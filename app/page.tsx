@@ -560,29 +560,35 @@ export default function App() {
         </div>
 
         {/* Filters */}
-        <div className="mb-8 space-y-3 md:mb-12 md:flex md:flex-wrap md:items-center md:gap-3 md:space-y-0">
-          <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:overflow-visible md:px-0">
-            <AnimatedTabs
-              tabs={filters}
-              value={activeFilter}
-              onValueChange={setActiveFilter}
-              layoutId="dingry-catalog-tabs"
-              aria-label="Catégories du catalogue"
-              className="w-max max-w-none"
-            />
-          </div>
-          <Button
-            type="button"
-            variant="rotate-border"
-            onClick={() => setPersonalizeOpen(true)}
-            className="h-9 w-full min-h-9 whitespace-nowrap px-4 text-[10px] tracking-[0.18em] uppercase font-medium sm:w-auto md:min-h-10 md:px-5 md:text-[11px] md:tracking-[0.2em]"
-          >
-            Personnalisation
-          </Button>
+        <div className="sticky top-[3.25rem] z-40 -mx-4 mb-8 border-b border-white/[0.06] bg-[#0a0a0a]/50 px-4 py-3 backdrop-blur-xl md:top-16 md:mb-12 md:mx-0 md:px-0">
+          <AnimatedTabs
+            tabs={filters}
+            value={activeFilter}
+            onValueChange={setActiveFilter}
+            layoutId="dingry-catalog-tabs"
+            aria-label="Catégories du catalogue"
+            variant="underline"
+            labelForTab={(tab) => (tab === "Hoodie zippé" ? "Zip" : tab)}
+            endAction={
+              <button
+                type="button"
+                onClick={() => setPersonalizeOpen(true)}
+                className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-[10px] font-medium tracking-[0.18em] uppercase text-white/75 transition-colors hover:border-[#0066FF]/45 hover:text-white active:scale-[0.97]"
+              >
+                Perso
+              </button>
+            }
+          />
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+        <motion.div
+          key={activeFilter}
+          initial={{ opacity: 0.5, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: MODAL_OVERLAY_EASE }}
+          className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4 lg:grid-cols-4"
+        >
           {activeFilter === "Hoodie" ? hoodiePairs.map((pair) => (
             <ProductCard
               key={pair.id}
@@ -599,7 +605,7 @@ export default function App() {
               <p className="text-sm text-white/40 tracking-wider">Cette catégorie sera bientôt disponible dans le catalogue.</p>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {(showVoirPlus || showVoirPlusHoodie) && (
           <div className="mt-14 flex justify-center pb-4">
