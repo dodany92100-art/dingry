@@ -1,0 +1,93 @@
+export const PRODUCT_SIZES = ["S", "M", "L", "XL"] as const;
+
+export type ProductSize = (typeof PRODUCT_SIZES)[number];
+
+export type OrderStatus = "En attente" | "Expédié" | "Livré";
+
+export const ORDER_STATUSES: OrderStatus[] = ["En attente", "Expédié", "Livré"];
+
+export const PRODUCT_CATEGORIES = ["Tee", "Hoodie", "Hoodie zippé"] as const;
+
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+
+export type AdminProduct = {
+  id: string;
+  sku: string;
+  name: string;
+  variant: string;
+  description: string;
+  category: ProductCategory;
+  price: number;
+  sizes: ProductSize[];
+  stock: number;
+  imageUrl: string;
+  blobUrl: string | null;
+  blobPathname: string | null;
+  createdAt: string;
+};
+
+export type CatalogProduct = {
+  id: number;
+  sku: string;
+  name: string;
+  variant: string;
+  description: string;
+  category: ProductCategory;
+  price: number;
+  image: string;
+  sizes: ProductSize[];
+  stock: number;
+};
+
+export type AdminOrder = {
+  id: string;
+  customerName: string;
+  email: string;
+  total: number;
+  items: string[];
+  status: OrderStatus;
+  createdAt: string;
+  source: "stripe" | "demo";
+};
+
+export type AdminStore = {
+  version: number;
+  products: AdminProduct[];
+  orders: AdminOrder[];
+};
+
+export const STORE_VERSION = 3;
+
+export function isProductSize(value: string): value is ProductSize {
+  return (PRODUCT_SIZES as readonly string[]).includes(value);
+}
+
+export function isProductCategory(value: string): value is ProductCategory {
+  return (PRODUCT_CATEGORIES as readonly string[]).includes(value);
+}
+
+export function isOrderStatus(value: string): value is OrderStatus {
+  return (ORDER_STATUSES as readonly string[]).includes(value);
+}
+
+export function nextOrderStatus(status: OrderStatus): OrderStatus {
+  const index = ORDER_STATUSES.indexOf(status);
+  return ORDER_STATUSES[(index + 1) % ORDER_STATUSES.length];
+}
+
+export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {
+  const id = Number(product.id);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  return {
+    id,
+    sku: product.sku,
+    name: product.name,
+    variant: product.variant,
+    description: product.description,
+    category: product.category,
+    price: product.price,
+    image: product.imageUrl,
+    sizes: product.sizes,
+    stock: product.stock,
+  };
+}

@@ -1,0 +1,28 @@
+---
+description: Projet DINGRY uniquement — pas RAP2K
+alwaysApply: true
+---
+
+# DINGRY (rts-sepia) — périmètre strict
+
+Ce workspace est **la boutique DINGRY** (streetwear). **Ne pas** appliquer les conventions RAP2K (Vite, `useTonkeys`, `src/app`, Ligue Arena, Méthode Diabira Fibonacci, alias `@/` Rap2K).
+
+## Stack
+
+- Next.js 16 (App Router), React 19, Tailwind CSS 4, TypeScript
+- Paiement : `app/api/checkout/route.ts` + variable `STRIPE_SECRET_KEY`
+- UI principale : `app/page.tsx` (catalogue, panier, modales — fichier central)
+- Layout / styles : `app/layout.tsx`, `app/globals.css`
+- Contenus client : `public/DINGRY-contenus-client.html`
+
+## Règles de travail
+
+- Modifications **minimales** ; pas de refactor massif sans demande explicite
+- Images produits : URLs Cloudinary déjà dans `page.tsx` ; pas d’invention d’URLs
+- TypeScript strict ; pas de `any`
+- Explications en **français** sauf demande contraire
+- Ne pas toucher aux dossiers hors ce workspace (`agence tout site/ RAP2K`, `~/` repo rap2k)
+
+## Git
+
+- Dépôt Git **local à ce dossier** uniquement. Ne pas confondre avec le dépôt `rap2k` à la racine du home utilisateur.
