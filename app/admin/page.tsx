@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { prepareProductImage } from "@/lib/client/prepare-product-image";
 import {
   ORDER_STATUSES,
   PRODUCT_CATEGORIES,
@@ -71,6 +72,7 @@ export default function AdminPage() {
   const [stock, setStock] = useState(EMPTY_FORM.stock);
   const [sizes, setSizes] = useState<ProductSize[]>(EMPTY_FORM.sizes);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [convertingImage, setConvertingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
@@ -251,6 +253,24 @@ export default function AdminPage() {
     resetForm();
   }
 
+  async function acceptProductImage(selected: File | null) {
+    setFormError("");
+    setFormSuccess("");
+    if (!selected) {
+      setImageFile(null);
+      return;
+    }
+    setConvertingImage(true);
+    try {
+      setImageFile(await prepareProductImage(selected));
+    } catch (error) {
+      setImageFile(null);
+      setFormError(error instanceof Error ? error.message : "Conversion impossible.");
+    } finally {
+      setConvertingImage(false);
+    }
+  }
+
   function toggleSize(size: ProductSize) {
     setSizes((current) =>
       current.includes(size)
@@ -276,6 +296,10 @@ export default function AdminPage() {
     setFormError("");
     setFormSuccess("");
 
+    if (convertingImage) {
+      setFormError("Conversion de l'image en cours.");
+      return;
+    }
     if (!editingId && !imageFile) {
       setFormError("Ajoute une image produit.");
       return;
@@ -612,16 +636,28 @@ export default function AdminPage() {
                 {editingId ? "Remplacer l'image" : "Image"}
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-                  className="mt-2 w-full text-sm text-white/70 file:mr-3 file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-[0.18em] file:text-black"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={convertingImage}
+                  onChange={(event) => {
+                    const selected = event.target.files?.[0] ?? null;
+                    event.target.value = "";
+                    void acceptProductImage(selected);
+                  }}
+                  className="mt-2 w-full text-sm text-white/70 file:mr-3 file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-[0.18em] file:text-black disabled:opacity-50"
                 />
               </label>
+              <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-white/35">
+                {convertingImage
+                  ? "Conversion WebP…"
+                  : imageFile
+                    ? `WebP prêt · ${Math.max(1, Math.round(imageFile.size / 1024))} Ko`
+                    : "Jusqu'à 10 Mo · enregistré en WebP, 1 Mo maximum"}
+              </p>
               {formError ? <p className="mt-3 text-sm text-red-400">{formError}</p> : null}
               {formSuccess ? <p className="mt-3 text-sm text-white/70">{formSuccess}</p> : null}
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || convertingImage}
                 className="mt-5 h-11 w-full bg-white text-[11px] font-bold uppercase tracking-[0.22em] text-black disabled:opacity-50"
               >
                 {saving ? "Envoi…" : editingId ? "Mettre à jour le site" : "Ajouter au catalogue"}

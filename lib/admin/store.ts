@@ -17,8 +17,8 @@ import {
 const STORE_PATHNAME = "dingry/admin/store.json";
 const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json");
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const MAX_IMAGE_BYTES = 1 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
 
 function isAdminStore(value: unknown): value is AdminStore {
   if (!value || typeof value !== "object") return false;
@@ -185,10 +185,10 @@ function safeFileName(name: string): string {
 
 export function validateImageFile(file: File): string | null {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    return "Image invalide. Formats acceptés : JPG, PNG, WEBP, GIF.";
+    return "L'image doit être convertie en WebP avant l'enregistrement.";
   }
   if (file.size > MAX_IMAGE_BYTES) {
-    return "Image trop lourde (4 Mo maximum).";
+    return "Image trop lourde (1 Mo maximum après conversion).";
   }
   return null;
 }
@@ -197,14 +197,14 @@ export async function uploadProductImage(
   productId: string,
   file: File,
 ): Promise<{ imageUrl: string; blobUrl: string | null; blobPathname: string | null }> {
-  const filename = safeFileName(file.name);
+  const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
   const pathname = `dingry/products/${productId}/${filename}`;
 
   if (isBlobConfigured()) {
     const blob = await put(pathname, file, {
       access: "public",
       addRandomSuffix: true,
-      contentType: file.type,
+      contentType: "image/webp",
     });
     return {
       imageUrl: blob.url,

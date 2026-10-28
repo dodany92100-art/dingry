@@ -830,6 +830,7 @@ export default function App() {
             onClick={() => setSelectedProduct(null)}
           />
           <motion.div
+            data-product-modal=""
             className="relative z-10 bg-[#0a0a0a] border border-white/[0.06] w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col md:flex-row"
             key={selectedProduct.id}
             initial={{ opacity: 0, scale: 0.96, y: 14 }}
@@ -864,7 +865,14 @@ export default function App() {
                       <button
                         key={side}
                         type="button"
-                        onClick={() => setModalSide(side)}
+                        onClick={() => {
+                          setModalSide(side);
+                          if (side === "verso" && window.matchMedia("(max-width: 767px)").matches) {
+                            window.setTimeout(() => {
+                              document.querySelector("[data-product-modal]")?.scrollTo({ top: 0, behavior: "smooth" });
+                            }, 0);
+                          }
+                        }}
                         className={`border px-4 py-2 text-[10px] tracking-[0.25em] uppercase transition-colors ${modalSide === side ? "border-white bg-white text-black" : "border-white/20 text-white/50 hover:border-white/60 hover:text-white"}`}
                       >
                         {side}
