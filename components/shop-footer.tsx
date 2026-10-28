@@ -68,7 +68,7 @@ export function ShopFooter() {
             </ul>
           </div>
 
-          <div>
+          <div id="mentions-legales">
             <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-white/40">Informations légales</p>
             <div className="flex flex-col gap-2">
               <button
@@ -89,7 +89,23 @@ export function ShopFooter() {
           </div>
         </div>
 
-        <p className="mt-10 border-t border-white/[0.05] pt-6 text-center text-[10px] tracking-widest text-white/20">
+        <div className="mt-10 border-t border-white/[0.05] pt-6">
+          <p className="mb-4 text-center text-[10px] uppercase tracking-[0.28em] text-white/40">
+            Moyens de paiement
+          </p>
+          <ul className="flex flex-wrap items-center justify-center gap-2" aria-label="Moyens de paiement acceptés">
+            {["CB", "Visa", "Mastercard", "Amex", "Apple Pay", "Google Pay", "PayPal"].map((method) => (
+              <li
+                key={method}
+                className="flex h-8 items-center justify-center border border-white/15 bg-white/[0.03] px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75"
+              >
+                {method}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="mt-6 text-center text-[10px] tracking-widest text-white/20">
           © {new Date().getFullYear()} DINGRY. Tous droits réservés.
         </p>
       </footer>

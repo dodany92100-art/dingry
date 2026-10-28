@@ -837,15 +837,15 @@ export default function App() {
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
             transition={MODAL_PANEL_SPRING}
           >
-            <div className="flex-1 bg-[#080808]" style={{ minHeight: 400 }}>
+            <div className="w-full shrink-0 overflow-hidden bg-[#080808] md:w-1/2 md:max-w-[520px] md:self-start">
               <img
                 src={activeModalView?.image ?? selectedProduct.image}
                 alt={activeModalView?.name ?? selectedProduct.name}
-                className="w-full h-full object-cover"
-                style={{ filter: "brightness(0.85) contrast(1.05) grayscale(0.2)", maxHeight: 600 }}
+                className="block h-auto w-full"
+                style={{ filter: "brightness(0.85) contrast(1.05) grayscale(0.2)" }}
               />
             </div>
-            <div className="flex-1 p-8 md:p-10 flex flex-col justify-between">
+            <div className="relative z-10 flex flex-1 flex-col justify-between bg-[#0a0a0a] p-6 md:p-10">
               <div>
                 <button
                   onClick={() => setSelectedProduct(null)}
