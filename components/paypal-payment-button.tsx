@@ -29,7 +29,7 @@ const paypalOptions = {
 };
 
 function Spinner() {
-  return <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#050505]/15 border-t-[#050505]" aria-hidden />;
+  return <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/15 border-t-white" aria-hidden />;
 }
 
 export function PayPalPaymentButton({ lines, onApproved, disabled = false }: PayPalPaymentButtonProps) {
@@ -54,14 +54,14 @@ export function PayPalPaymentButton({ lines, onApproved, disabled = false }: Pay
   return (
     <div>
       <PayPalScriptProvider options={paypalOptions}>
-        <div className="relative bg-white p-4">
+        <div className="relative border border-white/10 bg-[#0a0a0a] p-4">
           {phase !== "idle" ? (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/95 px-6 text-center">
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#0a0a0a]/95 px-6 text-center">
               <Spinner />
-              <p className="text-[11px] font-medium tracking-[0.18em] text-[#050505] uppercase">
+              <p className="text-[11px] font-medium tracking-[0.18em] text-white uppercase">
                 {phase === "capturing" ? "Validation du paiement…" : "Ouverture de PayPal…"}
               </p>
-              <p className="max-w-xs text-xs leading-relaxed text-[#050505]/60">
+              <p className="max-w-xs text-xs leading-relaxed text-white/60">
                 {phase === "opening"
                   ? "Une fenêtre PayPal s’ouvre par-dessus DINGRY. Fermez-la pour revenir au paiement."
                   : "Ne fermez pas cet onglet."}
@@ -70,7 +70,7 @@ export function PayPalPaymentButton({ lines, onApproved, disabled = false }: Pay
                 <button
                   type="button"
                   onClick={() => setPhase("idle")}
-                  className="text-[10px] tracking-[0.16em] text-[#050505]/70 uppercase underline"
+                  className="text-[10px] tracking-[0.16em] text-white/70 uppercase underline"
                 >
                   Revenir au paiement
                 </button>

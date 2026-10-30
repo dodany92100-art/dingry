@@ -2,9 +2,12 @@ export const PRODUCT_SIZES = ["S", "M", "L", "XL", "TU"] as const;
 
 export type ProductSize = (typeof PRODUCT_SIZES)[number];
 
-export type OrderStatus = "En attente" | "Expédié" | "Livré";
+export type OrderStatus = "En attente" | "Expédié" | "Livré" | "À vérifier";
 
-export const ORDER_STATUSES: OrderStatus[] = ["En attente", "Expédié", "Livré"];
+/** Chaîne du bouton « avancer le statut » (sans « À vérifier »). */
+export const FULFILLMENT_STATUSES: OrderStatus[] = ["En attente", "Expédié", "Livré"];
+
+export const ORDER_STATUSES: OrderStatus[] = [...FULFILLMENT_STATUSES, "À vérifier"];
 
 /** Catégories admin (back-office). Libellé boutique : voir `lib/shop-catalog.ts`. */
 export const PRODUCT_CATEGORIES = ["Tee", "Hoodie", "Hoodie zippé", "Sweats", "Caps", "Jersey"] as const;
@@ -52,6 +55,12 @@ export type AdminOrder = {
   shippingName?: string;
   shippingAddress?: string;
   captureId?: string;
+  /** Lignes utilisées pour le décrément Redis (reconciliation). */
+  stockLines?: { productId: number; qty: number }[];
+  /** Décrément Redis en attente ou en échec. */
+  stockPending?: boolean;
+  /** Décrément Redis confirmé (double garde-fou avec dingry:stock-applied). */
+  stockApplied?: boolean;
 };
 
 export type AdminStore = {
@@ -75,8 +84,12 @@ export function isOrderStatus(value: string): value is OrderStatus {
 }
 
 export function nextOrderStatus(status: OrderStatus): OrderStatus {
-  const index = ORDER_STATUSES.indexOf(status);
-  return ORDER_STATUSES[(index + 1) % ORDER_STATUSES.length];
+  if (status === "À vérifier") {
+    return status;
+  }
+  const index = FULFILLMENT_STATUSES.indexOf(status);
+  if (index < 0) return "En attente";
+  return FULFILLMENT_STATUSES[(index + 1) % FULFILLMENT_STATUSES.length];
 }
 
 export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {

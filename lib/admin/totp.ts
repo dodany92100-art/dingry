@@ -3,7 +3,11 @@ import path from "node:path";
 import { Secret, TOTP } from "otpauth";
 import QRCode from "qrcode";
 
+import { getSharedRedis } from "@/lib/ratelimit";
+
 const LOCAL_SECRET_PATH = path.join(process.cwd(), "data", "admin", "totp-secret.txt");
+const TOTP_STEP_SECONDS = 30;
+const TOTP_REPLAY_TTL_SECONDS = 90;
 
 function normalizeSecret(value: string): string {
   return value.replace(/\s+/g, "").toUpperCase();
@@ -55,11 +59,31 @@ export async function getAdminTotp(): Promise<TOTP> {
   return createAdminTotp(await getTotpSecret());
 }
 
+async function consumeTotpStep(step: number): Promise<boolean> {
+  const client = getSharedRedis();
+  if (!client) {
+    if (process.env.NODE_ENV === "production") return false;
+    return true;
+  }
+  const key = `dingry:totp:used:${step}`;
+  try {
+    const result = await client.set(key, "1", { nx: true, ex: TOTP_REPLAY_TTL_SECONDS });
+    return result === "OK";
+  } catch (error) {
+    console.error("[admin-totp] Redis", error instanceof Error ? error.name : "erreur");
+    return process.env.NODE_ENV !== "production";
+  }
+}
+
 export async function verifyAdminTotp(code: string): Promise<boolean> {
   const token = code.replace(/\D/g, "");
   if (token.length !== 6) return false;
   const totp = await getAdminTotp();
-  return totp.validate({ token, window: 2 }) !== null;
+  const delta = totp.validate({ token, window: 2 });
+  if (delta === null) return false;
+  const nowStep = Math.floor(Date.now() / (TOTP_STEP_SECONDS * 1000));
+  const usedStep = nowStep + delta;
+  return consumeTotpStep(usedStep);
 }
 
 function toGoogleAuthenticatorUri(secret: string): string {

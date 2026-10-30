@@ -108,6 +108,7 @@ async function paypalFetch(path: string, init: RequestInit): Promise<PaypalCallR
     | null;
   if (!response.ok) {
     const issue = data?.details?.[0]?.issue || data?.name || "paypal";
+    console.error("PayPal refus", response.status, issue);
     return { ok: false, status: response.status, issue };
   }
   return { ok: true, order: data ?? {} };
@@ -276,12 +277,17 @@ export function readPayPalWebhookHeaders(request: Request): PayPalWebhookHeaders
 
 export async function verifyPayPalWebhookSignature(
   headers: PayPalWebhookHeaders,
-  event: unknown,
+  rawEventJson: string,
 ): Promise<"ok" | "invalid" | "unavailable"> {
   const config = paypalConfig();
   const webhookId = paypalWebhookId();
   if (!config || !webhookId) return "unavailable";
-  if (!event || typeof event !== "object" || Array.isArray(event)) return "invalid";
+
+  const trimmed = rawEventJson.trim();
+  if (trimmed.length === 0 || trimmed[0] !== "{" || trimmed[trimmed.length - 1] !== "}") {
+    return "invalid";
+  }
+
   const cert = paypalCertUrl(headers.certUrl);
   const sandbox = config.base.includes("sandbox");
   if (!cert || cert.sandbox !== sandbox) return "invalid";
@@ -290,10 +296,19 @@ export async function verifyPayPalWebhookSignature(
   try {
     token = await accessToken(config);
   } catch (error) {
-    console.error("PayPal webhook", error instanceof Error ? error.message : "erreur");
+    console.error("[paypal-webhook] token", error instanceof Error ? error.name : "erreur");
     return "unavailable";
   }
   if (!token) return "unavailable";
+
+  const body =
+    `{"auth_algo":${JSON.stringify(headers.authAlgo)},` +
+    `"cert_url":${JSON.stringify(headers.certUrl)},` +
+    `"transmission_id":${JSON.stringify(headers.transmissionId)},` +
+    `"transmission_sig":${JSON.stringify(headers.transmissionSig)},` +
+    `"transmission_time":${JSON.stringify(headers.transmissionTime)},` +
+    `"webhook_id":${JSON.stringify(webhookId)},` +
+    `"webhook_event":${rawEventJson}}`;
 
   let response: Response;
   try {
@@ -303,26 +318,18 @@ export async function verifyPayPalWebhookSignature(
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        auth_algo: headers.authAlgo,
-        cert_url: headers.certUrl,
-        transmission_id: headers.transmissionId,
-        transmission_sig: headers.transmissionSig,
-        transmission_time: headers.transmissionTime,
-        webhook_id: webhookId,
-        webhook_event: event,
-      }),
+      body,
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });
   } catch (error) {
-    console.error("PayPal webhook", error instanceof Error ? error.message : "erreur");
+    console.error("[paypal-webhook] verify", error instanceof Error ? error.name : "erreur");
     return "unavailable";
   }
 
   const data = (await response.json().catch(() => null)) as { verification_status?: string } | null;
   if (!response.ok) {
-    console.error("PayPal webhook", response.status);
+    console.error("[paypal-webhook] verify", response.status);
     return response.status >= 500 || response.status === 401 || response.status === 403 ? "unavailable" : "invalid";
   }
   return data?.verification_status === "SUCCESS" ? "ok" : "invalid";

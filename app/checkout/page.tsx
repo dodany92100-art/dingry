@@ -13,6 +13,7 @@ import {
   type CheckoutConfirmation,
   type StoredCartItem,
 } from "@/lib/checkout-draft";
+import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
 
 type ServerQuote = {
   totalCents: number;
@@ -52,6 +53,15 @@ export default function CheckoutPage() {
   useEffect(() => {
     setCart(readStoredCart());
     setReady(true);
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const previous = root.getAttribute("data-theme");
+    root.setAttribute("data-theme", "dark");
+    return () => {
+      root.setAttribute("data-theme", previous ?? "light");
+    };
   }, []);
 
   useEffect(() => {
@@ -107,9 +117,10 @@ export default function CheckoutPage() {
 
   const canPay = Boolean(token) && !saving && !confirmation && quoteState === "ready" && quote !== null;
 
-  async function registerOrder(orderId: string, turnstileToken: string) {
+  async function registerOrder(orderId: string, turnstileToken: string, attempt = 0) {
     setSaving(true);
-    setError(null);
+    if (attempt === 0) setError(null);
+    let scheduledRetry = false;
 
     try {
       const response = await fetch("/api/checkout", {
@@ -123,25 +134,48 @@ export default function CheckoutPage() {
         }),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string; order?: CheckoutConfirmation } | null;
+      const retryAfterHeader = Number(response.headers.get("Retry-After") ?? "0");
+      const finalizing =
+        response.status === 503 && payload?.error === PAYPAL_ORDER_FINALIZING_MESSAGE;
 
-      if (!response.ok || !payload?.order) {
-        setToken(null);
-        setWidgetKey((key) => key + 1);
-        setPendingOrderId(orderId);
-        setError(payload?.error ?? "La commande n’a pas pu être enregistrée. Relancez la vérification.");
+      if (response.ok && payload?.order) {
+        writeStoredCart([]);
+        saveCheckoutConfirmation(payload.order);
+        setCart([]);
+        setConfirmation(payload.order);
+        setPendingOrderId(null);
+        setError(null);
         return;
       }
 
-      writeStoredCart([]);
-      saveCheckoutConfirmation(payload.order);
-      setCart([]);
-      setConfirmation(payload.order);
-      setPendingOrderId(null);
+      if (finalizing && attempt < 12) {
+        scheduledRetry = true;
+        setPendingOrderId(orderId);
+        setError("Paiement reçu. Finalisation de votre commande…");
+        const waitMs = Math.max(1, retryAfterHeader || 3) * 1000;
+        window.setTimeout(() => {
+          void registerOrder(orderId, turnstileToken, attempt + 1);
+        }, waitMs);
+        return;
+      }
+
+      if (finalizing) {
+        setPendingOrderId(orderId);
+        setError(
+          "Paiement reçu. Votre confirmation arrivera par e-mail dès que la commande sera enregistrée. Vous pouvez fermer cette page.",
+        );
+        return;
+      }
+
+      setToken(null);
+      setWidgetKey((key) => key + 1);
+      setPendingOrderId(orderId);
+      setError(payload?.error ?? "La commande n’a pas pu être enregistrée. Relancez la vérification.");
     } catch {
       setPendingOrderId(orderId);
       setError("Réseau indisponible. Le paiement PayPal est reçu : confirmez à nouveau pour enregistrer la commande.");
     } finally {
-      setSaving(false);
+      if (!scheduledRetry) setSaving(false);
     }
   }
 
@@ -214,13 +248,7 @@ export default function CheckoutPage() {
             </Link>
           </section>
         ) : (
-          <form
-            className="grid items-start gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (pendingOrderId && token) void registerOrder(pendingOrderId, token);
-            }}
-          >
+          <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
             <section className="border border-white/10 bg-[#0a0a0a] p-4 md:p-8">
               <div className="flex items-center justify-between gap-3">
                 <h1 className="text-[10px] tracking-[0.32em] text-white/40 uppercase">Votre commande</h1>
@@ -287,8 +315,11 @@ export default function CheckoutPage() {
                   </p>
                 ) : pendingOrderId ? (
                   <button
-                    type="submit"
+                    type="button"
                     disabled={!canPay}
+                    onClick={() => {
+                      if (pendingOrderId && token) void registerOrder(pendingOrderId, token);
+                    }}
                     className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
                   >
                     {saving ? "Enregistrement…" : "Confirmer la commande"}
@@ -322,7 +353,7 @@ export default function CheckoutPage() {
                 Retour à la boutique
               </Link>
             </section>
-          </form>
+          </div>
         )}
       </div>
     </main>

@@ -41,6 +41,7 @@ function formatDate(value: string): string {
 }
 
 function statusClass(status: OrderStatus): string {
+  if (status === "À vérifier") return "border-amber-500/40 bg-amber-500/10 text-amber-200";
   if (status === "Expédié") return "border-[#0066FF]/40 bg-[#0066FF]/15 text-[#7EB3FF]";
   if (status === "Livré") return "border-white/20 bg-white/10 text-white";
   return "border-white/10 bg-white/[0.04] text-white/55";
@@ -87,7 +88,7 @@ export default function AdminPage() {
   );
 
   const paypalOrders = useMemo(() => {
-    const rank: Record<OrderStatus, number> = { "En attente": 0, Expédié: 1, Livré: 2 };
+    const rank: Record<OrderStatus, number> = { "À vérifier": -1, "En attente": 0, Expédié: 1, Livré: 2 };
     return orders
       .filter((order) => order.source === "paypal")
       .sort((a, b) => rank[a.status] - rank[b.status] || b.createdAt.localeCompare(a.createdAt));
@@ -96,6 +97,11 @@ export default function AdminPage() {
   const pendingOrders = useMemo(
     () => paypalOrders.filter((order) => order.status === "En attente").length,
     [paypalOrders],
+  );
+
+  const stockPendingCount = useMemo(
+    () => orders.filter((order) => order.stockPending && !order.stockApplied).length,
+    [orders],
   );
 
   const resetForm = useCallback(() => {
@@ -501,6 +507,9 @@ export default function AdminPage() {
           </div>
           <div className="flex flex-wrap items-center gap-5 text-[11px] uppercase tracking-[0.2em] text-white/45">
             <span>{pendingOrders} à expédier</span>
+            {stockPendingCount > 0 ? (
+              <span className="text-amber-400/90">{stockPendingCount} stock en attente</span>
+            ) : null}
             {lowStockCount > 0 ? <span className="text-[#7EB3FF]">{lowStockCount} stock bas</span> : null}
             <a
               href="/"
@@ -693,7 +702,12 @@ export default function AdminPage() {
         {tab === "produits" ? (
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Stock</p>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Stock</p>
+                <p className="mt-1 max-w-md text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
+                  Une quantité par fiche produit, partagée entre toutes les tailles.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={openNewProduct}

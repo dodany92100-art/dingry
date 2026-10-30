@@ -26,7 +26,14 @@ export function turnstileRemoteIp(request: Request): string | undefined {
 export async function verifyTurnstileToken(token: string, remoteIp?: string): Promise<TurnstileVerdict> {
   const secret = process.env.TURNSTILE_SECRET_KEY?.trim() ?? "";
   if (!secret) {
+    if (process.env.NODE_ENV === "development") return { ok: true };
     return { ok: false, status: 503, error: "Protection anti-bot indisponible." };
+  }
+  if (token === "developpement" && process.env.NODE_ENV !== "development") {
+    return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
+  }
+  if (process.env.NODE_ENV === "development" && token === "developpement") {
+    return { ok: true };
   }
   if (token.length < 10 || token.length > 2048) {
     return { ok: false, status: 403, error: "Vérification anti-bot refusée." };

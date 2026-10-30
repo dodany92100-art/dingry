@@ -449,6 +449,8 @@ export default function App() {
   const [cartHydrated, setCartHydrated] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [products, setProducts] = useState<ShopProduct[]>(PRODUCTS);
+  const [catalogState, setCatalogState] = useState<"loading" | "ready" | "error">("loading");
+  const [catalogRetry, setCatalogRetry] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<ShopProduct | null>(null);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedQuantity, setSelectedQuantity] = useState(1);
@@ -500,20 +502,33 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     async function loadCatalog() {
+      setCatalogState((state) => (state === "ready" ? state : "loading"));
       try {
         const response = await fetch("/api/catalog", { cache: "no-store" });
-        if (!response.ok) return;
+        if (response.status === 503) {
+          if (!cancelled) setCatalogState("error");
+          return;
+        }
+        if (!response.ok) {
+          if (!cancelled) setCatalogState("error");
+          return;
+        }
         const data = (await response.json()) as { products?: unknown };
         const live = Array.isArray(data.products)
           ? data.products
               .map(shopProductFromUnknown)
               .filter((item): item is NonNullable<typeof item> => item !== null)
           : [];
-        if (!cancelled && live.length > 0) {
-          setProducts(overlayShopCatalog(PRODUCTS, live));
+        if (!cancelled) {
+          if (live.length > 0) {
+            setProducts(overlayShopCatalog(PRODUCTS, live));
+            setCatalogState("ready");
+          } else {
+            setCatalogState(process.env.NODE_ENV === "development" ? "ready" : "error");
+          }
         }
       } catch {
-        // catalogue statique
+        if (!cancelled) setCatalogState("error");
       }
     }
     function refreshCatalog() {
@@ -527,7 +542,7 @@ export default function App() {
       window.removeEventListener("focus", refreshCatalog);
       document.removeEventListener("visibilitychange", refreshCatalog);
     };
-  }, []);
+  }, [catalogRetry]);
 
   function selectCatalogFilter(next: CatalogFilter) {
     const params = new URLSearchParams(searchParams.toString());
@@ -624,6 +639,7 @@ export default function App() {
   }
 
   function goToCheckout() {
+    if (catalogState === "error") return;
     writeStoredCart(cart);
     setCartOpen(false);
     router.push("/checkout");
@@ -795,20 +811,7 @@ export default function App() {
       </section>
       </div>
 
-      {/* TICKER */}
-      <div id="catalogue-landing" className="dingry-catalog-strip">
-        <div className="dingry-catalog-strip-fade dingry-catalog-strip-fade--top" aria-hidden />
-        <div className="dingry-catalog-strip-track py-3 overflow-hidden">
-          <div className="flex w-max gap-16 animate-marquee whitespace-nowrap">
-            {Array(2).fill(null).map((_, i) => (
-              <span key={i} className="shrink-0 text-[11px] font-semibold tracking-[0.28em] uppercase text-white">
-                ROCK THE STREET &nbsp;•&nbsp; DINGRY OFFICIEL &nbsp;•&nbsp; LIVRAISON OFFERTE &nbsp;•&nbsp; PERSONNALISER VOTRE T-SHIRT &nbsp;•&nbsp; @dingry_officiel &nbsp;•&nbsp;
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="dingry-catalog-strip-fade dingry-catalog-strip-fade--bottom" aria-hidden />
-      </div>
+      <div id="catalogue-landing" />
 
       {/* CATALOGUE */}
       <section id="catalogue" className="dingry-catalog-surface px-4 pb-20 md:px-12 md:pb-24">
@@ -840,7 +843,23 @@ export default function App() {
           />
         </div>
 
+        {catalogState === "error" ? (
+          <div className="mb-10 border border-white/15 bg-[#0a0a0a]/80 px-6 py-8 text-center md:px-10">
+            <p className="text-sm leading-relaxed text-white/60">
+              Impossible de charger Dingry collection pour le moment.
+            </p>
+            <button
+              type="button"
+              onClick={() => setCatalogRetry((value) => value + 1)}
+              className="mt-6 border border-white/20 px-6 py-3 text-[10px] tracking-[0.22em] text-white uppercase transition-colors hover:border-[#0066FF] hover:text-[#7EB3FF]"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : null}
+
         {/* Grid */}
+        {catalogState !== "error" ? (
         <motion.div
           key={activeFilter}
           initial={{ opacity: 0.5, y: 8 }}
@@ -857,6 +876,7 @@ export default function App() {
             </div>
           )}
         </motion.div>
+        ) : null}
       </section>
 
       {/* EDITORIAL STRIP */}
@@ -1353,7 +1373,8 @@ export default function App() {
                 <button
                   type="button"
                   onClick={goToCheckout}
-                  className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white"
+                  disabled={catalogState === "error"}
+                  className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
                 >
                   Payer avec PayPal
                 </button>
@@ -1366,15 +1387,6 @@ export default function App() {
         </div>
       )}
 
-      <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          animation: marquee 20s linear infinite;
-        }
-      `}</style>
       </div>
     </div>
   );

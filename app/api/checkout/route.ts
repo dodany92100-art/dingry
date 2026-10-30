@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import type { AdminOrder } from "@/lib/admin/types";
+import { StoreUnavailableError } from "@/lib/admin/store";
 import { parseCheckoutLines, quoteCheckout, type CheckoutQuote } from "@/lib/checkout-quote";
+import { StockCheckoutError } from "@/lib/stock";
 import { savePayPalDraft } from "@/lib/paypal-draft";
 import { isPayPalOrderId } from "@/lib/paypal-order-id";
-import { persistPayPalPayment } from "@/lib/paypal-persist";
+import { PAYPAL_ORDER_FINALIZING_MESSAGE, persistPayPalPayment } from "@/lib/paypal-persist";
 import {
   capturePayPalOrder,
   createPayPalOrder,
@@ -12,12 +14,17 @@ import {
   paypalConfigured,
   readVerifiedPayment,
 } from "@/lib/paypal-server";
-import { clientIp, limitCheckout } from "@/lib/ratelimit";
+import { limitCheckoutEntry, limitCheckoutPayment, limitCheckoutQuote } from "@/lib/ratelimit";
+import { clientIp } from "@/lib/request-ip";
 import { turnstileRemoteIp, turnstileTokenFromBody, verifyTurnstileToken } from "@/lib/turnstile";
 
 export const runtime = "nodejs";
+/** Inférieur au TTL du verrou Redis PayPal (`PAYPAL_ORDER_LOCK_TTL_SECONDS`). */
+export const maxDuration = 60;
 
-function limited(gate: Exclude<Awaited<ReturnType<typeof limitCheckout>>, { ok: true }>) {
+const CHECKOUT_MAX_BODY = 32_000;
+
+function limited(gate: Exclude<Awaited<ReturnType<typeof limitCheckoutEntry>>, { ok: true }>) {
   const headers: Record<string, string> = {};
   if (gate.status === 429) {
     headers["Retry-After"] = String(gate.retryAfter);
@@ -25,6 +32,14 @@ function limited(gate: Exclude<Awaited<ReturnType<typeof limitCheckout>>, { ok: 
     headers["X-RateLimit-Remaining"] = String(gate.remaining);
   }
   return NextResponse.json({ error: gate.error }, { status: gate.status, headers });
+}
+
+function persistFailed(saved: { ok: false; status: 409 | 503; error: string }) {
+  const headers: Record<string, string> = {};
+  if (saved.status === 503 && saved.error === PAYPAL_ORDER_FINALIZING_MESSAGE) {
+    headers["Retry-After"] = "3";
+  }
+  return NextResponse.json({ error: saved.error }, { status: saved.status, headers });
 }
 
 function confirmationOf(order: AdminOrder) {
@@ -41,12 +56,28 @@ function confirmationOf(order: AdminOrder) {
 
 
 export async function POST(request: Request) {
-  const gate = await limitCheckout(clientIp(request));
-  if (!gate.ok) return limited(gate);
+  const ip = clientIp(request);
+  const entryGate = await limitCheckoutEntry(ip);
+  if (!entryGate.ok) return limited(entryGate);
+
+  const contentLength = Number(request.headers.get("content-length") ?? "");
+  if (Number.isFinite(contentLength) && contentLength > CHECKOUT_MAX_BODY) {
+    return NextResponse.json({ error: "Commande invalide." }, { status: 400 });
+  }
+
+  let raw = "";
+  try {
+    raw = await request.text();
+  } catch {
+    return NextResponse.json({ error: "Commande invalide." }, { status: 400 });
+  }
+  if (raw.length === 0 || raw.length > CHECKOUT_MAX_BODY) {
+    return NextResponse.json({ error: "Commande invalide." }, { status: 400 });
+  }
 
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(raw) as unknown;
   } catch {
     return NextResponse.json({ error: "Commande invalide." }, { status: 400 });
   }
@@ -62,7 +93,14 @@ export async function POST(request: Request) {
   try {
     quote = await quoteCheckout(lines);
   } catch (error) {
-    console.error("Catalogue injoignable", error instanceof Error ? error.message : "erreur");
+    if (error instanceof StockCheckoutError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    if (error instanceof StoreUnavailableError) {
+      console.error("Catalogue injoignable", error.name);
+      return NextResponse.json({ error: "Dingry collection indisponible." }, { status: 503 });
+    }
+    console.error("Catalogue injoignable", error instanceof Error ? error.name : "erreur");
     return NextResponse.json({ error: "Dingry collection indisponible." }, { status: 503 });
   }
   if (!quote) {
@@ -71,6 +109,10 @@ export async function POST(request: Request) {
   const priced = quote;
 
   const intent = (body as { intent?: unknown }).intent;
+  const gate =
+    intent === "quote" ? await limitCheckoutQuote(ip) : await limitCheckoutPayment(ip);
+  if (!gate.ok) return limited(gate);
+
   if (intent === "quote") {
     return NextResponse.json({
       currency: priced.currency,
@@ -95,7 +137,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Le paiement PayPal n'a pas abouti." }, { status: 502 });
       }
       const drafted = await savePayPalDraft(created.orderId, quote);
-      if (!drafted) {
+      if (!drafted && process.env.NODE_ENV !== "development") {
         console.error("Brouillon PayPal non enregistré", created.orderId);
         return NextResponse.json({ error: "Paiement indisponible." }, { status: 503 });
       }
@@ -171,7 +213,7 @@ export async function POST(request: Request) {
 
     const saved = await persistPayPalPayment(payment, quote);
     if (!saved.ok) {
-      return NextResponse.json({ error: saved.error }, { status: saved.status });
+      return persistFailed(saved);
     }
 
     return NextResponse.json(

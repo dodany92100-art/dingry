@@ -1,7 +1,8 @@
 import { checkoutDigest, parseCheckoutLines, type CheckoutLine, type CheckoutQuote } from "@/lib/checkout-quote";
 import { getSharedRedis } from "@/lib/ratelimit";
 
-const DRAFT_TTL_SECONDS = 60 * 60 * 24 * 7;
+/** Doit couvrir les réessais webhook PayPal (plusieurs jours). */
+export const DRAFT_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 export type PayPalDraft = {
   lines: CheckoutLine[];
@@ -60,7 +61,7 @@ export async function savePayPalDraft(orderId: string, quote: CheckoutQuote): Pr
     const result = await client.set(draftKey(orderId), payload, { nx: true, ex: DRAFT_TTL_SECONDS });
     return result === "OK";
   } catch (error) {
-    console.error("Upstash injoignable", error instanceof Error ? error.message : "erreur");
+    console.error("[paypal-draft] Redis", error instanceof Error ? error.name : "erreur");
     return false;
   }
 }
@@ -72,7 +73,7 @@ export async function loadPayPalDraft(orderId: string): Promise<PayPalDraft | "m
   try {
     raw = await client.get<unknown>(draftKey(orderId));
   } catch (error) {
-    console.error("Upstash injoignable", error instanceof Error ? error.message : "erreur");
+    console.error("[paypal-draft] Redis", error instanceof Error ? error.name : "erreur");
     return "unavailable";
   }
   if (raw === null || raw === undefined) return "missing";

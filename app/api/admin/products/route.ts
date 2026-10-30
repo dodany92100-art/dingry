@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { isBlobConfigured, requireAdmin } from "@/lib/admin/auth";
 import { parseProductFields } from "@/lib/admin/parse-product";
-import { createProduct, loadStore, validateImageFile } from "@/lib/admin/store";
+import { createProduct, loadStore, StoreConflictError, StoreUnavailableError, validateImageFile } from "@/lib/admin/store";
+import { readStockQuantity } from "@/lib/stock";
 import type { ParsedProductFields } from "@/lib/admin/parse-product";
 
 export const runtime = "nodejs";
@@ -12,11 +13,27 @@ export async function GET() {
 
   try {
     const store = await loadStore();
+    const products = await Promise.all(
+      store.products.map(async (product) => {
+        const id = Number(product.id);
+        if (!Number.isInteger(id) || id <= 0) return product;
+        const live = await readStockQuantity(id);
+        if (live === "missing" || live === "unavailable") return product;
+        return { ...product, stock: live };
+      }),
+    );
     return NextResponse.json({
-      products: store.products,
+      products,
       blobEnabled: isBlobConfigured(),
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) {
+      console.error("Produits admin injoignables", error.name);
+      return NextResponse.json({ error: "Enregistrement indisponible." }, { status: 503 });
+    }
+    if (error instanceof StoreConflictError) {
+      return NextResponse.json({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
+    }
     return NextResponse.json({ error: "Impossible de charger les produits." }, { status: 500 });
   }
 }
@@ -62,10 +79,15 @@ export async function POST(request: Request) {
       file: image,
     });
     return NextResponse.json({ product }, { status: 201 });
-  } catch {
-    return NextResponse.json(
-      { error: "Impossible d'enregistrer le produit. Vérifie BLOB_READ_WRITE_TOKEN." },
-      { status: 500 },
-    );
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) {
+      console.error("Création produit indisponible", error.name);
+      return NextResponse.json({ error: "Enregistrement indisponible." }, { status: 503 });
+    }
+    if (error instanceof StoreConflictError) {
+      return NextResponse.json({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
+    }
+    console.error("Création produit", error instanceof Error ? error.name : typeof error);
+    return NextResponse.json({ error: "Impossible d'enregistrer le produit." }, { status: 500 });
   }
 }

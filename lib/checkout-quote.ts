@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
-import { loadStore } from "@/lib/admin/store";
+import { loadStoreReadOnly } from "@/lib/admin/store";
 import type { AdminProduct } from "@/lib/admin/types";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
+import {
+  assertCheckoutStock,
+  StockCheckoutError,
+  stockLinesFromCheckout,
+} from "@/lib/stock";
 
 const PERSONALIZABLE_PRODUCT_ID = 24;
 const SHOP_SIZES = new Set(["XS", "S", "M", "L", "XL", "XXL", "TU"]);
@@ -98,7 +103,7 @@ export function checkoutDigest(lines: CheckoutLine[]): string {
 }
 
 export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuote | null> {
-  const store = await loadStore();
+  const store = await loadStoreReadOnly();
   const byId = new Map<number, AdminProduct>();
   for (const product of store.products) {
     const id = Number(product.id);
@@ -137,6 +142,11 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
   }
 
   if (totalCents <= 0) return null;
+
+  const stock = await assertCheckoutStock(stockLinesFromCheckout(lines));
+  if (!stock.ok) {
+    throw new StockCheckoutError(stock.status, stock.error);
+  }
 
   return {
     lines,

@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { del, get, put } from "@vercel/blob";
-import { isBlobConfigured } from "@/lib/admin/auth";
+import { BlobPreconditionFailedError, del, get, put } from "@vercel/blob";
+import { isBlobConfigured } from "@/lib/admin/blob-config";
+import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing } from "@/lib/stock";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
 import { CATALOG_CANONICAL_IMAGE_BY_ID, DINGRY_JERSEY_PRODUCT_IDS, DINGRY_SWEAT_PRODUCT_IDS, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
 import {
@@ -20,6 +22,159 @@ const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json")
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
 const MAX_IMAGE_BYTES = 1 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
+const STORE_WRITE_ATTEMPTS = 5;
+
+export class StoreConflictError extends Error {
+  constructor() {
+    super("store-conflict");
+    this.name = "StoreConflictError";
+  }
+}
+
+export class StoreUnavailableError extends Error {
+  constructor(message = "Magasin indisponible.") {
+    super(message);
+    this.name = "StoreUnavailableError";
+  }
+}
+
+type StoreSnapshot = {
+  store: AdminStore;
+  etag: string | null;
+};
+
+/** Seules les erreurs de concurrence optimiste déclenchent un retry. */
+export function isStoreWriteConflict(error: unknown): boolean {
+  return error instanceof BlobPreconditionFailedError || error instanceof StoreConflictError;
+}
+
+function storeWriteBackoff(attempt: number): Promise<void> {
+  const ms = 50 + Math.random() * 100 + attempt * 25;
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function revisionFromDiskText(text: string): string {
+  return createHash("sha256").update(text).digest("hex");
+}
+
+function cloneStore(store: AdminStore): AdminStore {
+  return {
+    ...store,
+    products: store.products.map((product) => ({ ...product, sizes: [...product.sizes] })),
+    orders: store.orders.map((order) => ({ ...order })),
+  };
+}
+
+function assertStoreBackend(): void {
+  if (process.env.NODE_ENV === "production" && !isBlobConfigured()) {
+    throw new StoreUnavailableError("BLOB_READ_WRITE_TOKEN requis en production.");
+  }
+}
+
+function useLocalStoreFiles(): boolean {
+  return process.env.NODE_ENV !== "production" && !isBlobConfigured();
+}
+
+async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
+  assertStoreBackend();
+
+  if (isBlobConfigured()) {
+    const result = await get(STORE_PATHNAME, { access: "public", useCache: false });
+    if (!result || result.statusCode !== 200 || !result.stream) return "missing";
+    const text = await new Response(result.stream).text();
+    const parsed: unknown = JSON.parse(text);
+    if (!isAdminStore(parsed)) return "missing";
+    const raw = parsed as AdminStore;
+    return {
+      store: normalizeStore(raw),
+      etag: result.blob.etag,
+    };
+  }
+
+  if (!useLocalStoreFiles()) {
+    throw new StoreUnavailableError();
+  }
+
+  try {
+    const text = await readFile(LOCAL_STORE_PATH, "utf8");
+    const parsed: unknown = JSON.parse(text);
+    if (!isAdminStore(parsed)) return "missing";
+    const raw = parsed as AdminStore;
+    return {
+      store: normalizeStore(raw),
+      etag: revisionFromDiskText(text),
+    };
+  } catch {
+    return "missing";
+  }
+}
+
+async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promise<void> {
+  assertStoreBackend();
+  const next: AdminStore = { ...store, version: STORE_VERSION };
+  const body = JSON.stringify(next);
+
+  if (isBlobConfigured()) {
+    await put(STORE_PATHNAME, body, {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: etag !== null,
+      contentType: "application/json",
+      cacheControlMaxAge: 0,
+      ...(etag ? { ifMatch: etag } : {}),
+    });
+    return;
+  }
+
+  if (!useLocalStoreFiles()) {
+    throw new StoreUnavailableError();
+  }
+
+  if (etag) {
+    try {
+      const current = await readFile(LOCAL_STORE_PATH, "utf8");
+      if (revisionFromDiskText(current) !== etag) {
+        throw new StoreConflictError();
+      }
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      if (code === "ENOENT") throw new StoreConflictError();
+      if (error instanceof StoreConflictError) throw error;
+      throw error;
+    }
+  }
+
+  await mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
+  await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
+}
+
+async function withStoreOptimistic<T>(
+  mutate: (store: AdminStore) => { store: AdminStore; result: T; skipWrite?: boolean },
+): Promise<T> {
+  for (let attempt = 0; attempt < STORE_WRITE_ATTEMPTS; attempt++) {
+    let snapshot = await readStoreSnapshot();
+    if (snapshot === "missing") {
+      snapshot = {
+        store: normalizeStore(createSeededStore()),
+        etag: null,
+      };
+    }
+
+    const working = cloneStore(snapshot.store);
+    const outcome = mutate(working);
+    if (outcome.skipWrite) return outcome.result;
+
+    try {
+      await writeStoreSnapshot(outcome.store, snapshot.etag);
+      return outcome.result;
+    } catch (error) {
+      if (!isStoreWriteConflict(error)) throw error;
+      await storeWriteBackoff(attempt);
+    }
+  }
+
+  throw new StoreConflictError();
+}
 
 function isAdminStore(value: unknown): value is AdminStore {
   if (!value || typeof value !== "object") return false;
@@ -143,76 +298,37 @@ function normalizeStore(value: AdminStore): AdminStore {
   });
 }
 
-async function readRawStoreFromBlob(): Promise<AdminStore | null> {
+/** Lecture seule : aucune écriture Blob (catalogue, devis, findOrder). */
+export async function loadStoreReadOnly(): Promise<AdminStore> {
+  const snapshot = await readStoreSnapshot();
+  if (snapshot === "missing") {
+    return normalizeStore(createSeededStore());
+  }
+  return snapshot.store;
+}
+
+async function ensureInitialStore(): Promise<AdminStore> {
+  const seeded = normalizeStore(createSeededStore());
   try {
-    const result = await get(STORE_PATHNAME, { access: "public", useCache: false });
-    if (!result || result.statusCode !== 200 || !result.stream) return null;
-    const text = await new Response(result.stream).text();
-    const parsed: unknown = JSON.parse(text);
-    if (!isAdminStore(parsed)) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-async function writeStoreToBlob(store: AdminStore): Promise<void> {
-  await put(STORE_PATHNAME, JSON.stringify(store), {
-    access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: "application/json",
-    cacheControlMaxAge: 0,
-  });
-}
-
-async function readRawStoreFromDisk(): Promise<AdminStore | null> {
-  try {
-    const text = await readFile(LOCAL_STORE_PATH, "utf8");
-    const parsed: unknown = JSON.parse(text);
-    if (!isAdminStore(parsed)) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-async function writeStoreToDisk(store: AdminStore): Promise<void> {
-  await mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
-  await writeFile(LOCAL_STORE_PATH, JSON.stringify(store, null, 2), "utf8");
-}
-
-async function persistMigratedStore(raw: AdminStore): Promise<AdminStore> {
-  const normalized = normalizeStore(raw);
-  if (raw.version !== STORE_VERSION) {
-    await saveStore(normalized);
-  }
-  return normalized;
-}
-
-export async function loadStore(): Promise<AdminStore> {
-  if (isBlobConfigured()) {
-    const fromBlob = await readRawStoreFromBlob();
-    if (fromBlob) return persistMigratedStore(fromBlob);
-    const seeded = createSeededStore();
-    await writeStoreToBlob(seeded);
+    await writeStoreSnapshot(seeded, null);
+    await seedCatalogStockFromProducts(seeded.products);
     return seeded;
+  } catch (error) {
+    if (isStoreWriteConflict(error)) {
+      const again = await readStoreSnapshot();
+      if (again !== "missing") return again.store;
+    }
+    throw error;
   }
-
-  const fromDisk = await readRawStoreFromDisk();
-  if (fromDisk) return persistMigratedStore(fromDisk);
-  const seeded = createSeededStore();
-  await writeStoreToDisk(seeded);
-  return seeded;
 }
 
-export async function saveStore(store: AdminStore): Promise<void> {
-  const next: AdminStore = { ...store, version: STORE_VERSION };
-  if (isBlobConfigured()) {
-    await writeStoreToBlob(next);
-    return;
+/** Charge le magasin ; peut créer le fichier initial (admin, écritures). */
+export async function loadStore(): Promise<AdminStore> {
+  const snapshot = await readStoreSnapshot();
+  if (snapshot === "missing") {
+    return ensureInitialStore();
   }
-  await writeStoreToDisk(next);
+  return snapshot.store;
 }
 
 function safeFileName(name: string): string {
@@ -248,6 +364,10 @@ export async function uploadProductImage(
       blobUrl: blob.url,
       blobPathname: blob.pathname,
     };
+  }
+
+  if (!useLocalStoreFiles()) {
+    throw new StoreUnavailableError();
   }
 
   await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
@@ -304,8 +424,9 @@ export type ProductInput = {
 };
 
 export async function createProduct(input: ProductInput & { file: File }): Promise<AdminProduct> {
-  const store = await loadStore();
-  const id = nextProductId(store.products);
+  const snapshot = await readStoreSnapshot();
+  const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
+  const id = nextProductId(base.products);
   const uploaded = await uploadProductImage(id, input.file);
   const product: AdminProduct = {
     id,
@@ -323,9 +444,13 @@ export async function createProduct(input: ProductInput & { file: File }): Promi
     createdAt: new Date().toISOString(),
   };
 
-  store.products = [product, ...store.products];
-  await saveStore(store);
-  return product;
+  return withStoreOptimistic((store) => {
+    store.products = [product, ...store.products];
+    return { store, result: product };
+  }).then(async (created) => {
+    await seedStockIfMissing(Number(created.id), created.stock);
+    return created;
+  });
 }
 
 export async function updateProduct(
@@ -333,33 +458,75 @@ export async function updateProduct(
   input: Partial<ProductInput> & { stockDelta?: number },
   file?: File,
 ): Promise<AdminProduct | null> {
-  const store = await loadStore();
-  const product = store.products.find((item) => item.id === id);
-  if (!product) return null;
+  let uploaded: Awaited<ReturnType<typeof uploadProductImage>> | undefined;
+  let previous: AdminProduct | undefined;
+  let fields = { ...input };
 
-  if (typeof input.sku === "string") product.sku = input.sku;
-  if (typeof input.name === "string") product.name = input.name;
-  if (typeof input.variant === "string") product.variant = input.variant;
-  if (typeof input.description === "string") product.description = input.description;
-  if (input.category) product.category = input.category;
-  if (typeof input.price === "number") product.price = input.price;
-  if (input.sizes) product.sizes = input.sizes;
-  if (typeof input.stock === "number") {
-    product.stock = Math.max(0, Math.floor(input.stock));
-  } else if (typeof input.stockDelta === "number") {
-    product.stock = Math.max(0, Math.floor(product.stock + input.stockDelta));
+  const productId = Number(id);
+  if (typeof fields.stockDelta === "number" && Number.isInteger(productId) && productId > 0) {
+    const adjusted = await adjustStock(productId, fields.stockDelta);
+    if (!adjusted.ok) {
+      throw new StoreConflictError();
+    }
+    fields = { ...fields, stock: adjusted.quantity, stockDelta: undefined };
+  } else if (typeof fields.stock === "number" && Number.isInteger(productId) && productId > 0) {
+    const targetStock = fields.stock;
+    const snapshot = await readStoreSnapshot();
+    const current = snapshot === "missing" ? null : snapshot.store.products.find((p) => p.id === id);
+    const redisQty = await readStockQuantity(productId);
+    const baseline =
+      redisQty === "missing" || redisQty === "unavailable"
+        ? (current?.stock ?? targetStock)
+        : redisQty;
+    const delta = targetStock - baseline;
+    if (delta !== 0) {
+      const adjusted = await adjustStock(productId, delta);
+      if (!adjusted.ok) {
+        throw new StoreConflictError();
+      }
+      fields = { ...fields, stock: adjusted.quantity };
+    }
+    await seedStockIfMissing(productId, targetStock);
   }
 
   if (file) {
-    await deleteProductImage(product);
-    const uploaded = await uploadProductImage(id, file);
-    product.imageUrl = uploaded.imageUrl;
-    product.blobUrl = uploaded.blobUrl;
-    product.blobPathname = uploaded.blobPathname;
+    const snapshot = await readStoreSnapshot();
+    const base = snapshot === "missing" ? null : snapshot.store;
+    previous = base?.products.find((item) => item.id === id);
+    if (!previous) return null;
+    uploaded = await uploadProductImage(id, file);
   }
 
-  await saveStore(store);
-  return product;
+  return withStoreOptimistic((store) => {
+    const product = store.products.find((item) => item.id === id);
+    if (!product) {
+      return { store, result: null, skipWrite: true };
+    }
+
+    if (typeof fields.sku === "string") product.sku = fields.sku;
+    if (typeof fields.name === "string") product.name = fields.name;
+    if (typeof fields.variant === "string") product.variant = fields.variant;
+    if (typeof fields.description === "string") product.description = fields.description;
+    if (fields.category) product.category = fields.category;
+    if (typeof fields.price === "number") product.price = fields.price;
+    if (fields.sizes) product.sizes = fields.sizes;
+    if (typeof fields.stock === "number") {
+      product.stock = Math.max(0, Math.floor(fields.stock));
+    }
+
+    if (uploaded) {
+      product.imageUrl = uploaded.imageUrl;
+      product.blobUrl = uploaded.blobUrl;
+      product.blobPathname = uploaded.blobPathname;
+    }
+
+    return { store, result: product };
+  }).then(async (updated) => {
+    if (updated && file && previous) {
+      await deleteProductImage(previous);
+    }
+    return updated;
+  });
 }
 
 export async function updateProductStock(id: string, nextStock: number): Promise<AdminProduct | null> {
@@ -367,36 +534,78 @@ export async function updateProductStock(id: string, nextStock: number): Promise
 }
 
 export async function removeProduct(id: string): Promise<boolean> {
-  const store = await loadStore();
-  const product = store.products.find((item) => item.id === id);
-  if (!product) return false;
-  await deleteProductImage(product);
-  store.products = store.products.filter((item) => item.id !== id);
-  await saveStore(store);
+  const removed = await withStoreOptimistic((store) => {
+    const product = store.products.find((item) => item.id === id);
+    if (!product) {
+      return { store, result: null, skipWrite: true };
+    }
+    const copy = { ...product, sizes: [...product.sizes] };
+    store.products = store.products.filter((item) => item.id !== id);
+    return { store, result: copy };
+  });
+
+  if (!removed) return false;
+  await deleteProductImage(removed);
   return true;
 }
 
 export async function findOrder(id: string): Promise<AdminOrder | undefined> {
-  const store = await loadStore();
-  return store.orders.find((item) => item.id === id);
+  const snapshot = await readStoreSnapshot();
+  if (snapshot === "missing") return undefined;
+  return snapshot.store.orders.find((item) => item.id === id);
 }
 
 export async function insertOrderIfNew(order: AdminOrder): Promise<boolean> {
-  const store = await loadStore();
-  if (store.orders.some((item) => item.id === order.id)) return false;
-  store.orders = [order, ...store.orders];
-  await saveStore(store);
-  return true;
+  return withStoreOptimistic((store) => {
+    if (store.orders.some((item) => item.id === order.id)) {
+      return { store, result: false, skipWrite: true };
+    }
+    store.orders = [order, ...store.orders];
+    return { store, result: true };
+  });
 }
 
 export async function upsertOrder(order: AdminOrder): Promise<AdminOrder> {
-  const store = await loadStore();
-  const index = store.orders.findIndex((item) => item.id === order.id);
-  if (index >= 0) {
-    store.orders[index] = order;
-  } else {
-    store.orders = [order, ...store.orders];
+  return withStoreOptimistic((store) => {
+    const index = store.orders.findIndex((item) => item.id === order.id);
+    if (index >= 0) {
+      store.orders[index] = order;
+    } else {
+      store.orders = [order, ...store.orders];
+    }
+    return { store, result: order };
+  });
+}
+
+export type PatchOrderResult = { order: AdminOrder | null; changed: boolean };
+
+/** Comparaison champ par champ sur le patch (valeurs primitives / références explicites). */
+export function orderPatchHasChanges(current: AdminOrder, patch: Partial<AdminOrder>): boolean {
+  for (const key of Object.keys(patch) as (keyof AdminOrder)[]) {
+    if (patch[key] !== current[key]) return true;
   }
-  await saveStore(store);
-  return order;
+  return false;
+}
+
+/** Met à jour une commande existante sans écraser les champs non mentionnés (version relue). */
+export async function patchOrder(
+  orderId: string,
+  mutate: (current: AdminOrder) => Partial<AdminOrder>,
+): Promise<PatchOrderResult> {
+  return withStoreOptimistic((store) => {
+    const index = store.orders.findIndex((item) => item.id === orderId);
+    if (index < 0) {
+      return { store, result: { order: null, changed: false }, skipWrite: true };
+    }
+    const current = store.orders[index];
+    const patch = mutate(current);
+    if (Object.keys(patch).length === 0) {
+      return { store, result: { order: current, changed: false }, skipWrite: true };
+    }
+    if (!orderPatchHasChanges(current, patch)) {
+      return { store, result: { order: current, changed: false }, skipWrite: true };
+    }
+    store.orders[index] = { ...current, ...patch };
+    return { store, result: { order: store.orders[index], changed: true } };
+  });
 }

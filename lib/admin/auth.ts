@@ -21,7 +21,7 @@ export async function isAdminAuthenticated(): Promise<boolean> {
 export function adminCookieOptions(maxAge = sessionTtlSeconds()) {
   return {
     httpOnly: true,
-    sameSite: "lax" as const,
+    sameSite: "strict" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge,
@@ -55,6 +55,4 @@ export async function requireAdmin(): Promise<NextResponse | null> {
   return null;
 }
 
-export function isBlobConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-}
+export { isBlobConfigured } from "@/lib/admin/blob-config";

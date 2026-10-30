@@ -1,11 +1,18 @@
+import { randomUUID } from "node:crypto";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { clientIp } from "@/lib/request-ip";
 
-const WINDOW_TOKENS = 5;
-const WINDOW = "10 s";
+const COARSE_WINDOW_TOKENS = 60;
+const QUOTE_WINDOW_TOKENS = 20;
+const PAYMENT_WINDOW_TOKENS = 5;
+const QUOTE_WINDOW = "10 s" as const;
+const PAYMENT_WINDOW = "60 s" as const;
+const COARSE_WINDOW = "10 s" as const;
+const WEBHOOK_WINDOW = "10 s" as const;
 const REDIS_TIMEOUT_MS = 3000;
-const PAYPAL_ORDER_TTL_SECONDS = 60 * 60 * 24 * 90;
+/** Doit rester > durée max probable de capture + persistance (voir `maxDuration` sur `/api/checkout`). */
+const PAYPAL_ORDER_LOCK_TTL_SECONDS = 180;
+const PAYPAL_ORDER_DONE_TTL_SECONDS = 60 * 60 * 24 * 90;
 
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "";
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "";
@@ -22,29 +29,25 @@ export function getSharedRedis(): Redis | null {
   return getRedis();
 }
 
-const redis = getRedis();
+function buildLimiter(
+  prefix: string,
+  tokens: number,
+  window: typeof QUOTE_WINDOW | typeof PAYMENT_WINDOW | typeof COARSE_WINDOW,
+): Ratelimit | null {
+  const redis = getRedis();
+  if (!redis) return null;
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(tokens, window),
+    prefix,
+    timeout: REDIS_TIMEOUT_MS,
+  });
+}
 
-const checkoutRatelimit = redis
-  ? new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(WINDOW_TOKENS, WINDOW),
-      prefix: "dingry:checkout",
-      analytics: true,
-      timeout: REDIS_TIMEOUT_MS,
-    })
-  : null;
-
-const webhookRatelimit = redis
-  ? new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(30, WINDOW),
-      prefix: "dingry:paypal-webhook",
-      analytics: true,
-      timeout: REDIS_TIMEOUT_MS,
-    })
-  : null;
-
-export { clientIp };
+const checkoutEntryRatelimit = buildLimiter("dingry:checkout-entry", COARSE_WINDOW_TOKENS, COARSE_WINDOW);
+const checkoutQuoteRatelimit = buildLimiter("dingry:checkout-quote", QUOTE_WINDOW_TOKENS, QUOTE_WINDOW);
+const checkoutPaymentRatelimit = buildLimiter("dingry:checkout-pay", PAYMENT_WINDOW_TOKENS, PAYMENT_WINDOW);
+const webhookRatelimit = buildLimiter("dingry:paypal-webhook", 30, WEBHOOK_WINDOW);
 
 export type CheckoutRateLimit =
   | { ok: true; limit: number; remaining: number }
@@ -55,25 +58,95 @@ function paypalOrderKey(orderId: string): string {
   return `dingry:paypal-order:${orderId}`;
 }
 
-export async function claimPayPalOrder(orderId: string): Promise<"claimed" | "duplicate" | "unavailable"> {
+function lockValue(token: string): string {
+  return `lock:${token}`;
+}
+
+function logRedisError(scope: string, error: unknown): void {
+  console.error(scope, error instanceof Error ? error.name : typeof error);
+}
+
+export type PayPalOrderClaim =
+  | { status: "claimed"; token: string }
+  | { status: "duplicate" }
+  | { status: "unavailable" };
+
+export type PayPalOrderMarker = "absent" | "in_progress" | "done" | "unknown";
+
+export async function readPayPalOrderMarker(orderId: string): Promise<PayPalOrderMarker> {
   const client = getRedis();
-  if (!client) return "unavailable";
+  if (!client) return "absent";
   try {
-    const result = await client.set(paypalOrderKey(orderId), "1", { nx: true, ex: PAYPAL_ORDER_TTL_SECONDS });
-    return result === "OK" ? "claimed" : "duplicate";
+    const value = await client.get<string>(paypalOrderKey(orderId));
+    if (value === null || value === undefined) return "absent";
+    if (value === "done") return "done";
+    if (typeof value === "string" && value.startsWith("lock:")) return "in_progress";
+    return "unknown";
   } catch (error) {
-    console.error("Upstash injoignable", error instanceof Error ? error.message : "erreur");
-    return "unavailable";
+    logRedisError("Upstash injoignable", error);
+    return "unknown";
   }
 }
 
-export async function releasePayPalOrder(orderId: string): Promise<void> {
+export async function claimPayPalOrder(orderId: string): Promise<PayPalOrderClaim> {
+  const client = getRedis();
+  if (!client) return { status: "unavailable" };
+  const token = randomUUID();
+  try {
+    const result = await client.set(paypalOrderKey(orderId), lockValue(token), {
+      nx: true,
+      ex: PAYPAL_ORDER_LOCK_TTL_SECONDS,
+    });
+    return result === "OK" ? { status: "claimed", token } : { status: "duplicate" };
+  } catch (error) {
+    logRedisError("Upstash injoignable", error);
+    return { status: "unavailable" };
+  }
+}
+
+/** Marque la commande PayPal comme enregistrée (TTL long). Ne remplace que notre verrou court. */
+export async function completePayPalOrder(orderId: string, token: string): Promise<boolean> {
+  const client = getRedis();
+  if (!client) {
+    console.error("PayPal complete sans Redis", orderId);
+    return false;
+  }
+  const key = paypalOrderKey(orderId);
+  const expected = lockValue(token);
+  try {
+    const result = await client.eval(
+      `if redis.call("get", KEYS[1]) == ARGV[1] then
+         return redis.call("set", KEYS[1], "done", "EX", ARGV[2])
+       end
+       return 0`,
+      [key],
+      [expected, String(PAYPAL_ORDER_DONE_TTL_SECONDS)],
+    );
+    if (result === 0) {
+      console.error("PayPal marqueur non posé (verrou expiré ou token)", orderId);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logRedisError("Upstash injoignable", error);
+    return false;
+  }
+}
+
+/** Libère le verrou court seulement s'il nous appartient encore. */
+export async function releasePayPalOrder(orderId: string, token: string): Promise<void> {
   const client = getRedis();
   if (!client) return;
+  const key = paypalOrderKey(orderId);
+  const expected = lockValue(token);
   try {
-    await client.del(paypalOrderKey(orderId));
+    await client.eval(
+      `if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) end return 0`,
+      [key],
+      [expected],
+    );
   } catch (error) {
-    console.error("Upstash injoignable", error instanceof Error ? error.message : "erreur");
+    logRedisError("Upstash injoignable", error);
   }
 }
 
@@ -84,11 +157,41 @@ export async function limitPayPalWebhook(ip: string): Promise<CheckoutRateLimit>
   return slide(webhookRatelimit, ip, "Enregistrement indisponible.");
 }
 
-export async function limitCheckout(ip: string): Promise<CheckoutRateLimit> {
-  if (!checkoutRatelimit) {
+export async function limitCheckoutEntry(ip: string): Promise<CheckoutRateLimit> {
+  if (!checkoutEntryRatelimit) {
+    if (process.env.NODE_ENV === "development") {
+      return { ok: true, limit: 0, remaining: 0 };
+    }
     return { ok: false, status: 503, error: "Limitation de débit indisponible." };
   }
-  return slide(checkoutRatelimit, ip, "Limitation de débit indisponible.");
+  return slide(checkoutEntryRatelimit, ip, "Limitation de débit indisponible.");
+}
+
+export async function limitCheckoutQuote(ip: string): Promise<CheckoutRateLimit> {
+  if (!checkoutQuoteRatelimit) {
+    if (process.env.NODE_ENV === "development") {
+      return { ok: true, limit: 0, remaining: 0 };
+    }
+    return { ok: false, status: 503, error: "Limitation de débit indisponible." };
+  }
+  return slide(checkoutQuoteRatelimit, ip, "Limitation de débit indisponible.");
+}
+
+export async function limitCheckoutPayment(ip: string): Promise<CheckoutRateLimit> {
+  if (!checkoutPaymentRatelimit) {
+    if (process.env.NODE_ENV === "development") {
+      return { ok: true, limit: 0, remaining: 0 };
+    }
+    return { ok: false, status: 503, error: "Limitation de débit indisponible." };
+  }
+  return slide(checkoutPaymentRatelimit, ip, "Limitation de débit indisponible.");
+}
+
+function rateLimitIdentifier(ip: string): string | null {
+  const trimmed = ip.trim().slice(0, 80);
+  if (trimmed.length > 0 && trimmed !== "unknown") return trimmed;
+  if (process.env.NODE_ENV === "development") return "dev-local";
+  return null;
 }
 
 async function slide(
@@ -96,11 +199,16 @@ async function slide(
   ip: string,
   unavailable: string,
 ): Promise<CheckoutRateLimit> {
-  const identifier = ip.trim().slice(0, 80) || "unknown";
+  const identifier = rateLimitIdentifier(ip);
+  if (!identifier) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("Rate limit refusé : IP client inconnue");
+    }
+    return { ok: false, status: 503, error: unavailable };
+  }
 
   try {
     const result = await limiter.limit(identifier);
-    void result.pending;
 
     if (result.reason === "timeout") {
       return { ok: false, status: 503, error: unavailable };
@@ -120,7 +228,7 @@ async function slide(
 
     return { ok: true, limit: result.limit, remaining: result.remaining };
   } catch (error) {
-    console.error("Upstash injoignable", error instanceof Error ? error.message : "erreur");
+    logRedisError("Upstash injoignable", error);
     return { ok: false, status: 503, error: unavailable };
   }
 }

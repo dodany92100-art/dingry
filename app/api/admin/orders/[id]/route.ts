@@ -30,7 +30,16 @@ export async function PATCH(
 
   const status = requestedStatus && isOrderStatus(requestedStatus)
     ? requestedStatus
-    : nextOrderStatus(current.status);
+    : current.status === "À vérifier"
+      ? current.status
+      : nextOrderStatus(current.status);
+
+  if (current.status === "À vérifier" && !requestedStatus) {
+    return NextResponse.json(
+      { error: "Commande à vérifier : indiquez un statut explicitement." },
+      { status: 400 },
+    );
+  }
 
   const order = await upsertOrder({ ...current, status });
   return NextResponse.json({ order });

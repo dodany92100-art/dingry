@@ -17,7 +17,6 @@ const OVERLAY_EASE = [0.16, 1, 0.3, 1] as const;
 export function CookieConsent() {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
-  const isTeaser = pathname === "/";
   const [visible, setVisible] = useState(false);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
 
@@ -40,7 +39,7 @@ export function CookieConsent() {
     }
   }, []);
 
-  if (isAdmin || isTeaser) {
+  if (isAdmin) {
     return null;
   }
 
