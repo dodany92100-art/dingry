@@ -533,6 +533,10 @@ html[data-theme="light"] .dingry-catalog-bar [class*="border-white"] {
   animation: dingry-marquee var(--dingry-card-scroll-duration, 42s) linear infinite;
 }
 
+.dingry-marquee-track--manual {
+  animation: none;
+}
+
 .dingry-infinite-cards:hover .dingry-marquee-track,
 .dingry-marquee-track:focus-within {
   animation-play-state: paused;
