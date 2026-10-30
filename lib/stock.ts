@@ -3,6 +3,7 @@
  * Choix commercial : le champ admin `stock` est unique par fiche produit.
  */
 import type { CheckoutLine } from "@/lib/checkout-quote";
+import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 import { getSharedRedis } from "@/lib/ratelimit";
 
 export type StockLine = { productId: number; qty: number };
@@ -95,7 +96,10 @@ export function aggregateStockLines(lines: StockLine[]): [string, number][] {
 }
 
 export function stockLinesFromCheckout(lines: CheckoutLine[]): StockLine[] {
-  return lines.map((line) => ({ productId: line.productId, qty: line.qty }));
+  return lines.map((line) => ({
+    productId: resolveRectoCatalogId(line.productId),
+    qty: line.qty,
+  }));
 }
 
 export async function seedStockIfMissing(productId: number, qty: number): Promise<void> {

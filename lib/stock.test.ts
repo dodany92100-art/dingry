@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { nextOrderStatus } from "@/lib/admin/types";
-import { aggregateStockLines } from "@/lib/stock";
+import { aggregateStockLines, stockLinesFromCheckout } from "@/lib/stock";
 
 describe("aggregateStockLines", () => {
   beforeEach(() => {
@@ -17,6 +17,11 @@ describe("aggregateStockLines", () => {
       ["dingry:stock:11", 3],
       ["dingry:stock:24", 1],
     ]);
+  });
+
+  it("mappe le verso vers le pool stock recto au checkout", () => {
+    const lines = stockLinesFromCheckout([{ productId: 8, size: "M", qty: 1 }]);
+    expect(lines).toEqual([{ productId: 6, qty: 1 }]);
   });
 });
 

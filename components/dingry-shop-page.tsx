@@ -1051,9 +1051,9 @@ export default function App() {
                   type="button"
                   onClick={addPersonalizedToCart}
                   disabled={!personalizeSize || !personalizeLabel.trim()}
-                  className={`w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
+                  className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
                     personalizeSize && personalizeLabel.trim()
-                      ? "bg-white text-[#050505] hover:bg-[#0066FF] hover:text-white"
+                      ? "bg-[#0066FF] text-white hover:bg-[#0052cc]"
                       : "bg-white/10 text-white/20 cursor-not-allowed"
                   }`}
                 >
@@ -1144,7 +1144,7 @@ export default function App() {
                         className="w-9 h-9 text-white/60 hover:bg-white hover:text-black transition-colors"
                       >+</button>
                     </div>
-                    <p className="text-xs font-normal tabular-nums tracking-wide text-white/55">
+                    <p className="text-2xl font-bold tabular-nums tracking-tight text-[#0066FF]">
                       {(jerseyCheckoutProduct ?? selectedProduct).price}€
                     </p>
                   </div>
@@ -1220,11 +1220,12 @@ export default function App() {
                 })()}
               </div>
               <button
+                type="button"
                 onClick={addToCart}
                 disabled={!selectedSize}
-                className={`w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
+                className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
                   selectedSize
-                    ? "bg-white text-[#050505] hover:bg-[#0066FF] hover:text-white"
+                    ? "bg-[#0066FF] text-white hover:bg-[#0052cc]"
                     : "bg-white/10 text-white/20 cursor-not-allowed"
                 }`}
               >
@@ -1264,7 +1265,7 @@ export default function App() {
             <div className="flex items-center justify-between p-8 border-b border-white/[0.06]">
               <div>
                 <h2 className="text-sm font-bold tracking-[0.3em] uppercase">
-                  {orderConfirmation ? "Commande confirmée" : "Votre Vault"}
+                  {orderConfirmation ? "Commande confirmée" : "Votre panier"}
                 </h2>
                 {cartCount > 0 && !orderConfirmation ? (
                   <p className="text-xs text-white/40 mt-1">{cartCount} article{cartCount > 1 ? "s" : ""}</p>

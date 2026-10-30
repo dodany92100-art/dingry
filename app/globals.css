@@ -407,11 +407,24 @@ html[data-theme="light"] .dingry-shop [class*="text-white/70"] { color: rgb(22 2
 html[data-theme="light"] .dingry-shop [class*="text-white/75"] { color: rgb(22 22 22 / 0.84); }
 html[data-theme="light"] .dingry-shop [class*="text-white/80"] { color: rgb(22 22 22 / 0.9); }
 
-html[data-theme="light"] .dingry-shop [class*="bg-[#0066FF]"],
+html[data-theme="light"] .dingry-shop [class*="bg-[#0066FF]"] {
+  background-color: #0066ff;
+  color: #fff;
+}
+
 html[data-theme="light"] .dingry-shop [class*="bg-[#0066FF]"] *,
 html[data-theme="light"] .dingry-shop #catalogue-landing,
 html[data-theme="light"] .dingry-shop #catalogue-landing * {
   color: #fff;
+}
+
+.dingry-shop .dingry-add-to-cart-btn:not(:disabled) {
+  background-color: #0066ff !important;
+  color: #fff !important;
+}
+
+.dingry-shop .dingry-add-to-cart-btn:not(:disabled):hover {
+  background-color: #0052cc !important;
 }
 
 html[data-theme="light"] .dingry-hero,

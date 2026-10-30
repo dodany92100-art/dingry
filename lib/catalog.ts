@@ -1,6 +1,11 @@
 import {
   type CatalogProduct,
 } from "@/lib/admin/types";
+import {
+  isVersoCatalogId,
+  resolveRectoCatalogId,
+  versoSkuFromRecto,
+} from "@/lib/catalog-verso-recto";
 import { CATALOG_CANONICAL_IMAGE_BY_ID } from "@/lib/dingry-product-media";
 import { normalizeAdminCategory, resolveShopCategory, type ShopCategory } from "@/lib/shop-catalog";
 
@@ -32,6 +37,49 @@ export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
   };
 }
 
+function resolveLiveOverlay(
+  productId: number,
+  liveById: Map<number, CatalogProduct>,
+): { overlay: CatalogProduct; inheritedFromRecto: boolean } | null {
+  const direct = liveById.get(productId);
+  if (direct) return { overlay: direct, inheritedFromRecto: false };
+
+  if (!isVersoCatalogId(productId)) return null;
+  const rectoId = resolveRectoCatalogId(productId);
+  if (rectoId === productId) return null;
+  const fromRecto = liveById.get(rectoId);
+  if (!fromRecto) return null;
+  return { overlay: fromRecto, inheritedFromRecto: true };
+}
+
+function applyCatalogOverlay(
+  product: ShopProduct,
+  overlay: CatalogProduct,
+  inheritedFromRecto: boolean,
+): ShopProduct {
+  const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[product.id];
+  const sku =
+    inheritedFromRecto && product.id !== overlay.id
+      ? versoSkuFromRecto(overlay.sku)
+      : overlay.sku;
+  return {
+    ...product,
+    name: overlay.name,
+    variant: inheritedFromRecto
+      ? product.variant || overlay.variant
+      : overlay.variant || product.variant,
+    price: overlay.price,
+    image: inheritedFromRecto
+      ? (canonicalImage ?? product.image)
+      : (canonicalImage ?? overlay.image),
+    description: overlay.description || product.description,
+    category: resolveShopCategory(product.id, overlay.category || product.category),
+    sku,
+    sizes: overlay.sizes,
+    stock: overlay.stock,
+  };
+}
+
 export function overlayShopCatalog(
   fallback: ShopProduct[],
   live: CatalogProduct[],
@@ -39,27 +87,16 @@ export function overlayShopCatalog(
   const liveById = new Map(live.map((product) => [product.id, product]));
 
   const merged = fallback.map((product) => {
-    const overlay = liveById.get(product.id);
+    const resolved = resolveLiveOverlay(product.id, liveById);
     const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[product.id];
-    if (!overlay) {
+    if (!resolved) {
       const image = canonicalImage ?? product.image;
       const category = resolveShopCategory(product.id, product.category);
       return image !== product.image || category !== product.category
         ? { ...product, image, category }
         : product;
     }
-    return {
-      ...product,
-      name: overlay.name,
-      variant: overlay.variant || product.variant,
-      price: overlay.price,
-      image: canonicalImage ?? overlay.image,
-      description: overlay.description || product.description,
-      category: resolveShopCategory(product.id, overlay.category || product.category),
-      sku: overlay.sku,
-      sizes: overlay.sizes,
-      stock: overlay.stock,
-    };
+    return applyCatalogOverlay(product, resolved.overlay, resolved.inheritedFromRecto);
   });
 
   const extras = live

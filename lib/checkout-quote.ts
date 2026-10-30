@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { loadStoreReadOnly } from "@/lib/admin/store";
 import type { AdminProduct } from "@/lib/admin/types";
+import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
 import {
   assertCheckoutStock,
@@ -15,7 +16,7 @@ const MAX_QTY = 99;
 const MAX_PERSONALIZATION = 80;
 
 /** Pièces affichées sur la vitrine et absentes du catalogue admin. Le prix admin gagne dès qu'il existe. */
-const VITRINE_ONLY: Record<number, { name: string; variant: string; price: number }> = {
+export const VITRINE_ONLY: Record<number, { name: string; variant: string; price: number }> = {
   1: { name: "PHANTOM HOODIE", variant: "NUIT NOIRE — VERSO", price: 189 },
   3: { name: "DINGRY ORIGINAL HOODIE", variant: "VERT — VERSO", price: 189 },
   5: { name: "DINGRY ZIP HOODIE", variant: "BLACK OUTLINE — VERSO", price: 219 },
@@ -115,8 +116,9 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
   const paypalItems: CheckoutQuote["paypalItems"] = [];
 
   for (const line of lines) {
-    const product = byId.get(line.productId);
-    const fallback = VITRINE_ONLY[line.productId];
+    const rectoId = resolveRectoCatalogId(line.productId);
+    const product = byId.get(line.productId) ?? byId.get(rectoId);
+    const fallback = product ? undefined : VITRINE_ONLY[line.productId];
     const name = product?.name ?? fallback?.name;
     const variant = product?.variant ?? fallback?.variant ?? "";
     const price = product?.price ?? fallback?.price;
