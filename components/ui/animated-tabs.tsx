@@ -38,14 +38,23 @@ export function AnimatedTabs({
   labelForTab,
 }: AnimatedTabsProps) {
   const [internalValue, setInternalValue] = useState(defaultValue ?? tabs[0] ?? "");
+  const [motionReady, setMotionReady] = useState(false);
   const active = controlledValue ?? internalValue;
   const scrollRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
+  useEffect(() => {
+    setMotionReady(true);
+  }, []);
+
   const scrollTabIntoView = useCallback((tab: string) => {
     const node = tabRefs.current.get(tab);
-    if (!node) return;
-    node.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    const scroller = scrollRef.current;
+    if (!node || !scroller) return;
+    const nodeRect = node.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    const delta = nodeRect.left - scrollerRect.left - (scrollerRect.width - nodeRect.width) / 2;
+    scroller.scrollBy({ left: delta, behavior: "smooth" });
   }, []);
 
   const selectTab = useCallback(
@@ -94,11 +103,11 @@ export function AnimatedTabs({
   return (
     <div className={cn("relative min-w-0", className)}>
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#0a0a0a]/95 to-transparent md:w-8"
+        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#12151c]/40 to-transparent md:w-8"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[#0a0a0a]/95 to-transparent md:w-10"
+        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[#12151c]/40 to-transparent md:w-10"
         aria-hidden
       />
       <div
@@ -134,18 +143,26 @@ export function AnimatedTabs({
               )}
             >
               {isActive && isUnderline ? (
-                <motion.span
-                  layoutId={layoutId}
-                  className="absolute inset-x-2 bottom-1 h-[2px] rounded-full bg-[#0066FF] shadow-[0_0_12px_rgba(0,102,255,0.55)]"
-                  transition={{ type: "spring", stiffness: 480, damping: 34, mass: 0.7 }}
-                />
+                motionReady ? (
+                  <motion.span
+                    layoutId={layoutId}
+                    className="absolute inset-x-2 bottom-1 h-[2px] rounded-full bg-[#0066FF] shadow-[0_0_12px_rgba(0,102,255,0.55)]"
+                    transition={{ type: "spring", stiffness: 480, damping: 34, mass: 0.7 }}
+                  />
+                ) : (
+                  <span className="absolute inset-x-2 bottom-1 h-[2px] rounded-full bg-[#0066FF] shadow-[0_0_12px_rgba(0,102,255,0.55)]" />
+                )
               ) : null}
               {isActive && !isUnderline ? (
-                <motion.span
-                  layoutId={layoutId}
-                  className="absolute inset-0 border border-[#0066FF] bg-[#0066FF]"
-                  transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.75 }}
-                />
+                motionReady ? (
+                  <motion.span
+                    layoutId={layoutId}
+                    className="absolute inset-0 border border-[#0066FF] bg-[#0066FF]"
+                    transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.75 }}
+                  />
+                ) : (
+                  <span className="absolute inset-0 border border-[#0066FF] bg-[#0066FF]" />
+                )
               ) : null}
               <span className="relative z-[1]">{labelForTab?.(tab) ?? tab}</span>
             </button>

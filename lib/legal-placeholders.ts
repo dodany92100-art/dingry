@@ -21,7 +21,7 @@ export const LEGAL_DOCUMENTS: Record<
       {
         heading: "3. Commande et paiement",
         body:
-          "Le paiement est exigible immédiatement à la commande par carte bancaire, PayPal ou Apple Pay via Stripe. La commande est confirmée après acceptation du paiement par l’établissement bancaire.",
+          "Le paiement est exigible immédiatement à la commande par PayPal, avec un compte PayPal ou une carte bancaire via PayPal. La commande est confirmée après acceptation du paiement.",
       },
       {
         heading: "4. Livraison",
@@ -52,7 +52,7 @@ export const LEGAL_DOCUMENTS: Record<
       {
         heading: "2. Données collectées",
         body:
-          "Nous pouvons collecter : identité, coordonnées (e-mail, adresse de livraison), données de commande et de paiement (traitées par Stripe, sans conservation des numéros de carte sur nos serveurs), ainsi que des données techniques (cookies, logs) pour le fonctionnement du site.",
+          "Nous pouvons collecter : identité, coordonnées (e-mail, adresse de livraison), données de commande et de paiement (traitées par PayPal, sans conservation des numéros de carte sur nos serveurs), ainsi que des données techniques (cookies, logs) pour le fonctionnement du site.",
       },
       {
         heading: "3. Finalités",

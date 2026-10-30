@@ -1,4 +1,4 @@
-export const PRODUCT_SIZES = ["S", "M", "L", "XL"] as const;
+export const PRODUCT_SIZES = ["S", "M", "L", "XL", "TU"] as const;
 
 export type ProductSize = (typeof PRODUCT_SIZES)[number];
 
@@ -6,7 +6,8 @@ export type OrderStatus = "En attente" | "Expédié" | "Livré";
 
 export const ORDER_STATUSES: OrderStatus[] = ["En attente", "Expédié", "Livré"];
 
-export const PRODUCT_CATEGORIES = ["Tee", "Hoodie", "Hoodie zippé"] as const;
+/** Catégories admin (back-office). Libellé boutique : voir `lib/shop-catalog.ts`. */
+export const PRODUCT_CATEGORIES = ["Tee", "Hoodie", "Hoodie zippé", "Sweats", "Caps", "Jersey"] as const;
 
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 
@@ -47,7 +48,9 @@ export type AdminOrder = {
   items: string[];
   status: OrderStatus;
   createdAt: string;
-  source: "stripe" | "demo";
+  source: "paypal" | "demo";
+  shippingName?: string;
+  shippingAddress?: string;
 };
 
 export type AdminStore = {
@@ -56,7 +59,7 @@ export type AdminStore = {
   orders: AdminOrder[];
 };
 
-export const STORE_VERSION = 3;
+export const STORE_VERSION = 4;
 
 export function isProductSize(value: string): value is ProductSize {
   return (PRODUCT_SIZES as readonly string[]).includes(value);

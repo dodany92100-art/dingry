@@ -3,6 +3,7 @@ import path from "node:path";
 import { del, get, put } from "@vercel/blob";
 import { isBlobConfigured } from "@/lib/admin/auth";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
+import { CATALOG_CANONICAL_IMAGE_BY_ID, DINGRY_JERSEY_PRODUCT_IDS, DINGRY_SWEAT_PRODUCT_IDS, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
 import {
   isProductCategory,
   isProductSize,
@@ -59,6 +60,53 @@ function normalizeProduct(value: unknown): AdminProduct | null {
   };
 }
 
+function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined): AdminProduct {
+  const seedIdNum = Number(seed.id);
+  const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[seedIdNum];
+  const catalogLocked =
+    DINGRY_SWEAT_PRODUCT_IDS.has(seedIdNum) ||
+    DINGRY_TEE_PRODUCT_IDS.has(seedIdNum) ||
+    DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum) ||
+    canonicalImage !== undefined;
+  if (!current) return { ...seed, sizes: [...seed.sizes] };
+  const genericSku = !current.sku || current.sku === `DINGRY-${current.id}`;
+  const genericCategory = current.category === "Tee" && seed.category !== "Tee";
+  if (catalogLocked) {
+    return {
+      ...current,
+      ...seed,
+      imageUrl:
+        canonicalImage ??
+        (DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum) && current.imageUrl ? current.imageUrl : seed.imageUrl),
+      category: DINGRY_SWEAT_PRODUCT_IDS.has(seedIdNum)
+        ? "Sweats"
+        : DINGRY_TEE_PRODUCT_IDS.has(seedIdNum)
+          ? "Tee"
+          : DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum)
+            ? "Jersey"
+            : seed.category,
+      name: seed.name,
+      variant: DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum)
+        ? current.variant.trim() || seed.variant
+        : seed.variant,
+      description: seed.description || current.description,
+      sku: genericSku ? seed.sku : current.sku,
+      sizes: current.sizes.length > 0 ? current.sizes : [...seed.sizes],
+    };
+  }
+  return {
+    ...seed,
+    ...current,
+    imageUrl: canonicalImage ?? current.imageUrl,
+    sku: genericSku ? seed.sku : current.sku,
+    variant: current.variant || seed.variant,
+    description: current.description || seed.description,
+    category: genericCategory ? seed.category : current.category,
+    name: current.name.includes(" — ") ? seed.name : current.name,
+    sizes: current.sizes.length > 0 ? current.sizes : [...seed.sizes],
+  };
+}
+
 function migrateStore(raw: AdminStore): AdminStore {
   const existing = raw.products
     .map(normalizeProduct)
@@ -66,29 +114,16 @@ function migrateStore(raw: AdminStore): AdminStore {
   const byId = new Map(existing.map((item) => [item.id, item]));
 
   if (raw.version === STORE_VERSION && existing.length > 0) {
+    const mergedSeed = SEEDED_PRODUCTS.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
+    const extras = existing.filter((item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id));
     return {
       version: STORE_VERSION,
-      products: existing,
+      products: [...mergedSeed, ...extras],
       orders: raw.orders,
     };
   }
 
-  const mergedSeed = SEEDED_PRODUCTS.map((seed) => {
-    const current = byId.get(seed.id);
-    if (!current) return { ...seed, sizes: [...seed.sizes] };
-    const genericSku = !current.sku || current.sku === `DINGRY-${current.id}`;
-    const genericCategory = current.category === "Tee" && seed.category !== "Tee";
-    return {
-      ...seed,
-      ...current,
-      sku: genericSku ? seed.sku : current.sku,
-      variant: current.variant || seed.variant,
-      description: current.description || seed.description,
-      category: genericCategory ? seed.category : current.category,
-      name: current.name.includes(" — ") ? seed.name : current.name,
-      sizes: current.sizes.length > 0 ? current.sizes : [...seed.sizes],
-    };
-  });
+  const mergedSeed = SEEDED_PRODUCTS.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
   const extras = existing.filter((item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id));
 
   return {

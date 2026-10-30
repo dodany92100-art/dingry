@@ -1,8 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
+import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 
 const MODAL_OVERLAY_EASE = [0.16, 1, 0.3, 1] as const;
@@ -18,83 +19,128 @@ function InstagramIcon() {
   );
 }
 
+type FooterBlockProps = {
+  children: ReactNode;
+  className?: string;
+  id?: string;
+};
+
+function FooterBlock({ children, className, id }: FooterBlockProps) {
+  return (
+    <div
+      id={id}
+      className={`dingry-footer-block flex shrink-0 flex-col justify-between px-7 py-7 sm:px-8 sm:py-8 ${className ?? ""}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+type FooterMarqueeProps = {
+  onOpenLegal: (id: LegalDocId) => void;
+  withLegalAnchor?: boolean;
+};
+
+function FooterMarqueeBlocks({ onOpenLegal, withLegalAnchor }: FooterMarqueeProps) {
+  return (
+    <>
+      <FooterBlock>
+        <blockquote className="text-sm leading-relaxed text-white/75 md:text-[0.9375rem]">
+          Chaque pièce est une déclaration. Éditions limitées, attitude assumée.
+        </blockquote>
+        <div className="mt-6 flex flex-col gap-0.5">
+          <p className="text-sm font-semibold text-white/90">DINGRY Paris</p>
+          <p className="text-xs text-white/40">Rock The Street</p>
+        </div>
+      </FooterBlock>
+
+      <FooterBlock>
+        <p className="text-sm font-semibold uppercase tracking-wide text-white/90">Paris</p>
+        <p className="mt-2 text-xs leading-relaxed tracking-widest text-white/40">
+          Streetwear en édition limitée
+        </p>
+        <a
+          href="https://www.instagram.com/dingry_officiel/"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/70 transition-colors hover:text-[#0066FF]"
+          aria-label="Instagram @dingry_officiel"
+        >
+          <InstagramIcon />
+          @dingry_officiel
+        </a>
+      </FooterBlock>
+
+      <FooterBlock>
+        <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-white/45">Contact</p>
+        <ul className="space-y-2.5 text-xs font-medium tracking-wide text-white/55">
+          <li>
+            <a href="mailto:contact@dingry.fr" className="transition-colors hover:text-white">
+              contact@dingry.fr
+            </a>
+          </li>
+          <li>+33 1 42 00 00 00</li>
+          <li>12 rue du Temple, 75004 Paris</li>
+          <li className="pt-1 text-[10px] font-normal text-white/30">Coordonnées fictives — à remplacer</li>
+        </ul>
+      </FooterBlock>
+
+      <FooterBlock>
+        <blockquote className="text-sm leading-relaxed text-white/75 md:text-[0.9375rem]">
+          Livraison offerte en France · retours gratuits sous 30 jours · pièces numérotées.
+        </blockquote>
+        <div className="mt-6 flex flex-col gap-0.5">
+          <p className="text-sm font-semibold text-white/90">Service client</p>
+          <p className="text-xs text-white/40">Édition limitée</p>
+        </div>
+      </FooterBlock>
+
+      <FooterBlock id={withLegalAnchor ? "mentions-legales" : undefined}>
+        <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-white/45">
+          Informations légales
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenLegal("cgv")}
+            className="w-fit border border-white/20 bg-white/[0.03] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 transition-colors hover:border-white/45 hover:text-white"
+          >
+            CGV
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenLegal("rgpd")}
+            className="w-fit border border-white/20 bg-white/[0.03] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 transition-colors hover:border-white/45 hover:text-white"
+          >
+            RGPD
+          </button>
+        </div>
+      </FooterBlock>
+    </>
+  );
+}
+
 export function ShopFooter() {
   const [legalDoc, setLegalDoc] = useState<LegalDocId | null>(null);
   const activeLegal = legalDoc ? LEGAL_DOCUMENTS[legalDoc] : null;
 
   return (
     <>
-      <footer className="border-t border-white/[0.05] px-6 md:px-12 py-12">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <p className="text-2xl font-bold tracking-[0.3em] mb-3">DINGRY</p>
-            <p className="text-xs text-white/35 tracking-widest leading-relaxed">
-              Paris / Lyon
-              <br />
-              Streetwear en édition limitée
-            </p>
-            <a
-              href="https://www.instagram.com/dingry_officiel/"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-5 inline-flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-white/55 transition-colors hover:text-[#0066FF]"
-              aria-label="Instagram @dingry_officiel"
-            >
-              <InstagramIcon />
-              @dingry_officiel
-            </a>
-          </div>
-
-          <div>
-            <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-white/40">Contact</p>
-            <ul className="space-y-2 text-xs tracking-wide text-white/45">
-              <li>
-                <a href="mailto:contact@dingry.fr" className="hover:text-white transition-colors">
-                  contact@dingry.fr
-                </a>
-              </li>
-              <li>+33 1 42 00 00 00</li>
-              <li>12 rue du Temple, 75004 Paris</li>
-              <li className="text-[10px] text-white/25 pt-1">Coordonnées fictives — à remplacer</li>
-            </ul>
-          </div>
-
-          <div>
-            <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-white/40">Service</p>
-            <ul className="space-y-2 text-xs tracking-widest text-white/35">
-              <li>Livraison offerte en France</li>
-              <li>Retours gratuits sous 30 jours</li>
-              <li>Pièces numérotées — édition limitée</li>
-            </ul>
-          </div>
-
-          <div id="mentions-legales">
-            <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-white/40">Informations légales</p>
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setLegalDoc("cgv")}
-                className="w-fit border border-white/15 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 transition-colors hover:border-white/40 hover:text-white"
-              >
-                CGV
-              </button>
-              <button
-                type="button"
-                onClick={() => setLegalDoc("rgpd")}
-                className="w-fit border border-white/15 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 transition-colors hover:border-white/40 hover:text-white"
-              >
-                RGPD
-              </button>
+      <footer className="dingry-below-hero-surface border-t border-white/[0.05] px-0 py-12">
+        <InfiniteMovingCards ariaLabel="Informations boutique" durationSeconds={44}>
+          {[0, 1].map((copy) => (
+            <div key={copy} className="flex shrink-0 items-stretch gap-4 md:gap-6" aria-hidden={copy === 1}>
+              <FooterMarqueeBlocks onOpenLegal={setLegalDoc} withLegalAnchor={copy === 0} />
             </div>
-          </div>
-        </div>
+          ))}
+        </InfiniteMovingCards>
 
-        <div className="mt-10 border-t border-white/[0.05] pt-6">
+        <div className="mt-10 border-t border-white/[0.05] px-6 pt-6 md:px-12">
           <p className="mb-4 text-center text-[10px] uppercase tracking-[0.28em] text-white/40">
             Moyens de paiement
           </p>
           <ul className="flex flex-wrap items-center justify-center gap-2" aria-label="Moyens de paiement acceptés">
-            {["CB", "Visa", "Mastercard", "Amex", "Apple Pay", "Google Pay", "PayPal"].map((method) => (
+            {["PayPal", "Carte via PayPal"].map((method) => (
               <li
                 key={method}
                 className="flex h-8 items-center justify-center border border-white/15 bg-white/[0.03] px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75"
@@ -105,8 +151,8 @@ export function ShopFooter() {
           </ul>
         </div>
 
-        <p className="mt-6 text-center text-[10px] tracking-widest text-white/20">
-          © {new Date().getFullYear()} DINGRY. Tous droits réservés.
+        <p className="mt-6 px-6 text-center text-[10px] tracking-widest text-white/20 md:px-12">
+          © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY. Tous droits réservés.
         </p>
       </footer>
 

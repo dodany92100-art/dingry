@@ -27,7 +27,7 @@ export function ProductCard({
     <article className={cn("group", className)}>
       <button type="button" onClick={onClick} className="w-full text-left">
         <div
-          className="relative overflow-hidden rounded-xl md:rounded-2xl"
+          className="dingry-product-photo relative overflow-hidden rounded-xl md:rounded-2xl"
           style={{ aspectRatio: "3/4" }}
         >
           <img

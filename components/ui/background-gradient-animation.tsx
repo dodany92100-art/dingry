@@ -86,7 +86,7 @@ export function BackgroundGradientAnimation({
       aria-hidden="true"
       style={cssVars}
       className={cn(
-        "pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
+        "dingry-bga pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
         containerClassName,
       )}
     >

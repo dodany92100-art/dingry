@@ -2,8 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { prepareProductImage } from "@/lib/client/prepare-product-image";
+import { JERSEY_ADMIN_COLOR_VARIANTS } from "@/lib/jersey-shop";
 import {
-  ORDER_STATUSES,
   PRODUCT_CATEGORIES,
   PRODUCT_SIZES,
   type AdminOrder,
@@ -56,7 +56,8 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const [tab, setTab] = useState<TabId>("produits");
+  const [tab, setTab] = useState<TabId>("commandes");
+  const [editorOpen, setEditorOpen] = useState(false);
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loadError, setLoadError] = useState("");
@@ -84,13 +85,17 @@ export default function AdminPage() {
     [products],
   );
 
-  const pendingOrders = useMemo(
-    () => orders.filter((order) => order.status === "En attente").length,
-    [orders],
-  );
+  const paypalOrders = useMemo(() => {
+    const rank: Record<OrderStatus, number> = { "En attente": 0, Expédié: 1, Livré: 2 };
+    return orders
+      .filter((order) => order.source === "paypal")
+      .sort((a, b) => rank[a.status] - rank[b.status] || b.createdAt.localeCompare(a.createdAt));
+  }, [orders]);
 
-  const previewPrice = Number(price);
-  const previewImage = imagePreview || products.find((item) => item.id === editingId)?.imageUrl || "";
+  const pendingOrders = useMemo(
+    () => paypalOrders.filter((order) => order.status === "En attente").length,
+    [paypalOrders],
+  );
 
   const resetForm = useCallback(() => {
     setEditingId(null);
@@ -106,9 +111,16 @@ export default function AdminPage() {
     setImagePreview("");
     setFormError("");
     setFormSuccess("");
+    setEditorOpen(false);
   }, []);
 
+  function openNewProduct() {
+    resetForm();
+    setEditorOpen(true);
+  }
+
   function fillForm(product: AdminProduct) {
+    setEditorOpen(true);
     setEditingId(product.id);
     setSku(product.sku);
     setName(product.name);
@@ -461,12 +473,10 @@ export default function AdminPage() {
       <header className="border-b border-white/[0.08] px-6 py-5 md:px-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.35em] text-white/40">Administration</p>
-            <h1 className="mt-1 text-xl font-bold tracking-[0.28em]">DINGRY CRM</h1>
+            <h1 className="text-xl font-bold tracking-[0.28em]">DINGRY</h1>
           </div>
           <div className="flex flex-wrap items-center gap-5 text-[11px] uppercase tracking-[0.2em] text-white/45">
-            <span>{products.length} produits</span>
-            <span>{pendingOrders} en attente</span>
+            <span>{pendingOrders} à expédier</span>
             {lowStockCount > 0 ? <span className="text-[#7EB3FF]">{lowStockCount} stock bas</span> : null}
             <a
               href="/"
@@ -488,17 +498,10 @@ export default function AdminPage() {
       </header>
 
       <div className="px-6 py-6 md:px-10">
-        {!blobEnabled ? (
-          <p className="mb-6 border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/55">
-            Vercel Blob n&apos;est pas configuré. Les images sont stockées localement.
-            Ajoute BLOB_READ_WRITE_TOKEN dans .env pour l&apos;upload et la suppression Blob.
-          </p>
-        ) : null}
-
         <div className="mb-8 flex gap-2">
           {([
-            ["produits", "Produits & stock"],
             ["commandes", "Commandes"],
+            ["produits", "Stock"],
           ] as const).map(([id, label]) => (
             <button
               key={id}
@@ -517,36 +520,24 @@ export default function AdminPage() {
 
         {loadError ? <p className="mb-6 text-sm text-red-400">{loadError}</p> : null}
 
-        {tab === "produits" ? (
-          <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <form
+        {tab === "produits" && editorOpen ? (
+          <form
               onSubmit={handleSubmitProduct}
-              className="h-fit border border-white/10 bg-[#0a0a0a] p-5"
+              className="mb-8 h-fit max-w-xl border border-white/10 bg-[#0a0a0a] p-5"
             >
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-xs uppercase tracking-[0.28em] text-white/70">
                   {editingId ? "Modifier le produit" : "Nouveau produit"}
                 </h2>
-                {editingId ? (
-                  <button
+                <button
                     type="button"
                     onClick={resetForm}
                     className="text-[10px] uppercase tracking-[0.18em] text-white/40 hover:text-white"
                   >
-                    Nouveau
+                    Fermer
                   </button>
-                ) : null}
               </div>
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <label className="block text-[10px] uppercase tracking-[0.22em] text-white/40">
-                  Référence (SKU)
-                  <input
-                    value={sku}
-                    onChange={(event) => setSku(event.target.value)}
-                    required
-                    className="mt-2 h-10 w-full border border-white/12 bg-black px-3 text-sm text-white outline-none focus:border-white/40"
-                  />
-                </label>
+              <div className="mt-5">
                 <label className="block text-[10px] uppercase tracking-[0.22em] text-white/40">
                   Catégorie
                   <select
@@ -571,49 +562,39 @@ export default function AdminPage() {
                   className="mt-2 h-10 w-full border border-white/12 bg-black px-3 text-sm text-white outline-none focus:border-white/40"
                 />
               </label>
+              {category === "Jersey" ? (
+                <div className="mt-4">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Couleur</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {JERSEY_ADMIN_COLOR_VARIANTS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setVariant(color)}
+                        className={`border px-3 py-1.5 text-[10px] tracking-[0.18em] uppercase transition-colors ${
+                          variant.trim().toUpperCase() === color
+                            ? "border-white bg-white text-black"
+                            : "border-white/20 text-white/55 hover:border-white/45 hover:text-white"
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <label className="mt-4 block text-[10px] uppercase tracking-[0.22em] text-white/40">
-                Variante
+                Prix (€)
                 <input
-                  value={variant}
-                  onChange={(event) => setVariant(event.target.value)}
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={price}
+                  onChange={(event) => setPrice(event.target.value)}
+                  required
                   className="mt-2 h-10 w-full border border-white/12 bg-black px-3 text-sm text-white outline-none focus:border-white/40"
                 />
               </label>
-              <label className="mt-4 block text-[10px] uppercase tracking-[0.22em] text-white/40">
-                Description
-                <textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  rows={3}
-                  className="mt-2 w-full border border-white/12 bg-black px-3 py-2 text-sm text-white outline-none focus:border-white/40"
-                />
-              </label>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <label className="block text-[10px] uppercase tracking-[0.22em] text-white/40">
-                  Prix (€)
-                  <input
-                    type="number"
-                    min="1"
-                    step="0.01"
-                    value={price}
-                    onChange={(event) => setPrice(event.target.value)}
-                    required
-                    className="mt-2 h-10 w-full border border-white/12 bg-black px-3 text-sm text-white outline-none focus:border-white/40"
-                  />
-                </label>
-                <label className="block text-[10px] uppercase tracking-[0.22em] text-white/40">
-                  Stock
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={stock}
-                    onChange={(event) => setStock(event.target.value)}
-                    required
-                    className="mt-2 h-10 w-full border border-white/12 bg-black px-3 text-sm text-white outline-none focus:border-white/40"
-                  />
-                </label>
-              </div>
               <p className="mt-4 text-[10px] uppercase tracking-[0.22em] text-white/40">Tailles</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {PRODUCT_SIZES.map((size) => {
@@ -653,6 +634,13 @@ export default function AdminPage() {
                     ? `WebP prêt · ${Math.max(1, Math.round(imageFile.size / 1024))} Ko`
                     : "Jusqu'à 10 Mo · enregistré en WebP, 1 Mo maximum"}
               </p>
+              {imagePreview || (editingId && products.find((item) => item.id === editingId)?.imageUrl) ? (
+                <img
+                  src={imagePreview || products.find((item) => item.id === editingId)?.imageUrl}
+                  alt=""
+                  className="mt-3 h-28 w-20 object-cover"
+                />
+              ) : null}
               {formError ? <p className="mt-3 text-sm text-red-400">{formError}</p> : null}
               {formSuccess ? <p className="mt-3 text-sm text-white/70">{formSuccess}</p> : null}
               <button
@@ -660,178 +648,125 @@ export default function AdminPage() {
                 disabled={saving || convertingImage}
                 className="mt-5 h-11 w-full bg-white text-[11px] font-bold uppercase tracking-[0.22em] text-black disabled:opacity-50"
               >
-                {saving ? "Envoi…" : editingId ? "Mettre à jour le site" : "Ajouter au catalogue"}
+                {saving ? "Envoi…" : "Enregistrer"}
               </button>
+              {editingId ? (
+                <button
+                  type="button"
+                  disabled={busyProductId === editingId}
+                  onClick={() => {
+                    const product = products.find((item) => item.id === editingId);
+                    if (product) void handleDeleteProduct(product);
+                  }}
+                  className="mt-3 h-11 w-full border border-red-400/40 text-[11px] uppercase tracking-[0.22em] text-red-400 disabled:opacity-40"
+                >
+                  Supprimer
+                </button>
+              ) : null}
             </form>
-
-            <div>
-              <p className="mb-3 text-[10px] uppercase tracking-[0.22em] text-white/40">
-                Aperçu données
-              </p>
-              {previewImage && name.trim() ? (
-                <div className="border border-white/10 bg-[#0a0a0a] p-4">
-                  <div className="overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                    <img src={previewImage} alt="" className="h-full w-full object-cover" />
-                  </div>
-                  <p className="mt-4 text-[10px] uppercase tracking-[0.22em] text-white/40">{name.trim()}</p>
-                  <p className="mt-1 text-sm uppercase tracking-widest text-white/80">
-                    {variant.trim() || sku.trim() || "VARIANTE"}
-                  </p>
-                  {description.trim() ? (
-                    <p className="mt-2 text-sm text-white/45">{description.trim()}</p>
-                  ) : null}
-                  <p className="mt-4 text-sm font-bold">
-                    {Number.isFinite(previewPrice) && previewPrice > 0 ? `${previewPrice}€` : "—"}
-                  </p>
-                </div>
-              ) : (
-                <div className="border border-dashed border-white/15 px-4 py-16 text-center text-sm text-white/35">
-                  Saisis un nom et une image pour voir les données produit.
-                </div>
-              )}
-            </div>
-          </div>
         ) : null}
 
         {tab === "produits" ? (
-          <div className="mt-8 overflow-x-auto border border-white/10">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="border-b border-white/10 text-[10px] uppercase tracking-[0.22em] text-white/40">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Produit</th>
-                  <th className="px-4 py-3 font-medium">SKU</th>
-                  <th className="px-4 py-3 font-medium">Prix</th>
-                  <th className="px-4 py-3 font-medium">Tailles</th>
-                  <th className="px-4 py-3 font-medium">Stock</th>
-                  <th className="px-4 py-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-10 text-white/40">
-                      Aucun produit pour le moment.
-                    </td>
-                  </tr>
-                ) : (
-                  products.map((product) => (
-                    <tr key={product.id} className="border-b border-white/[0.06]">
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => fillForm(product)}
-                          className="flex items-center gap-3 text-left"
-                        >
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="h-14 w-11 object-cover"
-                          />
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.12em] text-white/90">
-                              {product.name}
-                            </p>
-                            <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/30">
-                              {product.variant || "Sans variante"}
-                            </p>
-                          </div>
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 text-white/55">{product.sku}</td>
-                      <td className="px-4 py-3 font-medium">{formatPrice(product.price)}</td>
-                      <td className="px-4 py-3 text-white/55">{product.sizes.join(" · ")}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            disabled={busyProductId === product.id || product.stock === 0}
-                            onClick={() => void changeStock(product, -1)}
-                            className="h-8 w-8 border border-white/15 text-white/70 hover:text-white disabled:opacity-30"
-                          >
-                            −
-                          </button>
-                          <span className={`min-w-8 text-center ${product.stock <= 3 ? "text-[#7EB3FF]" : ""}`}>
-                            {product.stock}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={busyProductId === product.id}
-                            onClick={() => void changeStock(product, 1)}
-                            className="h-8 w-8 border border-white/15 text-white/70 hover:text-white disabled:opacity-30"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={() => fillForm(product)}
-                            className="text-[11px] uppercase tracking-[0.18em] text-white/60 hover:text-white"
-                          >
-                            Éditer
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busyProductId === product.id}
-                            onClick={() => void handleDeleteProduct(product)}
-                            className="text-[11px] uppercase tracking-[0.18em] text-red-400 hover:text-red-300 disabled:opacity-40"
-                          >
-                            Supprimer
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Stock</p>
+              <button
+                type="button"
+                onClick={openNewProduct}
+                className="h-9 border border-white/15 px-3 text-[11px] uppercase tracking-[0.18em] text-white/70 hover:text-white"
+              >
+                Nouveau
+              </button>
+            </div>
+            <div className="border border-white/10">
+              {products.length === 0 ? (
+                <p className="px-4 py-10 text-sm text-white/40">Aucun produit.</p>
+              ) : (
+                products.map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center gap-4 border-b border-white/[0.06] px-4 py-3 last:border-b-0"
+                  >
+                    <img src={product.imageUrl} alt="" className="h-14 w-11 object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs uppercase tracking-[0.12em] text-white/90">{product.name}</p>
+                      {product.variant ? (
+                        <p className="mt-1 truncate text-[10px] uppercase tracking-[0.16em] text-white/35">{product.variant}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={busyProductId === product.id || product.stock === 0}
+                        onClick={() => void changeStock(product, -1)}
+                        className="h-8 w-8 border border-white/15 text-white/70 hover:text-white disabled:opacity-30"
+                        aria-label={`Retirer un ${product.name}`}
+                      >
+                        −
+                      </button>
+                      <span className={`min-w-8 text-center text-sm ${product.stock <= 3 ? "text-[#7EB3FF]" : ""}`}>
+                        {product.stock}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={busyProductId === product.id}
+                        onClick={() => void changeStock(product, 1)}
+                        className="h-8 w-8 border border-white/15 text-white/70 hover:text-white disabled:opacity-30"
+                        aria-label={`Ajouter un ${product.name}`}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fillForm(product)}
+                      className="text-[11px] uppercase tracking-[0.18em] text-white/55 hover:text-white"
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         ) : (
           <div className="border border-white/10">
-            <div className="hidden border-b border-white/10 px-4 py-3 text-[10px] uppercase tracking-[0.22em] text-white/40 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_5.5rem_minmax(0,1.3fr)_9.5rem] lg:gap-4">
-              <span>Client</span>
-              <span>Email</span>
-              <span>Montant</span>
-              <span>Articles</span>
-              <span>Statut</span>
-            </div>
-            {orders.length === 0 ? (
-              <p className="px-4 py-10 text-sm text-white/40">Aucune commande récente.</p>
+            {paypalOrders.length === 0 ? (
+              <p className="px-4 py-10 text-sm text-white/40">Aucune commande PayPal.</p>
             ) : (
-              orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="grid gap-3 border-b border-white/[0.06] px-4 py-4 last:border-b-0 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_5.5rem_minmax(0,1.3fr)_9.5rem] lg:items-center lg:gap-4"
-                >
-                  <div>
-                    <p className="text-sm text-white/90">{order.customerName}</p>
-                    <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/30">
-                      {formatDate(order.createdAt)} · {order.source === "stripe" ? "Stripe" : "Démo"}
-                    </p>
+              paypalOrders.map((order) => (
+                <article key={order.id} className="border-b border-white/[0.06] px-4 py-5 last:border-b-0">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-white">{order.customerName}</p>
+                      <p className="mt-1 text-sm text-white/55">{order.email}</p>
+                      <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/30">
+                        {formatDate(order.createdAt)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{formatPrice(order.total)}</p>
+                      <button
+                        type="button"
+                        disabled={busyOrderId === order.id}
+                        onClick={() => void handleCycleOrderStatus(order)}
+                        className={`mt-2 h-9 px-3 text-[11px] uppercase tracking-[0.16em] border ${statusClass(order.status)} disabled:opacity-40`}
+                      >
+                        {order.status}
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-sm text-white/60">{order.email}</p>
-                  <p className="text-sm font-medium">{formatPrice(order.total)}</p>
-                  <div className="text-sm text-white/65">
+                  <div className="mt-4 text-sm text-white/70">
                     {order.items.map((item) => (
                       <p key={item}>{item}</p>
                     ))}
                   </div>
-                  <div>
-                    <button
-                      type="button"
-                      disabled={busyOrderId === order.id}
-                      onClick={() => void handleCycleOrderStatus(order)}
-                      className={`h-9 px-3 text-[11px] uppercase tracking-[0.16em] border ${statusClass(order.status)} disabled:opacity-40`}
-                    >
-                      {order.status}
-                    </button>
-                    <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-white/25">
-                      {ORDER_STATUSES.join(" → ")}
-                    </p>
-                  </div>
-                </div>
+                  <p className="mt-4 text-sm leading-relaxed text-white/55">
+                    {order.shippingName ?? order.customerName}
+                    <br />
+                    {order.shippingAddress || "Adresse manquante"}
+                  </p>
+                </article>
               ))
             )}
           </div>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
@@ -163,6 +163,24 @@
   }
 }
 
+/* Logo DINGRY — tour complet (360°) toutes les 11 s, puis à l’endroit */
+@keyframes dingry-logo-flip-y {
+  0%,
+  78% {
+    transform: perspective(900px) rotateY(0deg);
+  }
+  100% {
+    transform: perspective(900px) rotateY(360deg);
+  }
+}
+
+.dingry-logo-flip {
+  animation: dingry-logo-flip-y 11s ease-in-out infinite;
+  transform-origin: center center;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
 /* Texte ville sous le logo — vue recto (maquette personnalisation) */
 .dingry-personalize-city {
   font-family: "Bebas Neue", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
@@ -202,6 +220,27 @@
 
 .btn-rotate-border:hover {
   color: #0066ff;
+}
+
+html[data-theme="light"] .dingry-shop .btn-rotate-border {
+  color: #161616;
+  background:
+    linear-gradient(#f6f6f4, #f6f6f4) padding-box,
+    conic-gradient(
+        from var(--dingry-rb-angle),
+        transparent 0deg 300deg,
+        #0066ff 320deg,
+        #161616 360deg
+      )
+      border-box !important;
+}
+
+html[data-theme="light"] .dingry-shop .btn-rotate-border:hover {
+  color: #0066ff;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-product-photo {
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
 }
 
 @keyframes dingry-card-gradient-shift {
@@ -309,5 +348,222 @@
   .dingry-bga-fifth,
   .dingry-card-gradient-animate {
     animation: none !important;
+  }
+}
+
+/* Jour = blanc par défaut. Nuit = habillage sombre actuel. */
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  background: #050505;
+  color: #fff;
+}
+
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background: #f6f6f4;
+  color: #161616;
+}
+
+html[data-theme="light"] .dingry-shop {
+  background: #f6f6f4;
+  color: #161616;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-hero-offset {
+  background-color: #050505 !important;
+}
+
+html[data-theme="light"] .dingry-shop [class*="bg-[#12151c]"]:not(nav),
+html[data-theme="light"] .dingry-shop [class*="bg-[#0a0a0a]"],
+html[data-theme="light"] .dingry-shop [class*="bg-[#080808]"] {
+  background-color: #fff;
+  color: #161616;
+}
+
+html[data-theme="light"] .dingry-shop [class*="bg-[#050505]/90"],
+html[data-theme="light"] .dingry-shop [class*="bg-[#050505]/80"] {
+  background-color: rgb(255 255 255 / 0.9);
+}
+
+html[data-theme="light"] .dingry-shop [class*="border-white"] {
+  border-color: rgb(0 0 0 / 0.12);
+}
+
+html[data-theme="light"] .dingry-shop [class*="text-neutral-100"],
+html[data-theme="light"] .dingry-shop [class*="text-white"] {
+  color: #161616;
+}
+
+html[data-theme="light"] .dingry-shop [class*="text-white/15"] { color: rgb(22 22 22 / 0.32); }
+html[data-theme="light"] .dingry-shop [class*="text-white/20"] { color: rgb(22 22 22 / 0.38); }
+html[data-theme="light"] .dingry-shop [class*="text-white/30"] { color: rgb(22 22 22 / 0.48); }
+html[data-theme="light"] .dingry-shop [class*="text-white/35"] { color: rgb(22 22 22 / 0.52); }
+html[data-theme="light"] .dingry-shop [class*="text-white/40"] { color: rgb(22 22 22 / 0.58); }
+html[data-theme="light"] .dingry-shop [class*="text-white/45"] { color: rgb(22 22 22 / 0.62); }
+html[data-theme="light"] .dingry-shop [class*="text-white/50"] { color: rgb(22 22 22 / 0.66); }
+html[data-theme="light"] .dingry-shop [class*="text-white/55"] { color: rgb(22 22 22 / 0.7); }
+html[data-theme="light"] .dingry-shop [class*="text-white/60"] { color: rgb(22 22 22 / 0.74); }
+html[data-theme="light"] .dingry-shop [class*="text-white/70"] { color: rgb(22 22 22 / 0.8); }
+html[data-theme="light"] .dingry-shop [class*="text-white/75"] { color: rgb(22 22 22 / 0.84); }
+html[data-theme="light"] .dingry-shop [class*="text-white/80"] { color: rgb(22 22 22 / 0.9); }
+
+html[data-theme="light"] .dingry-shop [class*="bg-[#0066FF]"],
+html[data-theme="light"] .dingry-shop [class*="bg-[#0066FF]"] *,
+html[data-theme="light"] .dingry-shop #catalogue-landing,
+html[data-theme="light"] .dingry-shop #catalogue-landing * {
+  color: #fff;
+}
+
+html[data-theme="light"] .dingry-hero,
+html[data-theme="light"] .dingry-hero [class*="text-white"] {
+  color: #fff;
+}
+
+html[data-theme="light"] .dingry-hero [class*="text-white/50"] { color: rgb(255 255 255 / 0.72); }
+html[data-theme="light"] .dingry-hero [class*="text-white/30"] { color: rgb(255 255 255 / 0.55); }
+
+.dingry-catalog-strip {
+  --dingry-strip-end: #050505;
+}
+
+.dingry-catalog-strip-fade {
+  height: 1rem;
+  pointer-events: none;
+}
+
+.dingry-catalog-strip-fade--top {
+  background: linear-gradient(180deg, #050505 0%, #12151c 45%, #0066ff 100%);
+}
+
+.dingry-catalog-strip-fade--bottom {
+  background: linear-gradient(180deg, #0066ff 0%, #1a4a8f 55%, var(--dingry-strip-end) 100%);
+}
+
+.dingry-catalog-strip-track {
+  background: #0066ff;
+}
+
+.dingry-catalog-strip-track span {
+  text-shadow: none;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-catalog-strip {
+  --dingry-strip-end: #f6f6f4;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-catalog-strip-fade--bottom {
+  background: linear-gradient(180deg, #0066ff 0%, #3d7fd4 50%, var(--dingry-strip-end) 100%);
+}
+
+html[data-theme="light"] .dingry-shop #catalogue-landing,
+html[data-theme="light"] .dingry-shop #catalogue-landing * {
+  color: #fff;
+}
+
+html[data-theme="light"] .dingry-bga {
+  background: #fff !important;
+}
+
+html[data-theme="light"] .dingry-bga * {
+  opacity: 0 !important;
+}
+
+html[data-theme="light"] .dingry-page,
+html[data-theme="light"] .dingry-sale-panel,
+html[data-theme="light"] .dingry-sale-photo {
+  background-color: transparent !important;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-catalog-surface,
+html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
+  background-color: #fff;
+}
+
+html[data-theme="light"] .dingry-sale-overlay {
+  background-color: rgb(255 255 255 / 0.9) !important;
+}
+
+html[data-theme="light"] .dingry-shop nav,
+html[data-theme="light"] .dingry-shop nav [class*="text-white"] {
+  color: #fff !important;
+  border-color: rgb(255 255 255 / 0.08);
+}
+
+html[data-theme="light"] .dingry-shop nav [class*="bg-[#0066FF]"],
+html[data-theme="light"] .dingry-shop nav [class*="bg-[#0066FF]"] * {
+  color: #fff !important;
+}
+
+html[data-theme="light"] .dingry-catalog-bar {
+  background-color: rgb(18 21 28 / 0.5) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.5);
+  backdrop-filter: blur(40px) saturate(1.5);
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.16) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+}
+
+html[data-theme="light"] .dingry-catalog-bar [class*="text-white"] {
+  color: #fff !important;
+}
+
+html[data-theme="light"] .dingry-catalog-bar [class*="text-white/35"] {
+  color: rgb(255 255 255 / 0.45) !important;
+}
+
+html[data-theme="light"] .dingry-catalog-bar [class*="text-white/70"],
+html[data-theme="light"] .dingry-catalog-bar [class*="text-white/75"] {
+  color: rgb(255 255 255 / 0.78) !important;
+}
+
+html[data-theme="light"] .dingry-catalog-bar [class*="border-white"] {
+  border-color: rgb(255 255 255 / 0.16) !important;
+}
+
+@keyframes dingry-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.dingry-marquee-track {
+  animation: dingry-marquee var(--dingry-card-scroll-duration, 42s) linear infinite;
+}
+
+.dingry-infinite-cards:hover .dingry-marquee-track,
+.dingry-marquee-track:focus-within {
+  animation-play-state: paused;
+}
+
+.dingry-infinite-cards {
+  mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+}
+
+.dingry-footer-block {
+  width: min(360px, 88vw);
+  min-height: 11.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: linear-gradient(180deg, rgb(24 24 26) 0%, rgb(8 8 10) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 12px 40px rgb(0 0 0 / 0.35);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-block {
+  border-color: rgb(0 102 255 / 0.22);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.92) 0%, rgb(246 246 244) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    0 10px 32px rgb(0 102 255 / 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dingry-marquee-track {
+    animation: none;
   }
 }

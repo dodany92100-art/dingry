@@ -1,5 +1,8 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+
+import { CookieConsent } from '@/components/cookie-consent'
+import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL, DINGRY_LOGO_URL } from '@/lib/dingry-brand'
+
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -9,19 +12,15 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
+        url: DINGRY_FAVICON_URL,
+        type: 'image/png',
       },
       {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
+        url: DINGRY_LOGO_URL,
+        type: 'image/png',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: DINGRY_APPLE_ICON_URL,
   },
 }
 
@@ -39,10 +38,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" className="bg-[#050505]">
-      <body className="antialiased bg-[#050505] text-white">
+    <html lang="fr" data-theme="light" suppressHydrationWarning>
+      <body className="antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{var t=localStorage.getItem("dingry-theme");document.documentElement.dataset.theme=t==="dark"?"dark":"light"}catch(e){document.documentElement.dataset.theme="light"}})()',
+          }}
+        />
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <CookieConsent />
       </body>
     </html>
   )
