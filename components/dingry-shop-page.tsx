@@ -800,19 +800,17 @@ export default function App() {
         <div className="dingry-hero-offset h-[49px] shrink-0 bg-[#050505] md:h-[85px]" aria-hidden />
 
       {/* HERO */}
-      <section className="dingry-hero relative min-h-0 flex-1 overflow-hidden">
-        <div className="absolute inset-0 bg-[#050505]">
-          {heroImages.map((img) => (
-            <img
-              key={img}
-              src={img}
-              alt="DINGRY editorial"
-              className="absolute inset-0 h-full w-full object-cover object-center"
-            />
-          ))}
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/60 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent" />
+      <section className="dingry-hero relative w-full max-md:min-h-0 max-md:flex-1 max-md:overflow-hidden">
+        {heroImages.map((img) => (
+          <img
+            key={img}
+            src={img}
+            alt="DINGRY editorial"
+            className="block h-auto w-full max-md:absolute max-md:inset-0 max-md:h-full max-md:object-cover max-md:object-center"
+          />
+        ))}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#050505]/60 via-transparent to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent" />
 
         <div className="absolute bottom-16 left-8 md:left-16 max-w-xl">
           <h1 className="text-5xl md:text-7xl font-bold leading-[0.9] tracking-tight uppercase mb-6">
