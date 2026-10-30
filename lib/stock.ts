@@ -17,7 +17,7 @@ export class StockCheckoutError extends Error {
   }
 }
 
-const stockKeyPrefix = (): string => {
+export const stockKeyPrefix = (): string => {
   const raw = process.env.STOCK_KEY_PREFIX?.trim();
   const base = raw && raw.length > 0 ? raw : "dingry:";
   return base.endsWith(":") ? base : `${base}:`;

@@ -14,14 +14,32 @@ const REDIS_TIMEOUT_MS = 3000;
 const PAYPAL_ORDER_LOCK_TTL_SECONDS = 180;
 const PAYPAL_ORDER_DONE_TTL_SECONDS = 60 * 60 * 24 * 90;
 
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "";
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "";
+function stripEnv(value: string | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
 
 let redisClient: Redis | null = null;
 
+function upstashCredentials(): { url: string; token: string } | null {
+  const url = stripEnv(process.env.UPSTASH_REDIS_REST_URL);
+  const token = stripEnv(process.env.UPSTASH_REDIS_REST_TOKEN);
+  if (!url || !token) return null;
+  return { url, token };
+}
+
 function getRedis(): Redis | null {
-  if (!redisUrl || !redisToken) return null;
-  redisClient ??= new Redis({ url: redisUrl, token: redisToken });
+  const creds = upstashCredentials();
+  if (!creds) {
+    return null;
+  }
+  redisClient ??= new Redis({ url: creds.url, token: creds.token });
   return redisClient;
 }
 

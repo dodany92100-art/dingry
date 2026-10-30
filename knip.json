@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "next.config.mjs",
+    "proxy.ts",
+    "app/**/*.{ts,tsx}",
+    "scripts/**/*.{ts,mjs}",
+    "vitest.config.ts",
+    "vitest.setup.ts"
+  ],
+  "project": ["**/*.{ts,tsx,mjs}"],
+  "ignore": ["**/*.test.ts", "next-env.d.ts"],
+  "ignoreDependencies": ["shadcn", "tw-animate-css", "@tailwindcss/postcss", "postcss", "postcss-load-config"],
+  "ignoreBinaries": ["vercel"]
+}
