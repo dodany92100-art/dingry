@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
+
+const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
 const OPENING_AT = Date.parse("2026-11-06T00:00:00+01:00");
 
@@ -55,13 +58,19 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (status === "sending") return;
+    const trimmed = email.trim();
+    if (trimmed.length > 180 || !EMAIL_PATTERN.test(trimmed)) {
+      setStatus("error");
+      setMessage("Indiquez une adresse e-mail valide.");
+      return;
+    }
     setStatus("sending");
     setMessage("");
     try {
       const response = await fetch("/api/teaser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, website }),
+        body: JSON.stringify({ email: trimmed, website }),
       });
       const body = (await response.json()) as { ok?: boolean; already?: boolean; error?: string };
       if (!response.ok) {
@@ -70,7 +79,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
         return;
       }
       setStatus(body.already ? "already" : "saved");
-      setMessage(body.already ? "Vous êtes déjà inscrit." : "C’est noté. On vous prévient le 6 novembre.");
+      setMessage(body.already ? "Vous êtes déjà inscrit." : "Merci, vous êtes inscrit.");
       setEmail("");
     } catch {
       setStatus("error");
@@ -82,13 +91,11 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
     <div className="relative z-10 flex min-h-dvh flex-col px-5 py-7 sm:px-8 md:px-12 lg:px-16">
       <div className="grid flex-1 items-center gap-10 md:grid-cols-2 md:gap-6">
         <div className="w-fit max-w-full md:justify-self-start">
-          <p className={`${displayClassName} text-[clamp(2.6rem,6.5vw,4.6rem)] leading-none tracking-[0.04em] text-white`}>
-            DINGRY
-            <sup className="ml-1 align-super text-[0.32em] tracking-normal">®</sup>
-          </p>
-          <p className={`${displayClassName} mt-3 text-center text-[clamp(0.95rem,1.6vw,1.25rem)] tracking-[0.42em] text-white`}>
-            PARIS
-          </p>
+          <img
+            src={DINGRY_LOGO_URL}
+            alt="DINGRY Paris"
+            className="h-auto w-[min(58vw,240px)] brightness-0 invert"
+          />
           <div className="mx-auto mt-4 h-px w-16 bg-white/80" />
           <p className="mt-3 text-center text-[10px] tracking-[0.28em] text-white/80 sm:text-[11px]">
             LE LUXE EST DANS L&apos;ATTITUDE
@@ -127,7 +134,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
         </svg>
       </div>
 
-      <form onSubmit={onSubmit} className="mx-auto w-full max-w-xl">
+      <form noValidate onSubmit={onSubmit} className="mx-auto w-full max-w-xl">
         <label htmlFor="teaser-email" className="sr-only">
           Inscrivez-vous pour être informé
         </label>
@@ -143,7 +150,10 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
             value={email}
             onChange={(event) => {
               setEmail(event.target.value);
-              if (status !== "sending") setStatus("idle");
+              if (status !== "sending") {
+                setStatus("idle");
+                setMessage("");
+              }
             }}
             placeholder="Inscrivez-vous pour être informé"
             className="min-w-0 flex-1 bg-transparent py-2.5 text-[11px] tracking-[0.16em] text-white uppercase outline-none placeholder:text-white/75 sm:text-xs"
@@ -165,7 +175,10 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           aria-hidden
           className="sr-only"
         />
-        <p className="mt-3 min-h-5 text-center text-xs tracking-wide text-white/80" role="status">
+        <p
+          className={`mt-3 min-h-5 text-center text-[11px] tracking-[0.18em] ${status === "error" ? "text-white/55" : "text-white/85"}`}
+          role="status"
+        >
           {message}
         </p>
       </form>
