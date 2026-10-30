@@ -574,13 +574,8 @@ html[data-theme="light"] .dingry-shop .dingry-footer-block {
     0 10px 32px rgb(0 102 255 / 0.08);
 }
 
-.dingry-tease-track {
-  animation: dingry-marquee 28s linear infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dingry-marquee-track,
-  .dingry-tease-track {
+  .dingry-marquee-track {
     animation: none;
   }
 }
