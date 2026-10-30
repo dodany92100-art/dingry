@@ -51,6 +51,7 @@ export type AdminOrder = {
   source: "paypal" | "demo";
   shippingName?: string;
   shippingAddress?: string;
+  captureId?: string;
 };
 
 export type AdminStore = {

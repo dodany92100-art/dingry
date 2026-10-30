@@ -479,6 +479,14 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
   background-color: #fff;
 }
 
+.dingry-catalog-logo {
+  filter: brightness(0) invert(1);
+}
+
+html[data-theme="light"] .dingry-catalog-logo {
+  filter: brightness(0);
+}
+
 html[data-theme="light"] .dingry-sale-overlay {
   background-color: rgb(255 255 255 / 0.9) !important;
 }

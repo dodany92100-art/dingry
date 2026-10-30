@@ -10,8 +10,15 @@ import { BackgroundGradientAnimation } from "@/components/ui/background-gradient
 import { AnimatedTabs } from "@/components/ui/animated-tabs";
 import { StickyScroll, type StickyScrollItem } from "@/components/ui/sticky-scroll-reveal";
 import { Button } from "@/components/ui/button";
-import { PayPalPaymentButton, type PayPalPaymentResult } from "@/components/paypal-payment-button";
 import { overlayShopCatalog, shopProductFromUnknown, type ShopProduct } from "@/lib/catalog";
+import {
+  cartUnitPrice,
+  consumeCheckoutConfirmation,
+  PERSONALIZATION_SURCHARGE_EUR,
+  readStoredCart,
+  writeStoredCart,
+  type StoredCartItem,
+} from "@/lib/checkout-draft";
 import {
   CATALOG_FILTER_LABEL,
   CATALOG_FILTERS,
@@ -86,7 +93,6 @@ const IMAGES = {
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
-const PERSONALIZATION_SURCHARGE_EUR = 5;
 const PERSONALIZATION_MAX_LABEL_LENGTH = 28;
 
 /** Maquettes recto (devant) — même logique que la PJ Paris / Marseille / Lyon */
@@ -422,12 +428,7 @@ const PRODUCTS: ShopProduct[] = [
   },
   ];
 
-type CartItem = {
-  product: ShopProduct;
-  size: string;
-  qty: number;
-  personalization?: string;
-};
+type CartItem = StoredCartItem;
 
 type OrderConfirmation = {
   orderId: string;
@@ -440,11 +441,12 @@ type OrderConfirmation = {
 };
 
 function cartItemUnitPrice(item: CartItem): number {
-  return item.product.price + (item.personalization ? PERSONALIZATION_SURCHARGE_EUR : 0);
+  return cartUnitPrice(item);
 }
 
 export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartHydrated, setCartHydrated] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [products, setProducts] = useState<ShopProduct[]>(PRODUCTS);
   const [selectedProduct, setSelectedProduct] = useState<ShopProduct | null>(null);
@@ -455,7 +457,6 @@ export default function App() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeFilter = parseCatalogFilter(searchParams.get("category"));
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [headerHidden, setHeaderHidden] = useState(false);
   const [modalSide, setModalSide] = useState<"recto" | "verso">("recto");
   const [jerseyColor, setJerseyColor] = useState<JerseyColorKey>("BLANC");
@@ -469,17 +470,26 @@ export default function App() {
   const productImageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("dingry-theme");
-    const next = saved === "dark" ? "dark" : "light";
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
+    const confirmation = consumeCheckoutConfirmation();
+    if (confirmation) {
+      writeStoredCart([]);
+      setCart([]);
+      setOrderConfirmation(confirmation);
+      setPaymentToastVisible(true);
+      setCartOpen(true);
+      setCartHydrated(true);
+      const timer = window.setTimeout(() => setPaymentToastVisible(false), 6500);
+      return () => window.clearTimeout(timer);
+    }
+    const saved = readStoredCart();
+    if (saved.length > 0) setCart(saved);
+    setCartHydrated(true);
   }, []);
 
-  function setThemeMode(next: "light" | "dark") {
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    window.localStorage.setItem("dingry-theme", next);
-  }
+  useEffect(() => {
+    if (!cartHydrated) return;
+    writeStoredCart(cart);
+  }, [cart, cartHydrated]);
 
   useEffect(() => {
     let cancelled = false;
@@ -500,9 +510,16 @@ export default function App() {
         // catalogue statique
       }
     }
+    function refreshCatalog() {
+      if (document.visibilityState === "visible") void loadCatalog();
+    }
     void loadCatalog();
+    window.addEventListener("focus", refreshCatalog);
+    document.addEventListener("visibilitychange", refreshCatalog);
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", refreshCatalog);
+      document.removeEventListener("visibilitychange", refreshCatalog);
     };
   }, []);
 
@@ -600,44 +617,10 @@ export default function App() {
     }));
   }
 
-  async function handlePayPalPaid(payment: PayPalPaymentResult) {
-    const items = cart.map((item) => {
-      const detail = item.personalization ? `${item.product.name} — ${item.personalization}` : item.product.name;
-      return `${detail} — ${item.size} ×${item.qty}`;
-    });
-    const total = payment.total > 0 ? payment.total : cartTotal;
-
-    try {
-      await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: payment.orderId,
-          payerName: payment.payerName,
-          email: payment.email,
-          total,
-          items,
-          shippingName: payment.shippingName,
-          shippingAddress: payment.shippingAddress,
-        }),
-      });
-    } catch {
-      // Paiement déjà capturé côté PayPal.
-    }
-
-    setOrderConfirmation({
-      orderId: payment.orderId,
-      payerName: payment.payerName,
-      email: payment.email,
-      total,
-      items,
-      shippingName: payment.shippingName,
-      shippingAddress: payment.shippingAddress,
-    });
-    setCart([]);
-    setPaymentToastVisible(true);
-    setCartOpen(true);
-    window.setTimeout(() => setPaymentToastVisible(false), 6500);
+  function goToCheckout() {
+    writeStoredCart(cart);
+    setCartOpen(false);
+    router.push("/checkout");
   }
 
   const heroImages = [IMAGES.hero1];
@@ -746,7 +729,7 @@ export default function App() {
               onClick={() => scrollToSection("catalogue")}
               className="text-xs tracking-[0.25em] text-white/40 uppercase hidden md:block hover:text-white transition-colors"
             >
-              Catalogue
+              Dingry collection
             </button>
           </div>
           <a href="/" className="flex items-center [perspective:900px]" aria-label="DINGRY Paris">
@@ -754,24 +737,6 @@ export default function App() {
           </a>
           <div className="flex items-center gap-6">
             <span className="text-xs tracking-[0.2em] text-white/40 uppercase hidden md:block">Paris</span>
-            <div className="flex rounded-full border border-current/25 p-0.5 text-[10px] font-medium tracking-[0.14em] uppercase" role="group" aria-label="Mode d'affichage">
-              <button
-                type="button"
-                onClick={() => setThemeMode("light")}
-                aria-pressed={theme === "light"}
-                className={`rounded-full px-2.5 py-1 transition-colors ${theme === "light" ? "bg-[#0066FF] text-white" : "text-current/70"}`}
-              >
-                Day
-              </button>
-              <button
-                type="button"
-                onClick={() => setThemeMode("dark")}
-                aria-pressed={theme === "dark"}
-                className={`rounded-full px-2.5 py-1 transition-colors ${theme === "dark" ? "bg-[#0066FF] text-white" : "text-current/70"}`}
-              >
-                Night
-              </button>
-            </div>
             <button
               onClick={() => setCartOpen(true)}
               className="relative flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-white/80 hover:text-white transition-colors duration-300"
@@ -842,7 +807,9 @@ export default function App() {
       {/* CATALOGUE */}
       <section id="catalogue" className="dingry-catalog-surface px-4 pb-20 md:px-12 md:pb-24">
         <div className="mb-2 md:mb-3">
-          <h2 className="text-2xl font-bold tracking-tight uppercase md:text-4xl">DINGRY Catalogue</h2>
+          <h2 className="mb-1">
+            <DingryLogo animate={false} className="dingry-catalog-logo h-9 md:h-14" />
+          </h2>
         </div>
 
         {/* Filters */}
@@ -852,7 +819,7 @@ export default function App() {
             value={activeFilter}
             onValueChange={(tab) => selectCatalogFilter(parseCatalogFilter(tab))}
             layoutId="dingry-catalog-tabs"
-            aria-label="Catégories du catalogue"
+            aria-label="Catégories de Dingry collection"
             variant="underline"
             labelForTab={(tab) => CATALOG_FILTER_LABEL[parseCatalogFilter(tab)]}
             endAction={
@@ -880,7 +847,7 @@ export default function App() {
           ) : (
             <div className="col-span-full border border-white/[0.06] py-20 text-center">
               <p className="text-[10px] tracking-[0.35em] text-[#0066FF] uppercase mb-4">Bientôt disponible</p>
-              <p className="text-sm text-white/40 tracking-wider">Cette catégorie sera bientôt disponible dans le catalogue.</p>
+              <p className="text-sm text-white/40 tracking-wider">Cette catégorie sera bientôt disponible dans Dingry collection.</p>
             </div>
           )}
         </motion.div>
@@ -1377,18 +1344,15 @@ export default function App() {
                   <span className="text-xs tracking-[0.25em] text-white/40 uppercase">Total</span>
                   <span className="text-base font-bold">{cartTotal}€</span>
                 </div>
-                <PayPalPaymentButton
-                  lines={cart.map((item) => ({
-                    name: item.personalization
-                      ? `${item.product.name} — ${item.personalization}`
-                      : `${item.product.name} — ${item.size}`,
-                    quantity: item.qty,
-                    unitAmount: cartItemUnitPrice(item),
-                  }))}
-                  onPaid={handlePayPalPaid}
-                />
+                <button
+                  type="button"
+                  onClick={goToCheckout}
+                  className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white"
+                >
+                  Payer avec PayPal
+                </button>
                 <p className="text-center text-[10px] text-white/20 mt-3 tracking-wider leading-relaxed">
-                  PayPal ou carte via PayPal
+                  Vérification anti-bot, puis PayPal ou carte
                 </p>
               </div>
             )}

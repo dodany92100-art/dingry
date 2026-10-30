@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { consumeBackupCode, ensureBackupCodes, isBackupCode } from "@/lib/admin/backup-codes";
 import { createAdminSessionResponse } from "@/lib/admin/auth";
 import {
   clearLoginFailures,
@@ -11,8 +12,11 @@ import { verifyAdminTotp } from "@/lib/admin/totp";
 
 export const runtime = "nodejs";
 
-function tooManyAttempts(address: string): NextResponse | null {
-  const retryAfter = loginRetryAfterSeconds(address);
+async function tooManyAttempts(address: string): Promise<NextResponse | null> {
+  const retryAfter = await loginRetryAfterSeconds(address);
+  if (retryAfter === "unavailable") {
+    return NextResponse.json({ error: "Connexion indisponible." }, { status: 503 });
+  }
   if (retryAfter === 0) return null;
   return NextResponse.json(
     { error: `Trop de tentatives. Réessaie dans ${retryAfterLabel(retryAfter)}.` },
@@ -22,7 +26,7 @@ function tooManyAttempts(address: string): NextResponse | null {
 
 export async function POST(request: Request) {
   const address = clientAddress(request);
-  const limited = tooManyAttempts(address);
+  const limited = await tooManyAttempts(address);
   if (limited) return limited;
 
   let code = "";
@@ -30,24 +34,33 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { code?: unknown };
     code = typeof body.code === "string" ? body.code : "";
   } catch {
-    recordLoginFailure(address);
+    await recordLoginFailure(address);
     return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   }
 
-  const digits = code.replace(/\D/g, "");
-  if (digits.length !== 6) {
-    recordLoginFailure(address);
+  const compact = code.replace(/[\s-]/g, "").toUpperCase();
+  let accepted = false;
+  if (/^\d{6}$/.test(compact)) {
+    accepted = await verifyAdminTotp(compact);
+  } else if (isBackupCode(compact)) {
+    accepted = await consumeBackupCode(compact);
+  } else {
+    await recordLoginFailure(address);
     return NextResponse.json(
-      { error: "Entre le code à 6 chiffres de Google Authenticator." },
+      { error: "Entre le code à 6 chiffres ou un code de secours." },
       { status: 400 },
     );
   }
 
-  if (!(await verifyAdminTotp(digits))) {
-    recordLoginFailure(address);
+  if (!accepted) {
+    await recordLoginFailure(address);
     return NextResponse.json({ error: "Code incorrect ou expiré." }, { status: 401 });
   }
 
-  clearLoginFailures(address);
-  return createAdminSessionResponse({ ok: true });
+  await clearLoginFailures(address);
+  const backupCodes = /^\d{6}$/.test(compact) ? await ensureBackupCodes() : null;
+  return createAdminSessionResponse({
+    ok: true,
+    ...(backupCodes ? { backupCodes } : {}),
+  });
 }

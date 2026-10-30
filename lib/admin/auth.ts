@@ -1,51 +1,41 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import {
+  ADMIN_COOKIE_NAME,
+  sessionTtlSeconds,
+  signAdminSession,
+  verifyAdminSession,
+} from "@/lib/admin/session-token";
 import { getTotpSecret } from "@/lib/admin/totp";
 
-export const ADMIN_COOKIE_NAME = "dingry_admin";
-
-const SESSION_PAYLOAD = "dingry-admin-session-v2-totp";
-
-async function sessionToken(): Promise<string> {
-  const secret = await getTotpSecret();
-  if (!secret) return "";
-  return createHmac("sha256", secret).update(SESSION_PAYLOAD).digest("hex");
-}
-
-export function safeEqual(left: string, right: string): boolean {
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  if (a.length === 0 || a.length !== b.length) {
-    const dummy = Buffer.alloc(32);
-    timingSafeEqual(dummy, dummy);
-    return false;
-  }
-  return timingSafeEqual(a, b);
-}
+export { ADMIN_COOKIE_NAME };
 
 export async function isAdminAuthenticated(): Promise<boolean> {
-  const expected = await sessionToken();
-  if (!expected) return false;
+  const secret = await getTotpSecret();
+  if (!secret) return false;
   const store = await cookies();
   const value = store.get(ADMIN_COOKIE_NAME)?.value ?? "";
-  if (!value) return false;
-  return safeEqual(value, expected);
+  return verifyAdminSession(value, secret);
 }
 
-export function adminCookieOptions() {
+export function adminCookieOptions(maxAge = sessionTtlSeconds()) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge,
   };
 }
 
 export async function createAdminSessionResponse(body: unknown, status = 200): Promise<NextResponse> {
+  const secret = await getTotpSecret();
+  if (!secret) {
+    return NextResponse.json({ error: "Connexion indisponible." }, { status: 503 });
+  }
+  const session = await signAdminSession(secret);
   const response = NextResponse.json(body, { status });
-  response.cookies.set(ADMIN_COOKIE_NAME, await sessionToken(), adminCookieOptions());
+  response.cookies.set(ADMIN_COOKIE_NAME, session.token, adminCookieOptions(session.maxAge));
   return response;
 }
 

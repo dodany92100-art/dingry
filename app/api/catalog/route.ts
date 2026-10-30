@@ -11,7 +11,10 @@ export async function GET() {
     const products = store.products
       .map(toCatalogProduct)
       .filter((product): product is NonNullable<typeof product> => product !== null);
-    return NextResponse.json({ products });
+    return NextResponse.json(
+      { products },
+      { headers: { "Cache-Control": "private, no-store, max-age=0" } },
+    );
   } catch {
     return NextResponse.json({ products: [] });
   }

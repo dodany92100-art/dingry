@@ -38,14 +38,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" data-theme="light" suppressHydrationWarning>
+    <html lang="fr" data-theme="light">
       <body className="antialiased">
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              '(function(){try{var t=localStorage.getItem("dingry-theme");document.documentElement.dataset.theme=t==="dark"?"dark":"light"}catch(e){document.documentElement.dataset.theme="light"}})()',
-          }}
-        />
         {children}
         <CookieConsent />
       </body>

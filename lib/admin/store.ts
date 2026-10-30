@@ -73,8 +73,8 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
   const genericCategory = current.category === "Tee" && seed.category !== "Tee";
   if (catalogLocked) {
     return {
-      ...current,
       ...seed,
+      ...current,
       imageUrl:
         canonicalImage ??
         (DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum) && current.imageUrl ? current.imageUrl : seed.imageUrl),
@@ -84,14 +84,16 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
           ? "Tee"
           : DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum)
             ? "Jersey"
-            : seed.category,
-      name: seed.name,
-      variant: DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum)
-        ? current.variant.trim() || seed.variant
-        : seed.variant,
-      description: seed.description || current.description,
+            : genericCategory
+              ? seed.category
+              : current.category,
+      name: current.name.includes(" — ") ? seed.name : current.name,
+      variant: current.variant.trim() || seed.variant,
+      description: current.description.trim() || seed.description,
       sku: genericSku ? seed.sku : current.sku,
       sizes: current.sizes.length > 0 ? current.sizes : [...seed.sizes],
+      price: current.price,
+      stock: current.stock,
     };
   }
   return {
@@ -160,7 +162,7 @@ async function writeStoreToBlob(store: AdminStore): Promise<void> {
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
-    cacheControlMaxAge: 60,
+    cacheControlMaxAge: 0,
   });
 }
 
@@ -370,6 +372,19 @@ export async function removeProduct(id: string): Promise<boolean> {
   if (!product) return false;
   await deleteProductImage(product);
   store.products = store.products.filter((item) => item.id !== id);
+  await saveStore(store);
+  return true;
+}
+
+export async function findOrder(id: string): Promise<AdminOrder | undefined> {
+  const store = await loadStore();
+  return store.orders.find((item) => item.id === id);
+}
+
+export async function insertOrderIfNew(order: AdminOrder): Promise<boolean> {
+  const store = await loadStore();
+  if (store.orders.some((item) => item.id === order.id)) return false;
+  store.orders = [order, ...store.orders];
   await saveStore(store);
   return true;
 }

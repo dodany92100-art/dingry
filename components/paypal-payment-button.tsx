@@ -1,20 +1,18 @@
 "use client";
 
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
-import { parsePayPalCapture, type PayPalPaymentResult } from "@/lib/paypal-order";
 import { useState } from "react";
 
 export type PayPalCartLine = {
-  name: string;
-  quantity: number;
-  unitAmount: number;
+  productId: number;
+  size: string;
+  qty: number;
+  personalization?: string;
 };
-
-export type { PayPalPaymentResult };
 
 type PayPalPaymentButtonProps = {
   lines: PayPalCartLine[];
-  onPaid: (result: PayPalPaymentResult) => void | Promise<void>;
+  onApproved: (orderId: string) => void | Promise<void>;
   disabled?: boolean;
 };
 
@@ -30,14 +28,12 @@ const paypalOptions = {
   disableFunding: "paylater,venmo,credit",
 };
 
-function euros(cents: number): string {
-  return (cents / 100).toFixed(2);
-}
-
-export function PayPalPaymentButton({ lines, onPaid, disabled = false }: PayPalPaymentButtonProps) {
+export function PayPalPaymentButton({ lines, onApproved, disabled = false }: PayPalPaymentButtonProps) {
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const signature = lines.map((line) => `${line.name}:${line.quantity}:${line.unitAmount}`).join("|");
+  const signature = lines
+    .map((line) => `${line.productId}:${line.size}:${line.qty}:${line.personalization ?? ""}`)
+    .join("|");
 
   if (!paypalClientId) {
     return (
@@ -61,61 +57,30 @@ export function PayPalPaymentButton({ lines, onPaid, disabled = false }: PayPalP
           <PayPalButtons
             style={{ layout: "vertical", shape: "rect", color: "gold", label: "paypal", tagline: false }}
             forceReRender={[signature]}
-            createOrder={(_data, actions) => {
-              const priced = lines.map((line) => {
-                const unitCents = Math.round(line.unitAmount * 100);
-                const quantity = Math.max(1, Math.min(99, Math.round(line.quantity)));
-                return { line, unitCents, quantity, lineCents: unitCents * quantity };
+            createOrder={async () => {
+              const response = await fetch("/api/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ intent: "create", lines }),
               });
-              const totalCents = priced.reduce((sum, item) => sum + item.lineCents, 0);
-              const currency = "EUR" as const;
-              const total = euros(totalCents);
-
-              return actions.order.create({
-                intent: "CAPTURE",
-                purchase_units: [
-                  {
-                    amount: {
-                      currency_code: currency,
-                      value: total,
-                      breakdown: {
-                        item_total: { currency_code: currency, value: total },
-                      },
-                    },
-                    items: priced.map(({ line, unitCents, quantity }) => ({
-                      name: line.name.slice(0, 127),
-                      quantity: String(quantity),
-                      category: "PHYSICAL_GOODS",
-                      unit_amount: { currency_code: currency, value: euros(unitCents) },
-                    })),
-                  },
-                ],
-                application_context: {
-                  brand_name: "DINGRY",
-                  shipping_preference: "GET_FROM_FILE",
-                  user_action: "PAY_NOW",
-                },
-              });
+              const payload = (await response.json().catch(() => null)) as { orderId?: string; error?: string } | null;
+              if (!response.ok || !payload?.orderId) {
+                const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
+                setError(message);
+                throw new Error(message);
+              }
+              setError(null);
+              return payload.orderId;
             }}
-            onApprove={async (data, actions) => {
-              if (!actions.order) {
-                setError("La capture PayPal est indisponible.");
+            onApprove={async (data) => {
+              if (!data.orderID) {
+                setError("La commande PayPal est introuvable.");
                 return;
               }
               setProcessing(true);
               setError(null);
               try {
-                const details = await actions.order.capture();
-                if (details.status !== "COMPLETED") {
-                  setError("Le paiement PayPal n'est pas confirmé.");
-                  return;
-                }
-                const result = parsePayPalCapture(details, data.orderID);
-                if (result.total <= 0) {
-                  setError("Montant de commande invalide.");
-                  return;
-                }
-                await onPaid(result);
+                await onApproved(data.orderID);
               } catch {
                 setError("Le paiement PayPal n'a pas abouti.");
               } finally {

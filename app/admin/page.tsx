@@ -55,6 +55,7 @@ export default function AdminPage() {
   const [totpEnrollment, setTotpEnrollment] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
 
   const [tab, setTab] = useState<TabId>("commandes");
   const [editorOpen, setEditorOpen] = useState(false);
@@ -239,12 +240,13 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: totpCode }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; backupCodes?: string[] };
       if (!response.ok) {
         setLoginError(data.error || "Code incorrect ou expiré.");
         return;
       }
       setTotpCode("");
+      setBackupCodes(Array.isArray(data.backupCodes) && data.backupCodes.length > 0 ? data.backupCodes : null);
       setAuthenticated(true);
       setBooting(true);
       await loadDashboard();
@@ -259,6 +261,7 @@ export default function AdminPage() {
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
     setAuthenticated(false);
+    setBackupCodes(null);
     setProducts([]);
     setOrders([]);
     setTotpCode("");
@@ -345,7 +348,7 @@ export default function AdminPage() {
       });
       fillForm(data.product);
       setImageFile(null);
-      setFormSuccess("Catalogue boutique mis à jour.");
+      setFormSuccess("Dingry collection mise à jour.");
     } catch {
       setFormError("Impossible d'enregistrer le produit.");
     } finally {
@@ -376,7 +379,7 @@ export default function AdminPage() {
 
   async function handleDeleteProduct(product: AdminProduct) {
     const confirmed = window.confirm(
-      `Supprimer « ${product.name} » du catalogue et son image${product.blobUrl ? " Vercel Blob" : ""} ?`,
+      `Supprimer « ${product.name} » de Dingry collection et son image${product.blobUrl ? " Vercel Blob" : ""} ?`,
     );
     if (!confirmed) return;
     setBusyProductId(product.id);
@@ -427,7 +430,7 @@ export default function AdminPage() {
         >
           <p className="text-[11px] uppercase tracking-[0.4em] text-white/40">CRM</p>
           <h1 className="mt-3 text-2xl font-bold tracking-[0.28em]">DINGRY</h1>
-          <p className="mt-2 text-sm text-white/45">Google Authenticator</p>
+          <p className="mt-2 text-sm text-white/45">Google Authenticator ou code de secours</p>
           {totpEnrollment ? (
             totpQr ? (
               <div className="mt-6 flex justify-center bg-white p-3">
@@ -439,18 +442,17 @@ export default function AdminPage() {
           ) : null}
           <p className="mt-4 text-sm leading-relaxed text-white/45">
             {totpEnrollment
-              ? "En local uniquement : scanne ce QR une fois dans Google Authenticator, puis entre le code à 6 chiffres."
-              : "Entre le code à 6 chiffres affiché dans Google Authenticator pour le compte DINGRY Admin."}
+              ? "En local uniquement : scanne ce QR une fois dans Google Authenticator, puis entre le code à 6 chiffres. Au premier succès, huit codes de secours s’affichent une seule fois."
+              : "Entre le code à 6 chiffres, ou un code de secours déjà noté."}
           </p>
           <label className="mt-6 block text-[10px] uppercase tracking-[0.25em] text-white/40">
-            Code à 6 chiffres
+            Code
             <input
               type="text"
-              inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={6}
+              maxLength={11}
               value={totpCode}
-              onChange={(event) => setTotpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(event) => setTotpCode(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 11))}
               required
               className="mt-2 h-11 w-full border border-white/15 bg-black px-3 text-center text-lg tracking-[0.4em] text-white outline-none focus:border-white/50"
             />
@@ -470,6 +472,28 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen">
+      {backupCodes ? (
+        <div className="border-b border-[#0066FF]/40 bg-[#041226] px-6 py-6 md:px-10">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-[#7EB3FF]">Codes de secours</p>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70">
+            Note-les maintenant. Ils remplacent le téléphone, chacun ne sert qu’une fois, et ils ne seront plus affichés.
+          </p>
+          <ul className="mt-4 grid max-w-md grid-cols-2 gap-2 font-mono text-sm text-white">
+            {backupCodes.map((code) => (
+              <li key={code} className="border border-white/10 bg-black px-3 py-2">
+                {code}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => setBackupCodes(null)}
+            className="mt-5 h-10 bg-white px-4 text-[11px] font-bold uppercase tracking-[0.2em] text-black"
+          >
+            J’ai noté ces codes
+          </button>
+        </div>
+      ) : null}
       <header className="border-b border-white/[0.08] px-6 py-5 md:px-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -742,6 +766,10 @@ export default function AdminPage() {
                       <p className="mt-1 text-sm text-white/55">{order.email}</p>
                       <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/30">
                         {formatDate(order.createdAt)}
+                      </p>
+                      <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/30">
+                        PayPal {order.id}
+                        {order.captureId ? ` · ${order.captureId}` : ""}
                       </p>
                     </div>
                     <div className="text-right">
