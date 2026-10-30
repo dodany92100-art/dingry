@@ -7,13 +7,23 @@ import { DingryLogo } from "@/components/dingry-logo";
 import { PayPalPaymentButton } from "@/components/paypal-payment-button";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 import {
-  cartUnitPrice,
   readStoredCart,
   saveCheckoutConfirmation,
   writeStoredCart,
   type CheckoutConfirmation,
   type StoredCartItem,
 } from "@/lib/checkout-draft";
+
+type ServerQuote = {
+  totalCents: number;
+  lines: { label: string; size: string; qty: number; amountCents: number }[];
+};
+
+function euros(cents: number): string {
+  const whole = Math.trunc(cents / 100);
+  const fraction = String(Math.abs(cents % 100)).padStart(2, "0");
+  return `${whole},${fraction} €`;
+}
 
 function orderLines(cart: StoredCartItem[]) {
   return cart.map((item) => ({
@@ -34,6 +44,8 @@ export default function CheckoutPage() {
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<CheckoutConfirmation | null>(null);
   const [saving, setSaving] = useState(false);
+  const [quote, setQuote] = useState<ServerQuote | null>(null);
+  const [quoteState, setQuoteState] = useState<"loading" | "ready" | "error">("loading");
   const tokenRef = useRef<string | null>(null);
   tokenRef.current = token;
 
@@ -42,8 +54,58 @@ export default function CheckoutPage() {
     setReady(true);
   }, []);
 
-  const total = cart.reduce((sum, item) => sum + cartUnitPrice(item) * item.qty, 0);
-  const canPay = Boolean(token) && !saving && !confirmation;
+  useEffect(() => {
+    if (!ready || cart.length === 0) return;
+    let cancelled = false;
+    setQuoteState("loading");
+    void (async () => {
+      try {
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ intent: "quote", lines: orderLines(cart) }),
+        });
+        const payload = (await response.json().catch(() => null)) as (ServerQuote & { error?: string }) | null;
+        const lines = payload?.lines;
+        const valid =
+          response.ok &&
+          payload !== null &&
+          typeof payload.totalCents === "number" &&
+          Array.isArray(lines) &&
+          lines.every(
+            (line) =>
+              line &&
+              typeof line.label === "string" &&
+              typeof line.size === "string" &&
+              typeof line.qty === "number" &&
+              typeof line.amountCents === "number",
+          );
+        if (!valid) {
+          if (!cancelled) {
+            setQuote(null);
+            setQuoteState("error");
+            setError(payload?.error ?? "Le total n'a pas pu être calculé.");
+          }
+          return;
+        }
+        if (!cancelled) {
+          setQuote({ totalCents: payload.totalCents, lines });
+          setQuoteState("ready");
+        }
+      } catch {
+        if (!cancelled) {
+          setQuote(null);
+          setQuoteState("error");
+          setError("Le total n'a pas pu être calculé.");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, cart]);
+
+  const canPay = Boolean(token) && !saving && !confirmation && quoteState === "ready" && quote !== null;
 
   async function registerOrder(orderId: string, turnstileToken: string) {
     setSaving(true);
@@ -98,12 +160,14 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
-      <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 py-8 md:px-5 md:py-14">
-        <header className="mb-10 flex items-center justify-between">
+      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-8 md:px-6 md:py-14">
+        <header className="mb-10 flex items-center justify-between gap-4">
           <Link href="/" aria-label="Retour à la boutique DINGRY">
             <DingryLogo animate={false} className="h-8 brightness-0 invert md:h-10" />
           </Link>
-          <p className="text-[10px] tracking-[0.32em] text-white/35 uppercase">Paiement</p>
+          <Link href="/" className="text-[10px] tracking-[0.22em] text-white/55 uppercase hover:text-white">
+            Retour à la boutique
+          </Link>
         </header>
 
         {!ready ? (
@@ -151,71 +215,113 @@ export default function CheckoutPage() {
           </section>
         ) : (
           <form
-            className="border border-white/10 bg-[#0a0a0a] p-4 md:p-8"
+            className="grid items-start gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]"
             onSubmit={(event) => {
               event.preventDefault();
               if (pendingOrderId && token) void registerOrder(pendingOrderId, token);
             }}
           >
-            <h1 className="text-[10px] tracking-[0.32em] text-white/40 uppercase">Votre commande</h1>
-            <ul className="mt-6 divide-y divide-white/[0.06]">
-              {cart.map((item, index) => (
-                <li key={`${item.product.id}-${item.size}-${index}`} className="flex gap-4 py-4">
-                  <img
-                    src={item.product.image}
-                    alt={item.product.name}
-                    className="h-20 w-16 bg-black object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[10px] tracking-[0.22em] text-white/40 uppercase">{item.product.name}</p>
-                    <p className="mt-1 text-sm tracking-wide uppercase">{item.product.variant}</p>
-                    {item.personalization ? (
-                      <p className="mt-1 text-xs tracking-wider text-[#0066FF] uppercase">« {item.personalization} »</p>
-                    ) : null}
-                    <p className="mt-1 text-xs text-white/40">Taille {item.size} · {item.qty}</p>
-                  </div>
-                  <p className="text-sm font-medium">{cartUnitPrice(item) * item.qty}€</p>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-2 flex items-baseline justify-between border-t border-white/[0.06] pt-5">
-              <span className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Total</span>
-              <span className="text-xl font-medium">{total}€</span>
-            </div>
-
-            <TurnstileWidget key={widgetKey} className="mt-8" onToken={setToken} />
-
-            <div className="mt-6">
-              {pendingOrderId ? (
-                <button
-                  type="submit"
-                  disabled={!canPay}
-                  className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
-                >
-                  {saving ? "Enregistrement…" : "Confirmer la commande"}
-                </button>
-              ) : canPay ? (
-                <PayPalPaymentButton lines={orderLines(cart)} onApproved={handleApproved} />
-              ) : (
-                <button
-                  type="button"
-                  disabled
-                  className="w-full cursor-not-allowed bg-white/10 py-4 text-[11px] font-medium tracking-[0.28em] text-white/25 uppercase"
-                >
-                  Payer avec PayPal
-                </button>
-              )}
-            </div>
-
-            <p className="mt-3 text-center text-[10px] leading-relaxed tracking-wider text-white/25">
-              {token ? "Vérification confirmée. PayPal ou carte via PayPal." : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
-            </p>
-            {error ? (
-              <p className="mt-4 text-center text-[11px] leading-relaxed text-[#ffb4b4]" role="alert">
-                {error}
+            <section className="border border-white/10 bg-[#0a0a0a] p-4 md:p-8">
+              <div className="flex items-center justify-between gap-3">
+                <h1 className="text-[10px] tracking-[0.32em] text-white/40 uppercase">Votre commande</h1>
+                <Link href="/?panier=1" className="text-[10px] tracking-[0.18em] text-[#0066FF] uppercase hover:text-white">
+                  Modifier le panier
+                </Link>
+              </div>
+              <ul className="mt-6 divide-y divide-white/[0.06]">
+                {(quote?.lines ?? cart.map((item) => ({
+                  label: item.product.name,
+                  size: item.size,
+                  qty: item.qty,
+                  amountCents: 0,
+                }))).map((line, index) => {
+                  const item = cart[index];
+                  return (
+                    <li key={`${line.label}-${line.size}-${index}`} className="flex gap-4 py-4">
+                      {item ? (
+                        <img
+                          src={item.product.image}
+                          alt={item.product.name}
+                          className="h-20 w-16 bg-black object-cover"
+                        />
+                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm tracking-wide uppercase">{item?.product.name ?? line.label}</p>
+                        {item?.product.variant ? (
+                          <p className="mt-1 text-xs tracking-wider text-white/45 uppercase">{item.product.variant}</p>
+                        ) : null}
+                        {item?.personalization ? (
+                          <p className="mt-1 text-xs tracking-wider text-[#0066FF] uppercase">« {item.personalization} »</p>
+                        ) : null}
+                        <p className="mt-1 text-xs text-white/40">Taille {line.size} · {line.qty}</p>
+                      </div>
+                      <p className="text-sm font-medium">
+                        {quoteState === "ready" ? euros(line.amountCents) : "…"}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-2 flex items-baseline justify-between border-t border-white/[0.06] pt-5">
+                <span className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Total à payer</span>
+                <span className="text-xl font-medium">
+                  {quoteState === "ready" && quote ? euros(quote.totalCents) : quoteState === "error" ? "—" : "Calcul…"}
+                </span>
+              </div>
+              <p className="mt-3 text-[10px] leading-relaxed tracking-wide text-white/30">
+                Montant calculé par DINGRY. La livraison est confirmée dans la fenêtre PayPal.
               </p>
-            ) : null}
+            </section>
+
+            <section className="border border-white/10 bg-[#0a0a0a] p-4 md:sticky md:top-6 md:p-8">
+              <h2 className="text-[10px] tracking-[0.32em] text-white/40 uppercase">Paiement</h2>
+              <p className="mt-3 text-sm leading-relaxed text-white/55">
+                Vous restez sur DINGRY. PayPal s’ouvre dans une fenêtre, que vous pouvez fermer pour revenir ici.
+              </p>
+              <TurnstileWidget key={widgetKey} className="mt-6" onToken={setToken} />
+              <div className="mt-6">
+                {quoteState === "loading" ? (
+                  <p className="flex items-center justify-center gap-3 py-4 text-[11px] tracking-[0.18em] text-white/45 uppercase">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" aria-hidden />
+                    Calcul du total…
+                  </p>
+                ) : pendingOrderId ? (
+                  <button
+                    type="submit"
+                    disabled={!canPay}
+                    className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
+                  >
+                    {saving ? "Enregistrement…" : "Confirmer la commande"}
+                  </button>
+                ) : canPay ? (
+                  <PayPalPaymentButton lines={orderLines(cart)} onApproved={handleApproved} />
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full cursor-not-allowed bg-white/10 py-4 text-[11px] font-medium tracking-[0.28em] text-white/25 uppercase"
+                  >
+                    {token ? "Paiement indisponible" : "Payer avec PayPal"}
+                  </button>
+                )}
+              </div>
+              <p className="mt-3 text-center text-[10px] leading-relaxed tracking-wider text-white/25">
+                {token
+                  ? "Vérification confirmée. PayPal ou carte, sans quitter la page."
+                  : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
+              </p>
+              {error ? (
+                <p className="mt-4 text-center text-[11px] leading-relaxed text-[#ffb4b4]" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              <Link
+                href="/"
+                className="mt-6 block w-full border border-white/15 py-3 text-center text-[10px] tracking-[0.22em] text-white/70 uppercase hover:border-white hover:text-white"
+              >
+                Retour à la boutique
+              </Link>
+            </section>
           </form>
         )}
       </div>

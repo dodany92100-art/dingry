@@ -28,12 +28,18 @@ const paypalOptions = {
   disableFunding: "paylater,venmo,credit",
 };
 
+function Spinner() {
+  return <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#050505]/15 border-t-[#050505]" aria-hidden />;
+}
+
 export function PayPalPaymentButton({ lines, onApproved, disabled = false }: PayPalPaymentButtonProps) {
   const [error, setError] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "opening" | "capturing">("idle");
   const signature = lines
     .map((line) => `${line.productId}:${line.size}:${line.qty}:${line.personalization ?? ""}`)
     .join("|");
+  const busy = phase !== "idle" || disabled;
 
   if (!paypalClientId) {
     return (
@@ -46,53 +52,109 @@ export function PayPalPaymentButton({ lines, onApproved, disabled = false }: Pay
   if (lines.length === 0) return null;
 
   return (
-    <PayPalScriptProvider options={paypalOptions}>
-      <div className="relative overflow-hidden bg-white/[0.03] p-3">
-        {processing ? (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0a0a0a]/85 backdrop-blur-sm">
-            <p className="text-[10px] font-medium tracking-[0.28em] text-white/70 uppercase">Validation du paiement…</p>
+    <div>
+      <PayPalScriptProvider options={paypalOptions}>
+        <div className="relative bg-white p-4">
+          {phase !== "idle" ? (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/95 px-6 text-center">
+              <Spinner />
+              <p className="text-[11px] font-medium tracking-[0.18em] text-[#050505] uppercase">
+                {phase === "capturing" ? "Validation du paiement…" : "Ouverture de PayPal…"}
+              </p>
+              <p className="max-w-xs text-xs leading-relaxed text-[#050505]/60">
+                {phase === "opening"
+                  ? "Une fenêtre PayPal s’ouvre par-dessus DINGRY. Fermez-la pour revenir au paiement."
+                  : "Ne fermez pas cet onglet."}
+              </p>
+              {phase === "opening" ? (
+                <button
+                  type="button"
+                  onClick={() => setPhase("idle")}
+                  className="text-[10px] tracking-[0.16em] text-[#050505]/70 uppercase underline"
+                >
+                  Revenir au paiement
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          <div className={busy ? "pointer-events-none opacity-50" : undefined}>
+            <PayPalButtons
+              style={{ layout: "vertical", shape: "rect", color: "gold", label: "paypal", height: 46, tagline: false }}
+              forceReRender={[signature]}
+              disabled={disabled}
+              createOrder={async () => {
+                setPhase("opening");
+                setError(null);
+                setCancelled(false);
+                try {
+                  const response = await fetch("/api/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ intent: "create", lines }),
+                  });
+                  const payload = (await response.json().catch(() => null)) as { orderId?: string; error?: string } | null;
+                  if (!response.ok || !payload?.orderId) {
+                    const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
+                    setError(message);
+                    setPhase("idle");
+                    throw new Error(message);
+                  }
+                  return payload.orderId;
+                } catch (cause) {
+                  setPhase("idle");
+                  if (cause instanceof Error && cause.message) throw cause;
+                  const message = "La commande PayPal n'a pas pu être ouverte.";
+                  setError(message);
+                  throw new Error(message);
+                }
+              }}
+              onApprove={async (data) => {
+                if (!data.orderID) {
+                  setPhase("idle");
+                  setError("La commande PayPal est introuvable.");
+                  return;
+                }
+                setPhase("capturing");
+                setError(null);
+                setCancelled(false);
+                try {
+                  await onApproved(data.orderID);
+                } catch {
+                  setError("Le paiement PayPal n'a pas abouti. Vous pouvez réessayer.");
+                } finally {
+                  setPhase("idle");
+                }
+              }}
+              onCancel={() => {
+                setPhase("idle");
+                setError(null);
+                setCancelled(true);
+              }}
+              onError={() => {
+                setPhase("idle");
+                setCancelled(false);
+                setError("Le paiement PayPal n'a pas abouti. Vous pouvez réessayer sans quitter la page.");
+              }}
+            />
           </div>
-        ) : null}
-        <div className={processing || disabled ? "pointer-events-none opacity-60" : undefined}>
-          <PayPalButtons
-            style={{ layout: "vertical", shape: "rect", color: "gold", label: "paypal", tagline: false }}
-            forceReRender={[signature]}
-            createOrder={async () => {
-              const response = await fetch("/api/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ intent: "create", lines }),
-              });
-              const payload = (await response.json().catch(() => null)) as { orderId?: string; error?: string } | null;
-              if (!response.ok || !payload?.orderId) {
-                const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
-                setError(message);
-                throw new Error(message);
-              }
-              setError(null);
-              return payload.orderId;
-            }}
-            onApprove={async (data) => {
-              if (!data.orderID) {
-                setError("La commande PayPal est introuvable.");
-                return;
-              }
-              setProcessing(true);
-              setError(null);
-              try {
-                await onApproved(data.orderID);
-              } catch {
-                setError("Le paiement PayPal n'a pas abouti.");
-              } finally {
-                setProcessing(false);
-              }
-            }}
-            onCancel={() => setError("Paiement annulé.")}
-            onError={() => setError("Le paiement PayPal n'a pas abouti.")}
-          />
         </div>
-      </div>
-      {error ? <p className="mt-3 text-center text-[11px] tracking-wide text-white/55">{error}</p> : null}
-    </PayPalScriptProvider>
+      </PayPalScriptProvider>
+      <p className="mt-3 text-center text-[10px] leading-relaxed tracking-wide text-white/40">
+        PayPal reste dans une fenêtre. DINGRY ne quitte pas votre écran.
+      </p>
+      {cancelled ? (
+        <div className="mt-3 border border-white/15 bg-white/[0.03] px-4 py-3 text-center" role="status">
+          <p className="text-sm text-white">Paiement annulé.</p>
+          <p className="mt-1 text-xs leading-relaxed text-white/55">
+            Vous êtes toujours sur DINGRY. Le panier est intact : relancez PayPal quand vous voulez.
+          </p>
+        </div>
+      ) : null}
+      {error ? (
+        <p className="mt-3 text-center text-[11px] leading-relaxed text-[#ffb4b4]" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

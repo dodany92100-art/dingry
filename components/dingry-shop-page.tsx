@@ -487,6 +487,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (searchParams.get("panier") !== "1") return;
+    if (readStoredCart().length === 0) return;
+    setCartOpen(true);
+  }, [searchParams]);
+
+  useEffect(() => {
     if (!cartHydrated) return;
     writeStoredCart(cart);
   }, [cart, cartHydrated]);

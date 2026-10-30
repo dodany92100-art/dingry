@@ -68,12 +68,26 @@ export async function POST(request: Request) {
   if (!quote) {
     return NextResponse.json({ error: "Un article n'est plus dans Dingry collection." }, { status: 400 });
   }
+  const priced = quote;
+
+  const intent = (body as { intent?: unknown }).intent;
+  if (intent === "quote") {
+    return NextResponse.json({
+      currency: priced.currency,
+      totalCents: priced.totalCents,
+      lines: priced.lines.map((line, index) => ({
+        label: priced.items[index] ?? "",
+        size: line.size,
+        qty: line.qty,
+        amountCents: (priced.paypalItems[index]?.unitCents ?? 0) * line.qty,
+      })),
+    });
+  }
 
   if (!paypalConfigured()) {
     return NextResponse.json({ error: "Paiement indisponible." }, { status: 503 });
   }
 
-  const intent = (body as { intent?: unknown }).intent;
   if (intent === "create") {
     try {
       const created = await createPayPalOrder(quote);
