@@ -3,11 +3,15 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
+import { DingryLogo } from "@/components/dingry-logo";
 import { cn } from "@/lib/utils";
 
 export type StickyScrollItem = {
   title: string;
   description: string;
+  kicker?: string;
+  /** Logo DINGRY détouré à la place du kicker texte */
+  kickerLogo?: boolean;
 };
 
 type StickyScrollProps = {
@@ -68,22 +72,21 @@ export function StickyScroll({
             data-index={index}
             className="flex min-h-[55vh] flex-col justify-center py-8 lg:min-h-[72vh] lg:py-16"
           >
-            <motion.h3
-              initial={false}
-              animate={{ opacity: activeIndex === index ? 1 : 0.28 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="text-3xl font-bold uppercase leading-tight tracking-tight md:text-4xl md:text-5xl"
-            >
+            {item.kickerLogo ? (
+              <div className="mb-4 max-w-md md:mb-5">
+                <DingryLogo animate={false} className="dingry-editorial-logo h-9 w-auto md:h-11" />
+              </div>
+            ) : item.kicker ? (
+              <p className="mb-4 max-w-md text-[10px] font-semibold uppercase tracking-[0.28em] text-[#0066FF] md:mb-5">
+                {item.kicker}
+              </p>
+            ) : null}
+            <h3 className="text-3xl font-bold uppercase leading-tight tracking-tight md:text-4xl md:text-5xl">
               {item.title}
-            </motion.h3>
-            <motion.p
-              initial={false}
-              animate={{ opacity: activeIndex === index ? 1 : 0.22 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-6 max-w-md text-sm leading-relaxed text-white/40"
-            >
+            </h3>
+            <p className="mt-6 max-w-md whitespace-pre-line text-sm leading-relaxed text-white/55">
               {item.description}
-            </motion.p>
+            </p>
           </div>
         ))}
       </div>

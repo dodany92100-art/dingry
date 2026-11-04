@@ -103,14 +103,14 @@ function FooterMarqueeBlocks({ onOpenLegal, withLegalAnchor }: FooterMarqueeProp
           <button
             type="button"
             onClick={() => onOpenLegal("cgv")}
-            className="w-fit border border-white/20 bg-white/[0.03] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 transition-colors hover:border-white/45 hover:text-white"
+            className="w-fit border border-white/20 bg-white/[0.03] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 transition-colors hover:border-[#0066FF]/45 hover:text-[#7EB3FF]"
           >
             CGV
           </button>
           <button
             type="button"
             onClick={() => onOpenLegal("rgpd")}
-            className="w-fit border border-white/20 bg-white/[0.03] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 transition-colors hover:border-white/45 hover:text-white"
+            className="w-fit border border-white/20 bg-white/[0.03] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 transition-colors hover:border-[#0066FF]/45 hover:text-[#7EB3FF]"
           >
             RGPD
           </button>

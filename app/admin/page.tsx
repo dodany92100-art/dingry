@@ -12,6 +12,7 @@ import {
   type ProductCategory,
   type ProductSize,
 } from "@/lib/admin/types";
+import { formatReviewReasons } from "@/lib/order-review";
 
 type TabId = "produits" | "commandes";
 
@@ -127,6 +128,7 @@ export default function AdminPage() {
   }
 
   function fillForm(product: AdminProduct) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setEditorOpen(true);
     setEditingId(product.id);
     setSku(product.sku);
@@ -307,8 +309,9 @@ export default function AdminPage() {
     formData.set("description", description.trim());
     formData.set("category", category);
     formData.set("price", price);
-    formData.set("stock", stock);
     formData.set("sizes", sizes.join(","));
+    // stock uniquement à la création — les modifications de stock passent par les boutons ±
+    if (!editingId) formData.set("stock", stock);
     if (imageFile) formData.set("image", imageFile);
   }
 
@@ -553,11 +556,14 @@ export default function AdminPage() {
 
         {loadError ? <p className="mb-6 text-sm text-red-400">{loadError}</p> : null}
 
-        {tab === "produits" && editorOpen ? (
-          <form
-              onSubmit={handleSubmitProduct}
-              className="mb-8 h-fit max-w-xl border border-white/10 bg-[#0a0a0a] p-5"
-            >
+        {editorOpen ? (
+          <div
+            className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-[rgba(0,0,0,0.8)] p-4 pb-10 sm:p-8"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="w-full max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain border border-white/10 bg-[#0a0a0a] p-5 pb-10">
+          <form onSubmit={handleSubmitProduct} className="h-fit">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-xs uppercase tracking-[0.28em] text-white/70">
                   {editingId ? "Modifier le produit" : "Nouveau produit"}
@@ -697,6 +703,8 @@ export default function AdminPage() {
                 </button>
               ) : null}
             </form>
+            </div>
+          </div>
         ) : null}
 
         {tab === "produits" ? (
@@ -723,16 +731,36 @@ export default function AdminPage() {
                 products.map((product) => (
                   <div
                     key={product.id}
-                    className="flex items-center gap-4 border-b border-white/[0.06] px-4 py-3 last:border-b-0"
+                    className="flex items-center gap-3 border-b border-white/[0.06] px-3 py-3 last:border-b-0 md:gap-4 md:px-4"
                   >
-                    <img src={product.imageUrl} alt="" className="h-14 w-11 object-cover" />
+                    {/* Miniature */}
+                    <img
+                      src={product.imageUrl}
+                      alt=""
+                      className="h-16 w-12 shrink-0 object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+
+                    {/* Infos produit */}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs uppercase tracking-[0.12em] text-white/90">{product.name}</p>
+                      <p className="truncate text-xs font-medium uppercase tracking-[0.12em] text-white/90">
+                        {product.name}
+                      </p>
                       {product.variant ? (
-                        <p className="mt-1 truncate text-[10px] uppercase tracking-[0.16em] text-white/35">{product.variant}</p>
+                        <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.14em] text-white/45">
+                          {product.variant}
+                        </p>
+                      ) : null}
+                      {product.sizes.length > 0 ? (
+                        <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-white/25">
+                          {product.sizes.join(" · ")}
+                        </p>
                       ) : null}
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    {/* Contrôle stock */}
+                    <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
                       <button
                         type="button"
                         disabled={busyProductId === product.id || product.stock === 0}
@@ -742,7 +770,7 @@ export default function AdminPage() {
                       >
                         −
                       </button>
-                      <span className={`min-w-8 text-center text-sm ${product.stock <= 3 ? "text-[#7EB3FF]" : ""}`}>
+                      <span className={`min-w-[2rem] text-center text-sm tabular-nums ${product.stock <= 3 ? "text-[#7EB3FF]" : ""}`}>
                         {product.stock}
                       </span>
                       <button
@@ -755,10 +783,12 @@ export default function AdminPage() {
                         +
                       </button>
                     </div>
+
+                    {/* Bouton modifier */}
                     <button
                       type="button"
                       onClick={() => fillForm(product)}
-                      className="text-[11px] uppercase tracking-[0.18em] text-white/55 hover:text-white"
+                      className="shrink-0 text-[11px] uppercase tracking-[0.18em] text-white/55 hover:text-white"
                     >
                       Modifier
                     </button>
@@ -796,6 +826,11 @@ export default function AdminPage() {
                       >
                         {order.status}
                       </button>
+                      {order.reviewReasons?.length ? (
+                        <p className="mt-2 text-[10px] tracking-[0.12em] text-amber-200/80 uppercase">
+                          Motif · {formatReviewReasons(order.reviewReasons)}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                   <div className="mt-4 text-sm text-white/70">

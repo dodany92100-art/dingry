@@ -123,6 +123,16 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
     const variant = product?.variant ?? fallback?.variant ?? "";
     const price = product?.price ?? fallback?.price;
     if (!name || price === undefined) return null;
+
+    const allowedSizes = product
+      ? new Set(product.sizes)
+      : fallback
+        ? SHOP_SIZES
+        : null;
+    if (!allowedSizes || !allowedSizes.has(line.size)) {
+      return null;
+    }
+
     const baseCents = priceToCents(price);
     if (baseCents === null) return null;
 

@@ -1,7 +1,26 @@
 /**
  * Alerte ops minimale (Resend) — id commande + motif, sans données client.
  */
-export async function sendOpsAlert(subject: string, details: { orderId?: string; reason: string }): Promise<void> {
+import { getSharedRedis } from "@/lib/ratelimit";
+
+export const OPS_ALERT_FETCH_TIMEOUT_MS = 5_000;
+
+const ALERT_DEDUPE_TTL_SECONDS = 60 * 60 * 24;
+
+function isProductionDeploy(): boolean {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+}
+
+function dedupeKey(key: string): string {
+  return `dingry:ops-alert-sent:${key}`;
+}
+
+export function orphanPaymentKey(orderId: string): string {
+  return `dingry:paypal-orphan:${orderId}`;
+}
+
+/** @returns true si Resend a accepté l’e-mail (ou config absente en dev). */
+export async function sendOpsAlert(subject: string, details: { orderId?: string; reason: string }): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY?.trim() ?? "";
   const to = process.env.OPS_ALERT_EMAIL?.trim() ?? "";
   const from = process.env.OPS_ALERT_FROM?.trim() ?? "";
@@ -9,7 +28,10 @@ export async function sendOpsAlert(subject: string, details: { orderId?: string;
   console.error("[ops-alert]", { subject, orderId: details.orderId, reason: details.reason });
 
   if (!apiKey || !to || !from) {
-    return;
+    if (isProductionDeploy()) {
+      console.error("[ops-alert] RESEND_API_KEY, OPS_ALERT_EMAIL ou OPS_ALERT_FROM manquant — alerte non envoyée");
+    }
+    return false;
   }
 
   const text = [`Motif: ${details.reason}`, `Commande PayPal: ${details.orderId ?? "—"}`, `Site: DINGRY`].join("\n");
@@ -27,12 +49,76 @@ export async function sendOpsAlert(subject: string, details: { orderId?: string;
         subject: `[DINGRY] ${subject}`,
         text,
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(OPS_ALERT_FETCH_TIMEOUT_MS),
     });
     if (!response.ok) {
       console.error("[ops-alert] Resend", response.status);
+      return false;
     }
+    return true;
   } catch (error) {
     console.error("[ops-alert] envoi", error instanceof Error ? error.name : "erreur");
+    return false;
+  }
+}
+
+/**
+ * Une alerte par clé sur 24 h si Redis OK. Redis indisponible : envoi quand même (fail-open).
+ * Le marqueur n’est conservé qu’après envoi Resend réussi.
+ */
+export async function sendOpsAlertOnce(
+  dedupeId: string,
+  subject: string,
+  details: { orderId?: string; reason: string },
+): Promise<void> {
+  const client = getSharedRedis();
+  const redisKey = dedupeKey(dedupeId);
+
+  if (client) {
+    try {
+      const locked = await client.set(redisKey, "1", { nx: true, ex: ALERT_DEDUPE_TTL_SECONDS });
+      if (locked !== "OK") return;
+    } catch (error) {
+      console.error("[ops-alert] dedupe", error instanceof Error ? error.name : "erreur");
+    }
+  }
+
+  const sent = await sendOpsAlert(subject, details);
+
+  if (sent) return;
+
+  if (client) {
+    try {
+      await client.del(redisKey);
+    } catch (error) {
+      console.error("[ops-alert] dedupe rollback", error instanceof Error ? error.name : "erreur");
+    }
+  }
+}
+
+/** Trace durable pour runbook (sans TTL). N’échoue jamais. */
+export async function markPayPalPaymentOrphan(orderId: string, reason: string): Promise<void> {
+  console.error("[paypal-orphan]", { orderId, reason });
+  const client = getSharedRedis();
+  if (!client) return;
+  try {
+    await client.set(
+      orphanPaymentKey(orderId),
+      JSON.stringify({ reason, recordedAt: new Date().toISOString() }),
+      { nx: true },
+    );
+  } catch (error) {
+    console.error("[paypal-orphan] Redis", error instanceof Error ? error.name : "erreur");
+  }
+}
+
+/** À appeler quand la commande est enregistrée ou régularisée dans le CRM. */
+export async function clearPayPalPaymentOrphan(orderId: string): Promise<void> {
+  const client = getSharedRedis();
+  if (!client) return;
+  try {
+    await client.del(orphanPaymentKey(orderId));
+  } catch (error) {
+    console.error("[paypal-orphan] clear", error instanceof Error ? error.name : "erreur");
   }
 }

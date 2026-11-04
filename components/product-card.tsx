@@ -2,6 +2,12 @@
 
 import { cn } from "@/lib/utils";
 
+/** Injecte f_auto,q_auto,w_{width} dans une URL Cloudinary (no-op sinon). */
+function cldOpt(url: string, width = 600): string {
+  if (!url.includes("res.cloudinary.com")) return url;
+  return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`);
+}
+
 export type ProductCardData = {
   name: string;
   variant: string;
@@ -31,8 +37,12 @@ export function ProductCard({
           style={{ aspectRatio: "3/4" }}
         >
           <img
-            src={image}
+            src={cldOpt(image, 600)}
             alt={`${name} ${variant}`}
+            loading="lazy"
+            decoding="async"
+            width={600}
+            height={800}
             className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.02] group-hover:brightness-[1.03]"
           />
         </div>

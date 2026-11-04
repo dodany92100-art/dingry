@@ -1,5 +1,6 @@
 import { patchOrder } from "@/lib/admin/store";
 import type { AdminOrder } from "@/lib/admin/types";
+import { mergeReviewReasons } from "@/lib/order-review";
 import {
   alertStockVerification,
   applyCheckoutStock,
@@ -20,14 +21,18 @@ export function stockPatchAfterApply(current: AdminOrder): Partial<AdminOrder> {
 
 export function stockPatchAfterShort(current: AdminOrder): Partial<AdminOrder> {
   if (!current.stockPending) return {};
-  if (current.status !== "En attente") {
-    return { stockPending: false, stockApplied: false };
-  }
-  return {
+  const stockFlags = {
     stockPending: false,
     stockApplied: false,
-    status: "À vérifier",
+    reviewReasons: mergeReviewReasons(current.reviewReasons, "stock"),
   };
+  if (current.status === "En attente") {
+    return { ...stockFlags, status: "À vérifier" as const };
+  }
+  if (current.status === "À vérifier") {
+    return stockFlags;
+  }
+  return { stockPending: false, stockApplied: false };
 }
 
 export function isStockReconcileCandidate(order: AdminOrder): boolean {

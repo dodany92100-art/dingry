@@ -40,7 +40,8 @@ export type CatalogProduct = {
   price: number;
   image: string;
   sizes: ProductSize[];
-  stock: number;
+  /** Absent si la source publique n’a pas d’info stock (devis serveur tranche). */
+  stock?: number;
 };
 
 export type AdminOrder = {
@@ -61,6 +62,8 @@ export type AdminOrder = {
   stockPending?: boolean;
   /** Décrément Redis confirmé (double garde-fou avec dingry:stock-applied). */
   stockApplied?: boolean;
+  /** Motifs du statut « À vérifier » (cumulables). */
+  reviewReasons?: ("stock" | "adresse")[];
 };
 
 export type AdminStore = {

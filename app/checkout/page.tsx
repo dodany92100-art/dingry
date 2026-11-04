@@ -7,8 +7,11 @@ import { DingryLogo } from "@/components/dingry-logo";
 import { PayPalPaymentButton } from "@/components/paypal-payment-button";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 import {
+  clearPendingCheckoutOrder,
+  readPendingCheckoutOrder,
   readStoredCart,
   saveCheckoutConfirmation,
+  savePendingCheckoutOrder,
   writeStoredCart,
   type CheckoutConfirmation,
   type StoredCartItem,
@@ -35,12 +38,39 @@ function orderLines(cart: StoredCartItem[]) {
   }));
 }
 
+function shouldPersistPendingCapture(status: number): boolean {
+  return status !== 400 && status !== 409;
+}
+
+function captureFailureMessage(status: number, serverError: string | undefined, orderId: string): string {
+  if (status === 400) {
+    const base = serverError ?? "Commande invalide.";
+    return `${base} Aucun débit n'a été effectué.`;
+  }
+  if (status === 503 && serverError === PAYPAL_ORDER_FINALIZING_MESSAGE) {
+    return serverError;
+  }
+  if (status === 503) {
+    return `Enregistrement temporairement indisponible. Si PayPal vous a débité, la commande sera finalisée ici ou via notre notification PayPal — vous n'avez rien à refaire. Sinon contactez-nous avec la référence ${orderId}.`;
+  }
+  if (status === 409) {
+    return serverError ?? "Cette commande est déjà enregistrée.";
+  }
+  if (status === 429) {
+    return (
+      serverError ??
+      "Trop de tentatives. Attendez une minute puis réessayez « Confirmer la commande »."
+    );
+  }
+  return serverError ?? "La commande n'a pas pu être enregistrée.";
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<StoredCartItem[]>([]);
   const [ready, setReady] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [widgetKey, setWidgetKey] = useState(0);
+  const [turnstileKey, setTurnstileKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<CheckoutConfirmation | null>(null);
@@ -49,9 +79,27 @@ export default function CheckoutPage() {
   const [quoteState, setQuoteState] = useState<"loading" | "ready" | "error">("loading");
   const tokenRef = useRef<string | null>(null);
   tokenRef.current = token;
+  const retryTimerRef = useRef<number | null>(null);
+  const [payPalFlowActive, setPayPalFlowActive] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current !== null) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setCart(readStoredCart());
+    const storedPending = readPendingCheckoutOrder();
+    if (storedPending) {
+      setPendingOrderId(storedPending);
+      setError(
+        "Paiement en attente de confirmation. Finalisez l’enregistrement ci-dessous (sans repayer).",
+      );
+    }
     setReady(true);
   }, []);
 
@@ -116,8 +164,20 @@ export default function CheckoutPage() {
   }, [ready, cart]);
 
   const canPay = Boolean(token) && !saving && !confirmation && quoteState === "ready" && quote !== null;
+  const showPayPalButton =
+    quoteState === "ready" && quote !== null && !confirmation && !pendingOrderId && (canPay || payPalFlowActive);
 
-  async function registerOrder(orderId: string, turnstileToken: string, attempt = 0) {
+  function syncPendingOrder(orderId: string, status: number) {
+    if (shouldPersistPendingCapture(status)) {
+      savePendingCheckoutOrder(orderId);
+      setPendingOrderId(orderId);
+    } else {
+      clearPendingCheckoutOrder();
+      setPendingOrderId(null);
+    }
+  }
+
+  async function registerOrder(orderId: string, attempt = 0) {
     setSaving(true);
     if (attempt === 0) setError(null);
     let scheduledRetry = false;
@@ -128,9 +188,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           intent: "capture",
-          token: turnstileToken,
           orderId,
-          lines: orderLines(cart),
         }),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string; order?: CheckoutConfirmation } | null;
@@ -141,6 +199,7 @@ export default function CheckoutPage() {
       if (response.ok && payload?.order) {
         writeStoredCart([]);
         saveCheckoutConfirmation(payload.order);
+        clearPendingCheckoutOrder();
         setCart([]);
         setConfirmation(payload.order);
         setPendingOrderId(null);
@@ -150,42 +209,47 @@ export default function CheckoutPage() {
 
       if (finalizing && attempt < 12) {
         scheduledRetry = true;
+        savePendingCheckoutOrder(orderId);
         setPendingOrderId(orderId);
         setError("Paiement reçu. Finalisation de votre commande…");
         const waitMs = Math.max(1, retryAfterHeader || 3) * 1000;
-        window.setTimeout(() => {
-          void registerOrder(orderId, turnstileToken, attempt + 1);
+        if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = window.setTimeout(() => {
+          retryTimerRef.current = null;
+          void registerOrder(orderId, attempt + 1);
         }, waitMs);
         return;
       }
 
       if (finalizing) {
-        setPendingOrderId(orderId);
+        syncPendingOrder(orderId, 503);
         setError(
           "Paiement reçu. Votre confirmation arrivera par e-mail dès que la commande sera enregistrée. Vous pouvez fermer cette page.",
         );
         return;
       }
 
-      setToken(null);
-      setWidgetKey((key) => key + 1);
-      setPendingOrderId(orderId);
-      setError(payload?.error ?? "La commande n’a pas pu être enregistrée. Relancez la vérification.");
+      syncPendingOrder(orderId, response.status);
+      setError(captureFailureMessage(response.status, payload?.error, orderId));
     } catch {
+      savePendingCheckoutOrder(orderId);
       setPendingOrderId(orderId);
-      setError("Réseau indisponible. Le paiement PayPal est reçu : confirmez à nouveau pour enregistrer la commande.");
+      setError(
+        `Réseau indisponible. Si PayPal vous a débité, réessayez « Confirmer la commande » ou contactez-nous avec la référence ${orderId}.`,
+      );
     } finally {
       if (!scheduledRetry) setSaving(false);
     }
   }
 
   async function handleApproved(orderId: string) {
-    const current = tokenRef.current;
-    if (!current) {
-      setError("Confirmez la vérification avant de payer.");
-      return;
-    }
-    await registerOrder(orderId, current);
+    await registerOrder(orderId);
+  }
+
+  /** Jeton Turnstile à usage unique : nouveau widget après chaque `create` réussi (relance PayPal). */
+  function refreshTurnstileAfterCreate() {
+    setToken(null);
+    setTurnstileKey((key) => key + 1);
   }
 
   function backToShop() {
@@ -219,7 +283,7 @@ export default function CheckoutPage() {
                 <li key={line}>{line}</li>
               ))}
             </ul>
-            <p className="mt-6 text-lg font-medium">{confirmation.total}€</p>
+            <p className="mt-6 text-lg font-medium">{euros(Math.round(confirmation.total * 100))}</p>
             {confirmation.shippingAddress ? (
               <div className="mt-4 text-sm leading-relaxed text-white/50">
                 <p>{confirmation.shippingName}</p>
@@ -306,7 +370,7 @@ export default function CheckoutPage() {
               <p className="mt-3 text-sm leading-relaxed text-white/55">
                 Vous restez sur DINGRY. PayPal s’ouvre dans une fenêtre, que vous pouvez fermer pour revenir ici.
               </p>
-              <TurnstileWidget key={widgetKey} className="mt-6" onToken={setToken} />
+              <TurnstileWidget key={turnstileKey} className="mt-6" onToken={setToken} />
               <div className="mt-6">
                 {quoteState === "loading" ? (
                   <p className="flex items-center justify-center gap-3 py-4 text-[11px] tracking-[0.18em] text-white/45 uppercase">
@@ -314,18 +378,30 @@ export default function CheckoutPage() {
                     Calcul du total…
                   </p>
                 ) : pendingOrderId ? (
-                  <button
-                    type="button"
-                    disabled={!canPay}
-                    onClick={() => {
-                      if (pendingOrderId && token) void registerOrder(pendingOrderId, token);
-                    }}
-                    className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
-                  >
-                    {saving ? "Enregistrement…" : "Confirmer la commande"}
-                  </button>
-                ) : canPay ? (
-                  <PayPalPaymentButton lines={orderLines(cart)} onApproved={handleApproved} />
+                  <>
+                    <p className="mb-4 text-center text-xs leading-relaxed text-[#0066FF]">
+                      Réf. PayPal {pendingOrderId}. Finalisez l’enregistrement de la commande (sans repayer).
+                    </p>
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => {
+                        if (pendingOrderId) void registerOrder(pendingOrderId);
+                      }}
+                      className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
+                    >
+                      {saving ? "Enregistrement…" : "Confirmer la commande"}
+                    </button>
+                  </>
+                ) : showPayPalButton ? (
+                  <PayPalPaymentButton
+                    lines={orderLines(cart)}
+                    getTurnstileToken={() => tokenRef.current}
+                    onPayPalFlowStart={() => setPayPalFlowActive(true)}
+                    onPayPalFlowEnd={() => setPayPalFlowActive(false)}
+                    onAfterCreateSuccess={refreshTurnstileAfterCreate}
+                    onApproved={handleApproved}
+                  />
                 ) : (
                   <button
                     type="button"

@@ -1,7 +1,7 @@
 "use client";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type TurnstileWidgetProps = {
   onToken: (token: string | null) => void;
@@ -13,10 +13,13 @@ const localBypass = !siteKey && process.env.NODE_ENV === "development";
 
 export function TurnstileWidget({ onToken, className }: TurnstileWidgetProps) {
   const [message, setMessage] = useState<string | null>(null);
+  const onTokenRef = useRef(onToken);
+  onTokenRef.current = onToken;
 
   useEffect(() => {
-    if (localBypass) onToken("developpement");
-  }, [onToken]);
+    if (!localBypass) return;
+    onTokenRef.current("developpement");
+  }, [localBypass]);
 
   if (localBypass) return null;
 

@@ -17,7 +17,9 @@ export async function proxy(request: NextRequest) {
 
   const secret = sessionSecretFromEnv();
   if (!secret) {
-    if (process.env.NODE_ENV === "production") return denied(request);
+    if (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") {
+      return denied(request);
+    }
     return NextResponse.next();
   }
 

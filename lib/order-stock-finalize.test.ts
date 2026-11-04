@@ -41,6 +41,17 @@ describe("stockPatchAfterShort", () => {
       stockPending: false,
       stockApplied: false,
       status: "À vérifier",
+      reviewReasons: ["stock"],
+    });
+  });
+
+  it("ajoute stock aux motifs existants sur À vérifier", () => {
+    expect(
+      stockPatchAfterShort(baseOrder({ status: "À vérifier", reviewReasons: ["adresse"] })),
+    ).toEqual({
+      stockPending: false,
+      stockApplied: false,
+      reviewReasons: ["stock", "adresse"],
     });
   });
 

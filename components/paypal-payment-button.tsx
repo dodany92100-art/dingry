@@ -12,7 +12,13 @@ export type PayPalCartLine = {
 
 type PayPalPaymentButtonProps = {
   lines: PayPalCartLine[];
+  /** Jeton au clic « Payer » (ref parent), pas dans le rendu des boutons. */
+  getTurnstileToken: () => string | null;
   onApproved: (orderId: string) => void | Promise<void>;
+  onPayPalFlowStart?: () => void;
+  onPayPalFlowEnd?: () => void;
+  /** Après `create` OK : nouveau jeton Turnstile pour un second paiement (capture sans Turnstile). */
+  onAfterCreateSuccess?: () => void;
   disabled?: boolean;
 };
 
@@ -32,14 +38,28 @@ function Spinner() {
   return <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/15 border-t-white" aria-hidden />;
 }
 
-export function PayPalPaymentButton({ lines, onApproved, disabled = false }: PayPalPaymentButtonProps) {
+export function PayPalPaymentButton({
+  lines,
+  getTurnstileToken,
+  onApproved,
+  onPayPalFlowStart,
+  onPayPalFlowEnd,
+  onAfterCreateSuccess,
+  disabled = false,
+}: PayPalPaymentButtonProps) {
   const [error, setError] = useState<string | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const [phase, setPhase] = useState<"idle" | "opening" | "capturing">("idle");
   const signature = lines
     .map((line) => `${line.productId}:${line.size}:${line.qty}:${line.personalization ?? ""}`)
     .join("|");
-  const busy = phase !== "idle" || disabled;
+  const buttonsDisabled = disabled && phase === "idle";
+  const busy = phase !== "idle" || buttonsDisabled;
+
+  function endFlow() {
+    setPhase("idle");
+    onPayPalFlowEnd?.();
+  }
 
   if (!paypalClientId) {
     return (
@@ -69,7 +89,7 @@ export function PayPalPaymentButton({ lines, onApproved, disabled = false }: Pay
               {phase === "opening" ? (
                 <button
                   type="button"
-                  onClick={() => setPhase("idle")}
+                  onClick={() => endFlow()}
                   className="text-[10px] tracking-[0.16em] text-white/70 uppercase underline"
                 >
                   Revenir au paiement
@@ -81,27 +101,36 @@ export function PayPalPaymentButton({ lines, onApproved, disabled = false }: Pay
             <PayPalButtons
               style={{ layout: "vertical", shape: "rect", color: "gold", label: "paypal", height: 46, tagline: false }}
               forceReRender={[signature]}
-              disabled={disabled}
+              disabled={buttonsDisabled}
               createOrder={async () => {
+                onPayPalFlowStart?.();
                 setPhase("opening");
                 setError(null);
                 setCancelled(false);
+                const turnstileToken = getTurnstileToken();
+                if (!turnstileToken) {
+                  const message = "Validez le contrôle de sécurité avant de payer.";
+                  setError(message);
+                  endFlow();
+                  throw new Error(message);
+                }
                 try {
                   const response = await fetch("/api/checkout", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ intent: "create", lines }),
+                    body: JSON.stringify({ intent: "create", token: turnstileToken, lines }),
                   });
                   const payload = (await response.json().catch(() => null)) as { orderId?: string; error?: string } | null;
                   if (!response.ok || !payload?.orderId) {
                     const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
                     setError(message);
-                    setPhase("idle");
+                    endFlow();
                     throw new Error(message);
                   }
+                  onAfterCreateSuccess?.();
                   return payload.orderId;
                 } catch (cause) {
-                  setPhase("idle");
+                  endFlow();
                   if (cause instanceof Error && cause.message) throw cause;
                   const message = "La commande PayPal n'a pas pu être ouverte.";
                   setError(message);
@@ -110,7 +139,7 @@ export function PayPalPaymentButton({ lines, onApproved, disabled = false }: Pay
               }}
               onApprove={async (data) => {
                 if (!data.orderID) {
-                  setPhase("idle");
+                  endFlow();
                   setError("La commande PayPal est introuvable.");
                   return;
                 }
@@ -122,16 +151,16 @@ export function PayPalPaymentButton({ lines, onApproved, disabled = false }: Pay
                 } catch {
                   setError("Le paiement PayPal n'a pas abouti. Vous pouvez réessayer.");
                 } finally {
-                  setPhase("idle");
+                  endFlow();
                 }
               }}
               onCancel={() => {
-                setPhase("idle");
+                endFlow();
                 setError(null);
                 setCancelled(true);
               }}
               onError={() => {
-                setPhase("idle");
+                endFlow();
                 setCancelled(false);
                 setError("Le paiement PayPal n'a pas abouti. Vous pouvez réessayer sans quitter la page.");
               }}

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "check:prod-env": "tsx scripts/check-prod-env.ts",
     "knip": "knip",
     "seed-stock": "tsx scripts/seed-stock.ts",
     "vercel:env-preview": "node scripts/push-vercel-preview-env.mjs",

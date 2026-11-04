@@ -73,4 +73,16 @@ describe("alignement CRM / vitrine fallback", () => {
       expect(seededIds.has(id), `id ${id} devrait rester vitrine-only ou être ajouté au CRM`).toBe(false);
     }
   });
+
+  it("devis vitrine-only pour chaque id (taille M)", async () => {
+    vi.mocked(loadStoreReadOnly).mockResolvedValue({
+      version: 4,
+      products: [],
+      orders: [],
+    });
+    for (const id of Object.keys(VITRINE_ONLY).map(Number)) {
+      const quote = await quoteCheckout([{ productId: id, size: "M", qty: 1 }]);
+      expect(quote?.totalCents).toBe(Math.round(VITRINE_ONLY[id].price * 100));
+    }
+  });
 });

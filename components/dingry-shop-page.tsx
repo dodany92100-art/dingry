@@ -10,7 +10,7 @@ import { BackgroundGradientAnimation } from "@/components/ui/background-gradient
 import { AnimatedTabs } from "@/components/ui/animated-tabs";
 import { StickyScroll, type StickyScrollItem } from "@/components/ui/sticky-scroll-reveal";
 import { Button } from "@/components/ui/button";
-import { overlayShopCatalog, shopProductFromUnknown, type ShopProduct } from "@/lib/catalog";
+import { overlayShopCatalog, isShopProductInStock, shopProductFromUnknown, type ShopProduct } from "@/lib/catalog";
 import {
   cartUnitPrice,
   consumeCheckoutConfirmation,
@@ -42,7 +42,7 @@ const MODAL_OVERLAY_EASE = [0.16, 1, 0.3, 1] as const;
 const MODAL_PANEL_SPRING = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.85 };
 
 const IMAGES = {
-  hero1: "https://res.cloudinary.com/dc9xmxpvv/image/upload/c_crop,g_north,h_1430,w_1960/v1793310395/014c39fa-7191-491e-a893-a58b934498dd_no55a0.jpg",
+  hero1: "https://res.cloudinary.com/dc9xmxpvv/image/upload/f_auto,q_auto,w_1920,c_crop,g_north,h_1430,w_1960/v1793310395/014c39fa-7191-491e-a893-a58b934498dd_no55a0.jpg",
   editorial: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793134245/IMG_4031_o8jpgl.jpg",
   hoodie1: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122066/HOODIE_DINGRY_ORIGINAL_BLEU_ROI_-_VERSO_xsoywe.png",
   hoodie2: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122066/HOODIE_DINGRY_ORIGINAL_BLEU_ROI_-_RECTO_m541tv.png",
@@ -104,14 +104,15 @@ const PERSONALIZATION_SHIRTS = [
 
 const EDITORIAL_SCROLL_ITEMS: StickyScrollItem[] = [
   {
+    kickerLogo: true,
     title: "Chaque silhouette raconte l'attitude.",
     description:
-      "DINGRY PARIS est une marque de streetwear française en plein développement, qui séduit un public toujours plus large grâce à une identité forte, un style affirmé et surtout un nom aussi original qu'universel.",
+      "Née au cœur de la scène urbaine française, DINGRY PARIS s'impose bien plus qu'une marque : c'est un manifeste. Portée par une identité visuelle forte et un style résolument affirmé, la maison séduit une communauté en quête d'exigence, d'authenticité et de singularité.\n\nEntre coupes irréprochables, finitions minutieuses et un nom aussi original qu'universel, DINGRY réinvente les codes du streetwear haut de gamme. Chaque pièce est pensée pour capturer l'air du temps tout en traversant les saisons avec une élégance brute et intemporelle.",
   },
   {
     title: "Rock the street.",
     description:
-      "DINGRY, c'est peut-être l'un des meilleurs noms qu'une marque puisse porter aujourd'hui. Un mot populaire, utilisé par toutes les générations et toutes les classes sociales, qui reflète parfaitement notre époque. Son écriture singulière en fait une signature immédiatement reconnaissable.",
+      "DINGRY, c'est peut-être l'un des meilleurs noms qu'une marque puisse porter aujourd'hui. Un mot populaire, utilisé par toutes les générations et toutes les classes sociales, qui reflète parfaitement notre époque. Son écriture singulière en fait une signature immédiatement reconnaissable.\n\nAu-delà du simple vestiaire, DINGRY est le miroir d'une génération libre, connectée et affranchie des codes traditionnels. En unissant l'universalité d'un nom à une exigence absolue de coupe, de matière et de direction artistique, nous ne faisons pas seulement du streetwear : nous créons un mouvement culturel pérenne.\n\nNotre ambition est claire : imposer DINGRY comme une référence incontournable du paysage urbain contemporain, en transformant chaque pièce en un manifeste d'attitude, de singularité et d'intemporalité.",
   },
 ];
 
@@ -504,7 +505,7 @@ export default function App() {
     async function loadCatalog() {
       setCatalogState((state) => (state === "ready" ? state : "loading"));
       try {
-        const response = await fetch("/api/catalog", { cache: "no-store" });
+        const response = await fetch("/api/catalog");
         if (response.status === 503) {
           if (!cancelled) setCatalogState("error");
           return;
@@ -522,26 +523,15 @@ export default function App() {
         if (!cancelled) {
           if (live.length > 0) {
             setProducts(overlayShopCatalog(PRODUCTS, live));
-            setCatalogState("ready");
-          } else {
-            setCatalogState(process.env.NODE_ENV === "development" ? "ready" : "error");
           }
+          setCatalogState("ready");
         }
       } catch {
         if (!cancelled) setCatalogState("error");
       }
     }
-    function refreshCatalog() {
-      if (document.visibilityState === "visible") void loadCatalog();
-    }
     void loadCatalog();
-    window.addEventListener("focus", refreshCatalog);
-    document.addEventListener("visibilitychange", refreshCatalog);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("focus", refreshCatalog);
-      document.removeEventListener("visibilitychange", refreshCatalog);
-    };
+    return () => { cancelled = true; };
   }, [catalogRetry]);
 
   function selectCatalogFilter(next: CatalogFilter) {
@@ -586,6 +576,7 @@ export default function App() {
 
   function addToCart() {
     if (!selectedProduct || !selectedSize) return;
+    if (!isShopProductInStock(selectedProduct)) return;
     const checkoutProduct = isJerseyShopProduct(selectedProduct)
       ? resolveJerseyProduct(products, jerseyColor) ?? selectedProduct
       : selectedProduct;
@@ -604,6 +595,7 @@ export default function App() {
 
   function addPersonalizedToCart() {
     if (!personalizationProduct || !personalizeSize) return;
+    if (!isShopProductInStock(personalizationProduct)) return;
     const label = personalizeLabel.trim().slice(0, PERSONALIZATION_MAX_LABEL_LENGTH);
     if (!label) return;
     const persoLine = `${label} — ${personalizeShirt.label} (recto)`;
@@ -683,6 +675,8 @@ export default function App() {
     isJerseyModal && selectedProduct
       ? resolveJerseyProduct(products, jerseyColor) ?? selectedProduct
       : null;
+  const modalSaleProduct = jerseyCheckoutProduct ?? selectedProduct;
+  const modalOutOfStock = modalSaleProduct !== null && !isShopProductInStock(modalSaleProduct);
 
   const activeModalView = (() => {
     if (!selectedProduct) return null;
@@ -740,7 +734,7 @@ export default function App() {
 
   return (
     <div className="dingry-shop relative h-dvh overflow-hidden text-white" style={{ fontFamily: "'Archivo Black', 'Arial Black', sans-serif" }}>
-      <BackgroundGradientAnimation />
+      <BackgroundGradientAnimation interactive={false} />
       <nav
         className={`fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] bg-[#12151c] backdrop-blur-md transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${headerHidden ? "pointer-events-none -translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
       >
@@ -793,6 +787,11 @@ export default function App() {
             key={img}
             src={img}
             alt="DINGRY editorial"
+            fetchPriority="high"
+            loading="eager"
+            decoding="sync"
+            width={1920}
+            height={1080}
             className="block h-auto w-full max-md:absolute max-md:inset-0 max-md:h-full max-md:object-cover max-md:object-center"
           />
         ))}
@@ -888,14 +887,16 @@ export default function App() {
           scrollContainerRef={pageScrollRef}
           items={EDITORIAL_SCROLL_ITEMS}
           stickyPanel={
-            <div className="relative w-full">
-              <img
-                src={IMAGES.editorial}
-                alt="DINGRY editorial"
-                className="block h-auto w-full object-contain object-center"
-                style={{ filter: "brightness(0.75) contrast(1.1) grayscale(0.4)" }}
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050505]/30 via-transparent to-transparent" />
+            <div className="dingry-editorial-frame relative w-full md:p-3">
+              <div className="dingry-editorial-frame__inner relative">
+                <img
+                  src={IMAGES.editorial}
+                  alt="DINGRY editorial"
+                  className="block h-auto w-full object-cover object-center"
+                  style={{ filter: "brightness(0.75) contrast(1.1) grayscale(0.4)" }}
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050505]/35 via-transparent to-transparent" />
+              </div>
             </div>
           }
         />
@@ -1050,14 +1051,14 @@ export default function App() {
                 <button
                   type="button"
                   onClick={addPersonalizedToCart}
-                  disabled={!personalizeSize || !personalizeLabel.trim()}
+                  disabled={!personalizeSize || !personalizeLabel.trim() || !isShopProductInStock(personalizationProduct!)}
                   className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
-                    personalizeSize && personalizeLabel.trim()
+                    personalizeSize && personalizeLabel.trim() && isShopProductInStock(personalizationProduct!)
                       ? "bg-[#0066FF] text-white hover:bg-[#0052cc]"
                       : "bg-white/10 text-white/20 cursor-not-allowed"
                   }`}
                 >
-                  Ajouter au panier
+                  {personalizationProduct && !isShopProductInStock(personalizationProduct) ? "Épuisé" : "Ajouter au panier"}
                 </button>
               </div>
             </div>
@@ -1222,14 +1223,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={addToCart}
-                disabled={!selectedSize}
+                disabled={!selectedSize || modalOutOfStock}
                 className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
-                  selectedSize
+                  selectedSize && !modalOutOfStock
                     ? "bg-[#0066FF] text-white hover:bg-[#0052cc]"
                     : "bg-white/10 text-white/20 cursor-not-allowed"
                 }`}
               >
-                ADD TO CART
+                {modalOutOfStock ? "Épuisé" : "ADD TO CART"}
               </button>
             </div>
           </motion.div>

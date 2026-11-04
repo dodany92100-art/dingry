@@ -3,6 +3,7 @@ import type { ShopProduct } from "@/lib/catalog";
 export const PERSONALIZATION_SURCHARGE_EUR = 5;
 const CART_KEY = "dingry-cart";
 const CONFIRMATION_KEY = "dingry-checkout-confirmation";
+const PENDING_ORDER_KEY = "dingry-checkout-pending-order";
 
 export type StoredCartItem = {
   product: ShopProduct;
@@ -113,6 +114,32 @@ export function saveCheckoutConfirmation(confirmation: CheckoutConfirmation): vo
     sessionStorage.setItem(CONFIRMATION_KEY, JSON.stringify(confirmation));
   } catch {
     // la page de paiement affiche déjà la confirmation
+  }
+}
+
+export function savePendingCheckoutOrder(orderId: string): void {
+  try {
+    sessionStorage.setItem(PENDING_ORDER_KEY, orderId);
+  } catch {
+    // navigation privée
+  }
+}
+
+export function readPendingCheckoutOrder(): string | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_ORDER_KEY);
+    if (!raw || raw.length > 64) return null;
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingCheckoutOrder(): void {
+  try {
+    sessionStorage.removeItem(PENDING_ORDER_KEY);
+  } catch {
+    // ignore
   }
 }
 

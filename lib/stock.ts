@@ -5,6 +5,7 @@
 import type { CheckoutLine } from "@/lib/checkout-quote";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 import { getSharedRedis } from "@/lib/ratelimit";
+import { sendOpsAlertOnce } from "@/lib/ops-alert";
 
 export type StockLine = { productId: number; qty: number };
 
@@ -131,16 +132,42 @@ function parseStockQuantity(value: string | null | undefined): number | "missing
 export async function readStockQuantity(
   productId: number,
 ): Promise<number | "missing" | "unavailable"> {
+  const batch = await readStockQuantities([productId]);
+  return batch.get(productId) ?? "missing";
+}
+
+export type StockQuantityRead = number | "missing" | "unavailable";
+
+export function isInStockFromQuantity(live: StockQuantityRead): boolean {
+  return live !== "missing" && live !== "unavailable" && Number.isFinite(live) && live > 0;
+}
+
+/** Une seule requête Redis pour tout le catalogue (mget). */
+export async function readStockQuantities(
+  productIds: number[],
+): Promise<Map<number, StockQuantityRead>> {
+  const map = new Map<number, StockQuantityRead>();
+  const unique = [...new Set(productIds.filter((id) => Number.isInteger(id) && id > 0))];
+  if (unique.length === 0) return map;
+
   const client = getSharedRedis();
-  if (!client) return "unavailable";
-  try {
-    const value = await client.get<string>(stockKey(productId));
-    const parsed = parseStockQuantity(value);
-    return parsed === "missing" ? "missing" : parsed;
-  } catch (error) {
-    console.error("[stock] Redis", error instanceof Error ? error.name : "erreur");
-    return "unavailable";
+  if (!client) {
+    for (const id of unique) map.set(id, "unavailable");
+    return map;
   }
+
+  const keys = unique.map((id) => stockKey(id));
+  try {
+    const values = await client.mget<(string | null)[]>(...keys);
+    for (let i = 0; i < unique.length; i += 1) {
+      const parsed = parseStockQuantity(values[i]);
+      map.set(unique[i], parsed === "missing" ? "missing" : parsed);
+    }
+  } catch (error) {
+    console.error("[stock] Redis mget", error instanceof Error ? error.name : "erreur");
+    for (const id of unique) map.set(id, "unavailable");
+  }
+  return map;
 }
 
 export async function assertCheckoutStock(
@@ -266,4 +293,8 @@ export async function adjustStock(
 
 export function alertStockVerification(orderId: string, reason: "short" | "unavailable"): void {
   console.error("[stock] commande à vérifier", { orderId, reason });
+  void sendOpsAlertOnce(`stock-${reason}:${orderId}`, "Stock à vérifier", {
+    orderId,
+    reason: reason === "short" ? "rupture stock (short)" : "Redis stock indisponible",
+  });
 }

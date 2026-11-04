@@ -90,10 +90,32 @@ describe("shopProductFromUnknown", () => {
       image: "https://example.com/x.jpg",
       category: "Sweats",
       sizes: ["M", "L"],
-      stock: 5,
+      inStock: false,
     });
     expect(parsed?.price).toBe(169);
     expect(parsed?.sku).toBe("DINGRY-S03");
+    expect(parsed?.stock).toBe(0);
+  });
+
+  it("inStock true → stock positif pour la boutique", () => {
+    const parsed = shopProductFromUnknown({
+      id: 1,
+      name: "X",
+      price: 10,
+      image: "https://example.com/x.jpg",
+      inStock: true,
+    });
+    expect(parsed?.stock).toBe(1);
+  });
+
+  it("sans inStock ni stock → pas de rupture affichée côté boutique", () => {
+    const parsed = shopProductFromUnknown({
+      id: 2,
+      name: "Y",
+      price: 20,
+      image: "https://example.com/y.jpg",
+    });
+    expect(parsed?.stock).toBeUndefined();
   });
 });
 

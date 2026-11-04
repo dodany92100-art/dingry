@@ -184,15 +184,11 @@ function amountMatches(amount: PaypalAmount | undefined, quote: CheckoutQuote): 
   return amount?.currency_code === quote.currency && parsePaypalCents(amount.value) === quote.totalCents;
 }
 
-export function readVerifiedPayment(
-  order: PaypalOrder,
-  quote: CheckoutQuote,
-  digestAlreadyMatched = false,
-): VerifiedPayPalPayment | null {
+export function readVerifiedPayment(order: PaypalOrder, quote: CheckoutQuote): VerifiedPayPalPayment | null {
   if (order.status !== "COMPLETED" || !order.id) return null;
   const unit = order.purchase_units?.[0];
   if (!unit || order.purchase_units?.length !== 1) return null;
-  if (unit.custom_id !== quote.digest && (!digestAlreadyMatched || unit.custom_id)) return null;
+  if (unit.custom_id !== quote.digest) return null;
   if (!amountMatches(unit.amount, quote)) return null;
 
   const capture = unit.payments?.captures?.[0];
@@ -278,7 +274,7 @@ export function readPayPalWebhookHeaders(request: Request): PayPalWebhookHeaders
 export async function verifyPayPalWebhookSignature(
   headers: PayPalWebhookHeaders,
   rawEventJson: string,
-): Promise<"ok" | "invalid" | "unavailable"> {
+): Promise<"ok" | "invalid" | "unavailable" | "auth"> {
   const config = paypalConfig();
   const webhookId = paypalWebhookId();
   if (!config || !webhookId) return "unavailable";
@@ -330,7 +326,8 @@ export async function verifyPayPalWebhookSignature(
   const data = (await response.json().catch(() => null)) as { verification_status?: string } | null;
   if (!response.ok) {
     console.error("[paypal-webhook] verify", response.status);
-    return response.status >= 500 || response.status === 401 || response.status === 403 ? "unavailable" : "invalid";
+    if (response.status === 401 || response.status === 403) return "auth";
+    return response.status >= 500 ? "unavailable" : "invalid";
   }
   return data?.verification_status === "SUCCESS" ? "ok" : "invalid";
 }

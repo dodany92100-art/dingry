@@ -30,6 +30,11 @@ describe("orderPatchHasChanges", () => {
     expect(orderPatchHasChanges(sampleOrder(), { stockApplied: true })).toBe(true);
     expect(orderPatchHasChanges(sampleOrder(), { status: "À vérifier" })).toBe(true);
   });
+
+  it("reviewReasons undefined vs tableau existant compte comme changement", () => {
+    const current = sampleOrder({ reviewReasons: ["stock"] });
+    expect(orderPatchHasChanges(current, { reviewReasons: undefined })).toBe(true);
+  });
 });
 
 describe("stockPatchAfterShort + alerte", () => {

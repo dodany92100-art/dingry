@@ -45,6 +45,11 @@ vi.mock("@/lib/admin/store", () => ({
   StoreConflictError: class StoreConflictError extends Error {},
 }));
 
+vi.mock("@/lib/ops-alert", () => ({
+  sendOpsAlertOnce: vi.fn().mockResolvedValue(undefined),
+  clearPayPalPaymentOrphan: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/ratelimit", () => ({
   claimPayPalOrder: vi.fn(),
   completePayPalOrder: vi.fn(),

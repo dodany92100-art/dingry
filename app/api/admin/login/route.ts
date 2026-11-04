@@ -1,24 +1,32 @@
 import { NextResponse } from "next/server";
+import { jsonNoStore } from "@/lib/http";
 import { consumeBackupCode, ensureBackupCodes, isBackupCode } from "@/lib/admin/backup-codes";
 import { createAdminSessionResponse } from "@/lib/admin/auth";
 import {
   clearLoginFailures,
   clientAddress,
+  loginClientAddressBlocked,
   loginRetryAfterSeconds,
   recordLoginFailure,
   retryAfterLabel,
 } from "@/lib/admin/login-rate-limit";
-import { verifyAdminTotp } from "@/lib/admin/totp";
+import { verifyAdminTotp, TotpMisconfiguredError, getTotpSecret } from "@/lib/admin/totp";
 
 export const runtime = "nodejs";
+
+const LOGIN_DENIED_MESSAGE = "Code incorrect ou expiré.";
+
+function loginDenied() {
+  return jsonNoStore({ error: LOGIN_DENIED_MESSAGE }, { status: 401 });
+}
 
 async function tooManyAttempts(address: string): Promise<NextResponse | null> {
   const retryAfter = await loginRetryAfterSeconds(address);
   if (retryAfter === "unavailable") {
-    return NextResponse.json({ error: "Connexion indisponible." }, { status: 503 });
+    return jsonNoStore({ error: "Connexion indisponible." }, { status: 503 });
   }
   if (retryAfter === 0) return null;
-  return NextResponse.json(
+  return jsonNoStore(
     { error: `Trop de tentatives. Réessaie dans ${retryAfterLabel(retryAfter)}.` },
     { status: 429, headers: { "Retry-After": String(retryAfter) } },
   );
@@ -26,8 +34,21 @@ async function tooManyAttempts(address: string): Promise<NextResponse | null> {
 
 export async function POST(request: Request) {
   const address = clientAddress(request);
+  if (loginClientAddressBlocked(address)) {
+    return jsonNoStore({ error: "Connexion indisponible." }, { status: 503 });
+  }
   const limited = await tooManyAttempts(address);
   if (limited) return limited;
+
+  try {
+    await getTotpSecret();
+  } catch (error) {
+    if (error instanceof TotpMisconfiguredError) {
+      console.error("[admin-login] totp misconfigured");
+      return jsonNoStore({ error: "Connexion indisponible." }, { status: 503 });
+    }
+    throw error;
+  }
 
   let code = "";
   try {
@@ -35,7 +56,7 @@ export async function POST(request: Request) {
     code = typeof body.code === "string" ? body.code : "";
   } catch {
     await recordLoginFailure(address);
-    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+    return loginDenied();
   }
 
   const compact = code.replace(/[\s-]/g, "").toUpperCase();
@@ -46,15 +67,12 @@ export async function POST(request: Request) {
     accepted = await consumeBackupCode(compact);
   } else {
     await recordLoginFailure(address);
-    return NextResponse.json(
-      { error: "Entre le code à 6 chiffres ou un code de secours." },
-      { status: 400 },
-    );
+    return loginDenied();
   }
 
   if (!accepted) {
     await recordLoginFailure(address);
-    return NextResponse.json({ error: "Code incorrect ou expiré." }, { status: 401 });
+    return loginDenied();
   }
 
   await clearLoginFailures(address);

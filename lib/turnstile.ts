@@ -2,14 +2,62 @@ import { clientIp } from "@/lib/request-ip";
 
 const SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
+const EXPECTED_ACTION = process.env.TURNSTILE_EXPECTED_ACTION?.trim() || "checkout";
+
 type SiteverifyResponse = {
   success?: boolean;
+  action?: string;
+  hostname?: string;
   "error-codes"?: string[];
 };
 
 export type TurnstileVerdict =
   | { ok: true }
   | { ok: false; status: 403 | 503; error: string };
+
+/** Bypass Turnstile uniquement en `npm run dev` local — pas sur preview/prod Vercel. */
+export function allowTurnstileDevBypass(): boolean {
+  return process.env.NODE_ENV === "development";
+}
+
+/** Liste explicite (virgules) : ex. `dingry.com,www.dingry.com`. Obligatoire en prod. */
+export function turnstileExpectedHostnames(): string[] {
+  const raw = process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim() ?? "";
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+}
+
+export function turnstileHostnameRequired(): boolean {
+  return !allowTurnstileDevBypass();
+}
+
+export function turnstileHostnameConfigured(): boolean {
+  if (allowTurnstileDevBypass()) return true;
+  if (turnstileExpectedHostnames().length > 0) return true;
+  if (process.env.VERCEL_ENV === "preview") {
+    return Boolean(
+      process.env.VERCEL_URL?.trim() || process.env.TURNSTILE_PREVIEW_HOST_SUFFIX?.trim(),
+    );
+  }
+  return false;
+}
+
+/** Preview : `VERCEL_URL` ou suffixe projet (ex. `-days-projects-36e5dc27.vercel.app`). */
+export function turnstileHostnameAllowed(hostname: string | undefined): boolean {
+  if (!hostname) return false;
+  const list = turnstileExpectedHostnames();
+  if (list.includes(hostname)) return true;
+  if (process.env.VERCEL_ENV === "preview") {
+    const vercel = process.env.VERCEL_URL?.trim();
+    if (vercel && hostname === vercel) return true;
+    const suffix = process.env.TURNSTILE_PREVIEW_HOST_SUFFIX?.trim();
+    if (suffix && hostname.endsWith(suffix)) return true;
+  }
+  return false;
+}
 
 export function turnstileTokenFromBody(value: unknown): string {
   if (!value || typeof value !== "object" || !("token" in value)) return "";
@@ -26,14 +74,16 @@ export function turnstileRemoteIp(request: Request): string | undefined {
 export async function verifyTurnstileToken(token: string, remoteIp?: string): Promise<TurnstileVerdict> {
   const secret = process.env.TURNSTILE_SECRET_KEY?.trim() ?? "";
   if (!secret) {
-    if (process.env.NODE_ENV === "development") return { ok: true };
+    if (allowTurnstileDevBypass()) return { ok: true };
     return { ok: false, status: 503, error: "Protection anti-bot indisponible." };
   }
-  if (token === "developpement" && process.env.NODE_ENV !== "development") {
-    return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
+  if (turnstileHostnameRequired() && !turnstileHostnameConfigured()) {
+    console.error("Turnstile hostname non configuré (TURNSTILE_EXPECTED_HOSTNAME ou preview VERCEL_URL)");
+    return { ok: false, status: 503, error: "Protection anti-bot indisponible." };
   }
-  if (process.env.NODE_ENV === "development" && token === "developpement") {
-    return { ok: true };
+  if (token === "developpement") {
+    if (allowTurnstileDevBypass()) return { ok: true };
+    return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
   }
   if (token.length < 10 || token.length > 2048) {
     return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
@@ -58,9 +108,19 @@ export async function verifyTurnstileToken(token: string, remoteIp?: string): Pr
       console.error("Turnstile refusé", data["error-codes"] ?? []);
       return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
     }
+    if (data.action !== EXPECTED_ACTION) {
+      console.error("Turnstile action refusée", data.action ?? "absent");
+      return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
+    }
+    if (turnstileExpectedHostnames().length > 0 || process.env.VERCEL_ENV === "preview") {
+      if (!turnstileHostnameAllowed(data.hostname)) {
+        console.error("Turnstile hostname refusé", data.hostname ?? "absent");
+        return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
+      }
+    }
     return { ok: true };
   } catch (error) {
-    console.error("Turnstile injoignable", error instanceof Error ? error.message : "erreur");
+    console.error("Turnstile injoignable", error instanceof Error ? error.name : "erreur");
     return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
   }
 }

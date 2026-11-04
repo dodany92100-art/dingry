@@ -38,6 +38,16 @@ export class StoreUnavailableError extends Error {
   }
 }
 
+export class ProductStockAdjustError extends Error {
+  constructor(
+    message: string,
+    readonly code: "negative" | "unavailable" | "missing",
+  ) {
+    super(message);
+    this.name = "ProductStockAdjustError";
+  }
+}
+
 type StoreSnapshot = {
   store: AdminStore;
   etag: string | null;
@@ -79,16 +89,33 @@ async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
   assertStoreBackend();
 
   if (isBlobConfigured()) {
-    const result = await get(STORE_PATHNAME, { access: "public", useCache: false });
-    if (!result || result.statusCode !== 200 || !result.stream) return "missing";
-    const text = await new Response(result.stream).text();
-    const parsed: unknown = JSON.parse(text);
-    if (!isAdminStore(parsed)) return "missing";
-    const raw = parsed as AdminStore;
-    return {
-      store: normalizeStore(raw),
-      etag: result.blob.etag,
-    };
+    try {
+      const result = await get(STORE_PATHNAME, { access: "private", useCache: false });
+      if (!result || result.statusCode !== 200 || !result.stream) return "missing";
+      let text: string;
+      try {
+        text = await new Response(result.stream).text();
+      } catch (error) {
+        console.error("[store] stream Blob", error instanceof Error ? error.name : "erreur");
+        return "missing";
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        console.error("[store] JSON blob invalide");
+        return "missing";
+      }
+      if (!isAdminStore(parsed)) return "missing";
+      const raw = parsed as AdminStore;
+      return {
+        store: normalizeStore(raw),
+        etag: result.blob.etag,
+      };
+    } catch (error) {
+      console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
+      return "missing";
+    }
   }
 
   if (!useLocalStoreFiles()) {
@@ -116,12 +143,12 @@ async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promi
 
   if (isBlobConfigured()) {
     await put(STORE_PATHNAME, body, {
-      access: "public",
+      access: "private",
       addRandomSuffix: false,
-      allowOverwrite: etag !== null,
+      allowOverwrite: true,          // toujours permettre l'écrasement
       contentType: "application/json",
       cacheControlMaxAge: 0,
-      ...(etag ? { ifMatch: etag } : {}),
+      ...(etag ? { ifMatch: etag } : {}), // conditionnel uniquement si on a un etag
     });
     return;
   }
@@ -300,11 +327,19 @@ function normalizeStore(value: AdminStore): AdminStore {
 
 /** Lecture seule : aucune écriture Blob (catalogue, devis, findOrder). */
 export async function loadStoreReadOnly(): Promise<AdminStore> {
-  const snapshot = await readStoreSnapshot();
-  if (snapshot === "missing") {
-    return normalizeStore(createSeededStore());
+  try {
+    const snapshot = await readStoreSnapshot();
+    if (snapshot === "missing") {
+      return normalizeStore(createSeededStore());
+    }
+    return snapshot.store;
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) {
+      console.error("[store] lecture seule indisponible, catalogue seed");
+      return normalizeStore(createSeededStore());
+    }
+    throw error;
   }
-  return snapshot.store;
 }
 
 async function ensureInitialStore(): Promise<AdminStore> {
@@ -466,32 +501,57 @@ export async function updateProduct(
   if (typeof fields.stockDelta === "number" && Number.isInteger(productId) && productId > 0) {
     const adjusted = await adjustStock(productId, fields.stockDelta);
     if (!adjusted.ok) {
-      throw new StoreConflictError();
+      throw new ProductStockAdjustError(adjusted.error, adjusted.code);
     }
     fields = { ...fields, stock: adjusted.quantity, stockDelta: undefined };
   } else if (typeof fields.stock === "number" && Number.isInteger(productId) && productId > 0) {
     const targetStock = fields.stock;
     const snapshot = await readStoreSnapshot();
     const current = snapshot === "missing" ? null : snapshot.store.products.find((p) => p.id === id);
-    const redisQty = await readStockQuantity(productId);
-    const baseline =
-      redisQty === "missing" || redisQty === "unavailable"
-        ? (current?.stock ?? targetStock)
-        : redisQty;
-    const delta = targetStock - baseline;
-    if (delta !== 0) {
-      const adjusted = await adjustStock(productId, delta);
-      if (!adjusted.ok) {
-        throw new StoreConflictError();
+    const storedStock = current?.stock;
+    const stockChanged =
+      storedStock === undefined || Math.floor(storedStock) !== Math.floor(targetStock);
+
+    if (stockChanged) {
+      const redisQty = await readStockQuantity(productId);
+      const baseline =
+        redisQty === "missing" || redisQty === "unavailable"
+          ? (storedStock ?? targetStock)
+          : redisQty;
+      const delta = targetStock - baseline;
+      if (delta !== 0) {
+        const adjusted = await adjustStock(productId, delta);
+        if (!adjusted.ok) {
+          if (adjusted.code === "negative") {
+            throw new ProductStockAdjustError(adjusted.error, adjusted.code);
+          }
+          try {
+            await seedStockIfMissing(productId, targetStock);
+          } catch (error) {
+            console.error("[stock] seed admin", error instanceof Error ? error.name : "erreur");
+          }
+        } else {
+          fields = { ...fields, stock: adjusted.quantity };
+        }
+      } else {
+        try {
+          await seedStockIfMissing(productId, targetStock);
+        } catch (error) {
+          console.error("[stock] seed admin", error instanceof Error ? error.name : "erreur");
+        }
       }
-      fields = { ...fields, stock: adjusted.quantity };
     }
-    await seedStockIfMissing(productId, targetStock);
   }
 
   if (file) {
-    const snapshot = await readStoreSnapshot();
-    const base = snapshot === "missing" ? null : snapshot.store;
+    let snap: StoreSnapshot | "missing";
+    try {
+      snap = await readStoreSnapshot();
+    } catch (error) {
+      console.error("[store] readStoreSnapshot upload", error instanceof Error ? error.name : "erreur");
+      snap = "missing";
+    }
+    const base = snap === "missing" ? null : snap.store;
     previous = base?.products.find((item) => item.id === id);
     if (!previous) return null;
     uploaded = await uploadProductImage(id, file);
@@ -565,23 +625,45 @@ export async function insertOrderIfNew(order: AdminOrder): Promise<boolean> {
   });
 }
 
-export async function upsertOrder(order: AdminOrder): Promise<AdminOrder> {
-  return withStoreOptimistic((store) => {
-    const index = store.orders.findIndex((item) => item.id === order.id);
-    if (index >= 0) {
-      store.orders[index] = order;
-    } else {
-      store.orders = [order, ...store.orders];
-    }
-    return { store, result: order };
-  });
+export type PatchOrderResult = { order: AdminOrder | null; changed: boolean };
+
+function reviewReasonsEqual(
+  left: AdminOrder["reviewReasons"],
+  right: AdminOrder["reviewReasons"],
+): boolean {
+  const a = left ?? [];
+  const b = right ?? [];
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
-export type PatchOrderResult = { order: AdminOrder | null; changed: boolean };
+function stockLinesEqual(
+  left: AdminOrder["stockLines"],
+  right: AdminOrder["stockLines"],
+): boolean {
+  const a = left ?? [];
+  const b = right ?? [];
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i].productId !== b[i].productId || a[i].qty !== b[i].qty) return false;
+  }
+  return true;
+}
 
 /** Comparaison champ par champ sur le patch (valeurs primitives / références explicites). */
 export function orderPatchHasChanges(current: AdminOrder, patch: Partial<AdminOrder>): boolean {
   for (const key of Object.keys(patch) as (keyof AdminOrder)[]) {
+    if (key === "reviewReasons") {
+      if (!reviewReasonsEqual(current.reviewReasons, patch.reviewReasons)) return true;
+      continue;
+    }
+    if (key === "stockLines") {
+      if (!stockLinesEqual(current.stockLines, patch.stockLines)) return true;
+      continue;
+    }
     if (patch[key] !== current[key]) return true;
   }
   return false;
@@ -592,7 +674,7 @@ export async function patchOrder(
   orderId: string,
   mutate: (current: AdminOrder) => Partial<AdminOrder>,
 ): Promise<PatchOrderResult> {
-  return withStoreOptimistic((store) => {
+  return withStoreOptimistic<PatchOrderResult>((store) => {
     const index = store.orders.findIndex((item) => item.id === orderId);
     if (index < 0) {
       return { store, result: { order: null, changed: false }, skipWrite: true };

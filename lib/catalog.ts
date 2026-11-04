@@ -19,8 +19,14 @@ export type ShopProduct = {
   category: ShopCategory | string;
   sku?: string;
   sizes?: string[];
+  /** 0 = rupture (API `inStock: false`), absent = fallback statique en stock. */
   stock?: number;
 };
+
+export function isShopProductInStock(product: ShopProduct): boolean {
+  if (product.stock === undefined) return true;
+  return product.stock > 0;
+}
 
 export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
   return {
@@ -117,6 +123,15 @@ export function shopProductFromUnknown(value: unknown): CatalogProduct | null {
   const price = Number(record.price);
   if (!Number.isInteger(id) || id <= 0 || !Number.isFinite(price) || price <= 0) return null;
   if (typeof record.name !== "string" || typeof record.image !== "string") return null;
+  const inStockFromApi = typeof record.inStock === "boolean" ? record.inStock : undefined;
+  const stockFromApi: number | undefined =
+    inStockFromApi !== undefined
+      ? inStockFromApi
+        ? 1
+        : 0
+      : record.stock !== undefined && Number.isFinite(Number(record.stock))
+        ? Math.max(0, Number(record.stock))
+        : undefined;
   return {
     id,
     sku: typeof record.sku === "string" ? record.sku : `DINGRY-${id}`,
@@ -131,6 +146,6 @@ export function shopProductFromUnknown(value: unknown): CatalogProduct | null {
           item === "S" || item === "M" || item === "L" || item === "XL" || item === "TU",
         )
       : ["S", "M", "L", "XL"],
-    stock: Number.isFinite(Number(record.stock)) ? Math.max(0, Number(record.stock)) : 0,
+    stock: stockFromApi,
   };
 }

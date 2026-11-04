@@ -1,5 +1,7 @@
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
+export const MIN_ADMIN_SESSION_SECRET_LENGTH = 32;
+
 export const ADMIN_COOKIE_NAME = "dingry_admin";
 
 type SessionPayload = {
@@ -11,13 +13,26 @@ export function sessionTtlSeconds(): number {
   return SESSION_TTL_SECONDS;
 }
 
-export function normalizeSessionSecret(value: string): string {
-  return value.replace(/\s+/g, "").toUpperCase();
+export function isProductionDeploy(): boolean {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
 }
 
+function validSessionSecret(raw: string, enforceMinLength: boolean): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (enforceMinLength && trimmed.length < MIN_ADMIN_SESSION_SECRET_LENGTH) return "";
+  return trimmed;
+}
+
+/** Secret HMAC des cookies admin — distinct du secret TOTP en production. */
 export function sessionSecretFromEnv(): string {
-  const raw = process.env.ADMIN_TOTP_SECRET?.trim() ?? "";
-  return raw ? normalizeSessionSecret(raw) : "";
+  const dedicated = process.env.ADMIN_SESSION_SECRET?.trim() ?? "";
+  if (dedicated) {
+    return validSessionSecret(dedicated, isProductionDeploy());
+  }
+  if (isProductionDeploy()) return "";
+  const fallback = process.env.ADMIN_TOTP_SECRET?.trim() ?? "";
+  return fallback;
 }
 
 function bytesToBase64Url(bytes: Uint8Array): string {
