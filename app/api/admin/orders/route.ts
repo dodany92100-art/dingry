@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { listOrders } from "@/lib/admin/orders";
+import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -10,8 +11,8 @@ export async function GET() {
 
   try {
     const orders = await listOrders();
-    return NextResponse.json({ orders });
+    return jsonNoStore({ orders });
   } catch {
-    return NextResponse.json({ error: "Impossible de charger les commandes." }, { status: 500 });
+    return jsonNoStore({ error: "Impossible de charger les commandes." }, { status: 500 });
   }
 }

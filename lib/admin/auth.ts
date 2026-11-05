@@ -35,10 +35,7 @@ export function adminCookieOptions(maxAge = sessionTtlSeconds()) {
 export async function createAdminSessionResponse(body: unknown, status = 200) {
   const secret = sessionSecretFromEnv();
   if (!secret) {
-    return jsonNoStore(
-      { error: "Connexion indisponible : ADMIN_SESSION_SECRET (≥ 32 car.) ou ADMIN_TOTP_SECRET requis." },
-      { status: 503 },
-    );
+    return jsonNoStore({ error: "Connexion indisponible." }, { status: 503 });
   }
   const session = await signAdminSession(secret);
   const response = jsonNoStore(body, { status });

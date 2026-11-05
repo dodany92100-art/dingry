@@ -69,6 +69,7 @@ describe("createAdminSessionResponse", () => {
     vi.stubEnv("ADMIN_SESSION_SECRET", "");
     const response = await createAdminSessionResponse({ ok: true });
     expect(response.status).toBe(503);
+    expect(((await response.json()) as { error?: string }).error).toBe("Connexion indisponible.");
   });
 
   it("login réussi → Cache-Control no-store", async () => {

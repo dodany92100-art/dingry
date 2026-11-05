@@ -94,42 +94,56 @@ function useLocalStoreFiles(): boolean {
 }
 
 async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
+  let result: Awaited<ReturnType<typeof get>>;
   try {
-    const result = await get(STORE_PATHNAME, { access: "private" });
-    if (!result || result.statusCode !== 200 || !result.stream) return "missing";
-    let text: string;
-    try {
-      text = await new Response(result.stream).text();
-    } catch (error) {
-      console.error("[store] stream Blob", error instanceof Error ? error.name : "erreur");
-      return "missing";
-    }
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      console.error("[store] JSON blob invalide");
-      return "missing";
-    }
-    if (!isAdminStore(parsed)) return "missing";
-    const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
-    const normalized = normalizeStore(parsed);
-    return {
-      store: normalized,
-      etag: result.blob.etag,
-      ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
-    };
+    result = await get(STORE_PATHNAME, { access: "private" });
   } catch (error) {
     console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
+    throw new StoreUnavailableError();
+  }
+
+  if (!result || result.statusCode === 404) {
     return "missing";
   }
+  if (result.statusCode !== 200 || !result.stream) {
+    console.error("[store] Blob HTTP", result.statusCode ?? "sans réponse");
+    throw new StoreUnavailableError();
+  }
+
+  let text: string;
+  try {
+    text = await new Response(result.stream).text();
+  } catch (error) {
+    console.error("[store] stream Blob", error instanceof Error ? error.name : "erreur");
+    throw new StoreUnavailableError();
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    console.error("[store] JSON blob invalide");
+    throw new StoreUnavailableError();
+  }
+  if (!isAdminStore(parsed)) {
+    console.error("[store] schéma blob invalide");
+    throw new StoreUnavailableError();
+  }
+  const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
+  const normalized = normalizeStore(parsed);
+  return {
+    store: normalized,
+    etag: result.blob.etag,
+    ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
+  };
 }
 
 async function readLocalSnapshot(): Promise<StoreSnapshot | "missing"> {
   try {
     const text = await readFile(LOCAL_STORE_PATH, "utf8");
     const parsed: unknown = JSON.parse(text);
-    if (!isAdminStore(parsed)) return "missing";
+    if (!isAdminStore(parsed)) {
+      throw new StoreUnavailableError();
+    }
     const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
     const normalized = normalizeStore(parsed);
     return {
@@ -137,8 +151,11 @@ async function readLocalSnapshot(): Promise<StoreSnapshot | "missing"> {
       etag: revisionFromDiskText(text),
       ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
     };
-  } catch {
-    return "missing";
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === "ENOENT") return "missing";
+    if (error instanceof StoreUnavailableError) throw error;
+    throw new StoreUnavailableError();
   }
 }
 
@@ -198,7 +215,7 @@ async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promi
   await put(STORE_PATHNAME, body, {
     access: "private",
     addRandomSuffix: false,
-    allowOverwrite: true,
+    allowOverwrite: etag !== null,
     contentType: "application/json",
     cacheControlMaxAge: 0,
     ...(etag ? { ifMatch: etag } : {}),
@@ -387,11 +404,17 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
   try {
     const snapshot = await readStoreSnapshot();
     if (snapshot === "missing") {
+      if (process.env.NODE_ENV === "production") {
+        throw new StoreUnavailableError();
+      }
       return normalizeStore(createSeededStore());
     }
     return snapshot.store;
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
+      if (process.env.NODE_ENV === "production") {
+        throw error;
+      }
       console.error("[store] lecture seule indisponible, catalogue seed");
       return normalizeStore(createSeededStore());
     }
