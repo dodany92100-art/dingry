@@ -405,6 +405,9 @@ export default function AdminPage() {
       if (response.ok) {
         setProducts((current) => current.filter((item) => item.id !== product.id));
         if (editingId === product.id) resetForm();
+      } else {
+        const data = (await response.json()) as { error?: string };
+        window.alert(data.error ?? "Suppression impossible.");
       }
     } finally {
       setBusyProductId(null);

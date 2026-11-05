@@ -70,9 +70,11 @@ export type AdminStore = {
   version: number;
   products: AdminProduct[];
   orders: AdminOrder[];
+  /** Fiches seed retirées du stock admin / catalogue live (ids catalogue). */
+  removedCatalogIds?: string[];
 };
 
-export const STORE_VERSION = 4;
+export const STORE_VERSION = 5;
 
 export function isProductSize(value: string): value is ProductSize {
   return (PRODUCT_SIZES as readonly string[]).includes(value);

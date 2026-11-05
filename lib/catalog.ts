@@ -69,7 +69,7 @@ function applyCatalogOverlay(
     inheritedFromRecto && product.id !== overlay.id
       ? versoSkuFromRecto(overlay.sku)
       : overlay.sku;
-  return withStorefrontPrice({
+  return {
     ...product,
     name: overlay.name,
     variant: inheritedFromRecto
@@ -84,7 +84,7 @@ function applyCatalogOverlay(
     sku,
     sizes: overlay.sizes,
     stock: overlay.stock,
-  });
+  };
 }
 
 export function overlayShopCatalog(
@@ -105,7 +105,7 @@ export function overlayShopCatalog(
           : product;
       return withStorefrontPrice(next);
     }
-    return withStorefrontPrice(applyCatalogOverlay(product, resolved.overlay, resolved.inheritedFromRecto));
+    return applyCatalogOverlay(product, resolved.overlay, resolved.inheritedFromRecto);
   });
 
   const extras = live
@@ -114,7 +114,7 @@ export function overlayShopCatalog(
     .map((product) => {
       const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[product.id];
       const withImage = canonicalImage ? { ...product, image: canonicalImage } : product;
-      return withStorefrontPrice(withImage);
+      return withImage;
     });
 
   return [...merged, ...extras];

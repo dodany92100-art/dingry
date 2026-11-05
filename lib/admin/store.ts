@@ -314,24 +314,37 @@ function migrateStore(raw: AdminStore): AdminStore {
     .map(normalizeProduct)
     .filter((item): item is AdminProduct => item !== null);
   const byId = new Map(existing.map((item) => [item.id, item]));
+  const removed = new Set(
+    (Array.isArray(raw.removedCatalogIds) ? raw.removedCatalogIds : [])
+      .map((id) => String(id).trim())
+      .filter(Boolean),
+  );
+
+  const activeSeeds = SEEDED_PRODUCTS.filter((seed) => !removed.has(seed.id));
 
   if (raw.version === STORE_VERSION && existing.length > 0) {
-    const mergedSeed = SEEDED_PRODUCTS.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
-    const extras = existing.filter((item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id));
+    const mergedSeed = activeSeeds.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
+    const extras = existing.filter(
+      (item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id) && !removed.has(item.id),
+    );
     return {
       version: STORE_VERSION,
       products: [...mergedSeed, ...extras],
       orders: raw.orders,
+      removedCatalogIds: [...removed],
     };
   }
 
-  const mergedSeed = SEEDED_PRODUCTS.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
-  const extras = existing.filter((item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id));
+  const mergedSeed = activeSeeds.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
+  const extras = existing.filter(
+    (item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id) && !removed.has(item.id),
+  );
 
   return {
     version: STORE_VERSION,
     products: [...mergedSeed, ...extras],
     orders: raw.orders,
+    removedCatalogIds: [...removed],
   };
 }
 
@@ -340,6 +353,7 @@ function normalizeStore(value: AdminStore): AdminStore {
     version: typeof value.version === "number" ? value.version : 0,
     products: Array.isArray(value.products) ? value.products : [],
     orders: Array.isArray(value.orders) ? value.orders : [],
+    removedCatalogIds: Array.isArray(value.removedCatalogIds) ? value.removedCatalogIds : [],
   });
 }
 
@@ -619,6 +633,11 @@ export async function removeProduct(id: string): Promise<boolean> {
     }
     const copy = { ...product, sizes: [...product.sizes] };
     store.products = store.products.filter((item) => item.id !== id);
+    if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
+      const tombstone = new Set(store.removedCatalogIds ?? []);
+      tombstone.add(id);
+      store.removedCatalogIds = [...tombstone];
+    }
     return { store, result: copy };
   });
 

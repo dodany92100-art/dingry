@@ -31,12 +31,17 @@ function ipKey(address: string): string {
 }
 
 function memoryMode(): boolean {
-  return process.env.NODE_ENV !== "production";
+  if (process.env.NODE_ENV !== "production") return true;
+  if (process.env.VERCEL_ENV === "preview") return true;
+  return false;
 }
 
-/** Refuse le login si l’IP n’est pas identifiable (prod / preview Vercel). */
+/** Refuse le login si l’IP n’est pas identifiable (prod Vercel uniquement). */
 export function loginClientAddressBlocked(address: string): boolean {
-  return address === "unknown" && process.env.NODE_ENV !== "development";
+  if (address !== "unknown") return false;
+  if (process.env.NODE_ENV === "development") return false;
+  if (process.env.VERCEL_ENV === "preview") return false;
+  return true;
 }
 
 function pruneExpired(now: number): void {

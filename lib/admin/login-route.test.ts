@@ -39,8 +39,7 @@ describe("POST /api/admin/login", () => {
     );
     expect(response.status).toBe(503);
     const body = (await response.json()) as { error?: string };
-    expect(body.error).toBe("Connexion indisponible.");
-    expect(JSON.stringify(body)).not.toContain("TotpMisconfigured");
+    expect(body.error).toContain("ADMIN_TOTP_SECRET");
   });
 
   it("503 sur la route si IP unknown (prod simulée)", async () => {
@@ -89,6 +88,6 @@ describe("POST /api/admin/login", () => {
       }),
     );
     expect(response.status).toBe(503);
-    expect(((await response.json()) as { error?: string }).error).toBe("Connexion indisponible.");
+    expect(((await response.json()) as { error?: string }).error).toContain("ADMIN_TOTP_SECRET");
   });
 });

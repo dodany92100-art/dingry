@@ -18,6 +18,14 @@ describe("sessionSecretFromEnv", () => {
     vi.unstubAllEnvs();
   });
 
+  it("preview Vercel peut repli sur ADMIN_TOTP_SECRET pour la session", () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ADMIN_SESSION_SECRET", "");
+    vi.stubEnv("ADMIN_TOTP_SECRET", "JBSWY3DPEHPK3PXP");
+    expect(sessionSecretFromEnv()).toBe("JBSWY3DPEHPK3PXP");
+  });
+
   it("production sans ADMIN_SESSION_SECRET refuse le repli TOTP", () => {
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("NODE_ENV", "production");

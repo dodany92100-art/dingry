@@ -1,8 +1,14 @@
 import type { AdminOrder, AdminProduct, AdminStore, ProductCategory, ProductSize } from "@/lib/admin/types";
 import { STORE_VERSION } from "@/lib/admin/types";
 import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
+import { DINGRY_STOREFRONT_PRICE_BY_ID } from "@/lib/dingry-storefront-prices";
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL"] as const;
+
+function seedCatalogPrice(id: string, legacyPrice: number): number {
+  const mapped = DINGRY_STOREFRONT_PRICE_BY_ID[Number(id)];
+  return mapped ?? legacyPrice;
+}
 
 function product(
   id: string,
@@ -23,7 +29,7 @@ function product(
     variant,
     description,
     category,
-    price,
+    price: seedCatalogPrice(id, price),
     sizes: [...sizes],
     stock,
     imageUrl,
