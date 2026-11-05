@@ -23,6 +23,7 @@ type AnimatedTabsProps = {
   variant?: "filled" | "underline";
   endAction?: ReactNode;
   labelForTab?: (tab: string) => string;
+  classNameForTab?: (tab: string) => string | undefined;
 };
 
 export function AnimatedTabs({
@@ -36,6 +37,7 @@ export function AnimatedTabs({
   variant = "underline",
   endAction,
   labelForTab,
+  classNameForTab,
 }: AnimatedTabsProps) {
   const [internalValue, setInternalValue] = useState(defaultValue ?? tabs[0] ?? "");
   const [motionReady, setMotionReady] = useState(false);
@@ -140,6 +142,7 @@ export function AnimatedTabs({
                   ? "snap-center px-3.5 py-2.5 text-[10px] font-medium tracking-[0.2em] sm:px-4 sm:text-[11px] sm:tracking-[0.22em]"
                   : "inline-flex min-h-9 items-center px-3 py-2 text-[10px] font-medium tracking-[0.16em] sm:min-h-10 sm:px-4 sm:text-[11px] sm:tracking-[0.2em] md:px-5",
                 isActive ? "text-white" : "text-white/35 hover:text-white/70",
+                classNameForTab?.(tab),
               )}
             >
               {isActive && isUnderline ? (

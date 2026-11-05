@@ -16,6 +16,8 @@ import {
   type CheckoutConfirmation,
   type StoredCartItem,
 } from "@/lib/checkout-draft";
+import { DINGRY_DELIVERY_ESTIMATE, DINGRY_SHIPPING_LABEL } from "@/lib/dingry-checkout-copy";
+import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
 
 type ServerQuote = {
@@ -259,11 +261,15 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-8 md:px-6 md:py-14">
-        <header className="mb-10 flex items-center justify-between gap-4">
-          <Link href="/" aria-label="Retour à la boutique DINGRY">
-            <DingryLogo animate={false} className="h-8 brightness-0 invert md:h-10" />
-          </Link>
-          <Link href="/" className="text-[10px] tracking-[0.22em] text-white/55 uppercase hover:text-white">
+        <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <Link href="/" aria-label="Retour à la boutique DINGRY">
+              <DingryLogo animate={false} className="h-8 brightness-0 invert md:h-10" />
+            </Link>
+            <p className="dingry-typo-manifesto mt-3 text-[10px] text-white/70">{DINGRY_MANIFESTO_FR}</p>
+            <p className="dingry-typo-street dingry-typo-street--sm mt-2">{DINGRY_STREET_LINE}</p>
+          </div>
+          <Link href="/" className="dingry-interactive-luxe text-[10px] tracking-[0.22em] text-white/55 uppercase hover:text-white">
             Retour à la boutique
           </Link>
         </header>
@@ -300,7 +306,7 @@ export default function CheckoutPage() {
           </section>
         ) : cart.length === 0 ? (
           <section className="border border-white/10 bg-[#0a0a0a] p-4 md:p-8">
-            <h1 className="text-2xl font-medium tracking-tight">Panier vide</h1>
+            <h1 className="text-2xl font-medium tracking-tight">Votre panier est vide.</h1>
             <p className="mt-3 text-sm leading-relaxed text-white/55">
               Ajoutez une pièce avant de passer au paiement.
             </p>
@@ -308,7 +314,7 @@ export default function CheckoutPage() {
               href="/"
               className="mt-8 block w-full bg-white py-4 text-center text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white"
             >
-              Voir Dingry collection
+              Continuer vos achats
             </Link>
           </section>
         ) : (
@@ -354,18 +360,25 @@ export default function CheckoutPage() {
                   );
                 })}
               </ul>
-              <div className="mt-2 flex items-baseline justify-between border-t border-white/[0.06] pt-5">
-                <span className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Total à payer</span>
+              <div className="mt-4 space-y-2 border-t border-white/[0.06] pt-5 text-sm text-white/55">
+                <div className="flex justify-between">
+                  <span>{DINGRY_SHIPPING_LABEL}</span>
+                  <span>0 €</span>
+                </div>
+                <p className="text-[10px] leading-relaxed tracking-wide text-white/35">{DINGRY_DELIVERY_ESTIMATE}</p>
+              </div>
+              <div className="mt-4 flex items-baseline justify-between border-t border-white/[0.06] pt-5">
+                <span className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Total TTC</span>
                 <span className="text-xl font-medium">
                   {quoteState === "ready" && quote ? euros(quote.totalCents) : quoteState === "error" ? "—" : "Calcul…"}
                 </span>
               </div>
               <p className="mt-3 text-[10px] leading-relaxed tracking-wide text-white/30">
-                Montant calculé par DINGRY. La livraison est confirmée dans la fenêtre PayPal.
+                Montant validé par DINGRY. Adresse de livraison saisie dans PayPal.
               </p>
             </section>
 
-            <section className="border border-white/10 bg-[#0a0a0a] p-4 md:sticky md:top-6 md:p-8">
+            <section className="border border-white/10 bg-[#0a0a0a] p-4 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto md:p-8">
               <h2 className="text-[10px] tracking-[0.32em] text-white/40 uppercase">Paiement</h2>
               <p className="mt-3 text-sm leading-relaxed text-white/55">
                 Vous restez sur DINGRY. PayPal s’ouvre dans une fenêtre, que vous pouvez fermer pour revenir ici.

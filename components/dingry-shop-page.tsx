@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { DingryLogo } from "@/components/dingry-logo";
-import { ProductCard } from "@/components/product-card";
+import { cldOpt, ProductCard } from "@/components/product-card";
 import { ShopFooter } from "@/components/shop-footer";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
 import { AnimatedTabs } from "@/components/ui/animated-tabs";
@@ -20,14 +20,39 @@ import {
   type StoredCartItem,
 } from "@/lib/checkout-draft";
 import {
-  CATALOG_FILTER_LABEL,
-  CATALOG_FILTERS,
+  CATALOG_MENU_TAB_CUSTOM,
+  CATALOG_MENU_TABS,
+  catalogMenuTabLabel,
   filterCatalogProducts,
   isRectoVersoShopCategory,
   parseCatalogFilter,
   type CatalogFilter,
 } from "@/lib/shop-catalog";
+import {
+  sortCatalogProducts,
+} from "@/lib/catalog-sort";
 
+import {
+  productSlugForCatalogId,
+  rectoIdFromProductSlug,
+} from "@/lib/dingry-product-copy";
+import { DINGRY_DELIVERY_ESTIMATE, DINGRY_SHIPPING_LABEL } from "@/lib/dingry-checkout-copy";
+import {
+  catalogRectoId,
+  completeLookForProduct,
+  productDetailCopy,
+  productLineForCatalogId,
+  storefrontProductSubtitle,
+  storefrontProductTitle,
+} from "@/lib/dingry-product-display";
+import { DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
+import {
+  DINGRY_MANIFESTO_EN,
+  DINGRY_MANIFESTO_FR,
+  DINGRY_HERO_EDITORIAL_LINES,
+  DINGRY_STREET_LINE,
+} from "@/lib/dingry-brand-voice";
+import { readWishlistIds, toggleWishlistId } from "@/lib/wishlist";
 import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 import { buildSweatCatalogPairs } from "@/lib/sweat-catalog-pairs";
 import {
@@ -107,12 +132,14 @@ const EDITORIAL_SCROLL_ITEMS: StickyScrollItem[] = [
     kickerLogo: true,
     title: "Chaque silhouette raconte l'attitude.",
     description:
-      "Née au cœur de la scène urbaine française, DINGRY PARIS s'impose bien plus qu'une marque : c'est un manifeste. Portée par une identité visuelle forte et un style résolument affirmé, la maison séduit une communauté en quête d'exigence, d'authenticité et de singularité.\n\nEntre coupes irréprochables, finitions minutieuses et un nom aussi original qu'universel, DINGRY réinvente les codes du streetwear haut de gamme. Chaque pièce est pensée pour capturer l'air du temps tout en traversant les saisons avec une élégance brute et intemporelle.",
+      "DINGRY Paris est une marque de streetwear française en plein développement, qui séduit un public toujours plus large grâce à une identité forte, un style affirmé et surtout un nom aussi original qu'universel.\n\nEntre coupes oversize, finitions soignées et drops en édition limitée, DINGRY réinvente le streetwear premium pensé pour Paris, Lyon et la scène urbaine européenne.",
   },
   {
-    title: "Rock the street.",
+    title: DINGRY_STREET_LINE,
+    titleVariant: "street",
     description:
-      "DINGRY, c'est peut-être l'un des meilleurs noms qu'une marque puisse porter aujourd'hui. Un mot populaire, utilisé par toutes les générations et toutes les classes sociales, qui reflète parfaitement notre époque. Son écriture singulière en fait une signature immédiatement reconnaissable.\n\nAu-delà du simple vestiaire, DINGRY est le miroir d'une génération libre, connectée et affranchie des codes traditionnels. En unissant l'universalité d'un nom à une exigence absolue de coupe, de matière et de direction artistique, nous ne faisons pas seulement du streetwear : nous créons un mouvement culturel pérenne.\n\nNotre ambition est claire : imposer DINGRY comme une référence incontournable du paysage urbain contemporain, en transformant chaque pièce en un manifeste d'attitude, de singularité et d'intemporalité.",
+      "DINGRY, c'est peut-être l'un des meilleurs noms qu'une marque de streetwear puisse porter aujourd'hui. Un mot populaire, utilisé par toutes les générations et toutes les classes sociales, qui reflète parfaitement notre époque. Son écriture singulière en fait une signature immédiatement reconnaissable.",
+    elasticLogoCenter: true,
   },
 ];
 
@@ -145,72 +172,72 @@ const TEE_VERSO_BY_RECTO_ID: Record<
 const PRODUCTS: ShopProduct[] = [
   {
     id: 1,
-    name: "PHANTOM HOODIE",
-    variant: "NUIT NOIRE — VERSO",
-    price: 189,
+    name: "Hoodie DINGRY Original KING BLUE / PINK",
+    variant: "VERSO",
+    price: 80,
     image: IMAGES.hoodie1,
     description: "Coton lourd 480g, coupe oversize, capuche doublée. Finitions intérieures ton sur ton.",
     category: "Hoodie",
   },
   {
     id: 2,
-    name: "PHANTOM HOODIE",
-    variant: "ZENITH",
-    price: 189,
+    name: "Hoodie DINGRY Original KING BLUE / PINK",
+    variant: "RECTO",
+    price: 80,
     image: IMAGES.hoodie2,
-    description: "Même coupe que la Nuit Noire. Coloris exclusive, édition numérotée 200 exemplaires.",
+    description: "Coloris king blue, broderie pink. Édition limitée.",
     category: "Hoodie",
   },
   {
     id: 3,
-    name: "DINGRY ORIGINAL HOODIE",
-    variant: "VERT — VERSO",
-    price: 189,
+    name: "Hoodie DINGRY Original VERT",
+    variant: "VERSO",
+    price: 80,
     image: IMAGES.hoodie3,
     description: "Coton lourd, coupe oversize et signature DINGRY au dos.",
     category: "Hoodie",
   },
   {
     id: 4,
-    name: "DINGRY ZIP HOODIE",
-    variant: "BLACK OUTLINE — RECTO",
-    price: 219,
+    name: "Hoodie zippé DINGRY Outline / BLACK",
+    variant: "RECTO",
+    price: 90,
     image: IMAGES.hoodie4,
     description: "Hoodie zippé noir, silhouette structurée et détails outline.",
     category: "Hoodie zippé",
   },
   {
     id: 5,
-    name: "DINGRY ZIP HOODIE",
-    variant: "BLACK OUTLINE — VERSO",
-    price: 219,
+    name: "Hoodie zippé DINGRY Outline / BLACK",
+    variant: "VERSO",
+    price: 90,
     image: IMAGES.hoodie5,
-    description: "Vue dos du hoodie zippé signature, édition limitée.",
+    description: "Vue dos du hoodie zippé outline.",
     category: "Hoodie zippé",
   },
   {
     id: 6,
-    name: "DINGRY ORIGINAL HOODIE",
-    variant: "BLACK — RECTO",
-    price: 189,
+    name: "Hoodie DINGRY Original BLACK",
+    variant: "RECTO",
+    price: 80,
     image: IMAGES.hoodie6,
     description: "Le hoodie original DINGRY en noir, coupe oversize.",
     category: "Hoodie",
   },
   {
     id: 7,
-    name: "DINGRY ORIGINAL HOODIE",
-    variant: "VERT — RECTO",
-    price: 189,
+    name: "Hoodie DINGRY Original VERT",
+    variant: "RECTO",
+    price: 80,
     image: IMAGES.hoodie7,
     description: "Le modèle original en vert, pensé pour la rue.",
     category: "Hoodie",
   },
   {
     id: 8,
-    name: "DINGRY ORIGINAL HOODIE",
-    variant: "BLACK — VERSO",
-    price: 189,
+    name: "Hoodie DINGRY Original BLACK",
+    variant: "VERSO",
+    price: 80,
     image: IMAGES.hoodie8,
     description: "Vue dos du hoodie original noir DINGRY.",
     category: "Hoodie",
@@ -225,9 +252,14 @@ const PRODUCTS: ShopProduct[] = [
       `COLLECTION ${String(collection).padStart(2, "0")} — RECTO`;
     return {
       id: 11 + index,
-      name: "DINGRY TEE",
+      name:
+        collection === 1
+          ? "T-shirt DINGRY Original WHITE"
+          : collection === 11
+            ? "T-shirt DINGRY Original BLACK"
+            : "DINGRY TEE",
       variant: inCatalog ? rectoVariant : `COLLECTION ${String(collection).padStart(2, "0")} — VERSO`,
-      price: 119,
+      price: collection === 1 || collection === 11 ? 35 : 119,
       image: IMAGES[imageKey],
       description: "",
       category: "T-shirts",
@@ -237,7 +269,7 @@ const PRODUCTS: ShopProduct[] = [
     id: 22,
     name: "DINGRY TEE FEMME",
     variant: "ORIGINAL — RECTO",
-    price: 119,
+    price: 35,
     image: IMAGES.tee12,
     description: "",
     category: "T-shirts",
@@ -246,7 +278,7 @@ const PRODUCTS: ShopProduct[] = [
     id: 23,
     name: "DINGRY TEE FEMME",
     variant: "SIGNATURE — RECTO",
-    price: 119,
+    price: 35,
     image: IMAGES.tee13,
     description: "",
     category: "T-shirts",
@@ -255,7 +287,7 @@ const PRODUCTS: ShopProduct[] = [
     id: 24,
     name: "DINGRY TEE",
     variant: "PERSONNALISÉ — RECTO",
-    price: 119,
+    price: 35,
     image: IMAGES.tee11,
     description: "T-shirt noir personnalisable — ville ou texte sous le logo (+5€).",
     category: "T-shirts",
@@ -264,7 +296,7 @@ const PRODUCTS: ShopProduct[] = [
     id: 25,
     name: "HOODIE BLACK PARIS BACK-LOGO",
     variant: "NOIR PARIS — RECTO",
-    price: 189,
+    price: 80,
     image: IMAGES.hoodieParisBlackRecto,
     description:
       "Hoodie noir avec logo DINGRY Paris sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
@@ -274,126 +306,125 @@ const PRODUCTS: ShopProduct[] = [
     id: 26,
     name: "HOODIE BLACK PARIS BACK-LOGO",
     variant: "NOIR PARIS — VERSO",
-    price: 189,
+    price: 80,
     image: IMAGES.hoodieParisBlackVerso,
     description: "",
     category: "Hoodie",
   },
   {
     id: 27,
-    name: "HOODIE GREY PARIS BACK-LOGO",
-    variant: "GRIS PARIS — RECTO",
-    price: 189,
+    name: "Hoodie DINGRY Original GREY",
+    variant: "RECTO",
+    price: 80,
     image: IMAGES.hoodieParisGreyRecto,
     description:
-      "Hoodie gris chiné avec logo DINGRY Paris rouge sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
+      "Hoodie gris chiné, logo DINGRY sur la poitrine et statement au dos.",
     category: "Hoodie",
   },
   {
     id: 28,
-    name: "HOODIE GREY PARIS BACK-LOGO",
-    variant: "GRIS PARIS — VERSO",
-    price: 189,
+    name: "Hoodie DINGRY Original GREY",
+    variant: "VERSO",
+    price: 80,
     image: IMAGES.hoodieParisGreyVerso,
     description: "",
     category: "Hoodie",
   },
   {
     id: 29,
-    name: "HOODIE CHOCOLAT PARIS",
-    variant: "CHOCOLAT PARIS — RECTO",
-    price: 189,
+    name: "Hoodie DINGRY Original CHOCOLAT",
+    variant: "RECTO",
+    price: 80,
     image: IMAGES.hoodieRoyalBlueRecto,
-    description: "Hoodie chocolat à capuche, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
+    description: "Hoodie chocolat à capuche, logo DINGRY sur la poitrine.",
     category: "Hoodie",
   },
   {
     id: 30,
-    name: "HOODIE CHOCOLAT PARIS",
-    variant: "CHOCOLAT PARIS — VERSO",
-    price: 189,
+    name: "Hoodie DINGRY Original CHOCOLAT",
+    variant: "VERSO",
+    price: 80,
     image: IMAGES.hoodieRoyalBlueVerso,
     description: "",
     category: "Hoodie",
   },
   {
     id: 35,
-    name: "HOODIE WHITE PARIS BACK-LOGO",
-    variant: "BLANC PARIS — RECTO",
-    price: 189,
+    name: "Hoodie DINGRY Original WHITE",
+    variant: "RECTO",
+    price: 80,
     image: IMAGES.hoodieParisWhiteRecto,
-    description:
-      "Hoodie blanc avec logo DINGRY Paris sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
+    description: "Hoodie blanc, logo DINGRY sur la poitrine et statement au dos.",
     category: "Hoodie",
   },
   {
     id: 36,
-    name: "HOODIE WHITE PARIS BACK-LOGO",
-    variant: "BLANC PARIS — VERSO",
-    price: 189,
+    name: "Hoodie DINGRY Original WHITE",
+    variant: "VERSO",
+    price: 80,
     image: IMAGES.hoodieParisWhiteVerso,
     description: "",
     category: "Hoodie",
   },
   {
     id: 31,
-    name: "SWEAT NEON YELLOW PARIS",
-    variant: "JAUNE FLUO — RECTO",
-    price: 169,
+    name: "Crewneck DINGRY Original YELLOW FLUO",
+    variant: "RECTO",
+    price: 50,
     image: IMAGES.sweatNeonYellowRecto,
     description: "Sweat col rond jaune fluo sans capuche, logo DINGRY Paris noir sur la poitrine.",
     category: "Sweats",
   },
   {
     id: 32,
-    name: "SWEAT NEON YELLOW PARIS",
-    variant: "JAUNE FLUO — VERSO",
-    price: 169,
+    name: "Crewneck DINGRY Original YELLOW FLUO",
+    variant: "VERSO",
+    price: 50,
     image: IMAGES.sweatNeonYellowVerso,
     description: "",
     category: "Sweats",
   },
   {
     id: 33,
-    name: "SWEAT ROYAL BLUE RETRO",
-    variant: "ROYAL BLUE — RECTO",
-    price: 169,
+    name: "Crewneck DINGRY Original BLUE / YELLOW",
+    variant: "RECTO",
+    price: 50,
     image: IMAGES.sweatRoyalBlueRecto,
     description: "Sweat col rond bleu royal sans capuche, écriture Dingry jaune style rétro sur la poitrine.",
     category: "Sweats",
   },
   {
     id: 34,
-    name: "SWEAT ROYAL BLUE RETRO",
-    variant: "ROYAL BLUE — VERSO",
-    price: 169,
+    name: "Crewneck DINGRY Original BLUE / YELLOW",
+    variant: "VERSO",
+    price: 50,
     image: IMAGES.sweatRoyalBlueVerso,
     description: "",
     category: "Sweats",
   },
   {
     id: 39,
-    name: "CREWNECK DINGRY PURPLE",
-    variant: "PURPLE — RECTO",
-    price: 169,
+    name: "Crewneck DINGRY Original PURPLE / PINK",
+    variant: "RECTO",
+    price: 50,
     image: IMAGES.sweatPurpleRecto,
     description: "Sweat col rond violet sans capuche, logo DINGRY Paris rose sur la poitrine et éclair sur la manche.",
     category: "Sweats",
   },
   {
     id: 40,
-    name: "CREWNECK DINGRY PURPLE",
-    variant: "PURPLE — VERSO",
-    price: 169,
+    name: "Crewneck DINGRY Original PURPLE / PINK",
+    variant: "VERSO",
+    price: 50,
     image: IMAGES.sweatPurpleVerso,
     description: "",
     category: "Sweats",
   },
   {
     id: 37,
-    name: "CASQUETTE DINGRY",
-    variant: "NOIR",
-    price: 45,
+    name: "CAP DINGRY Original BLACK",
+    variant: "TU",
+    price: 40,
     image: IMAGES.cap1,
     description: "Casquette noire, logo DINGRY blanc sur l'avant et marque sur la bride.",
     category: "Caps",
@@ -401,9 +432,9 @@ const PRODUCTS: ShopProduct[] = [
   },
   {
     id: 38,
-    name: "CASQUETTE DINGRY",
-    variant: "ROUGE",
-    price: 45,
+    name: "CAP DINGRY Original RED",
+    variant: "TU",
+    price: 40,
     image: IMAGES.cap2,
     description: "Casquette rouge, logo DINGRY blanc sur l'avant et marque sur la bride.",
     category: "Caps",
@@ -460,7 +491,6 @@ export default function App() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeFilter = parseCatalogFilter(searchParams.get("category"));
-  const [headerHidden, setHeaderHidden] = useState(false);
   const [modalSide, setModalSide] = useState<"recto" | "verso">("recto");
   const [jerseyColor, setJerseyColor] = useState<JerseyColorKey>("BLANC");
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
@@ -468,9 +498,14 @@ export default function App() {
   const [personalizeSize, setPersonalizeSize] = useState("");
   const [personalizeQty, setPersonalizeQty] = useState(1);
   const [personalizeShirtId, setPersonalizeShirtId] = useState<(typeof PERSONALIZATION_SHIRTS)[number]["id"]>("noir");
+  const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const pageScrollRef = useRef<HTMLDivElement>(null);
   const productModalRef = useRef<HTMLDivElement>(null);
   const productImageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setWishlistIds(readWishlistIds());
+  }, []);
 
   useEffect(() => {
     const confirmation = consumeCheckoutConfirmation();
@@ -534,6 +569,33 @@ export default function App() {
     return () => { cancelled = true; };
   }, [catalogRetry]);
 
+  useEffect(() => {
+    if (catalogState !== "ready") return;
+    const slug = searchParams.get("produit");
+    if (!slug) return;
+    const rectoId = rectoIdFromProductSlug(slug);
+    if (!rectoId) return;
+    if (selectedProduct && productSlugForCatalogId(selectedProduct.id) === slug) return;
+    const product = products.find((item) => item.id === rectoId);
+    if (!product) return;
+    setSelectedProduct(product);
+    setSelectedSize("");
+    setModalSide("recto");
+  }, [catalogState, searchParams, products, selectedProduct]);
+
+  function syncProductInUrl(product: ShopProduct | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (product) {
+      const slug = productSlugForCatalogId(product.id);
+      if (slug) params.set("produit", slug);
+      else params.delete("produit");
+    } else {
+      params.delete("produit");
+    }
+    const query = params.toString();
+    router.replace(query ? `/?${query}` : "/", { scroll: false });
+  }
+
   function selectCatalogFilter(next: CatalogFilter) {
     const params = new URLSearchParams(searchParams.toString());
     if (next === "all") params.delete("category");
@@ -558,13 +620,6 @@ export default function App() {
     scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   }, [activeFilter]);
 
-  function handlePageScroll() {
-    const scroller = pageScrollRef.current;
-    if (!scroller) return;
-    const hidden = scroller.scrollTop > 8;
-    setHeaderHidden((current) => (current === hidden ? current : hidden));
-  }
-
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = cart.reduce((s, i) => s + cartItemUnitPrice(i) * i.qty, 0);
   const personalizationProduct = products.find((p) => p.id === 24) ?? PRODUCTS.find((p) => p.id === 24);
@@ -572,7 +627,24 @@ export default function App() {
   const personalizeShirt =
     PERSONALIZATION_SHIRTS.find((s) => s.id === personalizeShirtId) ?? PERSONALIZATION_SHIRTS[0];
 
-  const filtered = filterCatalogProducts(products, activeFilter);
+  const filtered = useMemo(
+    () => sortCatalogProducts(filterCatalogProducts(products, activeFilter), "featured"),
+    [products, activeFilter],
+  );
+  const catalogTabValue = personalizeOpen ? CATALOG_MENU_TAB_CUSTOM : activeFilter;
+
+  function openCustomConfigurator() {
+    setPersonalizeOpen(true);
+  }
+
+  function handleCatalogTabChange(tab: string) {
+    if (tab === CATALOG_MENU_TAB_CUSTOM) {
+      openCustomConfigurator();
+      return;
+    }
+    setPersonalizeOpen(false);
+    selectCatalogFilter(parseCatalogFilter(tab));
+  }
 
   function addToCart() {
     if (!selectedProduct || !selectedSize) return;
@@ -637,7 +709,7 @@ export default function App() {
     router.push("/checkout");
   }
 
-  const heroImages = [IMAGES.hero1];
+  const heroImages = [DINGRY_TEASING_HERO_SRC];
   const hoodiePairs = [
     { id: 8, color: "Chocolat Paris", reference: "DINGRY-H08", versoId: 30, rectoId: 29 },
     { id: 9, color: "Blanc Paris", reference: "DINGRY-H09", versoId: 36, rectoId: 35 },
@@ -702,6 +774,12 @@ export default function App() {
     if (isJerseyShopProduct(product)) {
       setJerseyColor(jerseyColorKeyFromProduct(product));
     }
+    syncProductInUrl(product);
+  }
+
+  function closeProductModal() {
+    setSelectedProduct(null);
+    syncProductInUrl(null);
   }
 
   function showProductSide(side: "recto" | "verso") {
@@ -717,55 +795,112 @@ export default function App() {
   }
 
   function scrollToSection(id: string) {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    const scroller = pageScrollRef.current;
+    const target = document.getElementById(id);
+    if (!scroller || !target) return;
+    const top =
+      target.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top +
+      scroller.scrollTop;
+    scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   }
 
-  const renderProductCard = (product: ShopProduct) => (
+  function productById(id: number): ShopProduct | undefined {
+    return products.find((item) => item.id === id);
+  }
+
+  function openVariantRecto(rectoId: number) {
+    const target = productById(rectoId);
+    if (target) openProductModal(target);
+  }
+
+  function handleWishlistToggle() {
+    if (!selectedProduct) return;
+    setWishlistIds(toggleWishlistId(catalogRectoId(selectedProduct.id)));
+  }
+
+  const selectedProductLine = selectedProduct ? productLineForCatalogId(selectedProduct.id) : null;
+  const selectedRectoId = selectedProduct ? catalogRectoId(selectedProduct.id) : null;
+  const selectedDetailCopy = selectedProduct ? productDetailCopy(selectedProduct) : null;
+  const completeLookItems = selectedProduct ? completeLookForProduct(selectedProduct.id, products) : [];
+  const wishlistActive =
+    selectedRectoId !== null && wishlistIds.includes(selectedRectoId);
+
+  const renderProductCard = (product: ShopProduct, index: number) => (
     <ProductCard
       key={product.id}
-      name={product.name}
-      variant={product.variant}
+      name={storefrontProductTitle(product)}
+      variant={storefrontProductSubtitle(product)}
       image={product.image}
       price={product.price}
+      priority={index < 4}
+      soldOut={!isShopProductInStock(product)}
       onClick={() => openProductModal(product)}
     />
   );
 
   return (
-    <div className="dingry-shop relative h-dvh overflow-hidden text-white" style={{ fontFamily: "'Archivo Black', 'Arial Black', sans-serif" }}>
+    <div className="dingry-shop relative h-dvh overflow-hidden text-white">
       <BackgroundGradientAnimation interactive={false} />
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] bg-[#12151c] backdrop-blur-md transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${headerHidden ? "pointer-events-none -translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}
-      >
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] bg-[#12151c]/95 backdrop-blur-md">
         <div className="flex items-center justify-between px-4 py-2.5 md:px-12 md:py-5">
-          <div className="flex items-center gap-8">
+          <div className="flex min-w-0 flex-1 items-center gap-4 md:gap-8">
+            <a href="/" className="flex shrink-0 items-center [perspective:900px]" aria-label="DINGRY Paris">
+              <DingryLogo animate />
+            </a>
+            <div className="hidden items-center gap-6 md:flex">
+              {(
+                [
+                  ["catalogue", "Catalogue"],
+                ["lookbook", "Lookbook"],
+                ["heritage", "Heritage"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => scrollToSection(id)}
+                  className="dingry-interactive-luxe text-xs tracking-[0.25em] text-white/40 uppercase hover:text-white"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-6">
+            <div className="hidden text-right md:block">
+              <span className="dingry-typo-manifesto-en block text-[9px] tracking-[0.2em]">
+                {DINGRY_MANIFESTO_EN}
+              </span>
+              <span className="dingry-typo-street mt-1 block text-lg leading-none">{DINGRY_STREET_LINE}</span>
+            </div>
             <button
               type="button"
-              onClick={() => scrollToSection("catalogue")}
-              className="text-xs tracking-[0.25em] text-white/40 uppercase hidden md:block hover:text-white transition-colors"
-            >
-              Dingry collection
-            </button>
-          </div>
-          <a href="/" className="flex items-center [perspective:900px]" aria-label="DINGRY Paris">
-            <DingryLogo animate />
-          </a>
-          <div className="flex items-center gap-6">
-            <span className="text-xs tracking-[0.2em] text-white/40 uppercase hidden md:block">Paris</span>
-            <button
               onClick={() => setCartOpen(true)}
-              className="relative flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-white/80 hover:text-white transition-colors duration-300"
+              aria-label={cartCount > 0 ? `Panier, ${cartCount} article${cartCount > 1 ? "s" : ""}` : "Ouvrir le panier"}
+              className="dingry-interactive-luxe relative flex h-11 items-center gap-2.5 rounded-sm border border-white/20 bg-white/[0.06] px-3.5 text-white/90 hover:border-[#0066FF]/50 hover:bg-white/[0.1] hover:text-white md:px-4"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <path d="M16 10a4 4 0 01-8 0"/>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <circle cx="9" cy="20" r="1.25" fill="currentColor" stroke="none" />
+                <circle cx="17" cy="20" r="1.25" fill="currentColor" stroke="none" />
+                <path d="M2 3h2.2l2.4 12.4a1.5 1.5 0 0 0 1.48 1.22h9.56a1.5 1.5 0 0 0 1.47-1.18L21 7H6" />
               </svg>
-              {cartCount > 0 && (
-                <span className="absolute -top-2.5 -right-2.5 w-4 h-4 bg-[#0066FF] flex items-center justify-center text-[10px] font-bold text-white rounded-none">
+              <span className="text-[10px] font-medium tracking-[0.22em] uppercase">Panier</span>
+              {cartCount > 0 ? (
+                <span className="flex h-5 min-w-5 items-center justify-center bg-[#0066FF] px-1.5 text-[10px] font-bold leading-none text-white">
                   {cartCount}
                 </span>
-              )}
+              ) : null}
             </button>
           </div>
         </div>
@@ -773,14 +908,10 @@ export default function App() {
       <div
         ref={pageScrollRef}
         className="dingry-page relative z-10 h-full overflow-y-auto bg-transparent [overflow-anchor:none]"
-        onScroll={handlePageScroll}
       >
 
-      <div className="flex min-h-dvh flex-col">
-        <div className="dingry-hero-offset h-[49px] shrink-0 bg-[#050505] md:h-[85px]" aria-hidden />
-
-      {/* HERO */}
-      <section className="dingry-hero relative w-full max-md:min-h-0 max-md:flex-1 max-md:overflow-hidden">
+      {/* HERO — même cadrage que le teaser (cover + hauteur viewport) */}
+      <section className="dingry-hero relative h-dvh w-full shrink-0 overflow-hidden">
         {heroImages.map((img) => (
           <img
             key={img}
@@ -791,55 +922,76 @@ export default function App() {
             decoding="sync"
             width={1920}
             height={1080}
-            className="block h-auto w-full max-md:absolute max-md:inset-0 max-md:h-full max-md:object-cover max-md:object-center"
+            className="absolute inset-0 h-full w-full object-cover object-center"
           />
         ))}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#050505]/60 via-transparent to-transparent" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent" />
-
-        <div className="absolute bottom-16 left-8 md:left-16 max-w-xl">
-          <h1 className="text-5xl md:text-7xl font-bold leading-[0.9] tracking-tight uppercase mb-6">
-            LE LUXE EST<br />DANS L&apos;ATTITUDE
-          </h1>
-          <p className="text-sm text-white/50 tracking-wider mb-10 leading-relaxed">
-            Chaque pièce est une déclaration. Éditions limitées.
-          </p>
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-end px-5 pb-8 pt-[var(--dingry-nav-h)] sm:px-8 sm:pb-10 md:items-center md:px-16 md:pb-0">
+          <div className="dingry-brand-reveal dingry-hero-copy w-full max-w-[19rem] sm:max-w-sm md:max-w-md">
+            <h1 className="dingry-typo-manifesto">{DINGRY_MANIFESTO_FR}</h1>
+            <p className="dingry-typo-manifesto-en mt-2">{DINGRY_MANIFESTO_EN}</p>
+            <div className="mt-3 h-px w-14 bg-white/70" />
+            <p className="dingry-typo-street dingry-typo-street--sm mt-3">{DINGRY_STREET_LINE}</p>
+            <p className="dingry-typo-body-alt mt-3">
+              {DINGRY_HERO_EDITORIAL_LINES.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </p>
+          </div>
         </div>
-
       </section>
-      </div>
 
       <div id="catalogue-landing" />
 
       {/* CATALOGUE */}
       <section id="catalogue" className="dingry-catalog-surface px-4 pb-20 md:px-12 md:pb-24">
-        <div className="mb-2 md:mb-3">
-          <h2 className="mb-1">
+        <div className="mb-4 md:mb-5">
+          <h2 className="mb-2">
             <DingryLogo animate={false} className="dingry-catalog-logo h-9 md:h-14" />
           </h2>
+          <p className="dingry-typo-manifesto text-[10px] sm:text-[11px]">{DINGRY_MANIFESTO_FR}</p>
+          <p className="dingry-typo-street dingry-typo-street--sm mt-2 text-white/85">{DINGRY_STREET_LINE}</p>
         </div>
 
         {/* Filters */}
-        <div className="dingry-catalog-bar sticky top-0 z-40 -mx-4 mb-8 border-b border-white/15 bg-[#12151c]/50 px-4 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.16)] backdrop-blur-2xl backdrop-saturate-150 md:mb-12 md:mx-0 md:px-0">
+        <div className="dingry-catalog-bar -mx-4 mb-6 border-b border-white/15 bg-[#12151c]/95 px-4 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.16)] backdrop-blur-2xl backdrop-saturate-150 md:mb-8 md:mx-0 md:px-0">
           <AnimatedTabs
-            tabs={[...CATALOG_FILTERS]}
-            value={activeFilter}
-            onValueChange={(tab) => selectCatalogFilter(parseCatalogFilter(tab))}
+            tabs={[...CATALOG_MENU_TABS]}
+            value={catalogTabValue}
+            onValueChange={handleCatalogTabChange}
             layoutId="dingry-catalog-tabs"
-            aria-label="Catégories de Dingry collection"
+            aria-label="Catégories de la collection DINGRY"
             variant="underline"
-            labelForTab={(tab) => CATALOG_FILTER_LABEL[parseCatalogFilter(tab)]}
-            endAction={
-              <button
-                type="button"
-                onClick={() => setPersonalizeOpen(true)}
-                className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-[10px] font-medium tracking-[0.18em] uppercase text-white/75 transition-colors hover:border-[#0066FF]/45 hover:text-white active:scale-[0.97]"
-              >
-                Perso
-              </button>
+            labelForTab={catalogMenuTabLabel}
+            classNameForTab={(tab) =>
+              tab === CATALOG_MENU_TAB_CUSTOM
+                ? "border border-[#0066FF]/45 bg-[#0066FF]/12 text-white hover:text-white"
+                : undefined
             }
           />
         </div>
+
+        <button
+          type="button"
+          onClick={openCustomConfigurator}
+          className="group mb-8 w-full border border-[#0066FF]/40 bg-gradient-to-r from-[#0066FF]/15 via-[#0066FF]/8 to-transparent p-5 text-left transition-colors hover:border-[#0066FF]/65 hover:from-[#0066FF]/22 md:p-6"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="max-w-xl">
+              <p className="text-[10px] font-semibold tracking-[0.32em] text-[#0066FF] uppercase">Custom · Configurateur</p>
+              <p className="mt-2 text-lg uppercase tracking-tight text-white md:text-xl">
+                Ville, texte ou message sous le logo
+              </p>
+              <p className="mt-2 text-sm text-white/50">
+                Tee personnalisable · aperçu en direct · +{PERSONALIZATION_SURCHARGE_EUR}€
+              </p>
+            </div>
+            <span className="shrink-0 bg-[#0066FF] px-5 py-3 text-[10px] font-medium tracking-[0.24em] text-white uppercase transition-colors group-hover:bg-[#0052cc]">
+              Ouvrir
+            </span>
+          </div>
+        </button>
 
         {catalogState === "error" ? (
           <div className="mb-10 border border-white/15 bg-[#0a0a0a]/80 px-6 py-8 text-center md:px-10">
@@ -866,7 +1018,7 @@ export default function App() {
           className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4 lg:grid-cols-4"
         >
           {filtered.length > 0 ? (
-            filtered.map(renderProductCard)
+            filtered.map((product, index) => renderProductCard(product, index))
           ) : (
             <div className="col-span-full border border-white/[0.06] py-20 text-center">
               <p className="text-[10px] tracking-[0.35em] text-[#0066FF] uppercase mb-4">Bientôt disponible</p>
@@ -877,11 +1029,34 @@ export default function App() {
         ) : null}
       </section>
 
-      {/* EDITORIAL STRIP */}
-      <section className="dingry-below-hero-surface border-t border-white/[0.05] px-6 md:px-12 py-12 md:py-16">
-        <p className="mb-8 text-[10px] font-semibold tracking-[0.35em] text-[#0066FF] uppercase md:mb-10">
-          DINGRY Rock The Street
+      <section id="lookbook" className="dingry-below-hero-surface border-t border-white/[0.05] px-6 py-12 md:px-12 md:py-16">
+        <p className="mb-8 text-[10px] font-semibold tracking-[0.35em] text-[#0066FF] uppercase">Lookbook</p>
+        <div className="grid gap-4 md:grid-cols-3">
+          {(
+            [
+              [IMAGES.editorial, "DINGRY — Rock the Street", "Par Sully Sefil"],
+              [IMAGES.hero1, "DINGRY Look Book", "Editorial"],
+              [IMAGES.cap1, "DYRON — AFRO PUNK", "Saison capsule"],
+            ] as const
+          ).map(([src, title, caption]) => (
+            <figure key={title} className="overflow-hidden">
+              <img src={src} alt={title} loading="lazy" decoding="async" className="aspect-[3/4] w-full object-cover" />
+              <figcaption className="mt-3">
+                <p className="text-sm uppercase tracking-wide">{title}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-white/45">{caption}</p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      <section id="heritage" className="dingry-below-hero-surface border-t border-white/[0.05] px-6 py-12 md:px-12 md:py-16">
+        <p className="mb-4 text-[10px] font-semibold tracking-[0.35em] text-[#0066FF] uppercase">Heritage</p>
+        <h2 className="max-w-xl text-3xl uppercase leading-tight md:text-5xl">True luxury is attitude.</h2>
+        <p className="mt-6 max-w-xl text-sm leading-relaxed text-white/70">
+          DINGRY est une attitude. Une vision du luxe qui ne demande pas la permission.
         </p>
+        <p className="mt-6 text-[10px] uppercase tracking-[0.28em] text-white/45">DINGRY — Rock the Street</p>
         <StickyScroll
           scrollContainerRef={pageScrollRef}
           items={EDITORIAL_SCROLL_ITEMS}
@@ -936,10 +1111,18 @@ export default function App() {
               </svg>
             </button>
             <div className="p-8 md:p-10 border-b border-white/[0.06]">
-              <p className="text-[10px] tracking-[0.35em] text-[#0066FF] uppercase mb-2">Studio</p>
+              <p className="text-[10px] tracking-[0.35em] text-[#0066FF] uppercase mb-2">Custom · Studio</p>
               <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight pr-12">
-                À chaque ville sa DINGRY
+                Configurateur tee personnalisé
               </h2>
+              <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/55">
+                Choisissez la couleur, saisissez votre texte, vérifiez l&apos;aperçu recto, puis ajoutez au panier.
+              </p>
+              <ol className="mt-6 flex flex-wrap gap-2 text-[9px] tracking-[0.16em] text-white/40 uppercase md:gap-3 md:text-[10px]">
+                <li className="rounded-full border border-white/15 px-3 py-1.5">1 · Couleur</li>
+                <li className="rounded-full border border-white/15 px-3 py-1.5">2 · Texte</li>
+                <li className="rounded-full border border-white/15 px-3 py-1.5">3 · Taille & quantité</li>
+              </ol>
             </div>
             <div className="p-8 md:p-10 grid md:grid-cols-2 gap-10 md:gap-12 items-start">
               <div className="relative mx-auto w-full max-w-xs" style={{ aspectRatio: "3/4" }}>
@@ -977,7 +1160,7 @@ export default function App() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase mb-3">Couleur du tee</p>
+                  <p className="mb-3 text-[10px] tracking-[0.3em] text-[#0066FF] uppercase">Étape 1 · Couleur du tee</p>
                   <div className="flex flex-wrap gap-2">
                     {PERSONALIZATION_SHIRTS.map((shirt) => (
                       <button
@@ -996,7 +1179,9 @@ export default function App() {
                   </div>
                 </div>
                 <label className="block">
-                  <span className="text-[10px] tracking-[0.3em] text-white/40 uppercase mb-2 block">Ville, pays ou texte</span>
+                  <span className="mb-2 block text-[10px] tracking-[0.3em] text-[#0066FF] uppercase">
+                    Étape 2 · Ville, pays ou texte
+                  </span>
                   <input
                     type="text"
                     value={personalizeLabel}
@@ -1007,7 +1192,7 @@ export default function App() {
                   />
                 </label>
                 <div>
-                  <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase mb-3">Taille</p>
+                  <p className="mb-3 text-[10px] tracking-[0.3em] text-[#0066FF] uppercase">Étape 3 · Taille</p>
                   <div className="grid grid-cols-6 gap-2">
                     {SIZES.map((s) => (
                       <button
@@ -1044,8 +1229,10 @@ export default function App() {
                   </div>
                 </div>
                 <p className="text-lg font-bold">
-                  {(personalizationProduct?.price ?? 119) + PERSONALIZATION_SURCHARGE_EUR}€{" "}
-                  <span className="text-xs font-normal text-white/40 tracking-wider">({personalizationProduct?.price ?? 119}€ + {PERSONALIZATION_SURCHARGE_EUR}€ perso.)</span>
+                  {((personalizationProduct?.price ?? 119) + PERSONALIZATION_SURCHARGE_EUR) * personalizeQty}€{" "}
+                  <span className="text-xs font-normal text-white/40 tracking-wider">
+                    ({(personalizationProduct?.price ?? 119) + PERSONALIZATION_SURCHARGE_EUR}€ × {personalizeQty})
+                  </span>
                 </p>
                 <button
                   type="button"
@@ -1079,7 +1266,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22, ease: MODAL_OVERLAY_EASE }}
-            onClick={() => setSelectedProduct(null)}
+            onClick={() => closeProductModal()}
           />
           <motion.div
             ref={productModalRef}
@@ -1115,7 +1302,7 @@ export default function App() {
                     ) : null}
                     <button
                       type="button"
-                      onClick={() => setSelectedProduct(null)}
+                      onClick={() => closeProductModal()}
                       className={`h-11 w-11 items-center justify-center text-white/40 transition-colors hover:text-white ${showModalSideToggle ? "hidden md:flex" : "flex"}`}
                       aria-label="Fermer"
                     >
@@ -1125,7 +1312,67 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <h2 className="text-2xl font-bold tracking-widest uppercase mb-4">{selectedProduct.name}</h2>
+                <p className="dingry-typo-manifesto-en mb-3">{DINGRY_MANIFESTO_EN}</p>
+                <h2 className="mb-2 text-2xl font-bold uppercase tracking-wide leading-tight">
+                  {storefrontProductTitle(selectedProduct)}
+                </h2>
+                {selectedDetailCopy?.description ? (
+                  <p className="mb-4 text-sm leading-relaxed text-white/55">{selectedDetailCopy.description}</p>
+                ) : null}
+                {selectedDetailCopy?.fabrication ? (
+                  <div className="mb-4">
+                    <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Fabrication</p>
+                    <p className="text-xs leading-relaxed text-white/50">{selectedDetailCopy.fabrication}</p>
+                  </div>
+                ) : null}
+                {selectedDetailCopy?.limitedEdition ? (
+                  <div className="mb-4">
+                    <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Édition limitée</p>
+                    <p className="text-xs leading-relaxed text-white/50">{selectedDetailCopy.limitedEdition}</p>
+                  </div>
+                ) : null}
+                {selectedProductLine && selectedRectoId !== null ? (
+                  <div className="mb-6">
+                    <p className="mb-3 text-[10px] tracking-[0.3em] text-white/40 uppercase">Variantes</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProductLine.variants.map((variant) => {
+                        const isActive = variant.rectoId === selectedRectoId;
+                        const disabled = variant.comingSoon || !productById(variant.rectoId);
+                        return (
+                          <button
+                            key={variant.rectoId}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => openVariantRecto(variant.rectoId)}
+                            className={`border px-3 py-2 text-[10px] tracking-[0.16em] uppercase transition-colors ${
+                              isActive
+                                ? "border-[#0066FF] bg-[#0066FF] text-white"
+                                : disabled
+                                  ? "cursor-not-allowed border-white/10 text-white/25"
+                                  : "border-white/15 text-white/55 hover:border-white/40 hover:text-white"
+                            }`}
+                            aria-pressed={isActive}
+                          >
+                            {variant.colorLabel}
+                            {variant.comingSoon ? " · bientôt" : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+                {selectedDetailCopy?.materials ? (
+                  <div className="mb-4">
+                    <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Matières</p>
+                    <p className="text-xs leading-relaxed text-white/50">{selectedDetailCopy.materials}</p>
+                  </div>
+                ) : null}
+                {selectedDetailCopy?.sizeGuide ? (
+                  <div className="mb-6">
+                    <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Guide des tailles</p>
+                    <p className="text-xs leading-relaxed text-white/50">{selectedDetailCopy.sizeGuide}</p>
+                  </div>
+                ) : null}
                 <div className="mb-6 flex items-start justify-between gap-3">
                   <span className="text-[10px] tracking-[0.3em] text-white/40 uppercase">Quantité</span>
                   <div className="flex flex-col items-center gap-1.5">
@@ -1145,7 +1392,7 @@ export default function App() {
                       >+</button>
                     </div>
                     <p className="text-2xl font-bold tabular-nums tracking-tight text-[#0066FF]">
-                      {(jerseyCheckoutProduct ?? selectedProduct).price}€
+                      {(jerseyCheckoutProduct ?? selectedProduct).price * selectedQuantity}€
                     </p>
                   </div>
                 </div>
@@ -1171,7 +1418,7 @@ export default function App() {
                     </div>
                   </div>
                 ) : null}
-                <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase mb-4">Select a Size</p>
+                <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase mb-4">Sélectionnez une taille</p>
                 {(() => {
                   const modalSizes =
                     selectedProduct.sizes && selectedProduct.sizes.length > 0 ? selectedProduct.sizes : SIZES;
@@ -1219,18 +1466,51 @@ export default function App() {
                   );
                 })()}
               </div>
-              <button
-                type="button"
-                onClick={addToCart}
-                disabled={!selectedSize || modalOutOfStock}
-                className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
-                  selectedSize && !modalOutOfStock
-                    ? "bg-[#0066FF] text-white hover:bg-[#0052cc]"
-                    : "bg-white/10 text-white/20 cursor-not-allowed"
-                }`}
-              >
-                {modalOutOfStock ? "Épuisé" : "ADD TO CART"}
-              </button>
+              {completeLookItems.length > 0 ? (
+                <div className="mb-6 border-t border-white/[0.06] pt-5">
+                  <p className="mb-3 text-[10px] tracking-[0.28em] text-[#0066FF] uppercase">Complète le look</p>
+                  <div className="flex gap-3 overflow-x-auto pb-1">
+                    {completeLookItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => openProductModal(item)}
+                        className="w-24 shrink-0 border border-white/10 bg-[#080808] text-left transition-colors hover:border-[#0066FF]/40"
+                      >
+                        <img src={item.image} alt="" className="aspect-[3/4] w-full object-cover" />
+                        <span className="block p-2 text-[9px] uppercase leading-snug tracking-wide text-white/55">
+                          {storefrontProductTitle(item)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={addToCart}
+                  disabled={!selectedSize || modalOutOfStock}
+                  className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
+                    selectedSize && !modalOutOfStock
+                      ? "bg-[#0066FF] text-white shadow-[0_8px_32px_rgba(0,102,255,0.35)] hover:bg-[#0052cc]"
+                      : "bg-white/10 text-white/20 cursor-not-allowed"
+                  }`}
+                >
+                  {modalOutOfStock ? "Épuisé" : "Ajouter au panier"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleWishlistToggle}
+                  className={`w-full border py-3 text-[10px] font-medium tracking-[0.24em] uppercase transition-colors ${
+                    wishlistActive
+                      ? "border-[#0066FF] text-[#7EB3FF]"
+                      : "border-white/20 text-white/55 hover:border-white/45 hover:text-white"
+                  }`}
+                >
+                  {wishlistActive ? "Dans la wishlist" : "Ajouter à la wishlist"}
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -1259,16 +1539,45 @@ export default function App() {
 
       {/* CART DRAWER */}
       {cartOpen && (
-        <div className="fixed inset-0 z-[70] flex justify-end">
-          <div className="absolute inset-0 bg-[#050505]/80 backdrop-blur-sm" onClick={() => setCartOpen(false)} />
-          <div className="relative z-10 bg-[#0a0a0a] border-l border-white/[0.06] w-full max-w-md flex flex-col h-full">
+        <div className="fixed inset-0 z-[70] flex justify-end md:justify-stretch">
+          <aside className="relative hidden min-w-0 flex-1 overflow-hidden md:block">
+            <button
+              type="button"
+              onClick={() => setCartOpen(false)}
+              className="absolute inset-0 z-20 cursor-pointer"
+              aria-label="Fermer le panier et continuer vos achats"
+            />
+            <img
+              src={IMAGES.editorial}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/75 to-[#050505]/40" />
+            <div className="pointer-events-none relative z-10 flex h-full max-w-lg flex-col justify-end p-10 lg:p-14">
+              <p className="dingry-typo-eyebrow text-[#0066FF]">DINGRY Paris</p>
+              <p className="dingry-typo-manifesto mt-4 text-white/75">{DINGRY_MANIFESTO_FR}</p>
+              <p className="dingry-typo-street dingry-typo-street--lg mt-3">{DINGRY_STREET_LINE}</p>
+              <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/60">{DINGRY_DELIVERY_ESTIMATE}</p>
+              <p className="mt-10 text-[10px] tracking-[0.24em] text-white/35 uppercase">
+                Cliquez pour continuer vos achats
+              </p>
+            </div>
+          </aside>
+          <div
+            className="absolute inset-0 bg-[#050505]/80 backdrop-blur-sm md:hidden"
+            onClick={() => setCartOpen(false)}
+            aria-hidden
+          />
+          <div className="relative z-10 flex h-full min-h-0 w-full max-w-md flex-col border-l border-white/[0.06] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.45)]">
             <div className="flex items-center justify-between p-8 border-b border-white/[0.06]">
               <div>
                 <h2 className="text-sm font-bold tracking-[0.3em] uppercase">
-                  {orderConfirmation ? "Commande confirmée" : "Votre panier"}
+                  {orderConfirmation ? "Commande confirmée" : "Panier"}
                 </h2>
                 {cartCount > 0 && !orderConfirmation ? (
-                  <p className="text-xs text-white/40 mt-1">{cartCount} article{cartCount > 1 ? "s" : ""}</p>
+                  <p className="mt-1 text-xs text-white/40">
+                    {cartCount} article{cartCount > 1 ? "s" : ""} · {DINGRY_SHIPPING_LABEL.toLowerCase()}
+                  </p>
                 ) : null}
               </div>
               <button onClick={() => setCartOpen(false)} className="w-10 h-10 flex items-center justify-center text-white/40 hover:text-white transition-colors">
@@ -1318,23 +1627,36 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="text-center">
-                    <p className="text-sm tracking-[0.3em] text-white/20 uppercase mb-2">YOUR VAULT IS EMPTY</p>
-                    <p className="text-xs text-white/15">Aucun article pour le moment.</p>
+                    <p className="text-sm tracking-[0.3em] text-white/20 uppercase mb-2">Votre panier est vide.</p>
+                    <button
+                      type="button"
+                      onClick={() => setCartOpen(false)}
+                      className="mt-6 text-[10px] uppercase tracking-[0.22em] text-white/50 hover:text-white"
+                    >
+                      Continuer vos achats
+                    </button>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-6">
                 {cart.map((item, idx) => (
                   <div key={idx} className="flex gap-4 border border-white/[0.05] p-4 bg-[#080808]">
-                    <img src={item.product.image} alt={item.product.name} className="w-20 h-24 object-cover flex-shrink-0" style={{ filter: "grayscale(0.3)" }} />
+                    <div className="flex h-28 w-20 shrink-0 items-center justify-center overflow-hidden bg-[#0a0a0a]">
+                      <img
+                        src={cldOpt(item.product.image, 240)}
+                        alt={item.product.name}
+                        className="max-h-full max-w-full object-contain object-center"
+                        decoding="async"
+                      />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase">{item.product.name}</p>
                       <p className="text-sm font-medium tracking-widest uppercase truncate">{item.product.variant}</p>
                       {item.personalization && (
                         <p className="text-xs text-[#0066FF] mt-1 tracking-wider uppercase">« {item.personalization} »</p>
                       )}
-                      <p className="text-xs text-white/40 mt-1">Taille: {item.size}</p>
+                      <p className="mt-1 text-xs text-white/40">Taille {item.size}</p>
                       <div className="flex items-center gap-3 mt-3">
                         <span className="text-[9px] tracking-[0.25em] text-white/35 uppercase">Quantité</span>
                         <div className="flex items-center border border-white/15">
@@ -1353,9 +1675,14 @@ export default function App() {
                           >+</button>
                         </div>
                       </div>
-                      <p className="text-sm font-bold mt-2">{cartItemUnitPrice(item) * item.qty}€</p>
+                      <p className="mt-2 text-sm font-bold">{cartItemUnitPrice(item) * item.qty} €</p>
                     </div>
-                    <button onClick={() => removeFromCart(idx)} className="text-white/20 hover:text-white/60 transition-colors self-start mt-1">
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(idx)}
+                      aria-label={`Retirer ${item.product.name} du panier`}
+                      className="mt-1 self-start text-white/20 transition-colors hover:text-white/60"
+                    >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                       </svg>
@@ -1366,21 +1693,40 @@ export default function App() {
             )}
 
             {cart.length > 0 && (
-              <div className="p-6 border-t border-white/[0.06]">
-                <div className="flex justify-between mb-6">
-                  <span className="text-xs tracking-[0.25em] text-white/40 uppercase">Total</span>
-                  <span className="text-base font-bold">{cartTotal}€</span>
+              <div className="sticky bottom-0 shrink-0 border-t border-white/[0.06] bg-[#0a0a0a] p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+                <p className="mb-4 text-[10px] tracking-[0.22em] text-white/35 uppercase">Récapitulatif</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-white/55">
+                    <span>Sous-total</span>
+                    <span>{cartTotal} €</span>
+                  </div>
+                  <div className="flex justify-between text-white/55">
+                    <span>{DINGRY_SHIPPING_LABEL}</span>
+                    <span>0 €</span>
+                  </div>
+                  <div className="flex justify-between border-t border-white/[0.06] pt-3 text-base font-bold">
+                    <span className="text-xs tracking-[0.22em] uppercase text-white/40">Total TTC</span>
+                    <span>{cartTotal} €</span>
+                  </div>
                 </div>
+                <p className="mt-3 text-[10px] leading-relaxed tracking-wide text-white/35">{DINGRY_DELIVERY_ESTIMATE}</p>
                 <button
                   type="button"
                   onClick={goToCheckout}
                   disabled={catalogState === "error"}
-                  className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
+                  className="mt-5 w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
                 >
-                  Payer avec PayPal
+                  Passer au paiement
                 </button>
-                <p className="text-center text-[10px] text-white/20 mt-3 tracking-wider leading-relaxed">
-                  Vérification anti-bot, puis PayPal ou carte
+                <button
+                  type="button"
+                  onClick={() => setCartOpen(false)}
+                  className="mt-3 w-full py-2 text-[10px] tracking-[0.2em] text-white/45 uppercase hover:text-white"
+                >
+                  Continuer mes achats
+                </button>
+                <p className="mt-3 text-center text-[10px] leading-relaxed tracking-wide text-white/25">
+                  Paiement sécurisé sur la page suivante (PayPal ou carte).
                 </p>
               </div>
             )}

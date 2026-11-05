@@ -3,6 +3,7 @@ import { loadStoreReadOnly } from "@/lib/admin/store";
 import type { AdminProduct } from "@/lib/admin/types";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
+import { storefrontPriceForCatalogId } from "@/lib/dingry-storefront-prices";
 import {
   assertCheckoutStock,
   StockCheckoutError,
@@ -17,14 +18,10 @@ const MAX_PERSONALIZATION = 80;
 
 /** Pièces affichées sur la vitrine et absentes du catalogue admin. Le prix admin gagne dès qu'il existe. */
 export const VITRINE_ONLY: Record<number, { name: string; variant: string; price: number }> = {
-  1: { name: "PHANTOM HOODIE", variant: "NUIT NOIRE — VERSO", price: 189 },
-  3: { name: "DINGRY ORIGINAL HOODIE", variant: "VERT — VERSO", price: 189 },
-  5: { name: "DINGRY ZIP HOODIE", variant: "BLACK OUTLINE — VERSO", price: 219 },
-  8: { name: "DINGRY ORIGINAL HOODIE", variant: "BLACK — VERSO", price: 189 },
-  12: { name: "DINGRY TEE", variant: "COLLECTION 02 — VERSO", price: 119 },
-  14: { name: "DINGRY TEE", variant: "COLLECTION 04 — VERSO", price: 119 },
-  15: { name: "DINGRY TEE", variant: "COLLECTION 05 — VERSO", price: 119 },
-  16: { name: "DINGRY TEE", variant: "COLLECTION 06 — VERSO", price: 119 },
+  1: { name: "Hoodie DINGRY Original KING BLUE / PINK", variant: "VERSO", price: 80 },
+  3: { name: "Hoodie DINGRY Original VERT", variant: "VERSO", price: 80 },
+  5: { name: "Hoodie zippé DINGRY Outline / BLACK", variant: "VERSO", price: 90 },
+  8: { name: "Hoodie DINGRY Original BLACK", variant: "VERSO", price: 80 },
   18: { name: "DINGRY TEE", variant: "COLLECTION 08 — VERSO", price: 119 },
   20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 119 },
 };
@@ -121,7 +118,9 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
     const fallback = product ? undefined : VITRINE_ONLY[line.productId];
     const name = product?.name ?? fallback?.name;
     const variant = product?.variant ?? fallback?.variant ?? "";
-    const price = product?.price ?? fallback?.price;
+    const rawPrice = product?.price ?? fallback?.price;
+    const price =
+      rawPrice === undefined ? undefined : storefrontPriceForCatalogId(rectoId, rawPrice);
     if (!name || price === undefined) return null;
 
     const allowedSizes = product

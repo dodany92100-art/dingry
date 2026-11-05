@@ -4,14 +4,20 @@ import { motion } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { DingryLogo } from "@/components/dingry-logo";
+import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
+import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
 import { cn } from "@/lib/utils";
 
 export type StickyScrollItem = {
   title: string;
   description: string;
   kicker?: string;
+  /** Titre en Anton (street) vs éditorial bold */
+  titleVariant?: "street" | "editorial";
   /** Logo DINGRY détouré à la place du kicker texte */
   kickerLogo?: boolean;
+  /** Logo animé (élastique), centré sous le texte */
+  elasticLogoCenter?: boolean;
 };
 
 type StickyScrollProps = {
@@ -70,23 +76,43 @@ export function StickyScroll({
               blockRefs.current[index] = node;
             }}
             data-index={index}
-            className="flex min-h-[55vh] flex-col justify-center py-8 lg:min-h-[72vh] lg:py-16"
+            className={cn(
+              "flex min-h-[55vh] flex-col py-8 lg:min-h-[72vh] lg:py-16",
+              item.elasticLogoCenter ? "justify-start" : "justify-center",
+            )}
           >
             {item.kickerLogo ? (
               <div className="mb-4 max-w-md md:mb-5">
                 <DingryLogo animate={false} className="dingry-editorial-logo h-9 w-auto md:h-11" />
+                <p className="dingry-typo-manifesto mt-4 text-[10px] text-white/75">{DINGRY_MANIFESTO_FR}</p>
               </div>
             ) : item.kicker ? (
               <p className="mb-4 max-w-md text-[10px] font-semibold uppercase tracking-[0.28em] text-[#0066FF] md:mb-5">
                 {item.kicker}
               </p>
             ) : null}
-            <h3 className="text-3xl font-bold uppercase leading-tight tracking-tight md:text-4xl md:text-5xl">
+            <h3
+              className={cn(
+                item.titleVariant === "street"
+                  ? "dingry-typo-street dingry-typo-street--md max-w-md"
+                  : "max-w-md text-3xl font-bold uppercase leading-tight tracking-tight md:text-4xl md:text-5xl",
+              )}
+            >
               {item.title}
             </h3>
             <p className="mt-6 max-w-md whitespace-pre-line text-sm leading-relaxed text-white/55">
               {item.description}
             </p>
+            {item.elasticLogoCenter ? (
+              <div className="flex w-full flex-1 items-center justify-center pt-8 md:pt-10">
+                <img
+                  src={DINGRY_LOGO_URL}
+                  alt="DINGRY Paris"
+                  decoding="async"
+                  className="dingry-editorial-logo dingry-logo-elastic"
+                />
+              </div>
+            ) : null}
           </div>
         ))}
       </div>

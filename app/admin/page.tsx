@@ -724,7 +724,7 @@ export default function AdminPage() {
                 Nouveau
               </button>
             </div>
-            <div className="border border-white/10">
+            <div className="dingry-admin-stock border border-white/10">
               {products.length === 0 ? (
                 <p className="px-4 py-10 text-sm text-white/40">Aucun produit.</p>
               ) : (
@@ -744,17 +744,19 @@ export default function AdminPage() {
 
                     {/* Infos produit */}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium uppercase tracking-[0.12em] text-white/90">
+                      <p className="truncate text-[11px] font-normal uppercase tracking-[0.28em] text-white">
                         {product.name}
                       </p>
                       {product.variant ? (
-                        <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.14em] text-white/45">
+                        <p className="mt-1 truncate text-[10px] font-normal uppercase tracking-[0.22em] text-white">
                           {product.variant}
                         </p>
                       ) : null}
-                      {product.sizes.length > 0 ? (
-                        <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-white/25">
-                          {product.sizes.join(" · ")}
+                      {product.sizes.length > 0 || product.price > 0 ? (
+                        <p className="mt-1.5 text-[10px] font-normal uppercase tracking-[0.2em] text-white">
+                          {[product.sizes.length > 0 ? product.sizes.join(" · ") : null, `${product.price} €`]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </p>
                       ) : null}
                     </div>
@@ -770,7 +772,7 @@ export default function AdminPage() {
                       >
                         −
                       </button>
-                      <span className={`min-w-[2rem] text-center text-sm tabular-nums ${product.stock <= 3 ? "text-[#7EB3FF]" : ""}`}>
+                      <span className={`min-w-[2rem] text-center text-sm tabular-nums text-white ${product.stock <= 3 ? "text-[#7EB3FF]" : ""}`}>
                         {product.stock}
                       </span>
                       <button

@@ -8,6 +8,7 @@ import {
 } from "@/lib/catalog-verso-recto";
 import { CATALOG_CANONICAL_IMAGE_BY_ID } from "@/lib/dingry-product-media";
 import { normalizeAdminCategory, resolveShopCategory, type ShopCategory } from "@/lib/shop-catalog";
+import { withStorefrontPrice } from "@/lib/dingry-storefront-prices";
 
 export type ShopProduct = {
   id: number;
@@ -68,7 +69,7 @@ function applyCatalogOverlay(
     inheritedFromRecto && product.id !== overlay.id
       ? versoSkuFromRecto(overlay.sku)
       : overlay.sku;
-  return {
+  return withStorefrontPrice({
     ...product,
     name: overlay.name,
     variant: inheritedFromRecto
@@ -83,7 +84,7 @@ function applyCatalogOverlay(
     sku,
     sizes: overlay.sizes,
     stock: overlay.stock,
-  };
+  });
 }
 
 export function overlayShopCatalog(
@@ -98,11 +99,13 @@ export function overlayShopCatalog(
     if (!resolved) {
       const image = canonicalImage ?? product.image;
       const category = resolveShopCategory(product.id, product.category);
-      return image !== product.image || category !== product.category
-        ? { ...product, image, category }
-        : product;
+      const next =
+        image !== product.image || category !== product.category
+          ? { ...product, image, category }
+          : product;
+      return withStorefrontPrice(next);
     }
-    return applyCatalogOverlay(product, resolved.overlay, resolved.inheritedFromRecto);
+    return withStorefrontPrice(applyCatalogOverlay(product, resolved.overlay, resolved.inheritedFromRecto));
   });
 
   const extras = live
@@ -110,7 +113,8 @@ export function overlayShopCatalog(
     .map(catalogToShopProduct)
     .map((product) => {
       const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[product.id];
-      return canonicalImage ? { ...product, image: canonicalImage } : product;
+      const withImage = canonicalImage ? { ...product, image: canonicalImage } : product;
+      return withStorefrontPrice(withImage);
     });
 
   return [...merged, ...extras];

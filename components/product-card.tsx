@@ -84,6 +84,7 @@ export function ProductCard({
           <p className="text-[9px] uppercase tracking-[0.18em] text-white/45 md:text-[10px] md:tracking-[0.22em]">
             {name}
           </p>
+          {variant ? (
           <div className="mt-1 flex items-start justify-between gap-2">
             <p className="line-clamp-2 text-[11px] font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-sm md:tracking-widest">
               {variant}
@@ -92,6 +93,11 @@ export function ProductCard({
               {priceFormat.format(price)}
             </p>
           </div>
+          ) : (
+          <p className="mt-1 text-sm font-bold tabular-nums tracking-tight text-white md:text-base">
+            {priceFormat.format(price)}
+          </p>
+          )}
         </div>
       </button>
     </article>

@@ -3,15 +3,29 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState, type ReactNode } from "react";
 
+import { cn } from "@/lib/utils";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
+import {
+  DINGRY_MANIFESTO_FR,
+  DINGRY_STREET_LINE,
+} from "@/lib/dingry-brand-voice";
+import {
+  DINGRY_COMPANY,
+  DINGRY_CONTACT_EMAIL,
+  DINGRY_CONTACT_PHONE,
+  DINGRY_REASSURANCE_LINE,
+  DINGRY_RETURNS_ADDRESS,
+} from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 
 const MODAL_OVERLAY_EASE = [0.16, 1, 0.3, 1] as const;
 const MODAL_PANEL_SPRING = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.85 };
 
+const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
+
 function InstagramIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="12" cy="12" r="4.25" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" />
@@ -19,20 +33,35 @@ function InstagramIcon() {
   );
 }
 
-type FooterBlockProps = {
+type FooterCardProps = {
   children: ReactNode;
-  className?: string;
+  eyebrow: string;
+  footer?: ReactNode;
   id?: string;
+  index: string;
+  variant?: "default" | "pulse" | "legal";
 };
 
-function FooterBlock({ children, className, id }: FooterBlockProps) {
+function FooterCard({ children, eyebrow, footer, id, index, variant = "default" }: FooterCardProps) {
   return (
-    <div
+    <article
       id={id}
-      className={`dingry-footer-block flex shrink-0 flex-col justify-between px-7 py-7 sm:px-8 sm:py-8 ${className ?? ""}`}
+      className={cn(
+        "dingry-footer-block group",
+        variant === "pulse" && "dingry-footer-block--pulse",
+        variant === "legal" && "dingry-footer-block--legal",
+      )}
     >
-      {children}
-    </div>
+      <div className="dingry-footer-block__shine" aria-hidden />
+      <header className="relative z-[1] flex items-center justify-between gap-3">
+        <p className="dingry-footer-eyebrow">{eyebrow}</p>
+        <span className="dingry-footer-index" aria-hidden>
+          {index}
+        </span>
+      </header>
+      <div className="relative z-[1] mt-5 flex min-h-0 flex-1 flex-col justify-center">{children}</div>
+      {footer ? <footer className="dingry-footer-card-foot relative z-[1]">{footer}</footer> : null}
+    </article>
   );
 }
 
@@ -42,80 +71,87 @@ type FooterMarqueeProps = {
 };
 
 function FooterMarqueeBlocks({ onOpenLegal, withLegalAnchor }: FooterMarqueeProps) {
+  const legalLinks: { id: LegalDocId; label: string }[] = [
+    { id: "mentions", label: "Mentions" },
+    { id: "cgv", label: "CGV" },
+    { id: "rgpd", label: "RGPD" },
+  ];
+
   return (
     <>
-      <FooterBlock>
-        <blockquote className="text-sm leading-relaxed text-white/75 md:text-[0.9375rem]">
-          Chaque pièce est une déclaration. Éditions limitées, attitude assumée.
-        </blockquote>
-        <div className="mt-6 flex flex-col gap-0.5">
-          <p className="text-sm font-semibold text-white/90">DINGRY Paris</p>
-          <p className="text-xs text-white/40">Rock The Street</p>
-        </div>
-      </FooterBlock>
+      <FooterCard eyebrow="Signal" index="01" variant="pulse">
+        <p className="dingry-typo-manifesto text-[10px] text-white/90 sm:text-[11px]">{DINGRY_MANIFESTO_FR}</p>
+        <p className="dingry-typo-street dingry-typo-street--sm mt-4 text-white">{DINGRY_STREET_LINE}</p>
+        <p className="mt-4 text-[10px] uppercase tracking-[0.24em] text-white/40">DINGRY Paris</p>
+      </FooterCard>
 
-      <FooterBlock>
-        <p className="text-sm font-semibold uppercase tracking-wide text-white/90">Paris</p>
-        <p className="mt-2 text-xs leading-relaxed tracking-widest text-white/40">
-          Streetwear en édition limitée
-        </p>
-        <a
-          href="https://www.instagram.com/dingry_officiel/"
-          target="_blank"
-          rel="noreferrer"
-          className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/70 transition-colors hover:text-[#0066FF]"
-          aria-label="Instagram @dingry_officiel"
-        >
-          <InstagramIcon />
-          @dingry_officiel
-        </a>
-      </FooterBlock>
+      <FooterCard
+        eyebrow="Réseau"
+        index="02"
+        footer={
+          <a
+            href={DINGRY_INSTAGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="dingry-footer-link inline-flex items-center gap-2"
+            aria-label="Instagram @dingry_officiel"
+          >
+            <InstagramIcon />
+            @dingry_officiel
+          </a>
+        }
+      >
+        <p className="text-[11px] uppercase tracking-[0.26em] text-white/85">Paris · Lyon</p>
+        <p className="mt-3 text-[10px] leading-[1.8] tracking-[0.16em] text-white/45">Streetwear en édition limitée.</p>
+      </FooterCard>
 
-      <FooterBlock>
-        <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-white/45">Contact</p>
-        <ul className="space-y-2.5 text-xs font-medium tracking-wide text-white/55">
+      <FooterCard eyebrow="Contact" index="03">
+        <ul className="space-y-2.5 text-[10px] leading-relaxed tracking-[0.14em] text-white/55">
           <li>
-            <a href="mailto:contact@dingry.fr" className="transition-colors hover:text-white">
-              contact@dingry.fr
+            <a href={`mailto:${DINGRY_CONTACT_EMAIL}`} className="dingry-footer-link text-white/85">
+              {DINGRY_CONTACT_EMAIL}
             </a>
           </li>
-          <li>+33 1 42 00 00 00</li>
-          <li>12 rue du Temple, 75004 Paris</li>
-          <li className="pt-1 text-[10px] font-normal text-white/30">Coordonnées fictives — à remplacer</li>
+          <li>{DINGRY_CONTACT_PHONE}</li>
+          <li className="text-white/35">
+            {DINGRY_COMPANY.legalName} · {DINGRY_COMPANY.registeredOffice}
+          </li>
+          <li className="text-white/30">Retours · {DINGRY_RETURNS_ADDRESS}</li>
         </ul>
-      </FooterBlock>
+      </FooterCard>
 
-      <FooterBlock>
-        <blockquote className="text-sm leading-relaxed text-white/75 md:text-[0.9375rem]">
-          Livraison offerte en France · retours gratuits sous 30 jours · pièces numérotées.
-        </blockquote>
-        <div className="mt-6 flex flex-col gap-0.5">
-          <p className="text-sm font-semibold text-white/90">Service client</p>
-          <p className="text-xs text-white/40">Édition limitée</p>
-        </div>
-      </FooterBlock>
+      <FooterCard eyebrow="Logistique" index="04" variant="pulse">
+        <ul className="space-y-2 text-[10px] leading-[1.75] tracking-[0.15em] text-white/50">
+          <li className="flex items-center gap-2">
+            <span className="dingry-footer-dot" aria-hidden />
+            Livraison offerte en France
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="dingry-footer-dot" aria-hidden />
+            Retours gratuits sous 14 jours
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="dingry-footer-dot" aria-hidden />
+            Pièces numérotées
+          </li>
+        </ul>
+      </FooterCard>
 
-      <FooterBlock id={withLegalAnchor ? "mentions-legales" : undefined}>
-        <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-white/45">
-          Informations légales
-        </p>
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => onOpenLegal("cgv")}
-            className="w-fit border border-white/20 bg-white/[0.03] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 transition-colors hover:border-[#0066FF]/45 hover:text-[#7EB3FF]"
-          >
-            CGV
-          </button>
-          <button
-            type="button"
-            onClick={() => onOpenLegal("rgpd")}
-            className="w-fit border border-white/20 bg-white/[0.03] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/75 transition-colors hover:border-[#0066FF]/45 hover:text-[#7EB3FF]"
-          >
-            RGPD
-          </button>
+      <FooterCard eyebrow="Légal" index="05" variant="legal" id={withLegalAnchor ? "mentions-legales" : undefined}>
+        <p className="mb-4 text-[10px] leading-[1.7] tracking-[0.12em] text-white/40">{DINGRY_REASSURANCE_LINE}</p>
+        <div className="flex flex-wrap gap-2">
+          {legalLinks.map((link) => (
+            <button
+              key={link.id}
+              type="button"
+              onClick={() => onOpenLegal(link.id)}
+              className="dingry-footer-chip"
+            >
+              {link.label}
+            </button>
+          ))}
         </div>
-      </FooterBlock>
+      </FooterCard>
     </>
   );
 }
@@ -126,32 +162,40 @@ export function ShopFooter() {
 
   return (
     <>
-      <footer className="dingry-below-hero-surface border-t border-white/[0.05] px-0 py-12">
-        <InfiniteMovingCards ariaLabel="Informations boutique" durationSeconds={44}>
+      <footer className="dingry-footer-stage dingry-below-hero-surface relative overflow-hidden border-t border-white/[0.06] px-0 py-14 md:py-16">
+        <InfiniteMovingCards ariaLabel="Informations boutique" durationSeconds={52}>
           {[0, 1].map((copy) => (
-            <div key={copy} className="flex shrink-0 items-stretch gap-4 md:gap-6" aria-hidden={copy === 1}>
+            <div key={copy} className="flex shrink-0 items-stretch gap-5 md:gap-8" aria-hidden={copy === 1}>
               <FooterMarqueeBlocks onOpenLegal={setLegalDoc} withLegalAnchor={copy === 0} />
             </div>
           ))}
         </InfiniteMovingCards>
 
-        <div className="mt-10 border-t border-white/[0.05] px-6 pt-6 md:px-12">
-          <p className="mb-4 text-center text-[10px] uppercase tracking-[0.28em] text-white/40">
-            Moyens de paiement
-          </p>
-          <ul className="flex flex-wrap items-center justify-center gap-2" aria-label="Moyens de paiement acceptés">
+        <div className="relative z-[1] mt-12 border-t border-white/[0.06] px-6 pt-8 md:px-12">
+          <p className="mb-4 text-center text-[10px] uppercase tracking-[0.32em] text-white/35">Moyens de paiement</p>
+          <ul className="flex flex-wrap items-center justify-center gap-3" aria-label="Moyens de paiement acceptés">
             {["PayPal", "Carte via PayPal"].map((method) => (
-              <li
-                key={method}
-                className="flex h-8 items-center justify-center border border-white/15 bg-white/[0.03] px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75"
-              >
+              <li key={method} className="dingry-footer-chip dingry-footer-chip--ghost">
                 {method}
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="mt-6 px-6 text-center text-[10px] tracking-widest text-white/20 md:px-12">
+        <div className="mt-8 flex justify-center">
+          <a
+            href={DINGRY_INSTAGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="dingry-footer-link inline-flex items-center gap-2.5"
+            aria-label="Instagram @dingry_officiel"
+          >
+            <InstagramIcon />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.22em]">@dingry_officiel</span>
+          </a>
+        </div>
+
+        <p className="mt-6 px-6 text-center text-[10px] tracking-[0.28em] text-white/25 md:px-12">
           © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY. Tous droits réservés.
         </p>
       </footer>

@@ -1,25 +1,18 @@
 import type { Metadata, Viewport } from 'next'
 
 import { CookieConsent } from '@/components/cookie-consent'
-import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL, DINGRY_LOGO_URL } from '@/lib/dingry-brand'
+import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL } from '@/lib/dingry-brand'
+
+import { DINGRY_META_DESCRIPTION } from '@/lib/dingry-brand-voice'
 
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'DINGRY — True Luxury Is Attitude',
-  description: 'DINGRY. Rock the street. Collection capsule en édition limitée.',
+  description: DINGRY_META_DESCRIPTION,
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: DINGRY_FAVICON_URL,
-        type: 'image/png',
-      },
-      {
-        url: DINGRY_LOGO_URL,
-        type: 'image/png',
-      },
-    ],
+    icon: { url: DINGRY_FAVICON_URL, type: 'image/png' },
     apple: DINGRY_APPLE_ICON_URL,
   },
 }

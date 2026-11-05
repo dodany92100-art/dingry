@@ -81,54 +81,47 @@ function assertStoreBackend(): void {
   }
 }
 
+/** En local le token Blob lit mais l'API d'écriture répond 403. Le fichier local fait foi. */
 function useLocalStoreFiles(): boolean {
-  return process.env.NODE_ENV !== "production" && !isBlobConfigured();
+  return process.env.NODE_ENV !== "production";
 }
 
-async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
-  assertStoreBackend();
-
-  if (isBlobConfigured()) {
+async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
+  try {
+    const result = await get(STORE_PATHNAME, { access: "private" });
+    if (!result || result.statusCode !== 200 || !result.stream) return "missing";
+    let text: string;
     try {
-      const result = await get(STORE_PATHNAME, { access: "private", useCache: false });
-      if (!result || result.statusCode !== 200 || !result.stream) return "missing";
-      let text: string;
-      try {
-        text = await new Response(result.stream).text();
-      } catch (error) {
-        console.error("[store] stream Blob", error instanceof Error ? error.name : "erreur");
-        return "missing";
-      }
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        console.error("[store] JSON blob invalide");
-        return "missing";
-      }
-      if (!isAdminStore(parsed)) return "missing";
-      const raw = parsed as AdminStore;
-      return {
-        store: normalizeStore(raw),
-        etag: result.blob.etag,
-      };
+      text = await new Response(result.stream).text();
     } catch (error) {
-      console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
+      console.error("[store] stream Blob", error instanceof Error ? error.name : "erreur");
       return "missing";
     }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      console.error("[store] JSON blob invalide");
+      return "missing";
+    }
+    if (!isAdminStore(parsed)) return "missing";
+    return {
+      store: normalizeStore(parsed),
+      etag: result.blob.etag,
+    };
+  } catch (error) {
+    console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
+    return "missing";
   }
+}
 
-  if (!useLocalStoreFiles()) {
-    throw new StoreUnavailableError();
-  }
-
+async function readLocalSnapshot(): Promise<StoreSnapshot | "missing"> {
   try {
     const text = await readFile(LOCAL_STORE_PATH, "utf8");
     const parsed: unknown = JSON.parse(text);
     if (!isAdminStore(parsed)) return "missing";
-    const raw = parsed as AdminStore;
     return {
-      store: normalizeStore(raw),
+      store: normalizeStore(parsed),
       etag: revisionFromDiskText(text),
     };
   } catch {
@@ -136,43 +129,68 @@ async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
   }
 }
 
+async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
+  assertStoreBackend();
+
+  if (useLocalStoreFiles()) {
+    const local = await readLocalSnapshot();
+    if (local !== "missing") return local;
+    if (isBlobConfigured()) {
+      const remote = await readBlobSnapshot();
+      if (remote !== "missing") {
+        await writeLocalSnapshot(remote.store);
+        return readLocalSnapshot();
+      }
+    }
+    return "missing";
+  }
+
+  if (isBlobConfigured()) return readBlobSnapshot();
+  throw new StoreUnavailableError();
+}
+
+async function writeLocalSnapshot(store: AdminStore): Promise<void> {
+  const next: AdminStore = { ...store, version: STORE_VERSION };
+  await mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
+  await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
+}
+
 async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promise<void> {
   assertStoreBackend();
   const next: AdminStore = { ...store, version: STORE_VERSION };
   const body = JSON.stringify(next);
 
-  if (isBlobConfigured()) {
-    await put(STORE_PATHNAME, body, {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,          // toujours permettre l'écrasement
-      contentType: "application/json",
-      cacheControlMaxAge: 0,
-      ...(etag ? { ifMatch: etag } : {}), // conditionnel uniquement si on a un etag
-    });
+  if (useLocalStoreFiles()) {
+    if (etag) {
+      try {
+        const current = await readFile(LOCAL_STORE_PATH, "utf8");
+        if (revisionFromDiskText(current) !== etag) {
+          throw new StoreConflictError();
+        }
+      } catch (error) {
+        const code = (error as { code?: string }).code;
+        if (code === "ENOENT") throw new StoreConflictError();
+        if (error instanceof StoreConflictError) throw error;
+        throw error;
+      }
+    }
+    await writeLocalSnapshot(next);
     return;
   }
 
-  if (!useLocalStoreFiles()) {
+  if (!isBlobConfigured()) {
     throw new StoreUnavailableError();
   }
 
-  if (etag) {
-    try {
-      const current = await readFile(LOCAL_STORE_PATH, "utf8");
-      if (revisionFromDiskText(current) !== etag) {
-        throw new StoreConflictError();
-      }
-    } catch (error) {
-      const code = (error as { code?: string }).code;
-      if (code === "ENOENT") throw new StoreConflictError();
-      if (error instanceof StoreConflictError) throw error;
-      throw error;
-    }
-  }
-
-  await mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
-  await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
+  await put(STORE_PATHNAME, body, {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
+    cacheControlMaxAge: 0,
+    ...(etag ? { ifMatch: etag } : {}),
+  });
+  return;
 }
 
 async function withStoreOptimistic<T>(

@@ -11,7 +11,7 @@ import {
 import type { ProductCategory } from "@/lib/admin/types";
 import type { ShopProduct } from "@/lib/catalog";
 
-export { filterByCategory, parseCatalogFilter, CATALOG_FILTERS, CATALOG_FILTER_LABEL } from "@/lib/catalog-category";
+export { filterByCategory, parseCatalogFilter, CATALOG_FILTERS, CATALOG_FILTER_LABEL, CATALOG_MENU_TAB_CUSTOM, CATALOG_MENU_TABS, catalogMenuTabLabel } from "@/lib/catalog-category";
 export type { CatalogCategory, CatalogFilter } from "@/lib/catalog-category";
 
 /** Catégories affichées sur une fiche produit boutique. */
@@ -40,12 +40,12 @@ export const SHOP_CATEGORY_TABS = [
 ] as const satisfies readonly ShopCategory[];
 
 /** Barre catalogue : « Tout » + chaque catégorie ci-dessus. */
-export const SHOP_CATALOG_TABS = ["Tout", ...SHOP_CATEGORY_TABS] as const;
+export const SHOP_CATALOG_TABS = ["Collection", ...SHOP_CATEGORY_TABS] as const;
 
 export type ShopCatalogTab = (typeof SHOP_CATALOG_TABS)[number];
 
 /** Retirés boutique (doublon Collection 05 — même photo que 09). */
-export const DINGRY_RETIRED_PRODUCT_IDS = new Set([15, 16]);
+export const DINGRY_RETIRED_PRODUCT_IDS = new Set([12, 13, 14, 15, 16]);
 
 export function isActiveShopProduct(product: { id: number }): boolean {
   return !DINGRY_RETIRED_PRODUCT_IDS.has(product.id);

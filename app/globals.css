@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
@@ -160,6 +160,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Anton", "Arial Narrow", sans-serif;
   }
 }
 
@@ -183,7 +184,7 @@
 
 /* Texte ville sous le logo — vue recto (maquette personnalisation) */
 .dingry-personalize-city {
-  font-family: "Bebas Neue", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Anton", "Arial Narrow", sans-serif;
   font-weight: 400;
   letter-spacing: 0.14em;
   color: #ffffff;
@@ -444,18 +445,242 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   color: #fff;
 }
 
+/* —— DINGRY : luxe (tracking) + street (Anton) —— */
+.dingry-shop {
+  --dingry-motion: cubic-bezier(0.16, 1, 0.3, 1);
+  --dingry-accent: #0066ff;
+  --dingry-nav-h: 3.0625rem;
+}
+
+@media (min-width: 768px) {
+  .dingry-shop {
+    --dingry-nav-h: 5.3125rem;
+  }
+}
+
+.dingry-catalog-bar {
+  position: sticky;
+  top: var(--dingry-nav-h);
+  z-index: 40;
+}
+
+.dingry-typo-manifesto {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  line-height: 1.55;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.9);
+}
+
+.dingry-typo-manifesto-en {
+  font-size: 0.625rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.38);
+}
+
+.dingry-typo-street {
+  font-family: Anton, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.92);
+}
+
+.dingry-typo-street--sm {
+  font-size: clamp(1.125rem, 2.8vw, 1.45rem);
+}
+
+.dingry-typo-street--md {
+  font-size: clamp(1.5rem, 3.2vw, 2.05rem);
+}
+
+.dingry-typo-street--lg {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.dingry-typo-body-alt {
+  font-size: 0.625rem;
+  line-height: 1.85;
+  letter-spacing: 0.14em;
+  color: rgb(255 255 255 / 0.45);
+}
+
+.dingry-typo-eyebrow {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.42);
+}
+
+.dingry-brand-reveal > * {
+  animation: dingry-brand-reveal 0.8s var(--dingry-motion) both;
+}
+
+.dingry-brand-reveal > *:nth-child(2) {
+  animation-delay: 0.07s;
+}
+
+.dingry-brand-reveal > *:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.dingry-brand-reveal > *:nth-child(4) {
+  animation-delay: 0.17s;
+}
+
+.dingry-brand-reveal > *:nth-child(5) {
+  animation-delay: 0.22s;
+}
+
+@keyframes dingry-brand-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dingry-interactive-luxe {
+  transition:
+    color 0.28s var(--dingry-motion),
+    border-color 0.28s var(--dingry-motion),
+    background-color 0.28s var(--dingry-motion),
+    transform 0.28s var(--dingry-motion),
+    opacity 0.28s var(--dingry-motion);
+}
+
+.dingry-interactive-luxe:hover {
+  transform: translateY(-1px);
+}
+
+.dingry-interactive-luxe:active {
+  transform: translateY(0);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-typo-manifesto {
+  color: rgb(14 17 24 / 0.88);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-typo-manifesto-en {
+  color: rgb(14 17 24 / 0.42);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-typo-street {
+  color: rgb(14 17 24 / 0.92);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
+  color: rgb(14 17 24 / 0.52);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dingry-brand-reveal > * {
+    animation: none;
+  }
+
+  .dingry-interactive-luxe:hover,
+  .dingry-interactive-luxe:active {
+    transform: none;
+  }
+}
+
+/* Admin CRM — liste stock (blanc plein + tracking boutique) */
+.dingry-admin-stock {
+  font-family: Anton, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.dingry-admin-stock p {
+  color: #fff;
+}
+
 .dingry-shop .dingry-add-to-cart-btn:not(:disabled) {
   background-color: #0066ff !important;
   color: #fff !important;
+  transition:
+    background-color 0.32s var(--dingry-motion, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform 0.28s var(--dingry-motion, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dingry-shop .dingry-add-to-cart-btn:not(:disabled):hover {
   background-color: #0052cc !important;
+  transform: translateY(-1px);
 }
 
 html[data-theme="light"] .dingry-hero,
 html[data-theme="light"] .dingry-hero [class*="text-white"] {
   color: #fff;
+}
+
+.dingry-hero-copy {
+  text-shadow:
+    0 1px 14px rgb(0 0 0 / 0.75),
+    0 0 2px rgb(0 0 0 / 0.9);
+}
+
+.dingry-hero-copy .dingry-typo-manifesto {
+  font-size: 0.8125rem;
+  letter-spacing: 0.26em;
+}
+
+.dingry-hero-copy .dingry-typo-manifesto-en {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+}
+
+.dingry-hero-copy .dingry-typo-street--sm {
+  font-size: clamp(1.35rem, 4vw, 1.85rem);
+}
+
+.dingry-hero-copy .dingry-typo-body-alt {
+  font-size: 0.6875rem;
+  line-height: 1.75;
+  letter-spacing: 0.15em;
+}
+
+@media (min-width: 768px) {
+  .dingry-hero-copy .dingry-typo-manifesto {
+    font-size: 0.875rem;
+  }
+
+  .dingry-hero-copy .dingry-typo-manifesto-en {
+    font-size: 0.8125rem;
+  }
+
+  .dingry-hero-copy .dingry-typo-street--sm {
+    font-size: clamp(1.5rem, 2.8vw, 2.05rem);
+  }
+
+  .dingry-hero-copy .dingry-typo-body-alt {
+    font-size: 0.75rem;
+    line-height: 1.8;
+  }
+}
+
+html[data-theme="light"] .dingry-hero .dingry-typo-manifesto,
+html[data-theme="light"] .dingry-hero .dingry-typo-manifesto-en,
+html[data-theme="light"] .dingry-hero .dingry-typo-street,
+html[data-theme="light"] .dingry-hero .dingry-typo-body-alt {
+  color: rgb(255 255 255 / 0.92);
+}
+
+html[data-theme="light"] .dingry-hero .dingry-typo-manifesto-en {
+  color: rgb(255 255 255 / 0.55);
+}
+
+html[data-theme="light"] .dingry-hero .dingry-typo-body-alt {
+  color: rgb(255 255 255 / 0.72);
 }
 
 html[data-theme="light"] .dingry-hero [class*="text-white/50"] { color: rgb(255 255 255 / 0.72); }
@@ -534,6 +759,34 @@ html[data-theme="light"] .dingry-editorial-logo {
   filter: brightness(0);
 }
 
+.dingry-logo-elastic {
+  width: min(92vw, 28rem);
+  height: auto;
+  max-width: none;
+  transform-origin: center center;
+  user-select: none;
+  animation: dingry-logo-elastic 6.5s cubic-bezier(0.45, 0.05, 0.2, 1) infinite;
+}
+
+@keyframes dingry-logo-elastic {
+  0%,
+  100% {
+    transform: scale(1.02) scaleX(1.14);
+  }
+
+  35% {
+    transform: scale(1.04) scaleX(1.19);
+  }
+
+  55% {
+    transform: scale(1.015) scaleX(1.1);
+  }
+
+  72% {
+    transform: scale(1.035) scaleX(1.16);
+  }
+}
+
 html[data-theme="light"] .dingry-sale-overlay {
   background-color: rgb(255 255 255 / 0.9) !important;
 }
@@ -597,24 +850,227 @@ html[data-theme="light"] .dingry-catalog-bar [class*="border-white"] {
   animation-play-state: paused;
 }
 
+.dingry-footer-stage {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgb(0 102 255 / 0.12) 0%, transparent 55%),
+    transparent;
+}
+
+.dingry-footer-marquee-logo {
+  width: min(90vw, 36rem);
+  height: auto;
+  max-width: none;
+  opacity: 1;
+  filter: brightness(0) invert(1);
+  transform: scale(1.06);
+  user-select: none;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-marquee-logo {
+  filter: brightness(0);
+  opacity: 1;
+}
+
+.dingry-infinite-cards-backdrop {
+  z-index: 0;
+}
+
+.dingry-infinite-cards .dingry-footer-block {
+  isolation: auto;
+  border-color: rgb(0 102 255 / 0.28);
+  background:
+    linear-gradient(155deg, rgb(0 102 255 / 0.06) 0%, transparent 48%),
+    linear-gradient(180deg, rgb(8 10 16 / 0.38) 0%, rgb(4 5 8 / 0.42) 100%);
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+  backdrop-filter: blur(8px) saturate(1.15);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 0 0 1px rgb(0 102 255 / 0.12),
+    0 16px 40px rgb(0 0 0 / 0.35);
+}
+
+.dingry-infinite-cards .dingry-footer-block::before {
+  opacity: 0.12;
+}
+
+.dingry-infinite-cards .dingry-footer-block__shine {
+  opacity: 0.35;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-infinite-cards .dingry-footer-block {
+  background:
+    linear-gradient(155deg, rgb(0 102 255 / 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.52) 0%, rgb(244 244 242 / 0.55) 100%);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-stage {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgb(0 102 255 / 0.06) 0%, transparent 55%),
+    #fff;
+}
+
 .dingry-infinite-cards {
-  mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+}
+
+@keyframes dingry-footer-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes dingry-footer-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .dingry-footer-block {
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
   overflow: hidden;
-  width: min(360px, 88vw);
-  min-height: 11.5rem;
-  border-radius: 0.75rem;
-  border: 1px solid rgb(255 255 255 / 0.1);
+  width: min(18.5rem, 84vw);
+  min-height: 13.5rem;
+  padding: 1.5rem 1.35rem 1.25rem;
   color: rgb(255 255 255);
-  background: linear-gradient(165deg, rgb(14 16 22) 0%, rgb(6 6 8) 100%);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  border: 1px solid rgb(0 102 255 / 0.22);
+  background:
+    linear-gradient(155deg, rgb(0 102 255 / 0.12) 0%, transparent 42%),
+    linear-gradient(180deg, rgb(10 12 18 / 0.78) 0%, rgb(4 5 8 / 0.82) 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 12px 32px rgb(0 0 0 / 0.5);
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 20px 50px rgb(0 0 0 / 0.45);
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.dingry-footer-block:hover {
+  transform: translateY(-3px);
+  border-color: rgb(0 102 255 / 0.55);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 0 28px rgb(0 102 255 / 0.22),
+    0 24px 56px rgb(0 0 0 / 0.55);
+}
+
+.dingry-footer-block__shine {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgb(255 255 255 / 0.07) 50%,
+    transparent 60%
+  );
+  transform: translateX(-120%);
+  animation: dingry-footer-shimmer 7s ease-in-out infinite;
+}
+
+.dingry-footer-block--pulse {
+  border-color: rgb(0 102 255 / 0.4);
+}
+
+.dingry-footer-block--pulse .dingry-footer-dot {
+  animation: dingry-footer-pulse 2.4s ease-in-out infinite;
+}
+
+.dingry-footer-block--legal {
+  border-color: rgb(255 255 255 / 0.18);
+  background:
+    linear-gradient(160deg, rgb(0 102 255 / 0.1) 0%, transparent 50%),
+    linear-gradient(180deg, rgb(8 9 14 / 0.9) 0%, rgb(3 3 5 / 0.95) 100%);
+}
+
+.dingry-footer-eyebrow {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: rgb(126 179 255 / 0.95);
+}
+
+.dingry-footer-index {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  color: rgb(255 255 255 / 0.28);
+}
+
+.dingry-footer-dot {
+  height: 0.35rem;
+  width: 0.35rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: rgb(0 102 255);
+  box-shadow: 0 0 10px rgb(0 102 255 / 0.85);
+}
+
+.dingry-footer-card-foot {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(0 102 255 / 0.15);
+}
+
+.dingry-footer-link {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.65);
+  transition: color 0.25s ease, text-shadow 0.25s ease;
+}
+
+.dingry-footer-link:hover {
+  color: rgb(255 255 255);
+  text-shadow: 0 0 16px rgb(0 102 255 / 0.65);
+}
+
+.dingry-footer-chip {
+  border: 1px solid rgb(0 102 255 / 0.35);
+  background: rgb(0 102 255 / 0.08);
+  padding: 0.45rem 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.78);
+  transition:
+    border-color 0.25s ease,
+    background-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.dingry-footer-chip:hover {
+  border-color: rgb(0 102 255 / 0.7);
+  background: rgb(0 102 255 / 0.16);
+  box-shadow: 0 0 20px rgb(0 102 255 / 0.25);
+}
+
+.dingry-footer-chip--ghost {
+  background: rgb(255 255 255 / 0.03);
+  border-color: rgb(255 255 255 / 0.12);
+  color: rgb(255 255 255 / 0.55);
 }
 
 .dingry-footer-block::before {
@@ -623,42 +1079,49 @@ html[data-theme="light"] .dingry-catalog-bar [class*="border-white"] {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(135deg, rgb(0 102 255 / 0.14) 0%, transparent 42%, transparent 100%);
-  opacity: 0.9;
-}
-
-.dingry-footer-block::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 0;
-  height: 2px;
-  width: 100%;
-  pointer-events: none;
-  background: linear-gradient(90deg, rgb(0 102 255 / 0.7), rgb(255 255 255 / 0.25), transparent 85%);
-}
-
-.dingry-footer-block > * {
-  position: relative;
-  z-index: 1;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px);
+  background-size: 18px 18px;
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-block {
-  border-color: rgb(0 0 0 / 0.1);
+  border-color: rgb(0 102 255 / 0.25);
   color: rgb(14 17 24);
-  background: linear-gradient(165deg, rgb(255 255 255) 0%, rgb(244 244 242) 100%);
+  background:
+    linear-gradient(155deg, rgb(0 102 255 / 0.08) 0%, transparent 45%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.92) 0%, rgb(244 244 242 / 0.95) 100%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.9),
-    0 10px 28px rgb(0 0 0 / 0.08);
+    0 16px 40px rgb(0 0 0 / 0.08);
 }
 
-html[data-theme="light"] .dingry-shop .dingry-footer-block::before {
-  background: linear-gradient(135deg, rgb(0 102 255 / 0.08) 0%, transparent 50%);
+html[data-theme="light"] .dingry-shop .dingry-footer-eyebrow {
+  color: rgb(0 82 204 / 0.85);
 }
 
-html[data-theme="light"] .dingry-shop .dingry-footer-block::after {
-  background: linear-gradient(90deg, rgb(0 102 255 / 0.55), transparent 75%);
+html[data-theme="light"] .dingry-shop .dingry-footer-link {
+  color: rgb(14 17 24 / 0.72);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dingry-logo-elastic {
+    animation: none;
+    transform: scale(1.02) scaleX(1.14);
+  }
+
+  .dingry-footer-block__shine {
+    animation: none;
+  }
+
+  .dingry-footer-block--pulse .dingry-footer-dot {
+    animation: none;
+  }
+
+  .dingry-footer-block:hover {
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

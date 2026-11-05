@@ -6,6 +6,8 @@ import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNo
 type InfiniteMovingCardsProps = {
   children: ReactNode;
   className?: string;
+  /** Visuel fixe centré dans le bandeau (ex. logo filigrane). */
+  backdrop?: ReactNode;
   /** Durée d’un cycle complet (deux copies = -50 %). */
   durationSeconds?: number;
   ariaLabel?: string;
@@ -20,6 +22,7 @@ function wrapOffset(offset: number, loop: number): number {
 export function InfiniteMovingCards({
   children,
   className,
+  backdrop,
   durationSeconds = 42,
   ariaLabel,
 }: InfiniteMovingCardsProps) {
@@ -154,9 +157,14 @@ export function InfiniteMovingCards({
       onPointerCancel={endDrag}
       onClickCapture={onClickCapture}
     >
+      {backdrop ? (
+        <div className="dingry-infinite-cards-backdrop pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+          {backdrop}
+        </div>
+      ) : null}
       <div
         ref={trackRef}
-        className="dingry-marquee-track dingry-marquee-track--manual flex w-max items-stretch gap-4 py-3 md:gap-6 md:py-4"
+        className="dingry-marquee-track dingry-marquee-track--manual relative z-[1] flex w-max items-stretch gap-4 py-3 md:gap-6 md:py-4"
       >
         {children}
       </div>

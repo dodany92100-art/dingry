@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
+import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 
 const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
@@ -97,8 +98,11 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
             className="h-auto w-[min(58vw,240px)] brightness-0 invert"
           />
           <div className="mx-auto mt-4 h-px w-16 bg-white/80" />
-          <p className="mt-3 text-center text-[10px] tracking-[0.28em] text-white/80 sm:text-[11px]">
-            LE LUXE EST DANS L&apos;ATTITUDE
+          <p className="dingry-typo-manifesto mt-3 text-center text-[10px] sm:text-[11px]">
+            {DINGRY_MANIFESTO_FR}
+          </p>
+          <p className={`${displayClassName} dingry-typo-street mt-4 text-center text-[clamp(1.25rem,3.2vw,1.65rem)]`}>
+            {DINGRY_STREET_LINE}
           </p>
         </div>
 
