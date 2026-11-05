@@ -1,4 +1,4 @@
 /** Ouverture officielle teaser (Europe/Paris). */
-export const DINGRY_TEASER_OPENING_AT = Date.parse("2026-11-06T12:00:00+01:00");
+export const DINGRY_TEASER_OPENING_AT = Date.parse("2026-11-06T22:00:00+01:00");
 
-export const DINGRY_TEASER_OPENING_LABEL = "LE 6 NOVEMBRE 2026 · 12H";
+export const DINGRY_TEASER_OPENING_LABEL = "LE 6 NOVEMBRE 2026 · 22H";
