@@ -1,31 +1,31 @@
-import type { ProductCategory } from "@/lib/admin/types";
-import { JERSEY_ADMIN_COLOR_VARIANTS } from "@/lib/jersey-shop";
+import { PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/admin/types";
 
-/** Couleurs proposées à la création / édition produit (admin stock). */
+/** Toutes les couleurs / coloris DINGRY (admin stock). */
 export const ADMIN_COLOR_VARIANTS = [
   "NOIR",
+  "BLACK",
   "BLANC",
+  "WHITE",
   "VERT",
   "ROUGE",
   "GRIS",
+  "GRIS CHINÉ",
   "KING BLUE",
+  "PINK",
   "ROYAL BLUE",
+  "BLEU ROI",
   "JAUNE FLUO",
   "PURPLE",
   "CHOCOLAT",
+  "ZENITH",
 ] as const;
 
 export type AdminColorVariant = (typeof ADMIN_COLOR_VARIANTS)[number];
 
-export const ADMIN_VARIANT_PRESETS: Record<ProductCategory, readonly string[]> = {
-  Tee: ["BLANC", "NOIR", "VERT", "ROUGE"],
-  Hoodie: ["NOIR", "BLANC", "VERT", "GRIS", "KING BLUE", "ROYAL BLUE", "CHOCOLAT"],
-  "Hoodie zippé": ["NOIR", "BLANC"],
-  Sweats: ["NOIR", "ROYAL BLUE", "JAUNE FLUO", "PURPLE", "GRIS"],
-  Caps: ["NOIR", "ROUGE", "BLANC"],
-  Jersey: JERSEY_ADMIN_COLOR_VARIANTS,
-};
+export const ADMIN_VARIANT_PRESETS = Object.fromEntries(
+  PRODUCT_CATEGORIES.map((category) => [category, ADMIN_COLOR_VARIANTS]),
+) as Record<ProductCategory, readonly AdminColorVariant[]>;
 
 export function defaultVariantForCategory(category: ProductCategory): string {
-  return ADMIN_VARIANT_PRESETS[category][0] ?? "";
+  return ADMIN_VARIANT_PRESETS[category][0] ?? "NOIR";
 }
