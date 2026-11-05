@@ -20,7 +20,10 @@ export async function GET() {
       const { stock: _stock, ...publicProduct } = catalog;
       return { ...publicProduct, inStock };
     });
-    return NextResponse.json({ products });
+    const removedCatalogIds = (store.removedCatalogIds ?? []).map((id) => Number(id)).filter((id) =>
+      Number.isInteger(id),
+    );
+    return NextResponse.json({ products, removedCatalogIds });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
       console.error("Catalogue injoignable", error.name);

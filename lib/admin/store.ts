@@ -5,6 +5,11 @@ import { BlobPreconditionFailedError, del, get, put } from "@vercel/blob";
 import { isBlobConfigured } from "@/lib/admin/blob-config";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing } from "@/lib/stock";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
+import {
+  isVersoCatalogId,
+  resolveRectoCatalogId,
+  VERSO_TO_RECTO_CATALOG_ID,
+} from "@/lib/catalog-verso-recto";
 import { CATALOG_CANONICAL_IMAGE_BY_ID, DINGRY_JERSEY_PRODUCT_IDS, DINGRY_SWEAT_PRODUCT_IDS, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
 import {
   isProductCategory,
@@ -652,6 +657,19 @@ export async function updateProductStock(id: string, nextStock: number): Promise
   return updateProduct(id, { stock: nextStock });
 }
 
+function tombstoneCatalogPair(tombstone: Set<string>, id: string): void {
+  tombstone.add(id);
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) return;
+  if (isVersoCatalogId(numericId)) {
+    tombstone.add(String(resolveRectoCatalogId(numericId)));
+    return;
+  }
+  for (const [verso, recto] of VERSO_TO_RECTO_CATALOG_ID) {
+    if (recto === numericId) tombstone.add(String(verso));
+  }
+}
+
 export async function removeProduct(id: string): Promise<boolean> {
   const removed = await withStoreOptimistic((store) => {
     const product = store.products.find((item) => item.id === id);
@@ -662,8 +680,9 @@ export async function removeProduct(id: string): Promise<boolean> {
     store.products = store.products.filter((item) => item.id !== id);
     if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
       const tombstone = new Set(store.removedCatalogIds ?? []);
-      tombstone.add(id);
+      tombstoneCatalogPair(tombstone, id);
       store.removedCatalogIds = [...tombstone];
+      store.products = store.products.filter((item) => !tombstone.has(item.id));
     }
     return { store, result: copy };
   });

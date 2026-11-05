@@ -549,15 +549,23 @@ export default function App() {
           if (!cancelled) setCatalogState("error");
           return;
         }
-        const data = (await response.json()) as { products?: unknown };
+        const data = (await response.json()) as {
+          products?: unknown;
+          removedCatalogIds?: unknown;
+        };
         const live = Array.isArray(data.products)
           ? data.products
               .map(shopProductFromUnknown)
               .filter((item): item is NonNullable<typeof item> => item !== null)
           : [];
+        const removedCatalogIds = Array.isArray(data.removedCatalogIds)
+          ? data.removedCatalogIds.filter(
+              (id): id is number => typeof id === "number" && Number.isInteger(id) && id > 0,
+            )
+          : [];
         if (!cancelled) {
-          if (live.length > 0) {
-            setProducts(overlayShopCatalog(PRODUCTS, live));
+          if (live.length > 0 || removedCatalogIds.length > 0) {
+            setProducts(overlayShopCatalog(PRODUCTS, live, removedCatalogIds));
           }
           setCatalogState("ready");
         }

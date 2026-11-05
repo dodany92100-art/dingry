@@ -85,10 +85,32 @@ function applyCatalogOverlay(
   };
 }
 
+function normalizeRemovedCatalogIds(ids: readonly (string | number)[] | undefined): Set<number> {
+  const removed = new Set<number>();
+  if (!ids?.length) return removed;
+  for (const raw of ids) {
+    const id = Number(String(raw).trim());
+    if (Number.isInteger(id) && id > 0) removed.add(id);
+  }
+  return removed;
+}
+
+/** Id masqué boutique : tombstone CRM ou verso dont le recto est retiré. */
+export function isShopCatalogIdHidden(
+  catalogId: number,
+  removed: ReadonlySet<number>,
+): boolean {
+  if (removed.has(catalogId)) return true;
+  const rectoId = resolveRectoCatalogId(catalogId);
+  return rectoId !== catalogId && removed.has(rectoId);
+}
+
 export function overlayShopCatalog(
   fallback: ShopProduct[],
   live: CatalogProduct[],
+  removedCatalogIds: readonly (string | number)[] = [],
 ): ShopProduct[] {
+  const removed = normalizeRemovedCatalogIds(removedCatalogIds);
   const liveById = new Map(live.map((product) => [product.id, product]));
 
   const merged = fallback.map((product) => {
@@ -115,7 +137,7 @@ export function overlayShopCatalog(
       return withImage;
     });
 
-  return [...merged, ...extras];
+  return [...merged, ...extras].filter((product) => !isShopCatalogIdHidden(product.id, removed));
 }
 
 export function shopProductFromUnknown(value: unknown): CatalogProduct | null {

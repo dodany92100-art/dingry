@@ -77,6 +77,16 @@ describe("overlayShopCatalog", () => {
     expect(merged[0]?.id).toBe(99);
     expect(merged[0]?.sku).toBe("DINGRY-X99");
   });
+
+  it("masque un id tombstone du fallback (ex. hoodie Paris 25–26)", () => {
+    const merged = overlayShopCatalog(
+      [fallbackProduct(25, 80), { ...fallbackProduct(26, 80), variant: "VERSO" }],
+      [],
+      ["25"],
+    );
+    expect(merged.some((p) => p.id === 25)).toBe(false);
+    expect(merged.some((p) => p.id === 26)).toBe(false);
+  });
 });
 
 describe("shopProductFromUnknown", () => {

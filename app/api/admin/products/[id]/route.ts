@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/auth";
 import { parseProductFields } from "@/lib/admin/parse-product";
 import {
@@ -103,6 +104,8 @@ export async function DELETE(
     if (!removed) {
       return jsonNoStore({ error: "Produit introuvable." }, { status: 404 });
     }
+    revalidatePath("/api/catalog");
+    revalidatePath("/");
     return jsonNoStore({ ok: true });
   } catch (error) {
     console.error("Suppression produit", error instanceof Error ? error.name : "erreur");
