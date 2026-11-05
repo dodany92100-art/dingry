@@ -725,7 +725,6 @@ export default function App() {
       key={product.id}
       name={product.name}
       variant={product.variant}
-      description={product.description}
       image={product.image}
       price={product.price}
       onClick={() => openProductModal(product)}
