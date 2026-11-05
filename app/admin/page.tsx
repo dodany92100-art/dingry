@@ -2,7 +2,6 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { prepareProductImage } from "@/lib/client/prepare-product-image";
-import { JERSEY_ADMIN_COLOR_VARIANTS } from "@/lib/jersey-shop";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_SIZES,
@@ -13,6 +12,10 @@ import {
   type ProductSize,
 } from "@/lib/admin/types";
 import { formatReviewReasons } from "@/lib/order-review";
+import {
+  ADMIN_VARIANT_PRESETS,
+  defaultVariantForCategory,
+} from "@/lib/admin/product-variant-presets";
 
 type TabId = "produits" | "commandes";
 
@@ -124,6 +127,7 @@ export default function AdminPage() {
 
   function openNewProduct() {
     resetForm();
+    setVariant(defaultVariantForCategory(EMPTY_FORM.category));
     setEditorOpen(true);
   }
 
@@ -326,6 +330,10 @@ export default function AdminPage() {
     }
     if (!editingId && !imageFile) {
       setFormError("Ajoute une image produit.");
+      return;
+    }
+    if (!variant.trim()) {
+      setFormError("Choisis ou saisis une couleur (variante).");
       return;
     }
     if (sizes.length === 0) {
@@ -581,7 +589,11 @@ export default function AdminPage() {
                   Catégorie
                   <select
                     value={category}
-                    onChange={(event) => setCategory(event.target.value as ProductCategory)}
+                    onChange={(event) => {
+                      const next = event.target.value as ProductCategory;
+                      setCategory(next);
+                      if (!editingId) setVariant(defaultVariantForCategory(next));
+                    }}
                     className="mt-2 h-10 w-full border border-white/12 bg-black px-3 text-sm text-white outline-none focus:border-white/40"
                   >
                     {PRODUCT_CATEGORIES.map((item) => (
@@ -601,27 +613,31 @@ export default function AdminPage() {
                   className="mt-2 h-10 w-full border border-white/12 bg-black px-3 text-sm text-white outline-none focus:border-white/40"
                 />
               </label>
-              {category === "Jersey" ? (
-                <div className="mt-4">
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Couleur</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {JERSEY_ADMIN_COLOR_VARIANTS.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => setVariant(color)}
-                        className={`border px-3 py-1.5 text-[10px] tracking-[0.18em] uppercase transition-colors ${
-                          variant.trim().toUpperCase() === color
-                            ? "border-white bg-white text-black"
-                            : "border-white/20 text-white/55 hover:border-white/45 hover:text-white"
-                        }`}
-                      >
-                        {color}
-                      </button>
-                    ))}
-                  </div>
+              <div className="mt-4">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Couleur (variante)</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {ADMIN_VARIANT_PRESETS[category].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setVariant(preset)}
+                      className={`border px-3 py-1.5 text-[10px] tracking-[0.12em] uppercase transition-colors ${
+                        variant.trim().toUpperCase() === preset.toUpperCase()
+                          ? "border-white bg-white text-black"
+                          : "border-white/20 text-white/55 hover:border-white/45 hover:text-white"
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
                 </div>
-              ) : null}
+                <input
+                  value={variant}
+                  onChange={(event) => setVariant(event.target.value)}
+                  placeholder="Couleur (ex. NOIR, BLANC, KING BLUE…)"
+                  className="mt-3 h-10 w-full border border-white/12 bg-black px-3 text-sm text-white outline-none focus:border-white/40"
+                />
+              </div>
               <label className="mt-4 block text-[10px] uppercase tracking-[0.22em] text-white/40">
                 Prix (€)
                 <input

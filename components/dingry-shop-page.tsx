@@ -868,7 +868,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-6">
-            <div className="hidden text-right md:block">
+            <div className="dingry-nav-tagline hidden text-right md:block">
               <span className="dingry-typo-manifesto-en block text-[9px] tracking-[0.2em]">
                 {DINGRY_MANIFESTO_EN}
               </span>

@@ -802,6 +802,13 @@ html[data-theme="light"] .dingry-shop nav [class*="bg-[#0066FF]"] * {
   color: #fff !important;
 }
 
+.dingry-nav-tagline .dingry-typo-manifesto-en,
+.dingry-nav-tagline .dingry-typo-street,
+html[data-theme="light"] .dingry-shop .dingry-nav-tagline .dingry-typo-manifesto-en,
+html[data-theme="light"] .dingry-shop .dingry-nav-tagline .dingry-typo-street {
+  color: #fff;
+}
+
 html[data-theme="light"] .dingry-catalog-bar {
   background-color: rgb(18 21 28 / 0.5) !important;
   -webkit-backdrop-filter: blur(40px) saturate(1.5);
