@@ -102,7 +102,11 @@ async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
     throw new StoreUnavailableError();
   }
 
-  if (!result || result.statusCode === 404) {
+  if (!result) {
+    return "missing";
+  }
+  const statusCode = (result as { statusCode?: number }).statusCode;
+  if (statusCode === 404) {
     return "missing";
   }
   if (result.statusCode !== 200 || !result.stream) {
