@@ -7,14 +7,14 @@ const anton = Anton({ weight: "400", subsets: ["latin"], display: "swap" });
 
 export const teaserHomeMetadata: Metadata = {
   title: "DINGRY Paris — 6 novembre",
-  description: "Ouverture du site officiel DINGRY Paris le 6 novembre 2026.",
+  description: "Ouverture du site officiel DINGRY Paris le 6 novembre 2026 à 12h.",
 };
 
 /** Accueil teasing prod — visuel plein écran sans calques d’assombrissement. */
 export default function DingryTeaserHome() {
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-black text-white">
-      <h1 className="sr-only">DINGRY Paris. Ouverture du site officiel le 6 novembre 2026.</h1>
+      <h1 className="sr-only">DINGRY Paris. Ouverture du site officiel le 6 novembre 2026 à 12h.</h1>
       <img
         src={DINGRY_TEASING_HERO_SRC}
         alt=""

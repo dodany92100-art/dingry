@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "if [ \"$VERCEL_ENV\" = \"production\" ] && [ \"$(date +%Y%m%d)\" -lt 20261106 ]; then echo \"Prod gelée jusqu'au 6 nov. 2026\"; exit 0; fi; exit 1",
+  "ignoreCommand": "exit 1",
   "crons": [
     {
       "path": "/api/cron/stock-reconcile",

@@ -3,10 +3,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
+import { DINGRY_TEASER_OPENING_AT, DINGRY_TEASER_OPENING_LABEL } from "@/lib/dingry-teaser-opening";
 
 const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
-const OPENING_AT = Date.parse("2026-11-06T00:00:00+01:00");
+const OPENING_AT = DINGRY_TEASER_OPENING_AT;
 
 const UNITS = [
   { key: "days", label: "Jours", seconds: 86_400 },
@@ -113,7 +114,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           </p>
           <div className="mt-4 flex items-center gap-3 md:justify-end">
             <span className="h-px w-8 bg-white/75 md:w-10" />
-            <p className="text-[11px] tracking-[0.28em] text-white sm:text-xs">LE 6 NOVEMBRE 2026</p>
+            <p className="text-[11px] tracking-[0.28em] text-white sm:text-xs">{DINGRY_TEASER_OPENING_LABEL}</p>
             <span className="h-px w-8 bg-white/75 md:w-10" />
           </div>
           <div className="mt-6 flex items-start justify-start gap-0 md:justify-end" aria-live="polite">
