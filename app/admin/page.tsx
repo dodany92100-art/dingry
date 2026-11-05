@@ -16,6 +16,11 @@ import {
   ADMIN_VARIANT_PRESETS,
   defaultVariantForCategory,
 } from "@/lib/admin/product-variant-presets";
+import {
+  ADMIN_CRM_RELEASE,
+  ADMIN_CRM_RELEASE_DISMISS_KEY,
+  ADMIN_CRM_VERSION,
+} from "@/lib/admin/crm-release";
 
 type TabId = "produits" | "commandes";
 
@@ -25,7 +30,7 @@ const EMPTY_FORM = {
   variant: "",
   description: "",
   category: "Tee" as ProductCategory,
-  price: "119",
+  price: "35",
   stock: "10",
   sizes: ["S", "M", "L", "XL"] as ProductSize[],
 };
@@ -85,6 +90,7 @@ export default function AdminPage() {
   const [formSuccess, setFormSuccess] = useState("");
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
+  const [releaseDismissed, setReleaseDismissed] = useState(true);
 
   const lowStockCount = useMemo(
     () => products.filter((product) => product.stock <= 3).length,
@@ -208,6 +214,24 @@ export default function AdminPage() {
       cancelled = true;
     };
   }, [loadDashboard]);
+
+  useEffect(() => {
+    try {
+      const dismissed = localStorage.getItem(ADMIN_CRM_RELEASE_DISMISS_KEY);
+      setReleaseDismissed(dismissed === ADMIN_CRM_VERSION);
+    } catch {
+      setReleaseDismissed(false);
+    }
+  }, []);
+
+  const dismissReleaseNotes = useCallback(() => {
+    try {
+      localStorage.setItem(ADMIN_CRM_RELEASE_DISMISS_KEY, ADMIN_CRM_VERSION);
+    } catch {
+      /* ignore */
+    }
+    setReleaseDismissed(true);
+  }, []);
 
   useEffect(() => {
     if (!imageFile) return;
@@ -518,6 +542,9 @@ export default function AdminPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold tracking-[0.28em]">DINGRY</h1>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.32em] text-white/35">
+              CRM v{ADMIN_CRM_VERSION}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-5 text-[11px] uppercase tracking-[0.2em] text-white/45">
             <span>{pendingOrders} à expédier</span>
@@ -543,6 +570,31 @@ export default function AdminPage() {
           </div>
         </div>
       </header>
+
+      {!releaseDismissed ? (
+        <div className="border-b border-[#0066FF]/35 bg-[#041226] px-6 py-5 md:px-10">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-3xl">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-[#7EB3FF]">
+                Mise à jour · {ADMIN_CRM_RELEASE.title}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-white/75">{ADMIN_CRM_RELEASE.summary}</p>
+              <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-white/55">
+                {ADMIN_CRM_RELEASE.highlights.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+            <button
+              type="button"
+              onClick={dismissReleaseNotes}
+              className="h-9 shrink-0 border border-white/15 px-3 text-[10px] uppercase tracking-[0.18em] text-white/70 transition hover:border-white/35 hover:text-white"
+            >
+              J’ai lu
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="px-6 py-6 md:px-10">
         <div className="mb-8 flex gap-2">

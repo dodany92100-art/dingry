@@ -3,7 +3,6 @@ import { loadStoreReadOnly } from "@/lib/admin/store";
 import type { AdminProduct } from "@/lib/admin/types";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
-import { storefrontPriceForCatalogId } from "@/lib/dingry-storefront-prices";
 import {
   assertCheckoutStock,
   StockCheckoutError,
@@ -22,8 +21,8 @@ export const VITRINE_ONLY: Record<number, { name: string; variant: string; price
   3: { name: "Hoodie DINGRY Original VERT", variant: "VERSO", price: 80 },
   5: { name: "Hoodie zippé DINGRY Outline / BLACK", variant: "VERSO", price: 90 },
   8: { name: "Hoodie DINGRY Original BLACK", variant: "VERSO", price: 80 },
-  18: { name: "DINGRY TEE", variant: "COLLECTION 08 — VERSO", price: 119 },
-  20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 119 },
+  18: { name: "DINGRY TEE", variant: "COLLECTION 08 — VERSO", price: 35 },
+  20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 35 },
 };
 
 export type CheckoutLine = {
@@ -118,9 +117,7 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
     const fallback = product ? undefined : VITRINE_ONLY[line.productId];
     const name = product?.name ?? fallback?.name;
     const variant = product?.variant ?? fallback?.variant ?? "";
-    const rawPrice = product?.price ?? fallback?.price;
-    const price =
-      rawPrice === undefined ? undefined : storefrontPriceForCatalogId(rectoId, rawPrice);
+    const price = product?.price ?? fallback?.price;
     if (!name || price === undefined) return null;
 
     const allowedSizes = product

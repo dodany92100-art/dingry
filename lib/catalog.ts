@@ -8,8 +8,6 @@ import {
 } from "@/lib/catalog-verso-recto";
 import { CATALOG_CANONICAL_IMAGE_BY_ID } from "@/lib/dingry-product-media";
 import { normalizeAdminCategory, resolveShopCategory, type ShopCategory } from "@/lib/shop-catalog";
-import { withStorefrontPrice } from "@/lib/dingry-storefront-prices";
-
 export type ShopProduct = {
   id: number;
   name: string;
@@ -103,7 +101,7 @@ export function overlayShopCatalog(
         image !== product.image || category !== product.category
           ? { ...product, image, category }
           : product;
-      return withStorefrontPrice(next);
+      return next;
     }
     return applyCatalogOverlay(product, resolved.overlay, resolved.inheritedFromRecto);
   });

@@ -25,9 +25,9 @@ describe("quoteCheckout — prix CRM", () => {
 
   it("utilise le prix admin pour un id seed (39 crewneck)", async () => {
     const seed = SEEDED_PRODUCTS.find((p) => p.id === "39");
-    expect(seed?.price).toBe(169);
+    expect(seed?.price).toBe(50);
     const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
-    expect(quote?.totalCents).toBe(16900);
+    expect(quote?.totalCents).toBe(5000);
   });
 
   it("prend en compte une modification CRM simulée", async () => {
@@ -48,9 +48,9 @@ describe("quoteCheckout — prix CRM", () => {
       products: [],
       orders: [],
     });
-    expect(VITRINE_ONLY[8]?.price).toBe(189);
+    expect(VITRINE_ONLY[8]?.price).toBe(80);
     const quote = await quoteCheckout([{ productId: 8, size: "M", qty: 1 }]);
-    expect(quote?.totalCents).toBe(18900);
+    expect(quote?.totalCents).toBe(8000);
   });
 
   it("facture le prix CRM du recto pour un verso sans fiche (id 8 → 6)", async () => {

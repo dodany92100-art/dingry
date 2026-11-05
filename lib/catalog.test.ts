@@ -43,7 +43,7 @@ describe("overlayShopCatalog", () => {
       [fallbackProduct(1, 189)],
       [liveProduct({ id: 39, sku: "DINGRY-S03", price: 169 })],
     );
-    expect(merged.find((p) => p.id === 1)?.price).toBe(80);
+    expect(merged.find((p) => p.id === 1)?.price).toBe(189);
     expect(merged.find((p) => p.id === 1)?.sku).toBeUndefined();
   });
 

@@ -74,7 +74,7 @@ export type AdminStore = {
   removedCatalogIds?: string[];
 };
 
-export const STORE_VERSION = 5;
+export const STORE_VERSION = 6;
 
 export function isProductSize(value: string): value is ProductSize {
   return (PRODUCT_SIZES as readonly string[]).includes(value);

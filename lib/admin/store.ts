@@ -51,6 +51,8 @@ export class ProductStockAdjustError extends Error {
 type StoreSnapshot = {
   store: AdminStore;
   etag: string | null;
+  /** Store JSON on disk/blob had an older version before normalize. */
+  migratedFromVersion?: number;
 };
 
 /** Seules les erreurs de concurrence optimiste déclenchent un retry. */
@@ -105,9 +107,12 @@ async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
       return "missing";
     }
     if (!isAdminStore(parsed)) return "missing";
+    const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
+    const normalized = normalizeStore(parsed);
     return {
-      store: normalizeStore(parsed),
+      store: normalized,
       etag: result.blob.etag,
+      ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
     };
   } catch (error) {
     console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
@@ -120,9 +125,12 @@ async function readLocalSnapshot(): Promise<StoreSnapshot | "missing"> {
     const text = await readFile(LOCAL_STORE_PATH, "utf8");
     const parsed: unknown = JSON.parse(text);
     if (!isAdminStore(parsed)) return "missing";
+    const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
+    const normalized = normalizeStore(parsed);
     return {
-      store: normalizeStore(parsed),
+      store: normalized,
       etag: revisionFromDiskText(text),
+      ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
     };
   } catch {
     return "missing";
@@ -310,7 +318,19 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
 }
 
 function migrateStore(raw: AdminStore): AdminStore {
-  const existing = raw.products
+  let source = raw;
+  if (raw.version < 6) {
+    const seedById = new Map(SEEDED_PRODUCTS.map((seed) => [seed.id, seed]));
+    source = {
+      ...raw,
+      products: raw.products.map((item) => {
+        const seed = seedById.get(String(item.id));
+        return seed ? { ...item, price: seed.price } : item;
+      }),
+    };
+  }
+
+  const existing = source.products
     .map(normalizeProduct)
     .filter((item): item is AdminProduct => item !== null);
   const byId = new Map(existing.map((item) => [item.id, item]));
@@ -394,6 +414,13 @@ export async function loadStore(): Promise<AdminStore> {
   const snapshot = await readStoreSnapshot();
   if (snapshot === "missing") {
     return ensureInitialStore();
+  }
+  if (snapshot.migratedFromVersion !== undefined) {
+    try {
+      await writeStoreSnapshot(snapshot.store, snapshot.etag);
+    } catch (error) {
+      console.error("[store] persistance migration version", error instanceof Error ? error.name : "erreur");
+    }
   }
   return snapshot.store;
 }
