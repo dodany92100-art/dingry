@@ -66,6 +66,7 @@ export async function POST(request: Request) {
   }
 
   const image = formData.get("image");
+  const imageBack = formData.get("imageBack");
   const publishStatus = normalizePublishStatus(String(formData.get("publishStatus") ?? "live"));
   const imageRequired = publishStatus === "live";
   if (imageRequired && (!(image instanceof File) || image.size === 0)) {
@@ -76,6 +77,12 @@ export async function POST(request: Request) {
     const imageError = validateImageFile(image);
     if (imageError) {
       return jsonNoStore({ error: imageError }, { status: 400 });
+    }
+  }
+  if (imageBack instanceof File && imageBack.size > 0) {
+    const err = validateImageFile(imageBack);
+    if (err) {
+      return jsonNoStore({ error: err }, { status: 400 });
     }
   }
 
@@ -91,12 +98,14 @@ export async function POST(request: Request) {
       limitedEdition: fields.limitedEdition ?? "",
       materials: fields.materials ?? "",
       sizeGuide: fields.sizeGuide ?? "",
+      printPlacement: fields.printPlacement,
       category: fields.category,
       price: fields.price,
       sizes: fields.sizes,
       stock: fields.stock,
       publishStatus: fields.publishStatus ?? publishStatus,
       file: image instanceof File && image.size > 0 ? image : null,
+      fileBack: imageBack instanceof File && imageBack.size > 0 ? imageBack : null,
     });
     revalidatePath("/api/catalog");
     revalidatePath("/");

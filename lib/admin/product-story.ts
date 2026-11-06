@@ -1,3 +1,5 @@
+import type { ProductPrintPlacement } from "@/lib/admin/types";
+
 /** Longueur max par bloc texte fiche produit (admin → boutique). */
 export const PRODUCT_STORY_FIELD_MAX = 420;
 
@@ -7,6 +9,7 @@ export type ProductStoryFormFields = {
   limitedEdition: string;
   materials: string;
   sizeGuide: string;
+  printPlacement: ProductPrintPlacement;
 };
 
 export const EMPTY_PRODUCT_STORY: ProductStoryFormFields = {
@@ -15,6 +18,7 @@ export const EMPTY_PRODUCT_STORY: ProductStoryFormFields = {
   limitedEdition: "",
   materials: "",
   sizeGuide: "",
+  printPlacement: "",
 };
 
 export function trimStoryField(value: string, max = PRODUCT_STORY_FIELD_MAX): string {

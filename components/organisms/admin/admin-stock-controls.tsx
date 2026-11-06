@@ -16,6 +16,11 @@ const BTN =
   "flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-sm text-white/80 shadow-none transition hover:border-[#0066FF]/50 hover:bg-[#0066FF]/15 hover:text-white disabled:opacity-30";
 const BTN_COMPACT = `${BTN} h-7 w-7 text-xs`;
 const BTN_ROW = `${BTN} h-8 w-8`;
+/** Même libellé et style que la vue liste (layout row). */
+const BTN_EDIT_ROW =
+  "ml-1 h-8 shrink-0 rounded-full px-3 text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:bg-white/10 hover:text-white";
+const BTN_EDIT_CARD =
+  "ml-0.5 h-7 shrink-0 rounded-full px-2.5 text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:bg-white/10 hover:text-white md:h-8 md:px-3";
 
 export function AdminStockControls({
   product,
@@ -57,7 +62,7 @@ export function AdminStockControls({
         <button
           type="button"
           onClick={() => onEdit(product)}
-          className="ml-1 h-8 shrink-0 rounded-full px-3 text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:bg-white/10 hover:text-white"
+          className={BTN_EDIT_ROW}
         >
           Modifier
         </button>
@@ -97,9 +102,9 @@ export function AdminStockControls({
       <button
         type="button"
         onClick={() => onEdit(product)}
-        className="ml-0.5 h-7 shrink-0 rounded-full px-2.5 text-[9px] uppercase tracking-[0.1em] text-white/50 transition hover:bg-white/10 hover:text-white"
+        className={BTN_EDIT_CARD}
       >
-        CRM
+        Modifier
       </button>
     </div>
   );

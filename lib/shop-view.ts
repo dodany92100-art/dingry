@@ -142,6 +142,8 @@ export function buildFlipPairs(products: ShopProduct[]): FlipPair[] {
 }
 
 export function catalogBackImageForRecto(product: ShopProduct, pairs: readonly FlipPair[]): string | undefined {
+  const crmBack = product.imageBack?.trim();
+  if (crmBack) return crmBack;
   const pair = pairs.find((entry) => entry.recto.id === product.id);
   if (pair) return pair.verso.image;
   const tee = TEE_VERSO_BY_RECTO_ID[product.id];

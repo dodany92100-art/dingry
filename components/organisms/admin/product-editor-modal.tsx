@@ -22,9 +22,13 @@ import {
   PRODUCT_CATEGORIES,
   normalizePantWaistSize,
   normalizeProductCategory,
+  isValidPantWaistSize,
   isDraftPlaceholderImage,
+  PRODUCT_PRINT_PLACEMENT_LABELS,
+  PRODUCT_PRINT_PLACEMENT_OPTIONS,
   type AdminProduct,
   type ProductCategory,
+  type ProductPrintPlacement,
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
@@ -36,6 +40,7 @@ import {
   parseSmartProductText,
   summarizeSmartParseFilled,
   type MakerSemanticBlock,
+  type SmartParseFieldId,
 } from "@/lib/admin/smart-product-text-parser";
 import { DEFAULT_SHOP_PRODUCT_STOCK } from "@/lib/shop-data";
 import type { SaveProductResult } from "./hooks/use-admin-products";
@@ -138,11 +143,45 @@ function formFrom(product: AdminProduct | null): FormState {
     limitedEdition: product.limitedEdition,
     materials: product.materials,
     sizeGuide: product.sizeGuide,
+    printPlacement: product.printPlacement,
     category: normalizeProductCategory(product.category),
     price: String(product.price),
     stock: String(product.stock),
     sizes: [...product.sizes],
   };
+}
+
+function sizesEqual(a: readonly ProductSize[], b: readonly ProductSize[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((item, i) => item === b[i]);
+}
+
+function colorDeclinationsEqual(a: readonly string[], b: readonly string[]): boolean {
+  const aa = a.map((c) => c.trim()).filter(Boolean);
+  const bb = b.map((c) => c.trim()).filter(Boolean);
+  if (aa.length !== bb.length) return false;
+  return aa.every((c, i) => c.toUpperCase() === bb[i].toUpperCase());
+}
+
+/** Comparaison formulaire ↔ baseline serveur (null = fiche vide création). Hors image. */
+function formStateMatchesBaseline(form: FormState, baselineProduct: AdminProduct | null): boolean {
+  const ref = formFrom(baselineProduct);
+  return (
+    form.sku.trim() === ref.sku.trim() &&
+    form.name.trim() === ref.name.trim() &&
+    form.variant.trim() === ref.variant.trim() &&
+    form.category === ref.category &&
+    Number(form.price) === Number(ref.price) &&
+    Number(form.stock) === Number(ref.stock) &&
+    sizesEqual(form.sizes, ref.sizes) &&
+    colorDeclinationsEqual(form.colorDeclinations, ref.colorDeclinations) &&
+    form.description.trim() === ref.description.trim() &&
+    form.fabrication.trim() === ref.fabrication.trim() &&
+    form.limitedEdition.trim() === ref.limitedEdition.trim() &&
+    form.materials.trim() === ref.materials.trim() &&
+    form.sizeGuide.trim() === ref.sizeGuide.trim() &&
+    form.printPlacement === ref.printPlacement
+  );
 }
 
 type EditorTab = "product" | "story";
@@ -153,12 +192,14 @@ function appendStoryFields(formData: FormData, form: FormState): void {
   formData.set("limitedEdition", form.limitedEdition.trim());
   formData.set("materials", form.materials.trim());
   formData.set("sizeGuide", form.sizeGuide.trim());
+  formData.set("printPlacement", form.printPlacement);
 }
 
 function buildFormDataForScope(
   form: FormState,
   scope: EditorTab,
-  imageFile: File | null,
+  imageRecto: File | null,
+  imageVerso: File | null,
   publishStatus: ProductPublishStatus,
   pantsVariantOverride?: string,
 ): FormData {
@@ -173,7 +214,9 @@ function buildFormDataForScope(
     formData.set("sizes", form.sizes.join(","));
     formData.set("colorDeclinations", resolvedColorDeclinations(form).join(","));
     formData.set("publishStatus", publishStatus);
-    if (imageFile) formData.set("image", imageFile);
+    formData.set("printPlacement", form.printPlacement);
+    if (imageRecto) formData.set("image", imageRecto);
+    if (imageVerso) formData.set("imageBack", imageVerso);
     return formData;
   }
   formData.set("publishStatus", publishStatus);
@@ -190,11 +233,12 @@ function buildFormDataStoryOnly(form: FormState, publishStatus?: ProductPublishS
 
 function buildFormDataComplete(
   form: FormState,
-  imageFile: File | null,
+  imageRecto: File | null,
+  imageVerso: File | null,
   publishStatus: ProductPublishStatus,
   pantsVariantOverride?: string,
 ): FormData {
-  const formData = buildFormDataForScope(form, "product", imageFile, publishStatus, pantsVariantOverride);
+  const formData = buildFormDataForScope(form, "product", imageRecto, imageVerso, publishStatus, pantsVariantOverride);
   appendStoryFields(formData, form);
   return formData;
 }
@@ -218,10 +262,15 @@ export function ProductEditorModal({
 }: ProductEditorModalProps) {
   const [current, setCurrent] = useState<AdminProduct | null>(initial);
   const [form, setForm] = useState<FormState>(() => formFrom(initial));
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageCleared, setImageCleared] = useState(false);
-  const [imagePreview, setImagePreview] = useState("");
-  const [convertingImage, setConvertingImage] = useState(false);
+  const [imageRectoFile, setImageRectoFile] = useState<File | null>(null);
+  const [imageVersoFile, setImageVersoFile] = useState<File | null>(null);
+  const [imageRectoCleared, setImageRectoCleared] = useState(false);
+  const [imageVersoCleared, setImageVersoCleared] = useState(false);
+  const [imageRectoPreview, setImageRectoPreview] = useState("");
+  const [imageVersoPreview, setImageVersoPreview] = useState("");
+  const [convertingRecto, setConvertingRecto] = useState(false);
+  const [convertingVerso, setConvertingVerso] = useState(false);
+  const convertingImage = convertingRecto || convertingVerso;
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState<FormSuccessState | null>(null);
@@ -240,14 +289,41 @@ export function ProductEditorModal({
   const editingId = current?.id ?? null;
 
   useEffect(() => {
-    if (!imageFile) {
-      setImagePreview("");
+    if (!imageRectoFile) {
+      setImageRectoPreview("");
       return;
     }
-    const url = URL.createObjectURL(imageFile);
-    setImagePreview(url);
+    const url = URL.createObjectURL(imageRectoFile);
+    setImageRectoPreview(url);
     return () => URL.revokeObjectURL(url);
-  }, [imageFile]);
+  }, [imageRectoFile]);
+
+  useEffect(() => {
+    if (!imageVersoFile) {
+      setImageVersoPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(imageVersoFile);
+    setImageVersoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageVersoFile]);
+
+  useEffect(() => {
+    setCurrent(initial);
+    const nextForm = formFrom(initial);
+    setForm(nextForm);
+    setColorListDraft(colorDeclinationsLabel(nextForm.colorDeclinations));
+    setWaistListDraft(waistDeclinationsLabel(nextForm.sizes, nextForm.variant));
+    setImageRectoFile(null);
+    setImageVersoFile(null);
+    setImageRectoCleared(false);
+    setImageVersoCleared(false);
+    setFormError("");
+    setFormSuccess(null);
+    setSmartPasteOpen(false);
+    setSmartPasteText("");
+    setPrintSheetOpen(false);
+  }, [initial]);
 
   function patch(update: Partial<FormState>) {
     setForm((previous) => ({ ...previous, ...update }));
@@ -300,7 +376,7 @@ export function ProductEditorModal({
 
   function showSmartPasteSuccess(parsed: ReturnType<typeof parseSmartProductText>) {
     const diag = parsed.diagnostics;
-    const analysisLine = `Analyse Maker · ${diag.blockCount} bloc(s) sémantique(s), ${diag.footnoteLinesSkipped} ligne(s) * exclue(s) du scan des tailles.`;
+    const analysisLine = `Analyse Maker · ${diag.blockCount} bloc(s) sémantique(s), ${diag.footnoteLinesSkipped} ligne(s) * exclue(s) du scan des tailles. Les grilles taille ne sont pas recopiées dans le titre / la description (fiche boutique).`;
     setFormSuccess({
       kind: "smart-parse",
       tone: "neutral",
@@ -311,14 +387,75 @@ export function ProductEditorModal({
     });
   }
 
-  function changeCategory(next: ProductCategory) {
-    patch({
-      category: next,
-      sizes: [],
-      ...(editingId ? {} : { variant: "", colorDeclinations: [] }),
+  function sizesAllowedForCategory(category: ProductCategory): Set<string> {
+    return new Set(ADMIN_CATEGORY_SIZES[category].map((s) => String(s)));
+  }
+
+  function filterSizesForCategory(sizes: readonly ProductSize[], category: ProductCategory): ProductSize[] {
+    const allowed = sizesAllowedForCategory(category);
+    return sizes.filter((s) => allowed.has(String(s)));
+  }
+
+  function changeCategory(nextCategory: ProductCategory) {
+    setForm((prev) => {
+      const nextSizes = filterSizesForCategory(prev.sizes, nextCategory);
+      const nowPants = isPantsCategory(nextCategory);
+      const wasPants = isPantsCategory(prev.category);
+
+      if (!editingId) {
+        setWaistListDraft("");
+        setColorListDraft("");
+        return {
+          ...prev,
+          category: nextCategory,
+          sizes: nextSizes,
+          variant: "",
+          colorDeclinations: [],
+        };
+      }
+
+      if (nowPants) {
+        const w = normalizePantWaistSize(prev.variant.trim());
+        const nextVariant =
+          w && nextSizes.includes(w) ? w : (nextSizes[0] ?? "");
+        setWaistListDraft(waistDeclinationsLabel(nextSizes, nextVariant));
+        setColorListDraft("");
+        return {
+          ...prev,
+          category: nextCategory,
+          sizes: nextSizes,
+          variant: nextVariant,
+          colorDeclinations: [],
+        };
+      }
+
+      let nextVariant = prev.variant.trim();
+      let nextColors = [...prev.colorDeclinations];
+
+      if (wasPants || isValidPantWaistSize(nextVariant)) {
+        nextVariant = nextColors[0] ?? "";
+      } else if (
+        nextColors.length > 0 &&
+        !nextColors.some((c) => c.trim().toUpperCase() === nextVariant.toUpperCase())
+      ) {
+        nextVariant = nextColors[0] ?? "";
+      }
+
+      setWaistListDraft("");
+      setColorListDraft(
+        colorDeclinationsLabel(
+          nextColors.length > 0 ? nextColors : nextVariant ? [nextVariant] : [],
+        ),
+      );
+
+      return {
+        ...prev,
+        category: nextCategory,
+        sizes: nextSizes,
+        variant: nextVariant,
+        colorDeclinations: nextColors,
+      };
     });
-    setWaistListDraft("");
-    if (!editingId) setColorListDraft("");
   }
 
   function toggleSize(size: ProductSize) {
@@ -352,23 +489,43 @@ export function ProductEditorModal({
     setCustomPantWaist("");
   }
 
-  async function acceptImage(selected: File | null) {
+  async function acceptImageRecto(selected: File | null) {
     setFormError("");
     setFormSuccess(null);
     if (!selected) {
-      setImageFile(null);
-      setImageCleared(true);
+      setImageRectoFile(null);
+      setImageRectoCleared(true);
       return;
     }
-    setImageCleared(false);
-    setConvertingImage(true);
+    setImageRectoCleared(false);
+    setConvertingRecto(true);
     try {
-      setImageFile(await prepareProductImage(selected));
+      setImageRectoFile(await prepareProductImage(selected));
     } catch (error) {
-      setImageFile(null);
+      setImageRectoFile(null);
       setFormError(error instanceof Error ? error.message : "Conversion impossible.");
     } finally {
-      setConvertingImage(false);
+      setConvertingRecto(false);
+    }
+  }
+
+  async function acceptImageVerso(selected: File | null) {
+    setFormError("");
+    setFormSuccess(null);
+    if (!selected) {
+      setImageVersoFile(null);
+      setImageVersoCleared(true);
+      return;
+    }
+    setImageVersoCleared(false);
+    setConvertingVerso(true);
+    try {
+      setImageVersoFile(await prepareProductImage(selected));
+    } catch (error) {
+      setImageVersoFile(null);
+      setFormError(error instanceof Error ? error.message : "Conversion impossible.");
+    } finally {
+      setConvertingVerso(false);
     }
   }
 
@@ -378,11 +535,11 @@ export function ProductEditorModal({
     if (convertingImage) return "Conversion de l'image en cours.";
     if (form.name.trim().length < 2) return "Nom du produit requis (2 caractères min.).";
     if (publishStatus === "live") {
-      if (!editingId && !imageFile) {
+      if (!editingId && !imageRectoFile) {
         return "Ajoute une image pour mettre en ligne.";
       }
-      const preview = imageCleared ? "" : imagePreview || current?.imageUrl || "";
-      if (!imageFile && (!preview || isDraftPlaceholderImage(preview))) {
+      const preview = imageRectoCleared ? "" : imageRectoPreview || current?.imageUrl || "";
+      if (!imageRectoFile && (!preview || isDraftPlaceholderImage(preview))) {
         return "Ajoute une image pour mettre en ligne.";
       }
     }
@@ -418,12 +575,20 @@ export function ProductEditorModal({
     const pantsVariant =
       isPantsCategory(form.category) ? normalizePantWaistSize(form.variant) ?? undefined : undefined;
     setSaving(true);
+    const publishBeforeSave = current?.publishStatus;
+    if (publishStatus === "live" && editingId) {
+      setCurrent((prev) => (prev ? { ...prev, publishStatus: "live" } : prev));
+    }
     try {
-      const payload = buildFormDataComplete(form, imageFile, publishStatus, pantsVariant);
-      if (imageCleared && !imageFile) payload.set("clearImage", "1");
+      const payload = buildFormDataComplete(form, imageRectoFile, imageVersoFile, publishStatus, pantsVariant);
+      if (imageRectoCleared && !imageRectoFile) payload.set("clearImage", "1");
+      if (imageVersoCleared && !imageVersoFile) payload.set("clearImageBack", "1");
       const result = await onSubmit(editingId, payload);
       if ("error" in result) {
         setFormError(result.error);
+        if (publishBeforeSave !== undefined && editingId) {
+          setCurrent((prev) => (prev ? { ...prev, publishStatus: publishBeforeSave } : prev));
+        }
         return;
       }
       setCurrent(result.product);
@@ -431,8 +596,10 @@ export function ProductEditorModal({
       setForm(nextForm);
       setColorListDraft(colorDeclinationsLabel(nextForm.colorDeclinations));
       setWaistListDraft(waistDeclinationsLabel(nextForm.sizes, nextForm.variant));
-      setImageFile(null);
-      setImageCleared(false);
+      setImageRectoFile(null);
+      setImageVersoFile(null);
+      setImageRectoCleared(false);
+      setImageVersoCleared(false);
       showFormSuccess(
         publishStatus === "live"
           ? "Produit en ligne sur la boutique."
@@ -461,7 +628,7 @@ export function ProductEditorModal({
       try {
         const result = await onSubmit(
           null,
-          buildFormDataComplete(form, imageFile, publishStatus, pantsVariant),
+          buildFormDataComplete(form, imageRectoFile, imageVersoFile, publishStatus, pantsVariant),
         );
         if ("error" in result) {
           setFormError(result.error);
@@ -472,7 +639,8 @@ export function ProductEditorModal({
         setForm(created);
         setColorListDraft(colorDeclinationsLabel(created.colorDeclinations));
         setWaistListDraft(waistDeclinationsLabel(created.sizes, created.variant));
-        setImageFile(null);
+        setImageRectoFile(null);
+        setImageVersoFile(null);
         showFormSuccess(
           publishStatus === "live"
             ? "Produit et fiche boutique en ligne."
@@ -485,15 +653,19 @@ export function ProductEditorModal({
       return;
     }
 
-    setSaving(true);
-    try {
-      if (publishStatus === "live") {
-        const validationError = validateProductFields("live");
-        if (validationError) {
-          setFormError(validationError);
-          return;
-        }
+    if (publishStatus === "live") {
+      const validationError = validateProductFields("live");
+      if (validationError) {
+        setFormError(validationError);
+        return;
       }
+    }
+    setSaving(true);
+    const publishBeforeStorySave = current?.publishStatus;
+    if (publishStatus === "live" && editingId) {
+      setCurrent((prev) => (prev ? { ...prev, publishStatus: "live" } : prev));
+    }
+    try {
       const storyPayload =
         publishStatus === "draft"
           ? buildFormDataStoryOnly(form)
@@ -501,6 +673,9 @@ export function ProductEditorModal({
       const result = await onSubmit(editingId, storyPayload);
       if ("error" in result) {
         setFormError(result.error);
+        if (publishBeforeStorySave !== undefined) {
+          setCurrent((prev) => (prev ? { ...prev, publishStatus: publishBeforeStorySave } : prev));
+        }
         return;
       }
       setCurrent(result.product);
@@ -530,8 +705,18 @@ export function ProductEditorModal({
     ? form.sizes.filter((size) => !presetPantWaists.includes(size))
     : [];
 
-  const previewSrc = imageFile ? imagePreview : imageCleared ? "" : imagePreview || current?.imageUrl || "";
-  const hasRealImage = Boolean(imageFile) || (previewSrc.length > 0 && !isDraftPlaceholderImage(previewSrc));
+  const previewRectoSrc = imageRectoFile
+    ? imageRectoPreview
+    : imageRectoCleared
+      ? ""
+      : current?.imageUrl ?? "";
+  const previewVersoSrc = imageVersoFile
+    ? imageVersoPreview
+    : imageVersoCleared
+      ? ""
+      : (current?.imageBackUrl ?? "").trim();
+  const hasRealImage =
+    Boolean(imageRectoFile) || (previewRectoSrc.length > 0 && !isDraftPlaceholderImage(previewRectoSrc));
 
   const previewModel = useMemo(
     () => ({
@@ -541,11 +726,13 @@ export function ProductEditorModal({
       price: form.price,
       sizes: form.sizes,
       description: form.description,
-      imageSrc: previewSrc,
+      printPlacement: form.printPlacement,
+      imageSrc: previewRectoSrc,
+      imageBackSrc: previewVersoSrc,
       publishStatus: (current?.publishStatus ?? "draft") as ProductPublishStatus,
       stock: Number(form.stock) || 0,
     }),
-    [form, previewSrc, current?.publishStatus],
+    [form, previewRectoSrc, previewVersoSrc, current?.publishStatus],
   );
 
   const printPickerProduct: PrintSizePickerProduct = useMemo(
@@ -591,6 +778,7 @@ export function ProductEditorModal({
       showFormSuccess(buildSmartParseRecap(parsed), "neutral");
       return;
     }
+    const filledSet = new Set<SmartParseFieldId>(parsed.filled);
     setForm((prev) => {
       const targetCategory = parsed.detectedCategory ?? prev.category;
       let next: FormState =
@@ -603,36 +791,68 @@ export function ProductEditorModal({
             }
           : { ...prev, category: targetCategory };
 
-      if (parsed.name !== undefined) next.name = parsed.name;
-      if (parsed.description !== undefined) next.description = parsed.description;
-      if (parsed.materials !== undefined) next.materials = parsed.materials;
-      if (parsed.fabrication !== undefined) next.fabrication = parsed.fabrication;
-      if (parsed.limitedEdition !== undefined) next.limitedEdition = parsed.limitedEdition;
-      if (parsed.price !== undefined) next.price = parsed.price;
+      next.name = filledSet.has("name") && parsed.name !== undefined ? parsed.name : "";
+      next.description =
+        filledSet.has("description") && parsed.description !== undefined ? parsed.description : "";
+      next.materials =
+        filledSet.has("materials") && parsed.materials !== undefined ? parsed.materials : "";
+      next.fabrication =
+        filledSet.has("fabrication") && parsed.fabrication !== undefined ? parsed.fabrication : "";
+      next.limitedEdition =
+        filledSet.has("limitedEdition") && parsed.limitedEdition !== undefined
+          ? parsed.limitedEdition
+          : "";
+      next.printPlacement =
+        filledSet.has("printPlacement") && parsed.printPlacement !== undefined
+          ? parsed.printPlacement
+          : "";
+      next.price = filledSet.has("price") && parsed.price !== undefined ? parsed.price : "";
 
-      if (parsed.variantColor !== undefined && !isPantsCategory(targetCategory)) {
-        next.variant = parsed.variantColor;
-        next.colorDeclinations = [parsed.variantColor];
-      }
-
-      if (parsed.sizes !== undefined && parsed.sizes.length > 0) {
-        next.sizes = parsed.sizes;
-        /** Pool global CRM : une quantité = une ligne taille au collage (cf. lib/stock.ts). */
-        next.stock = String(Math.min(parsed.sizes.length, 9999));
-        if (isPantsCategory(targetCategory)) {
+      const defaultStock = String(DEFAULT_SHOP_PRODUCT_STOCK);
+      const pantsNow = isPantsCategory(targetCategory);
+      if (pantsNow) {
+        if (filledSet.has("sizes") && parsed.sizes !== undefined && parsed.sizes.length > 0) {
+          next.sizes = parsed.sizes;
+          next.stock = String(Math.min(parsed.sizes.length, 9999));
           next.variant = parsed.sizes.includes(next.variant)
             ? next.variant
-            : (parsed.sizes[0] ?? next.variant);
+            : (parsed.sizes[0] ?? "");
+        } else {
+          next.sizes = [];
+          next.variant = "";
+          next.stock = defaultStock;
+        }
+        next.colorDeclinations = [];
+      } else {
+        if (filledSet.has("variant") && parsed.variantColor !== undefined) {
+          next.variant = parsed.variantColor;
+          next.colorDeclinations = [parsed.variantColor];
+        } else {
+          next.variant = "";
+          next.colorDeclinations = [];
+        }
+        if (filledSet.has("sizes") && parsed.sizes !== undefined && parsed.sizes.length > 0) {
+          next.sizes = parsed.sizes;
+          next.stock = String(Math.min(parsed.sizes.length, 9999));
+        } else {
+          next.sizes = [];
+          next.stock = defaultStock;
         }
       }
+
       return next;
     });
     const appliedCategory = parsed.detectedCategory ?? form.category;
-    if (parsed.sizes !== undefined && parsed.sizes.length > 0 && isPantsCategory(appliedCategory)) {
+    const pantsApplied = isPantsCategory(appliedCategory);
+    if (filledSet.has("sizes") && parsed.sizes !== undefined && parsed.sizes.length > 0 && pantsApplied) {
       setWaistListDraft(parsed.sizes.join(", "));
+    } else {
+      setWaistListDraft(pantsApplied ? "" : waistDeclinationsLabel([], ""));
     }
-    if (parsed.variantColor !== undefined && !isPantsCategory(appliedCategory)) {
+    if (filledSet.has("variant") && parsed.variantColor !== undefined && !pantsApplied) {
       setColorListDraft(colorDeclinationsLabel([parsed.variantColor]));
+    } else {
+      setColorListDraft("");
     }
     showSmartPasteSuccess(parsed);
   }
@@ -640,12 +860,21 @@ export function ProductEditorModal({
   const publishStatus = current?.publishStatus ?? "draft";
   const isPublished = publishStatus === "live";
 
+  /** Toute saisie ou média modifié = dirty (feedback immédiat, sans bloquer l’API). */
+  const isDirty = useMemo(() => {
+    if (imageRectoFile || imageVersoFile || imageRectoCleared || imageVersoCleared) return true;
+    return !formStateMatchesBaseline(form, current);
+  }, [form, current, imageRectoFile, imageVersoFile, imageRectoCleared, imageVersoCleared]);
+
   const draftSaveButtonClass = isPublished
     ? "h-12 flex-1 border-2 border-amber-500/90 bg-amber-950/40 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-100 transition duration-200 hover:border-amber-400 disabled:opacity-50"
     : "h-12 flex-1 border border-zinc-600 bg-transparent text-[11px] font-bold uppercase tracking-[0.18em] text-white/85 transition duration-200 hover:border-zinc-400 hover:text-white disabled:opacity-50";
 
-  const liveSaveButtonClass =
-    "group h-12 flex-[1.2] bg-[#0066FF] text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_0_24px_rgba(0,102,255,0.45)] transition duration-200 hover:bg-[#0052cc] disabled:opacity-50";
+  const liveSaveButtonClass = isPublished
+    ? "group h-12 flex-[1.2] bg-emerald-600 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_0_24px_rgba(5,150,105,0.42)] transition duration-200 hover:bg-emerald-500 disabled:opacity-50"
+    : "group h-12 flex-[1.2] bg-[#0066FF] text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_0_24px_rgba(0,102,255,0.45)] transition duration-200 hover:bg-[#0052cc] disabled:opacity-50";
+
+  const dirtyOutlineClass = isDirty ? "ring-1 ring-amber-400/50 ring-inset" : "";
 
   return (
     <motion.div
@@ -727,8 +956,8 @@ export function ProductEditorModal({
                   {formSuccess.title}
                 </p>
                 <ul className="mt-2 list-inside list-disc space-y-1 text-[13px] leading-snug text-white/85">
-                  {formSuccess.blocks.map((b) => (
-                    <li key={b.key}>
+                  {formSuccess.blocks.map((b, idx) => (
+                    <li key={`${b.key}-${idx}`}>
                       <span className="font-medium text-zinc-300">{b.label}</span>
                       {" · "}
                       <span className="text-white/80">{b.value}</span>
@@ -894,6 +1123,23 @@ export function ProductEditorModal({
                     ) : null}
                   </div>
 
+                  <label className="block text-[10px] uppercase tracking-[0.22em] text-zinc-500">
+                    Impression / finition
+                    <select
+                      value={form.printPlacement}
+                      onChange={(event) =>
+                        patch({ printPlacement: event.target.value as ProductPrintPlacement })
+                      }
+                      className="mt-2 h-11 w-full appearance-none rounded-sm border border-zinc-700 bg-zinc-950 px-3 text-sm text-white outline-none transition duration-200 focus:border-zinc-400"
+                    >
+                      {PRODUCT_PRINT_PLACEMENT_OPTIONS.map((opt) => (
+                        <option key={opt || "unset"} value={opt}>
+                          {PRODUCT_PRINT_PLACEMENT_LABELS[opt]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
                   <div className="grid gap-4 sm:grid-cols-2">
                     <label className="block text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                       Prix (€)
@@ -996,15 +1242,22 @@ export function ProductEditorModal({
 
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">Média produit</p>
-                    <AdminMediaDropzone
-                      previewSrc={previewSrc}
-                      converting={convertingImage}
-                      onFile={(file) => void acceptImage(file)}
-                    />
+                    <div className="mt-2 grid gap-4 sm:grid-cols-2">
+                      <AdminMediaDropzone
+                        label="1 · Photo recto (face)"
+                        previewSrc={previewRectoSrc}
+                        converting={convertingRecto}
+                        onFile={(file) => void acceptImageRecto(file)}
+                      />
+                      <AdminMediaDropzone
+                        label="2 · Photo verso (dos)"
+                        previewSrc={previewVersoSrc}
+                        converting={convertingVerso}
+                        onFile={(file) => void acceptImageVerso(file)}
+                      />
+                    </div>
                     <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-zinc-600">
-                      {imageFile
-                        ? `WebP · ${Math.max(1, Math.round(imageFile.size / 1024))} Ko`
-                        : "Jusqu’à 10 Mo · export WebP 1 Mo max"}
+                      WebP · jusqu’à 10 Mo par face · conversion automatique
                     </p>
                   </div>
 
@@ -1084,7 +1337,7 @@ export function ProductEditorModal({
                     ? "Attention · le produit repasse en brouillon (invisible boutique)."
                     : "Enregistrer sans publier sur la boutique."
                 }
-                className={draftSaveButtonClass}
+                className={`${draftSaveButtonClass} ${dirtyOutlineClass}`}
               >
                 {saving ? "Enregistrement…" : "Enregistrer brouillon"}
               </button>
@@ -1099,9 +1352,15 @@ export function ProductEditorModal({
                     ? "Produit déjà visible · enregistre et maintient en ligne."
                     : "Attention · visible immédiatement sur la boutique (image requise)."
                 }
-                className={liveSaveButtonClass}
+                className={`${liveSaveButtonClass} ${dirtyOutlineClass}`}
               >
-                {saving ? "Enregistrement…" : (
+                {saving ? (
+                  "Enregistrement…"
+                ) : isPublished ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    En ligne ✓
+                  </span>
+                ) : (
                   <span className="inline-flex items-center justify-center gap-2">
                     Mettre en ligne
                     <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">
@@ -1124,6 +1383,14 @@ export function ProductEditorModal({
                 </>
               )}
             </p>
+            {isDirty ? (
+              <p
+                className="mt-1.5 text-center text-[9px] uppercase tracking-[0.14em] text-amber-400/85"
+                aria-live="polite"
+              >
+                Modifications non enregistrées
+              </p>
+            ) : null}
           </div>
           </div>
         </form>

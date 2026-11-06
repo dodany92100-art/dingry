@@ -1,4 +1,5 @@
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
+import { printPlacementDisplayLabel } from "@/lib/admin/types";
 import { productStoryForShopProduct, type ProductStoryBlock } from "@/lib/dingry-product-copy";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 
@@ -235,12 +236,15 @@ export function storefrontProductSubtitle(product: ShopProduct): string {
 export function productDetailCopy(
   product: ShopProduct,
   catalog?: readonly ShopProduct[],
-): ProductStoryBlock & { description: string } {
+): ProductStoryBlock & { description: string; printPlacement?: string } {
   const story = productStoryForShopProduct(product);
   const line = catalog
     ? productLineForShop(product.id, catalog)
     : staticProductLineForCatalogId(product.id);
   const lead = adminLeadFromProduct(product, story);
+  const printPlacement = product.printPlacement
+    ? printPlacementDisplayLabel(product.printPlacement)
+    : undefined;
   return {
     lead,
     description: lead,
@@ -248,6 +252,7 @@ export function productDetailCopy(
     limitedEdition: product.limitedEdition?.trim() || story.limitedEdition,
     materials: product.materials?.trim() || line?.materials || story.materials,
     sizeGuide: product.sizeGuide?.trim() || line?.sizeGuide || story.sizeGuide,
+    ...(printPlacement ? { printPlacement } : {}),
   };
 }
 

@@ -20,9 +20,10 @@ type AdminStockListRowProps = {
   disableReorder?: boolean;
 };
 
-function rowCriticalClass(stock: number): string {
+function rowCriticalClass(stock: number, publishStatus: AdminProduct["publishStatus"]): string {
   if (stock <= 0) return "border-l-2 border-l-red-500/70 bg-red-950/10";
   if (stock <= LOW_STOCK_THRESHOLD) return "border-l-2 border-l-amber-400/60 bg-amber-950/10";
+  if (publishStatus === "live") return "border-l-2 border-l-emerald-500/70 bg-emerald-950/10";
   return "border-l-2 border-l-transparent";
 }
 
@@ -43,7 +44,7 @@ export function AdminStockListRow({
       busy={busy}
       disabled={disableReorder}
       onDrop={onDrop}
-      className={`dingry-admin-stock flex flex-col gap-3 border-b border-zinc-800 px-3 py-3 last:border-b-0 sm:flex-row sm:items-center md:gap-4 md:px-4 ${rowCriticalClass(product.stock)}`}
+      className={`dingry-admin-stock flex flex-col gap-3 border-b border-zinc-800 px-3 py-3 last:border-b-0 sm:flex-row sm:items-center md:gap-4 md:px-4 ${rowCriticalClass(product.stock, product.publishStatus)}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <AdminProductOrderControls

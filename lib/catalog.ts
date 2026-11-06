@@ -1,5 +1,7 @@
 import {
+  normalizePrintPlacement,
   type CatalogProduct,
+  type ProductPrintPlacement,
 } from "@/lib/admin/types";
 import { isDraftPlaceholderImage, isProductSize } from "@/lib/admin/types";
 import {
@@ -15,11 +17,14 @@ export type ShopProduct = {
   variant: string;
   price: number;
   image: string;
+  /** Dos (CRM) — prioritaire sur les paires figées hoodies/sweats si renseigné. */
+  imageBack?: string;
   description: string;
   fabrication?: string;
   limitedEdition?: string;
   materials?: string;
   sizeGuide?: string;
+  printPlacement?: ProductPrintPlacement;
   category: ShopCategory | string;
   sku?: string;
   sizes?: string[];
@@ -39,13 +44,14 @@ export function isShopProductInStock(product: ShopProduct): boolean {
 
 function storyFieldsFromCatalog(product: CatalogProduct): Pick<
   ShopProduct,
-  "fabrication" | "limitedEdition" | "materials" | "sizeGuide"
+  "fabrication" | "limitedEdition" | "materials" | "sizeGuide" | "printPlacement"
 > {
   return {
     ...(product.fabrication?.trim() ? { fabrication: product.fabrication.trim() } : {}),
     ...(product.limitedEdition?.trim() ? { limitedEdition: product.limitedEdition.trim() } : {}),
     ...(product.materials?.trim() ? { materials: product.materials.trim() } : {}),
     ...(product.sizeGuide?.trim() ? { sizeGuide: product.sizeGuide.trim() } : {}),
+    ...(product.printPlacement ? { printPlacement: product.printPlacement } : {}),
   };
 }
 
@@ -56,6 +62,7 @@ export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
     variant: product.variant,
     price: product.price,
     image: product.image,
+    ...(product.imageBack?.trim() ? { imageBack: product.imageBack.trim() } : {}),
     description: product.description,
     ...storyFieldsFromCatalog(product),
     category: resolveShopCategory(product.id, product.category),
@@ -89,17 +96,19 @@ function resolveLiveOverlay(
 function mergeStoryOverlay(
   base: ShopProduct,
   overlay: CatalogProduct,
-): Pick<ShopProduct, "fabrication" | "limitedEdition" | "materials" | "sizeGuide"> {
+): Pick<ShopProduct, "fabrication" | "limitedEdition" | "materials" | "sizeGuide" | "printPlacement"> {
   const pick = (key: "fabrication" | "limitedEdition" | "materials" | "sizeGuide") => {
     const fromOverlay = overlay[key]?.trim();
     if (fromOverlay) return fromOverlay;
     return base[key]?.trim() || undefined;
   };
+  const printPlacement = overlay.printPlacement || base.printPlacement;
   return {
     ...(pick("fabrication") ? { fabrication: pick("fabrication") } : {}),
     ...(pick("limitedEdition") ? { limitedEdition: pick("limitedEdition") } : {}),
     ...(pick("materials") ? { materials: pick("materials") } : {}),
     ...(pick("sizeGuide") ? { sizeGuide: pick("sizeGuide") } : {}),
+    ...(printPlacement ? { printPlacement } : {}),
   };
 }
 
@@ -113,6 +122,7 @@ function applyCatalogOverlay(
     inheritedFromRecto && product.id !== overlay.id
       ? versoSkuFromRecto(overlay.sku)
       : overlay.sku;
+  const overlayBack = overlay.imageBack?.trim();
   return {
     ...product,
     name: overlay.name,
@@ -125,6 +135,11 @@ function applyCatalogOverlay(
       : liveImage && !isDraftPlaceholderImage(liveImage)
         ? liveImage
         : (CATALOG_CANONICAL_IMAGE_BY_ID[product.id] ?? product.image),
+    ...(inheritedFromRecto
+      ? {}
+      : overlayBack && !isDraftPlaceholderImage(overlayBack)
+        ? { imageBack: overlayBack }
+        : { imageBack: undefined }),
     description: overlay.description?.trim() || product.description,
     ...mergeStoryOverlay(product, overlay),
     category: resolveShopCategory(product.id, overlay.category || product.category),
@@ -228,16 +243,21 @@ export function shopProductFromUnknown(value: unknown): CatalogProduct | null {
       : record.stock !== undefined && Number.isFinite(Number(record.stock))
         ? Math.max(0, Number(record.stock))
         : undefined;
+  const printPlacement = normalizePrintPlacement(record.printPlacement);
   return {
     id,
     sku: typeof record.sku === "string" ? record.sku : `DINGRY-${id}`,
     name: record.name,
     variant: typeof record.variant === "string" ? record.variant : "",
+    ...(typeof record.imageBack === "string" && record.imageBack.trim()
+      ? { imageBack: record.imageBack.trim() }
+      : {}),
     description: typeof record.description === "string" ? record.description : "",
     fabrication: typeof record.fabrication === "string" ? record.fabrication : undefined,
     limitedEdition: typeof record.limitedEdition === "string" ? record.limitedEdition : undefined,
     materials: typeof record.materials === "string" ? record.materials : undefined,
     sizeGuide: typeof record.sizeGuide === "string" ? record.sizeGuide : undefined,
+    ...(printPlacement ? { printPlacement } : {}),
     category: normalizeAdminCategory(typeof record.category === "string" ? record.category : "Tee"),
     price,
     image: record.image,

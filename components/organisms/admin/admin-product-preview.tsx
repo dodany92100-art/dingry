@@ -1,9 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import { ProductImageFlip } from "@/components/molecules/product-image-flip";
 import { resolveStockStatusLabel } from "@/components/organisms/admin/admin-stock-status-badge";
 import type { AdminProduct } from "@/lib/admin/types";
-import { isDraftPlaceholderImage } from "@/lib/admin/types";
-import type { ProductCategory, ProductPublishStatus, ProductSize } from "@/lib/admin/types";
+import { isDraftPlaceholderImage, printPlacementDisplayLabel } from "@/lib/admin/types";
+import type {
+  ProductCategory,
+  ProductPrintPlacement,
+  ProductPublishStatus,
+  ProductSize,
+} from "@/lib/admin/types";
 
 export type AdminProductPreviewModel = {
   name: string;
@@ -12,7 +19,11 @@ export type AdminProductPreviewModel = {
   price: string;
   sizes: ProductSize[];
   description: string;
+  printPlacement: ProductPrintPlacement;
+  /** Recto / face principale. */
   imageSrc: string;
+  /** Verso / dos (optionnel). */
+  imageBackSrc: string;
   publishStatus: ProductPublishStatus;
   stock: number;
 };
@@ -29,6 +40,7 @@ function previewProductFromModel(model: AdminProductPreviewModel): AdminProduct 
     name: model.name.trim() || "Nouveau produit",
     variant: model.variant.trim() || "—",
     description: model.description,
+    printPlacement: model.printPlacement,
     fabrication: "",
     limitedEdition: "",
     materials: "",
@@ -42,6 +54,9 @@ function previewProductFromModel(model: AdminProductPreviewModel): AdminProduct 
     imageUrl: model.imageSrc || "/dingry-draft-product.svg",
     blobUrl: null,
     blobPathname: null,
+    imageBackUrl: model.imageBackSrc.trim(),
+    imageBackBlobUrl: null,
+    imageBackBlobPathname: null,
     createdAt: new Date().toISOString(),
     isPinned: false,
     displayOrder: 0,
@@ -53,7 +68,15 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
   const status = resolveStockStatusLabel(product);
   const priceLabel = Number(model.price) > 0 ? `${model.price} €` : "— €";
   const sizesLabel = model.sizes.length > 0 ? model.sizes.join(" · ") : "Tailles à définir";
-  const hasImage = model.imageSrc.length > 0 && !isDraftPlaceholderImage(model.imageSrc);
+  const printLabel = model.printPlacement ? printPlacementDisplayLabel(model.printPlacement) : "";
+
+  const recto = model.imageSrc.trim();
+  const verso = model.imageBackSrc.trim();
+  const hasRecto = recto.length > 0 && !isDraftPlaceholderImage(recto);
+  const hasVerso = verso.length > 0 && !isDraftPlaceholderImage(verso);
+  const flippable = hasRecto && hasVerso;
+
+  const [side, setSide] = useState<"recto" | "verso">("recto");
 
   return (
     <div
@@ -66,17 +89,31 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
         <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-zinc-400">{model.category}</p>
       </div>
 
-      <div className="relative flex min-h-[14rem] w-full items-center justify-center bg-zinc-950 px-3 py-4 sm:min-h-[16rem] sm:px-4 lg:min-h-[20rem]">
-        {hasImage ? (
+      <div className="relative flex min-h-[14rem] w-full flex-col items-stretch justify-center bg-zinc-950 px-3 py-4 sm:min-h-[16rem] sm:px-4 lg:min-h-[20rem]">
+        {flippable ? (
+          <div className="mx-auto w-full max-w-[14rem] sm:max-w-[16rem]">
+            <ProductImageFlip
+              frontImage={recto}
+              backImage={verso}
+              side={side}
+              onSideChange={setSide}
+              alt={product.name}
+              imgClassName="max-h-64 object-contain object-center sm:max-h-72 lg:max-h-80"
+            />
+            <p className="mt-2 text-center text-[9px] uppercase tracking-[0.16em] text-zinc-500">
+              Survol · recto / verso
+            </p>
+          </div>
+        ) : hasRecto ? (
           <img
-            src={model.imageSrc}
+            src={recto}
             alt=""
-            className="max-h-64 w-full max-w-full object-contain object-center sm:max-h-72 lg:max-h-80"
+            className="mx-auto max-h-64 w-full max-w-full object-contain object-center sm:max-h-72 lg:max-h-80"
             decoding="async"
           />
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-[10px] uppercase tracking-[0.18em] text-zinc-600">
-            Aperçu image · upload ou brouillon
+            Aperçu image · upload recto ou brouillon
           </div>
         )}
       </div>
@@ -91,6 +128,9 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
           <span className="mx-2 text-zinc-600">·</span>
           {sizesLabel}
         </p>
+        {printLabel ? (
+          <p className="text-[10px] uppercase tracking-[0.18em] text-emerald-400/90">{printLabel}</p>
+        ) : null}
         {model.description.trim() ? (
           <p className="line-clamp-2 text-[10px] leading-relaxed tracking-[0.04em] text-zinc-300">
             {model.description.trim()}

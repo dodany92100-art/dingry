@@ -1,5 +1,5 @@
 const MAX_SOURCE_BYTES = 10 * 1024 * 1024;
-const MAX_OUTPUT_BYTES = 1 * 1024 * 1024;
+const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 function renderWebp(bitmap: ImageBitmap, maxEdge: number, quality: number): Promise<Blob> {
@@ -47,7 +47,7 @@ export async function prepareProductImage(file: File): Promise<File> {
       blob = await renderWebp(bitmap, edge, quality);
     }
     if (blob.size > MAX_OUTPUT_BYTES) {
-      throw new Error("Impossible de compresser cette image sous 1 Mo.");
+      throw new Error("Impossible de compresser cette image sous 10 Mo.");
     }
 
     const base = file.name.replace(/\.[^.]+$/, "").trim() || "produit";

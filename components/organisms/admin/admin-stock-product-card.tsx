@@ -39,6 +39,20 @@ function criticalStockRing(stock: number): string {
   return "";
 }
 
+/** Accent « en ligne » (aligné badge emerald) — sans écraser alerte stock. */
+function adminStockCardRing(product: AdminProduct): string {
+  const stockRing = criticalStockRing(product.stock);
+  if (stockRing) return stockRing;
+  if (product.publishStatus === "live") {
+    return "ring-1 ring-emerald-500/50 shadow-[0_0_14px_rgba(16,185,129,0.22)]";
+  }
+  return "";
+}
+
+/** Aligné sur le bouton « Modifier » de `AdminStockControls` (layout row). */
+const EDIT_GRID_OVERLAY_BTN =
+  "h-8 shrink-0 rounded-full px-3 text-[10px] uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/15 hover:text-white";
+
 export function AdminStockProductCard({
   product,
   dragIndex,
@@ -59,7 +73,7 @@ export function AdminStockProductCard({
       busy={busy}
       disabled={disableReorder}
       onDrop={onDrop}
-      className={`dingry-admin-stock group ${criticalStockRing(product.stock)}`}
+      className={`dingry-admin-stock group ${adminStockCardRing(product)}`}
     >
       <div className="w-full rounded-lg md:rounded-xl">
         <div className="dingry-product-photo relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-zinc-950 md:rounded-xl">
@@ -97,6 +111,24 @@ export function AdminStockProductCard({
               disableReorder={disableReorder}
               compact
             />
+          </div>
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[6] flex justify-center bg-gradient-to-t from-black/65 via-black/20 to-transparent px-2 pb-2 pt-8 md:px-3 md:pb-2.5"
+            data-admin-no-reorder
+          >
+            <button
+              type="button"
+              disabled={busy}
+              aria-label={`Modifier ${product.name}`}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onEdit(product);
+              }}
+              className={`pointer-events-auto border border-white/15 bg-black/45 backdrop-blur-[2px] ${EDIT_GRID_OVERLAY_BTN}`}
+            >
+              Modifier
+            </button>
           </div>
         </div>
 

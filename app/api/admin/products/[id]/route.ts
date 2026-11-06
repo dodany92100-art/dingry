@@ -45,6 +45,7 @@ export async function PATCH(
       }
 
       const image = formData.get("image");
+      const imageBack = formData.get("imageBack");
       let file: File | undefined;
       if (image instanceof File && image.size > 0) {
         const imageError = validateImageFile(image);
@@ -52,6 +53,14 @@ export async function PATCH(
           return jsonNoStore({ error: imageError }, { status: 400 });
         }
         file = image;
+      }
+      let fileBack: File | undefined;
+      if (imageBack instanceof File && imageBack.size > 0) {
+        const err = validateImageFile(imageBack);
+        if (err) {
+          return jsonNoStore({ error: err }, { status: 400 });
+        }
+        fileBack = imageBack;
       }
 
       const nextPublish =
@@ -68,7 +77,17 @@ export async function PATCH(
       }
 
       const clearImage = formData.get("clearImage") === "1";
-      const product = await updateProduct(id, { ...parsed.fields, ...(clearImage ? { clearImage: true } : {}) }, file);
+      const clearImageBack = formData.get("clearImageBack") === "1";
+      const product = await updateProduct(
+        id,
+        {
+          ...parsed.fields,
+          ...(clearImage ? { clearImage: true } : {}),
+          ...(clearImageBack ? { clearImageBack: true } : {}),
+          ...(fileBack ? { versoFile: fileBack } : {}),
+        },
+        file,
+      );
       revalidatePath("/api/catalog");
       revalidatePath("/");
       return jsonNoStore({ product });

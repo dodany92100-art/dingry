@@ -1,7 +1,13 @@
 import { trimStoryField } from "@/lib/admin/product-story";
 import { normalizePantWaistSize } from "@/lib/admin/pant-waist";
 import { ADMIN_COLOR_VARIANTS, isPantsCategory } from "@/lib/admin/product-variant-presets";
-import { ADMIN_CATEGORY_SIZES, type ProductCategory, type ProductSize } from "@/lib/admin/types";
+import {
+  ADMIN_CATEGORY_SIZES,
+  PRODUCT_PRINT_PLACEMENT_LABELS,
+  type ProductCategory,
+  type ProductPrintPlacement,
+  type ProductSize,
+} from "@/lib/admin/types";
 
 export type SmartParseFieldId =
   | "category"
@@ -12,7 +18,8 @@ export type SmartParseFieldId =
   | "limitedEdition"
   | "price"
   | "sizes"
-  | "variant";
+  | "variant"
+  | "printPlacement";
 
 export const SMART_PARSE_FIELD_LABELS: Record<SmartParseFieldId, string> = {
   category: "Catégorie",
@@ -24,6 +31,7 @@ export const SMART_PARSE_FIELD_LABELS: Record<SmartParseFieldId, string> = {
   price: "Prix (€)",
   sizes: "Tailles",
   variant: "Variante / couleur",
+  printPlacement: "Impression",
 };
 
 export type SmartProductParseResult = {
@@ -36,6 +44,7 @@ export type SmartProductParseResult = {
   price?: string;
   sizes?: ProductSize[];
   variantColor?: string;
+  printPlacement?: ProductPrintPlacement;
   filled: SmartParseFieldId[];
 };
 
@@ -55,7 +64,8 @@ export type MakerSemanticBlock = {
     | "materials"
     | "description"
     | "fabrication"
-    | "limitedEdition";
+    | "limitedEdition"
+    | "printPlacement";
   label: string;
   value: string;
 };
@@ -82,6 +92,29 @@ const RE_TITLE_COLOR_SUFFIX = /\s*[—–\-|·]\s*(?:couleur|color|colour|colori
 const RE_TITLE_PRICE_SUFFIX = /\s*[—–\-|·]\s*[^—–\-|·]{0,52}\d{1,4}(?:[.,]\d{1,2})?\s*(?:€|EUR)\s*$/i;
 const RE_SECTION_LABEL =
   /^\s*(matière|matériaux|composition|grammage|densité|tailles?|sizes?|couleur|coloris|colour|prix|price|fabriqué|origine)\s*[:\-.]?\s*/i;
+
+const RE_PRINT_RECTO_VERSO =
+  /\b(?:impression\s+)?(?:recto\s*[/·\-–—]\s*verso|recto\s*\+\s*verso|recto\s+et\s+verso|recto[\s,/]+verso)\b/i;
+const RE_PRINT_RECTO_ONLY =
+  /\b(?:impression\s+)?(?:recto\s+seul|face\s+avant\s+seul|print\s+recto\s+only)\b/i;
+const RE_PRINT_VERSO_ONLY =
+  /\b(?:impression\s+)?(?:verso\s+seul|dos\s+seul|print\s+verso\s+only)\b/i;
+
+function detectPrintPlacementFromText(sample: string): ProductPrintPlacement | undefined {
+  const t = sample.replace(/\u00a0/g, " ");
+  if (RE_PRINT_RECTO_ONLY.test(t)) return "RECTO_ONLY";
+  if (RE_PRINT_VERSO_ONLY.test(t)) return "VERSO_ONLY";
+  if (RE_PRINT_RECTO_VERSO.test(t)) return "RECTO_VERSO";
+  return undefined;
+}
+
+/** Ligne dédiée finition (évite doublon dans la description). */
+function lineLooksLikePrintPlacementOnly(line: string): boolean {
+  const t = line.trim();
+  if (t.length === 0 || t.length > 120) return false;
+  if (!/\b(recto|verso)\b/i.test(t)) return false;
+  return detectPrintPlacementFromText(t) !== undefined;
+}
 
 const LETTER_SIZE_SCAN: readonly { pattern: string; size: ProductSize }[] = [
   { pattern: "5XL", size: "5XL" },
@@ -454,6 +487,88 @@ function lineDuplicatesProductName(line: string, name: string): boolean {
   return a === b;
 }
 
+/** Codes taille lettre (scan parseur) — ordre longueur décroissante pour regex. */
+const LETTER_SIZE_PATTERN_SRC = "5XL|4XL|XXXL|3XL|XXL|2XL|XL|XS|XXS|TU|(?<![A-Z0-9])[SML](?![A-Z0-9])";
+
+/**
+ * S 46, M 48/50, XL 48 · 50 — réservé gestion stock.
+ * Les codes multi-lettres peuvent avoir des mensurations optionnelles ;
+ * pour S/M/L seul, il faut un chiffre EU (évite d’effacer le « m » de `g/m²`).
+ */
+const RE_LETTER_PLUS_MENSURATION_MULTI = new RegExp(
+  `\\b(?:5XL|4XL|XXXL|3XL|XXL|2XL|XL|XS|XXS|TU)\\s*\\*?\\s*(?:\\d{2}(?:\\s*[/·\\-–]\\s*\\d{2})?)?`,
+  "gi",
+);
+const RE_LETTER_PLUS_MENSURATION_SML = new RegExp(
+  "\\b[SML]\\s*\\*?\\s*\\d{2}(?:\\s*[/·\\-–]\\s*\\d{2})?",
+  "gi",
+);
+
+/** Fourchettes type 48/50, 50–52 (mensurations EU courantes grille). */
+const RE_EU_MENSURATION_RANGE = /\b(?:4[0-9]|5[0-6])\s*[/·\-–]\s*(?:4[0-9]|5[0-6])\b/gi;
+
+/**
+ * Retire d’un champ « public » les morceaux qui ressemblent à une grille tailles / mensurations.
+ */
+function stripPublicSizeFragments(raw: string): string {
+  const gpmPlaceholders: string[] = [];
+  let s = raw.replace(/\bg\s*\/\s*m[²2\u00B2]?/gi, (m) => {
+    const id = gpmPlaceholders.length;
+    gpmPlaceholders.push(m);
+    return `\uE000GPM${id}\uE000`;
+  });
+  for (let pass = 0; pass < 4; pass++) {
+    const next = s
+      .replace(RE_LETTER_PLUS_MENSURATION_MULTI, " ")
+      .replace(RE_LETTER_PLUS_MENSURATION_SML, " ")
+      .replace(RE_EU_MENSURATION_RANGE, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    if (next === s) break;
+    s = next;
+  }
+  return s.replace(/\uE000GPM(\d+)\uE000/g, (_, d) => gpmPlaceholders[Number(d)] ?? "");
+}
+
+function tokenizeSizeGridProbe(line: string): string[] {
+  return line
+    .split(/[\s,;|·]+/)
+    .map((t) => t.replace(/^\*+|\*+$/g, "").trim())
+    .filter(Boolean);
+}
+
+/** Ligne essentiellement une inventaire tailles / chiffres (pas du wording client). */
+function lineLooksLikeSizeGridOnly(line: string): boolean {
+  const t = line.trim();
+  if (t.length < 3) return false;
+  /** Libellés explicites — jamais dans la copy publique. */
+  if (/^\s*(tailles?|sizes?)\s*[:\-]/i.test(t) && t.length < 160) return true;
+
+  const tokens = tokenizeSizeGridProbe(t);
+  if (tokens.length < 2) return false;
+
+  let sizeLike = 0;
+  for (const tok of tokens) {
+    if (/^(?:5XL|4XL|XXXL|3XL|XXL|2XL|XL|XS|XXS|TU|[SML])$/i.test(tok)) {
+      sizeLike += 1;
+      continue;
+    }
+    if (/^(?:4[0-9]|5[0-6])$/i.test(tok)) {
+      sizeLike += 1;
+      continue;
+    }
+    if (/^(?:4[0-9]|5[0-6])[/·\-–](?:4[0-9]|5[0-6])$/i.test(tok)) {
+      sizeLike += 1;
+    }
+  }
+  const ratio = sizeLike / tokens.length;
+  if (tokens.length >= 2 && ratio >= 0.85) return true;
+  if (tokens.length >= 4 && ratio >= 0.65) return true;
+  /** Beaucoup de codes courts sans phrase (pas de voyelle longue). */
+  if (tokens.length >= 5 && !/[.!?]/.test(t) && sizeLike >= 4) return true;
+  return false;
+}
+
 const SEMANTIC_CLIP = (s: string, max: number) => (s.length <= max ? s : `${s.slice(0, max)}…`);
 
 function semanticBlockForField(
@@ -513,6 +628,14 @@ function semanticBlockForField(
             value: SEMANTIC_CLIP(result.description, 320),
           }
         : undefined;
+    case "printPlacement":
+      return result.printPlacement !== undefined
+        ? {
+            key: "printPlacement",
+            label: "Impression",
+            value: PRODUCT_PRINT_PLACEMENT_LABELS[result.printPlacement],
+          }
+        : undefined;
     default: {
       const _exhaustive: never = id;
       return _exhaustive;
@@ -544,6 +667,7 @@ function extractNameFromLines(
     const line = lines[i];
     if (!line) continue;
     if (isFootnoteLine(line)) continue;
+    if (lineLooksLikeSizeGridOnly(line)) continue;
     if (/^(prix|price|tailles?|sizes?|matière|matériaux)\s*[:\-]/i.test(line)) continue;
     if (looksLikeMaterialLine(line) && /%/.test(line)) continue;
     if (line.length >= 3 && line.length <= 140) candidates.push({ line, i });
@@ -570,7 +694,8 @@ function extractNameFromLines(
 
   const top = scored[0];
   if (!top || top.score < 0) return undefined;
-  const name = stripTitleMarketingSuffix(top.line);
+  let name = stripTitleMarketingSuffix(top.line);
+  name = stripPublicSizeFragments(name);
   if (name.length < 2) return undefined;
   return { name, titleLineIndex: top.i };
 }
@@ -608,6 +733,9 @@ export function parseSmartProductText(
   const { body: textNoStarLines, skipped: footnoteSkipped } = stripFootnoteLines(text);
   const lines = linesFromText(text);
   const tagged = tagSections(lines);
+
+  const printPlacementFromPaste = detectPrintPlacementFromText(text);
+  if (printPlacementFromPaste !== undefined) filled.push("printPlacement");
 
   const detectedCategory = detectCategoryFromText(text);
   const category = detectedCategory ?? fallbackCategory;
@@ -665,6 +793,7 @@ export function parseSmartProductText(
     const line = lines[i];
     if (titleLineIndex !== undefined && i === titleLineIndex) continue;
     if (isLineExcludedFromDescription(line)) continue;
+    if (lineLooksLikeSizeGridOnly(line)) continue;
     if (/^(prix|price)\s*[:\-]/i.test(line) && line.length < 55) continue;
     if (/^(tailles?|sizes?)\s*[:\-]/i.test(line) && line.length < 90) continue;
     if (looksLikeLimitedLine(line)) {
@@ -672,13 +801,14 @@ export function parseSmartProductText(
       continue;
     }
     if (RE_FABRICATION_LINE.test(line) && !looksLikeMaterialLine(line)) {
-      fabricationLines.push(line);
+      if (!lineLooksLikeSizeGridOnly(line)) fabricationLines.push(line);
       continue;
     }
     if (looksLikeMaterialLine(line)) {
       materialLines.push(line);
       continue;
     }
+    if (lineLooksLikePrintPlacementOnly(line)) continue;
     if (line.length >= 18 || /[.!?]$/.test(line)) descriptionCandidates.push(line);
     else if (line.length >= 8 && !/^\d{2}\b/.test(line) && !isPureCategoryLine(line)) {
       descriptionCandidates.push(line);
@@ -687,20 +817,29 @@ export function parseSmartProductText(
 
   let materials: string | undefined;
   if (materialLines.length > 0) {
-    materials = trimStoryField(materialLines.map((l) => normalizeStoryBody(l)).join("\n\n"));
-    filled.push("materials");
+    materials = stripPublicSizeFragments(
+      trimStoryField(materialLines.map((l) => normalizeStoryBody(l)).join("\n\n")),
+    );
+    if (materials.length > 0) filled.push("materials");
+    else materials = undefined;
   }
 
   let fabrication: string | undefined;
   if (fabricationLines.length > 0) {
-    fabrication = trimStoryField(fabricationLines.map((l) => normalizeStoryBody(l)).join("\n\n"));
-    filled.push("fabrication");
+    fabrication = stripPublicSizeFragments(
+      trimStoryField(fabricationLines.map((l) => normalizeStoryBody(l)).join("\n\n")),
+    );
+    if (fabrication.length > 0) filled.push("fabrication");
+    else fabrication = undefined;
   }
 
   let limitedEdition: string | undefined;
   if (limitedLines.length > 0) {
-    limitedEdition = trimStoryField(limitedLines.map((l) => normalizeStoryBody(l)).join("\n\n"));
-    filled.push("limitedEdition");
+    limitedEdition = stripPublicSizeFragments(
+      trimStoryField(limitedLines.map((l) => normalizeStoryBody(l)).join("\n\n")),
+    );
+    if (limitedEdition.length > 0) filled.push("limitedEdition");
+    else limitedEdition = undefined;
   }
 
   let description: string | undefined;
@@ -711,15 +850,19 @@ export function parseSmartProductText(
     return true;
   });
   if (descFiltered.length > 0) {
-    description = trimStoryField(descFiltered.map((l) => normalizeStoryBody(l)).join("\n\n"));
-    filled.push("description");
+    description = stripPublicSizeFragments(
+      trimStoryField(descFiltered.map((l) => normalizeStoryBody(l)).join("\n\n")),
+    );
+    if (description.length > 0) filled.push("description");
+    else description = undefined;
   } else if (materialLines.length === 0 && lines.length > 1 && name !== undefined) {
     const restParas = lines
       .filter((_, j) => j !== titleLineIndex)
       .filter((l) => !isLineExcludedFromDescription(l))
+      .filter((l) => !lineLooksLikeSizeGridOnly(l))
       .filter((l) => !lineDuplicatesProductName(l, name));
     const rest = restParas.join("\n\n");
-    const fallback = trimStoryField(normalizeStoryBody(rest));
+    const fallback = stripPublicSizeFragments(trimStoryField(normalizeStoryBody(rest)));
     if (fallback.length >= 10) {
       description = fallback;
       filled.push("description");
@@ -740,6 +883,7 @@ export function parseSmartProductText(
   if (price !== undefined) result.price = price;
   if (sizes.length > 0) result.sizes = sizes;
   if (variantColor !== undefined) result.variantColor = variantColor;
+  if (printPlacementFromPaste !== undefined) result.printPlacement = printPlacementFromPaste;
 
   result.semanticBlocks = buildMakerSemanticBlocks(result);
   return result;

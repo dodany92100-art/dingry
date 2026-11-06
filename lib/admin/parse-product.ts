@@ -2,6 +2,7 @@ import { trimStoryField } from "@/lib/admin/product-story";
 import {
   isProductCategory,
   isProductSize,
+  normalizePrintPlacement,
   normalizeProductCategory,
   normalizePantWaistSize,
   normalizePublishStatus,
@@ -9,6 +10,7 @@ import {
   PANT_WAIST_MAX,
   PANT_WAIST_MIN,
   type ProductCategory,
+  type ProductPrintPlacement,
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
@@ -22,6 +24,7 @@ export type ParsedProductFields = {
   limitedEdition: string;
   materials: string;
   sizeGuide: string;
+  printPlacement: ProductPrintPlacement;
   category: ProductCategory;
   price: number;
   sizes: ProductSize[];
@@ -31,6 +34,10 @@ export type ParsedProductFields = {
 };
 
 const STORY_KEYS = ["description", "fabrication", "limitedEdition", "materials", "sizeGuide"] as const;
+
+function parsePrintPlacement(getValue: (key: string) => string): ProductPrintPlacement {
+  return normalizePrintPlacement(getValue("printPlacement"));
+}
 
 function parseStoryFields(
   getValue: (key: string) => string,
@@ -98,6 +105,10 @@ export function parseProductFields(
 
   if (!partial || STORY_KEYS.some((key) => has(key))) {
     parseStoryFields(getValue, partial, has, fields);
+  }
+
+  if (!partial || has("printPlacement")) {
+    fields.printPlacement = parsePrintPlacement(getValue);
   }
 
   if (!partial || has("category")) {

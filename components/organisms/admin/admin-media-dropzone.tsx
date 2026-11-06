@@ -3,12 +3,14 @@
 import { useRef, useState } from "react";
 
 type AdminMediaDropzoneProps = {
+  /** Libellé au-dessus de la zone (ex. Recto / Verso). */
+  label?: string;
   previewSrc: string;
   converting: boolean;
   onFile: (file: File | null) => void;
 };
 
-export function AdminMediaDropzone({ previewSrc, converting, onFile }: AdminMediaDropzoneProps) {
+export function AdminMediaDropzone({ label, previewSrc, converting, onFile }: AdminMediaDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -18,6 +20,9 @@ export function AdminMediaDropzone({ previewSrc, converting, onFile }: AdminMedi
 
   return (
     <div className="mt-3">
+      {label ? (
+        <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-400">{label}</p>
+      ) : null}
       <input
         ref={inputRef}
         type="file"

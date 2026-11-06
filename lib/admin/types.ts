@@ -75,11 +75,41 @@ export function defaultSizesForCategory(category: ProductCategory): ProductSize[
 
 export type ProductPublishStatus = "draft" | "live";
 
+/** Zone d’impression / finition (CRM → fiche boutique). */
+export type ProductPrintPlacement = "" | "RECTO_VERSO" | "RECTO_ONLY" | "VERSO_ONLY";
+
+export const PRODUCT_PRINT_PLACEMENT_OPTIONS: readonly ProductPrintPlacement[] = [
+  "",
+  "RECTO_VERSO",
+  "RECTO_ONLY",
+  "VERSO_ONLY",
+];
+
+export const PRODUCT_PRINT_PLACEMENT_LABELS: Record<ProductPrintPlacement, string> = {
+  "": "Non renseigné",
+  RECTO_VERSO: "RECTO / VERSO",
+  RECTO_ONLY: "RECTO SEUL",
+  VERSO_ONLY: "VERSO SEUL",
+};
+
+export function printPlacementDisplayLabel(value: ProductPrintPlacement): string {
+  if (!value) return "";
+  return PRODUCT_PRINT_PLACEMENT_LABELS[value];
+}
+
 /** Image locale tant qu’aucune photo n’est uploadée (brouillon admin). */
 export const DRAFT_PRODUCT_PLACEHOLDER_IMAGE = "/dingry-draft-product.svg";
 
 export function normalizePublishStatus(value: unknown): ProductPublishStatus {
   return value === "draft" ? "draft" : "live";
+}
+
+export function normalizePrintPlacement(value: unknown): ProductPrintPlacement {
+  const v = String(value ?? "").trim().toUpperCase().replace(/\s+/g, "_");
+  if (v === "RECTO_VERSO" || v === "RECTO/VERSO") return "RECTO_VERSO";
+  if (v === "RECTO_ONLY" || v === "RECTO_SEUL" || v === "RECTOSEUL") return "RECTO_ONLY";
+  if (v === "VERSO_ONLY" || v === "VERSO_SEUL" || v === "VERSOSEUL") return "VERSO_ONLY";
+  return "";
 }
 
 export function parseColorDeclinations(raw: unknown): string[] {
@@ -120,6 +150,8 @@ export type AdminProduct = {
   limitedEdition: string;
   materials: string;
   sizeGuide: string;
+  /** Impression recto/verso (vide = non affiché boutique). */
+  printPlacement: ProductPrintPlacement;
   category: ProductCategory;
   price: number;
   sizes: ProductSize[];
@@ -130,6 +162,10 @@ export type AdminProduct = {
   imageUrl: string;
   blobUrl: string | null;
   blobPathname: string | null;
+  /** Photo dos (flip catalogue). Vide si absent. */
+  imageBackUrl: string;
+  imageBackBlobUrl: string | null;
+  imageBackBlobPathname: string | null;
   createdAt: string;
   /** Épinglé en tête de sa catégorie (admin + boutique). */
   isPinned: boolean;
@@ -147,9 +183,12 @@ export type CatalogProduct = {
   limitedEdition?: string;
   materials?: string;
   sizeGuide?: string;
+  printPlacement?: ProductPrintPlacement;
   category: ProductCategory;
   price: number;
   image: string;
+  /** Photo dos pour flip (produits CRM avec recto + verso sur une même fiche). */
+  imageBack?: string;
   sizes: ProductSize[];
   /** Coloris modal boutique (recto CRM associés par famille + nom). */
   colorDeclinations?: string[];
@@ -202,7 +241,7 @@ export type AdminStore = {
   removedCatalogIds?: string[];
 };
 
-export const STORE_VERSION = 10;
+export const STORE_VERSION = 12;
 
 export function isPantWaistSize(value: string): value is PantWaistSize {
   return (PANT_WAIST_PRESET_SIZES as readonly string[]).includes(value);
@@ -247,9 +286,11 @@ export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {
     ...(product.limitedEdition.trim() ? { limitedEdition: product.limitedEdition.trim() } : {}),
     ...(product.materials.trim() ? { materials: product.materials.trim() } : {}),
     ...(product.sizeGuide.trim() ? { sizeGuide: product.sizeGuide.trim() } : {}),
+    ...(product.printPlacement ? { printPlacement: product.printPlacement } : {}),
     category: product.category,
     price: product.price,
     image: product.imageUrl,
+    ...(product.imageBackUrl.trim() ? { imageBack: product.imageBackUrl.trim() } : {}),
     sizes: product.sizes,
     stock: product.stock,
     ...(product.colorDeclinations.length > 0

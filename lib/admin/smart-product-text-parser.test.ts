@@ -141,4 +141,21 @@ Texte descriptif unique sans répéter le nom produit.`;
     expect(r.name).toBe("HOODIE DINGRY SIGNATURE");
     expect(r.description).toBe("Texte descriptif unique sans répéter le nom produit.");
   });
+
+  it("ne met pas la grille S–mensurations dans nom, description ni fabrication", () => {
+    const raw = `HOODIE DINGRY
+
+S 46 M 48/50 L 50/52
+
+Conçu pour le quotidien urbain.
+
+Fabriqué au Portugal · coupe S 44 selon stock
+
+70 €`;
+    const r = parseSmartProductText(raw, "Hoodies");
+    expect(r.sizes).toEqual(["S", "M", "L"]);
+    expect(r.name).toBe("HOODIE DINGRY");
+    expect(r.description).toBe("Conçu pour le quotidien urbain.");
+    expect(r.fabrication).toBe("Fabriqué au Portugal · coupe selon stock");
+  });
 });

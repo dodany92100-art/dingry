@@ -82,6 +82,14 @@ function ProductModalContent({
         : null
     : null;
 
+  const crmFlipImages =
+    !showSideToggle && product.imageBack?.trim()
+      ? { front: displayProduct.image, back: product.imageBack.trim() }
+      : null;
+  const effectiveFlipImages = flipImages ?? crmFlipImages;
+  const showCrmFlip = Boolean(crmFlipImages);
+  const effectiveShowSideToggle = showSideToggle || showCrmFlip;
+
   const productLine = productLineForShop(product.id, products);
   const rectoId = catalogRectoId(product.id);
   const detail = productDetailCopy(product, products);
@@ -118,10 +126,10 @@ function ProductModalContent({
           ref={modal.productImageRef}
           className="dingry-sale-photo w-full shrink-0 overflow-hidden bg-[#080808] md:w-1/2 md:max-w-[520px] md:self-start"
         >
-          {flipImages ? (
+          {effectiveFlipImages ? (
             <ProductImageFlip
-              frontImage={flipImages.front}
-              backImage={flipImages.back}
+              frontImage={effectiveFlipImages.front}
+              backImage={effectiveFlipImages.back}
               side={modalSide}
               onSideChange={modal.showProductSide}
               alt={storefrontProductTitle(product, products)}
@@ -144,7 +152,7 @@ function ProductModalContent({
           <div>
             <div className="mb-2 flex items-center justify-end gap-3">
               <div className="flex shrink-0 items-center gap-2">
-                {showSideToggle ? (
+                {effectiveShowSideToggle ? (
                   <button
                     type="button"
                     onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
@@ -157,7 +165,7 @@ function ProductModalContent({
                 <button
                   type="button"
                   onClick={() => modal.closeProductModal()}
-                  className={`h-11 w-11 items-center justify-center text-white/40 transition-colors hover:text-white ${showSideToggle ? "hidden md:flex" : "flex"}`}
+                  className={`h-11 w-11 items-center justify-center text-white/40 transition-colors hover:text-white ${effectiveShowSideToggle ? "hidden md:flex" : "flex"}`}
                   aria-label="Fermer"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -173,6 +181,12 @@ function ProductModalContent({
             </h2>
             {detail.description ? (
               <p className="mb-4 text-sm leading-relaxed text-white/55">{detail.description}</p>
+            ) : null}
+            {detail.printPlacement ? (
+              <div className="mb-4">
+                <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Impression</p>
+                <p className="text-xs leading-relaxed text-white/50">{detail.printPlacement}</p>
+              </div>
             ) : null}
             {detail.fabrication ? (
               <div className="mb-4">
@@ -285,7 +299,7 @@ function ProductModalContent({
             ) : null}
             <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase mb-4">Sélectionnez une taille</p>
             <div
-              className={`grid gap-2 ${showSideToggle ? "mb-2" : "mb-8"} ${sizeCols === 4 ? "grid-cols-4" : "grid-cols-6"}`}
+              className={`grid gap-2 ${effectiveShowSideToggle ? "mb-2" : "mb-8"} ${sizeCols === 4 ? "grid-cols-4" : "grid-cols-6"}`}
             >
               {sizes.map((s) => (
                 <button
@@ -302,7 +316,7 @@ function ProductModalContent({
                 </button>
               ))}
             </div>
-            {showSideToggle ? (
+            {effectiveShowSideToggle ? (
               <div
                 className="mb-8 hidden gap-2 md:grid"
                 style={{ gridTemplateColumns: `repeat(${sizeCols}, minmax(0, 1fr))` }}

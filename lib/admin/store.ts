@@ -20,6 +20,7 @@ import {
   isProductSize,
   normalizeProductCategory,
   normalizePublishStatus,
+  normalizePrintPlacement,
   STORE_VERSION,
   type AdminLookbookSlide,
   type AdminOrder,
@@ -27,6 +28,7 @@ import {
   type AdminStore,
   parseColorDeclinations,
   type ProductCategory,
+  type ProductPrintPlacement,
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
@@ -40,7 +42,7 @@ import {
 const STORE_PATHNAME = "dingry/admin/store.json";
 const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json");
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
-const MAX_IMAGE_BYTES = 1 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
 const STORE_WRITE_ATTEMPTS = 5;
 
@@ -309,6 +311,7 @@ function normalizeProduct(value: unknown): AdminProduct | null {
     limitedEdition: String(record.limitedEdition ?? "").trim(),
     materials: String(record.materials ?? "").trim(),
     sizeGuide: String(record.sizeGuide ?? "").trim(),
+    printPlacement: normalizePrintPlacement(record.printPlacement),
     category,
     price,
     sizes: sizes.length > 0 ? sizes : [],
@@ -318,6 +321,10 @@ function normalizeProduct(value: unknown): AdminProduct | null {
     imageUrl,
     blobUrl: typeof record.blobUrl === "string" ? record.blobUrl : null,
     blobPathname: typeof record.blobPathname === "string" ? record.blobPathname : null,
+    imageBackUrl: typeof record.imageBackUrl === "string" ? String(record.imageBackUrl).trim() : "",
+    imageBackBlobUrl: typeof record.imageBackBlobUrl === "string" ? record.imageBackBlobUrl : null,
+    imageBackBlobPathname:
+      typeof record.imageBackBlobPathname === "string" ? record.imageBackBlobPathname : null,
     createdAt: typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString(),
     isPinned: normalizeIsPinned(record.isPinned),
     displayOrder: normalizeDisplayOrder(record.displayOrder),
@@ -364,6 +371,7 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
       name: current.name.includes(" — ") ? seed.name : current.name,
       variant: current.variant.trim() || seed.variant,
       description: current.description.trim() || seed.description,
+      printPlacement: current.printPlacement || seed.printPlacement,
       sku: genericSku ? seed.sku : current.sku,
       sizes: current.sizes.length > 0 ? current.sizes : [...seed.sizes],
       price: current.price,
@@ -377,6 +385,7 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
     sku: genericSku ? seed.sku : current.sku,
     variant: current.variant || seed.variant,
     description: current.description || seed.description,
+    printPlacement: current.printPlacement || seed.printPlacement,
     category: genericCategory ? seed.category : current.category,
     name: current.name.includes(" — ") ? seed.name : current.name,
     sizes: current.sizes.length > 0 ? current.sizes : [...seed.sizes],
@@ -413,6 +422,30 @@ function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
   return existing;
 }
 
+/** v12 : une fiche recto peut porter recto + verso ; les anciennes fiches « — VERSO » alimentent `imageBackUrl`. */
+function migrateProductVersoBackUrl(products: AdminProduct[]): AdminProduct[] {
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const versoImageByRectoId = new Map<string, string>();
+  for (const p of products) {
+    if (!/\bVERSO\b/i.test(p.variant)) continue;
+    const rectoId = String(resolveRectoCatalogId(Number(p.id)));
+    const recto = byId.get(rectoId);
+    if (!recto) continue;
+    if (recto.imageBackUrl.trim()) continue;
+    const src = p.imageUrl.trim();
+    if (!src || isDraftPlaceholderImage(src)) continue;
+    versoImageByRectoId.set(rectoId, src);
+  }
+
+  return products.map((p) => {
+    const backFromPair = versoImageByRectoId.get(p.id);
+    if (backFromPair && !p.imageBackUrl.trim()) {
+      return { ...p, imageBackUrl: backFromPair };
+    }
+    return p;
+  });
+}
+
 function migrateStore(raw: AdminStore): AdminStore {
   let source = raw;
   if (raw.version < 6) {
@@ -446,9 +479,10 @@ function migrateStore(raw: AdminStore): AdminStore {
     const extras = existing.filter(
       (item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id) && !removed.has(item.id),
     );
+    const products = migrateProductVersoBackUrl([...mergedSeed, ...extras]);
     return {
       version: STORE_VERSION,
-      products: finalizeProducts([...mergedSeed, ...extras]),
+      products: finalizeProducts(products),
       orders: raw.orders,
       lookbook: mergeLookbookSlides(raw),
       removedCatalogIds: [...removed],
@@ -459,10 +493,11 @@ function migrateStore(raw: AdminStore): AdminStore {
   const extras = existing.filter(
     (item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id) && !removed.has(item.id),
   );
+  const products = migrateProductVersoBackUrl([...mergedSeed, ...extras]);
 
   return {
     version: STORE_VERSION,
-    products: finalizeProducts([...mergedSeed, ...extras]),
+    products: finalizeProducts(products),
     orders: raw.orders,
     lookbook: mergeLookbookSlides(raw),
     removedCatalogIds: [...removed],
@@ -543,17 +578,20 @@ export function validateImageFile(file: File): string | null {
     return "L'image doit être convertie en WebP avant l'enregistrement.";
   }
   if (file.size > MAX_IMAGE_BYTES) {
-    return "Image trop lourde (1 Mo maximum après conversion).";
+    return "Image trop lourde (10 Mo maximum après conversion).";
   }
   return null;
 }
 
+type ProductImageFace = "recto" | "verso";
+
 export async function uploadProductImage(
   productId: string,
   file: File,
+  face: ProductImageFace = "recto",
 ): Promise<{ imageUrl: string; blobUrl: string | null; blobPathname: string | null }> {
   const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
-  const pathname = `dingry/products/${productId}/${filename}`;
+  const pathname = `dingry/products/${productId}/${face}-${filename}`;
 
   if (useLocalStoreFiles()) {
     await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
@@ -599,16 +637,40 @@ async function deleteLocalUpload(imageUrl: string): Promise<void> {
   }
 }
 
+async function deleteBlobOrLocal(
+  blobUrl: string | null,
+  blobPathname: string | null,
+  imageUrl: string,
+): Promise<void> {
+  if (blobUrl) {
+    await del(blobUrl);
+    return;
+  }
+  if (blobPathname) {
+    await del(blobPathname);
+    return;
+  }
+  await deleteLocalUpload(imageUrl);
+}
+
+/** Supprime le média recto ou verso sans toucher l’autre face. */
+export async function deleteProductFaceMedia(
+  product: AdminProduct,
+  face: ProductImageFace,
+): Promise<void> {
+  if (face === "recto") {
+    if (!product.imageUrl.trim() || isDraftPlaceholderImage(product.imageUrl)) return;
+    await deleteBlobOrLocal(product.blobUrl, product.blobPathname, product.imageUrl);
+    return;
+  }
+  const back = product.imageBackUrl.trim();
+  if (!back) return;
+  await deleteBlobOrLocal(product.imageBackBlobUrl, product.imageBackBlobPathname, back);
+}
+
 export async function deleteProductImage(product: AdminProduct): Promise<void> {
-  if (product.blobUrl) {
-    await del(product.blobUrl);
-    return;
-  }
-  if (product.blobPathname) {
-    await del(product.blobPathname);
-    return;
-  }
-  await deleteLocalUpload(product.imageUrl);
+  await deleteProductFaceMedia(product, "recto");
+  await deleteProductFaceMedia(product, "verso");
 }
 
 function nextProductId(products: AdminProduct[]): string {
@@ -628,6 +690,7 @@ export type ProductInput = {
   limitedEdition: string;
   materials: string;
   sizeGuide: string;
+  printPlacement?: ProductPrintPlacement;
   category: ProductCategory;
   price: number;
   sizes: ProductSize[];
@@ -636,6 +699,13 @@ export type ProductInput = {
   colorDeclinations?: string[];
   isPinned?: boolean;
   displayOrder?: number;
+};
+
+type ProductUpdateMedia = {
+  rectoFile?: File;
+  versoFile?: File;
+  clearImage?: boolean;
+  clearImageBack?: boolean;
 };
 
 export type PublishSelectionOutcome = {
@@ -756,13 +826,15 @@ export async function reorderAdminProductDisplay(
   });
 }
 
-export async function createProduct(input: ProductInput & { file?: File | null }): Promise<AdminProduct> {
+export async function createProduct(
+  input: ProductInput & { file?: File | null; fileBack?: File | null },
+): Promise<AdminProduct> {
   const snapshot = await readStoreSnapshot();
   const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
   const id = nextProductId(base.products);
   let uploaded: Awaited<ReturnType<typeof uploadProductImage>>;
   if (input.file && input.file.size > 0) {
-    uploaded = await uploadProductImage(id, input.file);
+    uploaded = await uploadProductImage(id, input.file, "recto");
   } else if (input.publishStatus === "draft") {
     uploaded = {
       imageUrl: DRAFT_PRODUCT_PLACEHOLDER_IMAGE,
@@ -771,6 +843,10 @@ export async function createProduct(input: ProductInput & { file?: File | null }
     };
   } else {
     throw new StoreUnavailableError("Une image est requise pour mettre en ligne.");
+  }
+  let uploadedBack: Awaited<ReturnType<typeof uploadProductImage>> | undefined;
+  if (input.fileBack && input.fileBack.size > 0) {
+    uploadedBack = await uploadProductImage(id, input.fileBack, "verso");
   }
   const product: AdminProduct = {
     id,
@@ -782,6 +858,7 @@ export async function createProduct(input: ProductInput & { file?: File | null }
     limitedEdition: input.limitedEdition,
     materials: input.materials,
     sizeGuide: input.sizeGuide,
+    printPlacement: input.printPlacement ?? "",
     category: input.category,
     price: input.price,
     sizes: input.sizes,
@@ -791,6 +868,9 @@ export async function createProduct(input: ProductInput & { file?: File | null }
     imageUrl: uploaded.imageUrl,
     blobUrl: uploaded.blobUrl,
     blobPathname: uploaded.blobPathname,
+    imageBackUrl: uploadedBack?.imageUrl ?? "",
+    imageBackBlobUrl: uploadedBack?.blobUrl ?? null,
+    imageBackBlobPathname: uploadedBack?.blobPathname ?? null,
     createdAt: new Date().toISOString(),
     isPinned: false,
     displayOrder: 0,
@@ -815,12 +895,21 @@ export async function createProduct(input: ProductInput & { file?: File | null }
 
 export async function updateProduct(
   id: string,
-  input: Partial<ProductInput> & { stockDelta?: number; clearImage?: boolean },
+  input: Partial<ProductInput> & ProductUpdateMedia & { stockDelta?: number },
   file?: File,
 ): Promise<AdminProduct | null> {
-  let uploaded: Awaited<ReturnType<typeof uploadProductImage>> | undefined;
-  let previous: AdminProduct | undefined;
+  let uploadedRecto: Awaited<ReturnType<typeof uploadProductImage>> | undefined;
+  let uploadedVerso: Awaited<ReturnType<typeof uploadProductImage>> | undefined;
+  let previousRecto: AdminProduct | undefined;
+  let previousVerso: AdminProduct | undefined;
+  let previousForClearBack: AdminProduct | undefined;
   let fields = { ...input };
+  const rectoFile = file ?? fields.rectoFile;
+  const versoFile = fields.versoFile;
+  const clearImageBack = fields.clearImageBack === true;
+  delete fields.rectoFile;
+  delete fields.versoFile;
+  delete fields.clearImageBack;
 
   const productId = Number(id);
   if (typeof fields.stockDelta === "number" && Number.isInteger(productId) && productId > 0) {
@@ -885,7 +974,7 @@ export async function updateProduct(
     }
   }
 
-  if (file) {
+  if (rectoFile && rectoFile.size > 0) {
     let snap: StoreSnapshot | "missing";
     try {
       snap = await readStoreSnapshot();
@@ -894,9 +983,36 @@ export async function updateProduct(
       snap = "missing";
     }
     const base = snap === "missing" ? null : snap.store;
-    previous = base?.products.find((item) => item.id === id);
-    if (!previous) return null;
-    uploaded = await uploadProductImage(id, file);
+    previousRecto = base?.products.find((item) => item.id === id);
+    if (!previousRecto) return null;
+    uploadedRecto = await uploadProductImage(id, rectoFile, "recto");
+  }
+
+  if (versoFile && versoFile.size > 0) {
+    let snap: StoreSnapshot | "missing";
+    try {
+      snap = await readStoreSnapshot();
+    } catch (error) {
+      console.error("[store] readStoreSnapshot upload verso", error instanceof Error ? error.name : "erreur");
+      snap = "missing";
+    }
+    const base = snap === "missing" ? null : snap.store;
+    previousVerso = base?.products.find((item) => item.id === id);
+    if (!previousVerso) return null;
+    uploadedVerso = await uploadProductImage(id, versoFile, "verso");
+  }
+
+  if (clearImageBack) {
+    let snap: StoreSnapshot | "missing";
+    try {
+      snap = await readStoreSnapshot();
+    } catch (error) {
+      console.error("[store] readStoreSnapshot clearImageBack", error instanceof Error ? error.name : "erreur");
+      snap = "missing";
+    }
+    const base = snap === "missing" ? null : snap.store;
+    previousForClearBack = base?.products.find((item) => item.id === id);
+    if (!previousForClearBack) return null;
   }
 
   return withStoreOptimistic((store) => {
@@ -913,6 +1029,7 @@ export async function updateProduct(
     if (typeof fields.limitedEdition === "string") product.limitedEdition = fields.limitedEdition;
     if (typeof fields.materials === "string") product.materials = fields.materials;
     if (typeof fields.sizeGuide === "string") product.sizeGuide = fields.sizeGuide;
+    if (fields.printPlacement !== undefined) product.printPlacement = fields.printPlacement;
     if (fields.category) product.category = fields.category;
     if (typeof fields.price === "number") product.price = fields.price;
     if (fields.sizes) product.sizes = fields.sizes;
@@ -932,14 +1049,24 @@ export async function updateProduct(
       product.displayOrder = normalizeDisplayOrder(fields.displayOrder);
     }
 
-    if (uploaded) {
-      product.imageUrl = uploaded.imageUrl;
-      product.blobUrl = uploaded.blobUrl;
-      product.blobPathname = uploaded.blobPathname;
+    if (uploadedRecto) {
+      product.imageUrl = uploadedRecto.imageUrl;
+      product.blobUrl = uploadedRecto.blobUrl;
+      product.blobPathname = uploadedRecto.blobPathname;
     } else if (fields.clearImage && product.publishStatus !== "live") {
       product.imageUrl = DRAFT_PRODUCT_PLACEHOLDER_IMAGE;
       product.blobUrl = null;
       product.blobPathname = null;
+    }
+
+    if (uploadedVerso) {
+      product.imageBackUrl = uploadedVerso.imageUrl;
+      product.imageBackBlobUrl = uploadedVerso.blobUrl;
+      product.imageBackBlobPathname = uploadedVerso.blobPathname;
+    } else if (clearImageBack) {
+      product.imageBackUrl = "";
+      product.imageBackBlobUrl = null;
+      product.imageBackBlobPathname = null;
     }
 
     if (product.publishStatus === "live") {
@@ -948,8 +1075,14 @@ export async function updateProduct(
 
     return { store, result: product };
   }).then(async (updated) => {
-    if (updated && file && previous) {
-      await deleteProductImage(previous);
+    if (updated && rectoFile && previousRecto) {
+      await deleteProductFaceMedia(previousRecto, "recto");
+    }
+    if (updated && versoFile && previousVerso) {
+      await deleteProductFaceMedia(previousVerso, "verso");
+    }
+    if (updated && clearImageBack && previousForClearBack?.imageBackUrl.trim()) {
+      await deleteProductFaceMedia(previousForClearBack, "verso");
     }
     return updated;
   });
@@ -1084,32 +1217,38 @@ export async function uploadLookbookImage(
   const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
   const pathname = `dingry/lookbook/${slideId}/${filename}`;
 
-  if (isBlobConfigured()) {
-    const blob = await put(pathname, file, {
-      access: "public",
-      addRandomSuffix: true,
-      contentType: "image/webp",
-    });
+  /** Aligné sur {@link uploadProductImage} : en dev, fichier local (token Blob souvent lecture seule). */
+  if (useLocalStoreFiles()) {
+    await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
+    const localName = `lookbook-${slideId}-${Date.now()}-${filename}`;
+    const bytes = Buffer.from(await file.arrayBuffer());
+    await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
     return {
-      imageUrl: blob.url,
-      blobUrl: blob.url,
-      blobPathname: blob.pathname,
+      imageUrl: `/admin-uploads/${localName}`,
+      blobUrl: null,
+      blobPathname: null,
     };
   }
 
-  if (!useLocalStoreFiles()) {
-    throw new StoreUnavailableError();
+  if (isBlobConfigured()) {
+    try {
+      const blob = await put(pathname, file, {
+        access: "public",
+        addRandomSuffix: true,
+        contentType: "image/webp",
+      });
+      return {
+        imageUrl: blob.url,
+        blobUrl: blob.url,
+        blobPathname: blob.pathname,
+      };
+    } catch (error) {
+      console.error("[store] upload Blob lookbook", error instanceof Error ? error.name : "erreur");
+      throw new StoreUnavailableError("Upload image impossible (Vercel Blob).");
+    }
   }
 
-  await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
-  const localName = `lookbook-${slideId}-${Date.now()}-${filename}`;
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
-  return {
-    imageUrl: `/admin-uploads/${localName}`,
-    blobUrl: null,
-    blobPathname: null,
-  };
+  throw new StoreUnavailableError("Stockage image indisponible.");
 }
 
 async function deleteLookbookImage(slide: AdminLookbookSlide): Promise<void> {
