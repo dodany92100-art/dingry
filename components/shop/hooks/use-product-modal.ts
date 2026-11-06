@@ -25,32 +25,57 @@ export function useProductModal({ products, catalogState }: Options) {
   const [jerseyColor, setJerseyColor] = useState<JerseyColorKey>("BLANC");
   const productModalRef = useRef<HTMLDivElement>(null);
   const productImageRef = useRef<HTMLDivElement>(null);
+  /** Slug attendu après router.replace — évite le flash variante (URL encore sur l’ancien ?produit=). */
+  const pendingProductSlugRef = useRef<string | null>(null);
 
   // Lien profond : ouvre la fiche correspondant au slug quand le catalogue est prêt.
   useEffect(() => {
     if (catalogState !== "ready") return;
     const slug = searchParams.get("produit");
+
+    if (pendingProductSlugRef.current !== null) {
+      const pending = pendingProductSlugRef.current;
+      if (slug === pending) {
+        pendingProductSlugRef.current = null;
+      } else {
+        return;
+      }
+    }
+
     if (!slug) return;
     const rectoId = rectoIdFromProductSlug(slug);
     if (!rectoId) return;
-    if (selectedProduct && productSlugForCatalogId(selectedProduct.id) === slug) return;
     const product = products.find((item) => item.id === rectoId);
     if (!product) return;
-    setSelectedProduct(product);
-    setSelectedSize("");
-    setModalSide("recto");
-  }, [catalogState, searchParams, products, selectedProduct]);
+
+    setSelectedProduct((current) => {
+      if (current?.id === product.id) return current;
+      setSelectedSize("");
+      setModalSide("recto");
+      if (isJerseyShopProduct(product)) {
+        setJerseyColor(jerseyColorKeyFromProduct(product));
+      }
+      return product;
+    });
+  }, [catalogState, searchParams, products]);
 
   const syncProductInUrl = useCallback(
     (product: ShopProduct | null) => {
       const params = new URLSearchParams(searchParams.toString());
+      let pendingSlug: string | null = null;
       if (product) {
         const slug = productSlugForCatalogId(product.id);
-        if (slug) params.set("produit", slug);
-        else params.delete("produit");
+        if (slug) {
+          params.set("produit", slug);
+          pendingSlug = slug;
+        } else {
+          params.delete("produit");
+        }
       } else {
         params.delete("produit");
+        pendingSlug = null;
       }
+      pendingProductSlugRef.current = pendingSlug;
       const query = params.toString();
       router.replace(query ? `/?${query}` : "/", { scroll: false });
     },
