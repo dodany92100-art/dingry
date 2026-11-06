@@ -4,8 +4,6 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ProductImageFlip, type ProductFlipSide } from "@/components/product-image-flip";
 
-const CLD_WIDTHS = [300, 450, 600, 900] as const;
-
 /** Ajoute f_auto,q_auto,w_N à une URL Cloudinary sans transformation existante. */
 export function cldOpt(url: string, width: number): string {
   const marker = "/upload/";
@@ -67,7 +65,7 @@ export function ProductCard({
           priority={priority}
           soldOut={soldOut}
           alt={`${name} ${variant}`}
-          imgClassName="transition duration-500 ease-out motion-reduce:transition-none group-hover:brightness-[1.03]"
+          imgClassName="transition-[filter] duration-300 ease-out motion-reduce:transition-none group-hover:brightness-[1.03]"
           onTap={onClick ? (nextSide) => onClick(nextSide) : undefined}
         />
         <button

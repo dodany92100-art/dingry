@@ -5,6 +5,7 @@ import { BlobPreconditionFailedError, del, get, put } from "@vercel/blob";
 import { isBlobConfigured } from "@/lib/admin/blob-config";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing } from "@/lib/stock";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
+import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
 import {
   isVersoCatalogId,
   resolveRectoCatalogId,
@@ -15,6 +16,7 @@ import {
   isProductCategory,
   isProductSize,
   STORE_VERSION,
+  type AdminLookbookSlide,
   type AdminOrder,
   type AdminProduct,
   type AdminStore,
@@ -79,6 +81,7 @@ function cloneStore(store: AdminStore): AdminStore {
     ...store,
     products: store.products.map((product) => ({ ...product, sizes: [...product.sizes] })),
     orders: store.orders.map((order) => ({ ...order })),
+    lookbook: store.lookbook.map((slide) => ({ ...slide })),
   };
 }
 
@@ -343,6 +346,36 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
   };
 }
 
+function normalizeLookbookSlide(value: unknown): AdminLookbookSlide | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const id = String(record.id ?? "").trim();
+  const title = String(record.title ?? "").trim();
+  const imageUrl = String(record.imageUrl ?? "").trim();
+  const sortOrder = Number(record.sortOrder);
+  if (!id || !title || !imageUrl || !Number.isInteger(sortOrder) || sortOrder < 0) return null;
+  return {
+    id,
+    title,
+    caption: String(record.caption ?? "").trim(),
+    imageUrl,
+    blobUrl: typeof record.blobUrl === "string" ? record.blobUrl : null,
+    blobPathname: typeof record.blobPathname === "string" ? record.blobPathname : null,
+    sortOrder,
+    createdAt: typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString(),
+  };
+}
+
+function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
+  const seeded = seededLookbookSlides();
+  const existing = (Array.isArray(raw.lookbook) ? raw.lookbook : [])
+    .map(normalizeLookbookSlide)
+    .filter((item): item is AdminLookbookSlide => item !== null)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  if (existing.length === 0) return seeded;
+  return existing;
+}
+
 function migrateStore(raw: AdminStore): AdminStore {
   let source = raw;
   if (raw.version < 6) {
@@ -377,6 +410,7 @@ function migrateStore(raw: AdminStore): AdminStore {
       version: STORE_VERSION,
       products: [...mergedSeed, ...extras],
       orders: raw.orders,
+      lookbook: mergeLookbookSlides(raw),
       removedCatalogIds: [...removed],
     };
   }
@@ -390,6 +424,7 @@ function migrateStore(raw: AdminStore): AdminStore {
     version: STORE_VERSION,
     products: [...mergedSeed, ...extras],
     orders: raw.orders,
+    lookbook: mergeLookbookSlides(raw),
     removedCatalogIds: [...removed],
   };
 }
@@ -399,6 +434,7 @@ function normalizeStore(value: AdminStore): AdminStore {
     version: typeof value.version === "number" ? value.version : 0,
     products: Array.isArray(value.products) ? value.products : [],
     orders: Array.isArray(value.orders) ? value.orders : [],
+    lookbook: Array.isArray(value.lookbook) ? value.lookbook : [],
     removedCatalogIds: Array.isArray(value.removedCatalogIds) ? value.removedCatalogIds : [],
   });
 }
@@ -799,5 +835,179 @@ export async function patchOrder(
     }
     store.orders[index] = { ...current, ...patch };
     return { store, result: { order: store.orders[index], changed: true } };
+  });
+}
+
+export async function uploadLookbookImage(
+  slideId: string,
+  file: File,
+): Promise<{ imageUrl: string; blobUrl: string | null; blobPathname: string | null }> {
+  const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
+  const pathname = `dingry/lookbook/${slideId}/${filename}`;
+
+  if (isBlobConfigured()) {
+    const blob = await put(pathname, file, {
+      access: "public",
+      addRandomSuffix: true,
+      contentType: "image/webp",
+    });
+    return {
+      imageUrl: blob.url,
+      blobUrl: blob.url,
+      blobPathname: blob.pathname,
+    };
+  }
+
+  if (!useLocalStoreFiles()) {
+    throw new StoreUnavailableError();
+  }
+
+  await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
+  const localName = `lookbook-${slideId}-${Date.now()}-${filename}`;
+  const bytes = Buffer.from(await file.arrayBuffer());
+  await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
+  return {
+    imageUrl: `/admin-uploads/${localName}`,
+    blobUrl: null,
+    blobPathname: null,
+  };
+}
+
+async function deleteLookbookImage(slide: AdminLookbookSlide): Promise<void> {
+  if (slide.blobUrl) {
+    await del(slide.blobUrl);
+    return;
+  }
+  if (slide.blobPathname) {
+    await del(slide.blobPathname);
+    return;
+  }
+  await deleteLocalUpload(slide.imageUrl);
+}
+
+function nextLookbookId(slides: AdminLookbookSlide[]): string {
+  const max = slides.reduce((current, item) => {
+    const match = /^lb-(\d+)$/.exec(item.id);
+    if (!match) return current;
+    const value = Number(match[1]);
+    return Number.isInteger(value) && value > current ? value : current;
+  }, 0);
+  return `lb-${max + 1}`;
+}
+
+function sortLookbook(slides: AdminLookbookSlide[]): AdminLookbookSlide[] {
+  return [...slides].sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+}
+
+export type LookbookInput = {
+  title: string;
+  caption: string;
+  sortOrder?: number;
+};
+
+export async function createLookbookSlide(input: LookbookInput & { file: File }): Promise<AdminLookbookSlide> {
+  const snapshot = await readStoreSnapshot();
+  const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
+  const id = nextLookbookId(base.lookbook);
+  const uploaded = await uploadLookbookImage(id, input.file);
+  const sortOrder = input.sortOrder ?? base.lookbook.length;
+  const slide: AdminLookbookSlide = {
+    id,
+    title: input.title,
+    caption: input.caption,
+    imageUrl: uploaded.imageUrl,
+    blobUrl: uploaded.blobUrl,
+    blobPathname: uploaded.blobPathname,
+    sortOrder,
+    createdAt: new Date().toISOString(),
+  };
+
+  return withStoreOptimistic((store) => {
+    store.lookbook = sortLookbook([...store.lookbook, slide]);
+    return { store, result: slide };
+  });
+}
+
+export async function updateLookbookSlide(
+  id: string,
+  input: Partial<LookbookInput>,
+  file?: File,
+): Promise<AdminLookbookSlide | null> {
+  let uploaded: Awaited<ReturnType<typeof uploadLookbookImage>> | undefined;
+  let previous: AdminLookbookSlide | undefined;
+
+  if (file) {
+    uploaded = await uploadLookbookImage(id, file);
+  }
+
+  return withStoreOptimistic((store) => {
+    const index = store.lookbook.findIndex((item) => item.id === id);
+    if (index < 0) {
+      return { store, result: null, skipWrite: true };
+    }
+    previous = { ...store.lookbook[index] };
+    const next: AdminLookbookSlide = {
+      ...store.lookbook[index],
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.caption !== undefined ? { caption: input.caption } : {}),
+      ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+      ...(uploaded
+        ? {
+            imageUrl: uploaded.imageUrl,
+            blobUrl: uploaded.blobUrl,
+            blobPathname: uploaded.blobPathname,
+          }
+        : {}),
+    };
+    store.lookbook[index] = next;
+    store.lookbook = sortLookbook(store.lookbook);
+    return { store, result: next };
+  }).then(async (updated) => {
+    if (uploaded && previous && updated) {
+      await deleteLookbookImage(previous);
+    }
+    return updated;
+  });
+}
+
+export async function removeLookbookSlide(id: string): Promise<boolean> {
+  const removed = await withStoreOptimistic((store) => {
+    const slide = store.lookbook.find((item) => item.id === id);
+    if (!slide) {
+      return { store, result: null, skipWrite: true };
+    }
+    const copy = { ...slide };
+    store.lookbook = store.lookbook.filter((item) => item.id !== id);
+    return { store, result: copy };
+  });
+
+  if (!removed) return false;
+  if (removed.blobUrl || removed.blobPathname || removed.imageUrl.startsWith("/admin-uploads/")) {
+    await deleteLookbookImage(removed);
+  }
+  return true;
+}
+
+export async function reorderLookbookSlide(id: string, direction: "up" | "down"): Promise<AdminLookbookSlide[] | null> {
+  return withStoreOptimistic((store) => {
+    const ordered = sortLookbook(store.lookbook);
+    const index = ordered.findIndex((item) => item.id === id);
+    if (index < 0) {
+      return { store, result: null, skipWrite: true };
+    }
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= ordered.length) {
+      return { store, result: ordered, skipWrite: true };
+    }
+    const current = ordered[index];
+    const swap = ordered[swapIndex];
+    store.lookbook = sortLookbook(
+      store.lookbook.map((item) => {
+        if (item.id === current.id) return { ...item, sortOrder: swap.sortOrder };
+        if (item.id === swap.id) return { ...item, sortOrder: current.sortOrder };
+        return item;
+      }),
+    );
+    return { store, result: sortLookbook(store.lookbook) };
   });
 }

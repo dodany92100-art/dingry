@@ -66,15 +66,27 @@ export type AdminOrder = {
   reviewReasons?: ("stock" | "adresse")[];
 };
 
+export type AdminLookbookSlide = {
+  id: string;
+  title: string;
+  caption: string;
+  imageUrl: string;
+  blobUrl: string | null;
+  blobPathname: string | null;
+  sortOrder: number;
+  createdAt: string;
+};
+
 export type AdminStore = {
   version: number;
   products: AdminProduct[];
   orders: AdminOrder[];
+  lookbook: AdminLookbookSlide[];
   /** Fiches seed retirées du stock admin / catalogue live (ids catalogue). */
   removedCatalogIds?: string[];
 };
 
-export const STORE_VERSION = 6;
+export const STORE_VERSION = 7;
 
 export function isProductSize(value: string): value is ProductSize {
   return (PRODUCT_SIZES as readonly string[]).includes(value);

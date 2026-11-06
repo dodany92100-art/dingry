@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShopFooter } from "@/components/shop-footer";
 import { BackgroundGradientAnimation } from "@/components/ui/background-gradient-animation";
@@ -13,7 +13,6 @@ import { useProductModal } from "@/components/shop/hooks/use-product-modal";
 import { useShopCart } from "@/components/shop/hooks/use-shop-cart";
 import { useShopCatalog } from "@/components/shop/hooks/use-shop-catalog";
 import { useWishlist } from "@/components/shop/hooks/use-wishlist";
-import { LookbookSection } from "@/components/shop/lookbook-section";
 import { PaymentToast } from "@/components/shop/payment-toast";
 import { PersonalizeModal, type PersonalizedLineInput } from "@/components/shop/personalize-modal";
 import { ProductModal } from "@/components/shop/product-modal";
@@ -51,6 +50,28 @@ export default function DingryShopPage() {
   );
 
   const tabValue = personalizeOpen ? CATALOG_MENU_TAB_CUSTOM : activeFilter;
+  const [cartScrollLocked, setCartScrollLocked] = useState(false);
+
+  useEffect(() => {
+    if (cart.open) setCartScrollLocked(true);
+  }, [cart.open]);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  useEffect(() => {
+    const scroller = pageScrollRef.current;
+    if (!scroller) return;
+    scroller.style.overflow = cartScrollLocked ? "hidden" : "";
+    return () => {
+      scroller.style.overflow = "";
+    };
+  }, [cartScrollLocked, pageScrollRef]);
 
   function handleTabChange(tab: string) {
     if (tab === CATALOG_MENU_TAB_CUSTOM) {
@@ -89,7 +110,7 @@ export default function DingryShopPage() {
       <ShopNav cartCount={cart.count} onOpenCart={() => cart.setOpen(true)} onScrollToSection={scrollToSection} />
       <div
         ref={pageScrollRef}
-        className="dingry-page relative z-10 h-full overflow-y-auto bg-transparent [overflow-anchor:none]"
+        className="dingry-page relative z-10 h-full overflow-y-auto overscroll-y-contain bg-transparent [overflow-anchor:none]"
       >
         <ShopHero />
         <div id="catalogue-landing" />
@@ -105,39 +126,39 @@ export default function DingryShopPage() {
           swipeHintIndex={swipeHintIndex}
           onOpenProduct={modal.openProductModal}
         />
-        <LookbookSection />
         <HeritageSection scrollContainerRef={pageScrollRef} />
         <ShopFooter />
-
-        <PersonalizeModal
-          open={personalizeOpen}
-          product={personalizationProduct}
-          onClose={() => setPersonalizeOpen(false)}
-          onSubmit={addPersonalized}
-        />
-        <ProductModal
-          modal={modal}
-          products={products}
-          flipPairs={flipPairs}
-          wishlistIds={wishlist.ids}
-          onToggleWishlist={wishlist.toggle}
-          onAddToCart={addToCart}
-        />
-        <PaymentToast visible={cart.toastVisible} />
-        <CartDrawer
-          open={cart.open}
-          onClose={() => cart.setOpen(false)}
-          items={cart.items}
-          count={cart.count}
-          total={cart.total}
-          confirmation={cart.confirmation}
-          onDismissConfirmation={cart.dismissConfirmation}
-          onUpdateQuantity={cart.updateQuantity}
-          onRemove={cart.removeLine}
-          onCheckout={goToCheckout}
-          checkoutDisabled={catalogState === "error"}
-        />
       </div>
+
+      <PersonalizeModal
+        open={personalizeOpen}
+        product={personalizationProduct}
+        onClose={() => setPersonalizeOpen(false)}
+        onSubmit={addPersonalized}
+      />
+      <ProductModal
+        modal={modal}
+        products={products}
+        flipPairs={flipPairs}
+        wishlistIds={wishlist.ids}
+        onToggleWishlist={wishlist.toggle}
+        onAddToCart={addToCart}
+      />
+      <PaymentToast visible={cart.toastVisible} />
+      <CartDrawer
+        open={cart.open}
+        onClose={() => cart.setOpen(false)}
+        onExitComplete={() => setCartScrollLocked(false)}
+        items={cart.items}
+        count={cart.count}
+        total={cart.total}
+        confirmation={cart.confirmation}
+        onDismissConfirmation={cart.dismissConfirmation}
+        onUpdateQuantity={cart.updateQuantity}
+        onRemove={cart.removeLine}
+        onCheckout={goToCheckout}
+        checkoutDisabled={catalogState === "error"}
+      />
     </div>
   );
 }

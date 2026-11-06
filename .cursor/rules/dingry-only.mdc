@@ -23,6 +23,20 @@ Ce workspace est **la boutique DINGRY** (streetwear). **Ne pas** appliquer les c
 - Explications en **français** sauf demande contraire
 - Ne pas toucher aux dossiers hors ce workspace (`agence tout site/ RAP2K`, `~/` repo rap2k)
 
+## Dev local
+
+- Boutique : http://localhost:3000/
+- Checkout : http://localhost:3000/checkout
+- Admin : http://localhost:3000/admin
+- Lancer : `npm run dev` (port **3000** par défaut)
+
+## Token economy (agent) — obligatoire
+
+- **Ultra-concision** : pas de salutations, filler, ni longues explications sauf demande explicite
+- **Diffs ciblés uniquement** : ne pas réécrire des fichiers entiers ; lignes/composants modifiés seulement
+- **Recherche limitée** : avant un grep/search, restreindre au dossier ou fichier concerné — pas de scan workspace entier sans nécessité
+- Réponses en **français** (sauf demande contraire)
+
 ## Git
 
 - Dépôt Git **local à ce dossier** uniquement. Ne pas confondre avec le dépôt `rap2k` à la racine du home utilisateur.

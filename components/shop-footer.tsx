@@ -22,6 +22,7 @@ const MODAL_OVERLAY_EASE = [0.16, 1, 0.3, 1] as const;
 const MODAL_PANEL_SPRING = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.85 };
 
 const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
+const FOOTER_SECTION_INDICES = ["01", "02", "03", "04", "05"] as const;
 
 function InstagramIcon() {
   return (
@@ -163,13 +164,35 @@ export function ShopFooter() {
   return (
     <>
       <footer className="dingry-footer-stage dingry-below-hero-surface relative overflow-hidden border-t border-white/[0.06] px-0 py-14 md:py-16">
-        <InfiniteMovingCards ariaLabel="Informations boutique" durationSeconds={52}>
-          {[0, 1].map((copy) => (
-            <div key={copy} className="flex shrink-0 items-stretch gap-5 md:gap-8" aria-hidden={copy === 1}>
-              <FooterMarqueeBlocks onOpenLegal={setLegalDoc} withLegalAnchor={copy === 0} />
-            </div>
+        <div className="flex flex-col gap-5 px-6 md:hidden">
+          <FooterMarqueeBlocks onOpenLegal={setLegalDoc} withLegalAnchor />
+        </div>
+
+        <div className="hidden md:block">
+          <InfiniteMovingCards ariaLabel="Informations boutique" durationSeconds={52}>
+            {[0, 1].map((copy) => (
+              <div key={copy} className="flex shrink-0 items-stretch gap-5 md:gap-8" aria-hidden={copy === 1}>
+                <FooterMarqueeBlocks onOpenLegal={setLegalDoc} withLegalAnchor={copy === 0} />
+              </div>
+            ))}
+          </InfiniteMovingCards>
+        </div>
+
+        <nav
+          className="relative z-[1] mt-10 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 px-6 md:mt-12"
+          aria-label="Numérotation des blocs pied de page"
+        >
+          {FOOTER_SECTION_INDICES.map((index, i) => (
+            <span key={index} className="inline-flex items-center gap-3">
+              {i > 0 ? (
+                <span className="text-[10px] text-white/15" aria-hidden>
+                  ·
+                </span>
+              ) : null}
+              <span className="dingry-footer-index text-white/45">{index}</span>
+            </span>
           ))}
-        </InfiniteMovingCards>
+        </nav>
 
         <div className="relative z-[1] mt-12 border-t border-white/[0.06] px-6 pt-8 md:px-12">
           <p className="mb-4 text-center text-[10px] uppercase tracking-[0.32em] text-white/35">Moyens de paiement</p>

@@ -15,7 +15,7 @@ import {
   personalizationLine,
   personalizationPreviewLabel,
 } from "@/lib/shop-view";
-import { MODAL_OVERLAY_EASE, MODAL_PANEL_SPRING } from "./motion";
+import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
 
 export type PersonalizedLineInput = { size: string; qty: number; personalization: string };
 
@@ -26,10 +26,7 @@ type PersonalizeModalProps = {
   onSubmit: (line: PersonalizedLineInput) => void;
 };
 
-/**
- * Toujours monté : l'état du formulaire (texte, couleur, taille) survit à la fermeture,
- * comme dans la page d'origine.
- */
+/** Formulaire conservé entre ouvertures (état local React). */
 export function PersonalizeModal({ open, product, onClose, onSubmit }: PersonalizeModalProps) {
   const [label, setLabel] = useState("PARIS");
   const [size, setSize] = useState("");
@@ -58,7 +55,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.22, ease: MODAL_OVERLAY_EASE }}
+            transition={MODAL_OVERLAY_TRANSITION}
             onClick={onClose}
           />
           <motion.div

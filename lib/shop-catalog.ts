@@ -1,8 +1,12 @@
 import {
+  CATALOG_CATEGORIES,
+  CATALOG_FILTER_LABEL,
   filterByCategory,
   normalizeCatalogCategory,
+  type CatalogCategory,
   type CatalogFilter,
 } from "@/lib/catalog-category";
+import { sortCatalogProducts } from "@/lib/catalog-sort";
 import {
   DINGRY_JERSEY_PRODUCT_IDS,
   DINGRY_SWEAT_PRODUCT_IDS,
@@ -27,17 +31,21 @@ export type ShopCategory =
 
 export const SHOP_TEE_CATEGORY = "T-shirts" satisfies ShopCategory;
 
-/** Onglets catégorie (sans « Tout ») — une entrée = un filtre boutique. */
-export const SHOP_CATEGORY_TABS = [
-  "T-shirts",
-  "Hoodie",
-  "Caps",
-  "Sweats",
-  "Hoodie zippé",
-  "Pants",
-  "Jersey",
-  "Crop Top",
-] as const satisfies readonly ShopCategory[];
+/** Onglets catégorie (sans « Tout ») — même ordre que le menu catalogue. */
+const SHOP_CATEGORY_BY_MENU_SLUG: Record<CatalogCategory, ShopCategory> = {
+  hoodies: "Hoodie",
+  "hoodie-zip": "Hoodie zippé",
+  sweats: "Sweats",
+  "t-shirts": SHOP_TEE_CATEGORY,
+  jersey: "Jersey",
+  pants: "Pants",
+  "crop-top": "Crop Top",
+  caps: "Caps",
+};
+
+export const SHOP_CATEGORY_TABS = CATALOG_CATEGORIES.map(
+  (slug) => SHOP_CATEGORY_BY_MENU_SLUG[slug],
+) as readonly ShopCategory[];
 
 /** Barre catalogue : « Tout » + chaque catégorie ci-dessus. */
 export const SHOP_CATALOG_TABS = ["Collection", ...SHOP_CATEGORY_TABS] as const;
@@ -97,6 +105,25 @@ export function filterCatalogProducts(
   tab: CatalogFilter,
 ): ShopProduct[] {
   return toCatalogCards(filterByCategory(products, tab));
+}
+
+export type CatalogMenuSection = {
+  category: CatalogCategory;
+  label: string;
+  products: ShopProduct[];
+};
+
+/** Vue « Collection » : blocs produits dans l’ordre du menu (Hoodies → Caps). */
+export function buildCatalogMenuSections(products: readonly ShopProduct[]): CatalogMenuSection[] {
+  const cards = toCatalogCards(products);
+  return CATALOG_CATEGORIES.map((category) => ({
+    category,
+    label: CATALOG_FILTER_LABEL[category],
+    products: sortCatalogProducts(
+      cards.filter((product) => normalizeCatalogCategory(product.category) === category),
+      "featured",
+    ),
+  })).filter((section) => section.products.length > 0);
 }
 
 /** Fiche produit avec bascule recto / verso (hoodies, sweats ; tees via meta dédiée). */

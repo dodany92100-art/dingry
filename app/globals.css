@@ -288,9 +288,21 @@ html[data-theme="light"] .dingry-shop .dingry-editorial-frame__inner {
   animation: dingry-flip-swipe-hint 2.5s ease-in-out 2;
 }
 
+.dingry-flip-track {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dingry-flip-track--dragging {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dingry-flip-swipe-hint {
     animation: none;
+  }
+
+  .dingry-flip-track {
+    transition: none;
   }
 }
 
@@ -474,6 +486,12 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   --dingry-motion: cubic-bezier(0.16, 1, 0.3, 1);
   --dingry-accent: #0066ff;
   --dingry-nav-h: 3.0625rem;
+}
+
+.dingry-page {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 @media (min-width: 768px) {

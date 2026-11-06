@@ -39,10 +39,10 @@ export function ProductImageFlip({
 }: ProductImageFlipProps) {
   const flippable = Boolean(backImage);
   const trackRef = useRef<HTMLDivElement>(null);
+  const trackInnerRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
   const dragDelta = useRef(0);
   const didDrag = useRef(false);
-  const [dragOffsetPx, setDragOffsetPx] = useState(0);
   const [hintDone, setHintDone] = useState(false);
   const showHint = swipeHint && flippable && !hintDone && side === "recto";
 
@@ -52,6 +52,21 @@ export function ProductImageFlip({
     return () => window.clearTimeout(timer);
   }, [showHint]);
 
+  const applyTrackTransform = useCallback(
+    (dragPx: number, animate: boolean) => {
+      const el = trackInnerRef.current;
+      if (!el || showHint) return;
+      el.classList.toggle("dingry-flip-track--dragging", !animate);
+      const basePercent = side === "verso" ? -50 : 0;
+      el.style.transform = `translateX(calc(${basePercent}% + ${dragPx}px))`;
+    },
+    [showHint, side],
+  );
+
+  useEffect(() => {
+    applyTrackTransform(0, true);
+  }, [applyTrackTransform, side]);
+
   const commitSide = useCallback(
     (next: ProductFlipSide) => {
       if (!flippable || next === side) return;
@@ -60,17 +75,14 @@ export function ProductImageFlip({
     [flippable, onSideChange, side],
   );
 
-  const finishDrag = useCallback(
-    (width: number) => {
-      const delta = dragDelta.current;
-      dragStartX.current = null;
-      setDragOffsetPx(0);
-      if (!flippable || Math.abs(delta) < SWIPE_THRESHOLD_PX) return;
-      if (delta < 0 && side === "recto") commitSide("verso");
-      if (delta > 0 && side === "verso") commitSide("recto");
-    },
-    [commitSide, flippable, side],
-  );
+  const finishDrag = useCallback(() => {
+    const delta = dragDelta.current;
+    dragStartX.current = null;
+    applyTrackTransform(0, true);
+    if (!flippable || Math.abs(delta) < SWIPE_THRESHOLD_PX) return;
+    if (delta < 0 && side === "recto") commitSide("verso");
+    if (delta > 0 && side === "verso") commitSide("recto");
+  }, [applyTrackTransform, commitSide, flippable, side]);
 
   const onPointerDown = (event: React.PointerEvent) => {
     if (!flippable) return;
@@ -89,13 +101,12 @@ export function ProductImageFlip({
     const atRecto = side === "recto";
     const clamped =
       atRecto ? Math.min(0, Math.max(-width, delta)) : Math.max(0, Math.min(width, delta));
-    setDragOffsetPx(clamped);
+    applyTrackTransform(clamped, false);
   };
 
   const onPointerUp = (event: React.PointerEvent) => {
     if (!flippable) return;
-    const width = trackRef.current?.clientWidth ?? 1;
-    finishDrag(width);
+    finishDrag();
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
@@ -110,11 +121,6 @@ export function ProductImageFlip({
     }
     onTap?.(side);
   };
-
-  const basePercent = side === "verso" ? -50 : 0;
-  const transform = flippable && !showHint
-    ? `translateX(calc(${basePercent}% + ${dragOffsetPx}px))`
-    : undefined;
 
   const frontSrc = cldOpt(frontImage, 600);
   const backSrc = backImage ? cldOpt(backImage, 600) : frontSrc;
@@ -139,7 +145,7 @@ export function ProductImageFlip({
           width={600}
           height={800}
           className={cn(
-            "h-full w-full object-cover transition duration-500 ease-out motion-reduce:transition-none",
+            "h-full w-full object-cover transition-[filter] duration-300 ease-out motion-reduce:transition-none",
             imgClassName,
             soldOut && "opacity-50",
           )}
@@ -181,12 +187,11 @@ export function ProductImageFlip({
       aria-label={flippable ? `${alt} — glisser pour voir le verso` : alt}
     >
       <div
+        ref={trackInnerRef}
         className={cn(
-          "flex h-full w-[200%] will-change-transform",
-          dragOffsetPx === 0 && "transition-transform duration-500 ease-out motion-reduce:transition-none",
+          "dingry-flip-track flex h-full w-[200%] will-change-transform",
           showHint && "dingry-flip-swipe-hint",
         )}
-        style={{ transform: showHint ? undefined : transform }}
       >
         <img
           src={frontSrc}
@@ -203,24 +208,20 @@ export function ProductImageFlip({
             soldOut && "opacity-50",
           )}
         />
-        {flippable ? (
-          <img
-            src={backSrc}
-            alt={`${alt} — verso`}
-            loading="lazy"
-            decoding="async"
-            width={600}
-            height={800}
-            draggable={false}
-            className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
-          />
-        ) : null}
+        <img
+          src={backSrc}
+          alt={`${alt} — verso`}
+          loading="lazy"
+          decoding="async"
+          width={600}
+          height={800}
+          draggable={false}
+          className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
+        />
       </div>
-      {flippable ? (
-        <span className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-black/55 px-2 py-0.5 text-[8px] uppercase tracking-[0.2em] text-white/70 md:text-[9px]">
-          {side === "recto" ? "Glisser → verso" : "← Recto"}
-        </span>
-      ) : null}
+      <span className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-black/55 px-2 py-0.5 text-[8px] uppercase tracking-[0.2em] text-white/70 md:text-[9px]">
+        {side === "recto" ? "Glisser → verso" : "← Recto"}
+      </span>
       {soldOut ? (
         <span className="pointer-events-none absolute left-2 top-2 bg-black/80 px-2 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
           Épuisé

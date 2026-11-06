@@ -35,7 +35,10 @@ export function useProductModal({ products, catalogState }: Options) {
 
     if (pendingProductSlugRef.current !== null) {
       const pending = pendingProductSlugRef.current;
-      if (slug === pending) {
+      if (pending === "") {
+        if (slug) return;
+        pendingProductSlugRef.current = null;
+      } else if (slug === pending) {
         pendingProductSlugRef.current = null;
       } else {
         return;
@@ -47,17 +50,15 @@ export function useProductModal({ products, catalogState }: Options) {
     if (!rectoId) return;
     const product = products.find((item) => item.id === rectoId);
     if (!product) return;
+    if (selectedProduct?.id === product.id) return;
 
-    setSelectedProduct((current) => {
-      if (current?.id === product.id) return current;
-      setSelectedSize("");
-      setModalSide("recto");
-      if (isJerseyShopProduct(product)) {
-        setJerseyColor(jerseyColorKeyFromProduct(product));
-      }
-      return product;
-    });
-  }, [catalogState, searchParams, products]);
+    setSelectedProduct(product);
+    setSelectedSize("");
+    setModalSide("recto");
+    if (isJerseyShopProduct(product)) {
+      setJerseyColor(jerseyColorKeyFromProduct(product));
+    }
+  }, [catalogState, searchParams, products, selectedProduct?.id]);
 
   const syncProductInUrl = useCallback(
     (product: ShopProduct | null) => {
@@ -73,7 +74,7 @@ export function useProductModal({ products, catalogState }: Options) {
         }
       } else {
         params.delete("produit");
-        pendingSlug = null;
+        pendingSlug = "";
       }
       pendingProductSlugRef.current = pendingSlug;
       const query = params.toString();

@@ -1,0 +1,131 @@
+import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/admin/auth";
+import { parseLookbookFields } from "@/lib/admin/parse-lookbook";
+import {
+  loadStoreReadOnly,
+  removeLookbookSlide,
+  reorderLookbookSlide,
+  StoreConflictError,
+  StoreUnavailableError,
+  updateLookbookSlide,
+  validateImageFile,
+} from "@/lib/admin/store";
+import { jsonNoStore } from "@/lib/http";
+
+export const runtime = "nodejs";
+
+function revalidateLookbook() {
+  revalidatePath("/");
+  revalidatePath("/api/lookbook");
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
+
+  const { id } = await params;
+  if (!id) {
+    return jsonNoStore({ error: "Slide introuvable." }, { status: 404 });
+  }
+
+  try {
+    const store = await loadStoreReadOnly();
+    const current = store.lookbook.find((item) => item.id === id);
+    if (!current) {
+      return jsonNoStore({ error: "Slide introuvable." }, { status: 404 });
+    }
+
+    const contentType = request.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      let body: Record<string, unknown>;
+      try {
+        body = (await request.json()) as Record<string, unknown>;
+      } catch {
+        return jsonNoStore({ error: "Corps JSON invalide." }, { status: 400 });
+      }
+
+      if (body.reorder === "up" || body.reorder === "down") {
+        const slides = await reorderLookbookSlide(id, body.reorder);
+        if (!slides) {
+          return jsonNoStore({ error: "Slide introuvable." }, { status: 404 });
+        }
+        revalidateLookbook();
+        return jsonNoStore({ slides });
+      }
+    }
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const parsed = parseLookbookFields(formData, { partial: true });
+      if (parsed.error) {
+        return jsonNoStore({ error: parsed.error }, { status: 400 });
+      }
+
+      const image = formData.get("image");
+      let file: File | undefined;
+      if (image instanceof File && image.size > 0) {
+        const imageError = validateImageFile(image);
+        if (imageError) {
+          return jsonNoStore({ error: imageError }, { status: 400 });
+        }
+        file = image;
+      }
+
+      const slide = await updateLookbookSlide(
+        id,
+        {
+          title: parsed.fields.title,
+          caption: parsed.fields.caption,
+          sortOrder: parsed.fields.sortOrder,
+        },
+        file,
+      );
+      revalidateLookbook();
+      return jsonNoStore({ slide });
+    }
+
+    return jsonNoStore({ error: "Requête non supportée." }, { status: 400 });
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) {
+      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
+    }
+    if (error instanceof StoreConflictError) {
+      return jsonNoStore({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
+    }
+    return jsonNoStore({ error: "Impossible de mettre à jour la slide." }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
+
+  const { id } = await params;
+  if (!id) {
+    return jsonNoStore({ error: "Slide introuvable." }, { status: 404 });
+  }
+
+  try {
+    const removed = await removeLookbookSlide(id);
+    if (!removed) {
+      return jsonNoStore({ error: "Slide introuvable." }, { status: 404 });
+    }
+    revalidateLookbook();
+    return jsonNoStore({ ok: true });
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) {
+      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
+    }
+    if (error instanceof StoreConflictError) {
+      return jsonNoStore({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
+    }
+    return jsonNoStore({ error: "Impossible de supprimer la slide." }, { status: 500 });
+  }
+}

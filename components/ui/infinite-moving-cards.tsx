@@ -11,6 +11,8 @@ type InfiniteMovingCardsProps = {
   /** Durée d’un cycle complet (deux copies = -50 %). */
   durationSeconds?: number;
   ariaLabel?: string;
+  /** Désactivé sur mobile : évite que le doigt fasse glisser tout le bandeau au lieu de scroller la page. */
+  allowPointerDrag?: boolean;
 };
 
 function wrapOffset(offset: number, loop: number): number {
@@ -25,6 +27,7 @@ export function InfiniteMovingCards({
   backdrop,
   durationSeconds = 42,
   ariaLabel,
+  allowPointerDrag = true,
 }: InfiniteMovingCardsProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -100,7 +103,7 @@ export function InfiniteMovingCards({
   }
 
   function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.button !== 0) return;
+    if (!allowPointerDrag || event.button !== 0) return;
     pausedRef.current = true;
     dragRef.current = {
       pointerId: event.pointerId,
@@ -111,6 +114,7 @@ export function InfiniteMovingCards({
   }
 
   function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!allowPointerDrag) return;
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     const delta = event.clientX - drag.startX;
@@ -145,17 +149,18 @@ export function InfiniteMovingCards({
     <div
       ref={viewportRef}
       className={cn(
-        "dingry-infinite-cards relative w-full cursor-grab touch-pan-y overflow-hidden active:cursor-grabbing",
+        "dingry-infinite-cards relative w-full overflow-hidden",
+        allowPointerDrag && "cursor-grab touch-pan-y active:cursor-grabbing",
         className,
       )}
       aria-label={ariaLabel}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-      onClickCapture={onClickCapture}
+      onPointerEnter={allowPointerDrag ? onPointerEnter : undefined}
+      onPointerLeave={allowPointerDrag ? onPointerLeave : undefined}
+      onPointerDown={allowPointerDrag ? onPointerDown : undefined}
+      onPointerMove={allowPointerDrag ? onPointerMove : undefined}
+      onPointerUp={allowPointerDrag ? endDrag : undefined}
+      onPointerCancel={allowPointerDrag ? endDrag : undefined}
+      onClickCapture={allowPointerDrag ? onClickCapture : undefined}
     >
       {backdrop ? (
         <div className="dingry-infinite-cards-backdrop pointer-events-none absolute inset-0 z-0 flex items-center justify-center">

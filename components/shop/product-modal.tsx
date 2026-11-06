@@ -21,7 +21,7 @@ import {
   type FlipPair,
 } from "@/lib/shop-view";
 import type { ProductModalState } from "./hooks/use-product-modal";
-import { MODAL_OVERLAY_EASE, MODAL_PANEL_SPRING } from "./motion";
+import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
 
 type ProductModalProps = {
   modal: ProductModalState;
@@ -97,7 +97,7 @@ function ProductModalContent({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.22, ease: MODAL_OVERLAY_EASE }}
+        transition={MODAL_OVERLAY_TRANSITION}
         onClick={() => modal.closeProductModal()}
       />
       <motion.div
@@ -135,7 +135,7 @@ function ProductModalContent({
             </div>
           )}
         </div>
-        <div className="dingry-sale-panel relative z-10 flex flex-1 flex-col justify-between bg-[#0a0a0a] p-6 md:p-10">
+        <div className="relative flex flex-1 flex-col justify-between bg-[#0a0a0a] p-6 md:p-10">
           <div>
             <div className="mb-2 flex items-center justify-end gap-3">
               <div className="flex shrink-0 items-center gap-2">
@@ -287,7 +287,7 @@ function ProductModalContent({
                   key={s}
                   type="button"
                   onClick={() => modal.setSelectedSize(s)}
-                  className={`py-2.5 text-xs font-medium tracking-widest border transition-all duration-200 ${
+                  className={`py-2.5 text-xs font-medium tracking-widest border transition-colors duration-150 ${
                     selectedSize === s
                       ? "bg-[#0066FF] border-[#0066FF] text-white"
                       : "border-white/10 text-white/50 hover:border-white/30 hover:text-white"
@@ -307,7 +307,7 @@ function ProductModalContent({
                   onClick={() => modal.showProductSide(nextSide)}
                   aria-pressed={modalSide === "verso"}
                   style={{ gridColumn: rectoColumn }}
-                  className={`py-2.5 text-[10px] font-medium tracking-[0.18em] uppercase border transition-all ${
+                  className={`py-2.5 text-[10px] font-medium tracking-[0.18em] uppercase border transition-colors duration-150 ${
                     modalSide === "verso"
                       ? "border-white bg-white text-black"
                       : "border-white/20 text-white/50 hover:border-white/60 hover:text-white"
@@ -343,7 +343,7 @@ function ProductModalContent({
               type="button"
               onClick={onAddToCart}
               disabled={!selectedSize || outOfStock}
-              className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
+              className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-colors duration-200 ${
                 selectedSize && !outOfStock
                   ? "bg-[#0066FF] text-white shadow-[0_8px_32px_rgba(0,102,255,0.35)] hover:bg-[#0052cc]"
                   : "bg-white/10 text-white/20 cursor-not-allowed"

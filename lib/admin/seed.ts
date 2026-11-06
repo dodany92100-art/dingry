@@ -1,5 +1,6 @@
 import type { AdminOrder, AdminProduct, AdminStore, ProductCategory, ProductSize } from "@/lib/admin/types";
 import { STORE_VERSION } from "@/lib/admin/types";
+import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
 import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL"] as const;
@@ -406,5 +407,6 @@ export function createSeededStore(): AdminStore {
     version: STORE_VERSION,
     products: SEEDED_PRODUCTS.map((item) => ({ ...item, sizes: [...item.sizes] })),
     orders: SEEDED_ORDERS.map((item) => ({ ...item, items: [...item.items] })),
+    lookbook: seededLookbookSlides(),
   };
 }

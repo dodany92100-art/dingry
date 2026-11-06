@@ -115,6 +115,13 @@ export function StickyScroll({
             ) : null}
           </div>
         ))}
+        <p
+          className="dingry-footer-index mt-8 text-center lg:hidden"
+          aria-live="polite"
+          aria-label={`Bloc ${activeIndex + 1} sur ${items.length}`}
+        >
+          {String(activeIndex + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}
+        </p>
       </div>
 
       <div

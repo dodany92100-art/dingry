@@ -20,6 +20,7 @@ describe("quoteCheckout — prix CRM", () => {
       version: 4,
       products: SEEDED_PRODUCTS.map((p) => ({ ...p })),
       orders: [],
+      lookbook: [],
     });
   });
 
@@ -37,6 +38,7 @@ describe("quoteCheckout — prix CRM", () => {
         p.id === "39" ? { ...p, price: 179, sku: "DINGRY-S03-BIS" } : { ...p },
       ),
       orders: [],
+      lookbook: [],
     });
     const quote = await quoteCheckout([{ productId: 39, size: "L", qty: 2 }]);
     expect(quote?.totalCents).toBe(35800);
@@ -47,6 +49,7 @@ describe("quoteCheckout — prix CRM", () => {
       version: 4,
       products: [],
       orders: [],
+      lookbook: [],
     });
     expect(VITRINE_ONLY[8]?.price).toBe(80);
     const quote = await quoteCheckout([{ productId: 8, size: "M", qty: 1 }]);
@@ -60,6 +63,7 @@ describe("quoteCheckout — prix CRM", () => {
         p.id === "6" ? { ...p, price: 205 } : { ...p },
       ),
       orders: [],
+      lookbook: [],
     });
     const quote = await quoteCheckout([{ productId: 8, size: "M", qty: 1 }]);
     expect(quote?.totalCents).toBe(20500);
@@ -79,6 +83,7 @@ describe("alignement CRM / vitrine fallback", () => {
       version: 4,
       products: [],
       orders: [],
+      lookbook: [],
     });
     for (const id of Object.keys(VITRINE_ONLY).map(Number)) {
       const quote = await quoteCheckout([{ productId: id, size: "M", qty: 1 }]);
