@@ -30,7 +30,3 @@ export function toggleWishlistId(productId: number): number[] {
   writeWishlistIds(next);
   return next;
 }
-
-export function isInWishlist(productId: number): boolean {
-  return readWishlistIds().includes(productId);
-}

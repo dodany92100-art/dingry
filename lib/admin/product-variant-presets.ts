@@ -24,7 +24,7 @@ export type AdminColorVariant = (typeof ADMIN_COLOR_VARIANTS)[number];
 
 export const ADMIN_VARIANT_PRESETS = Object.fromEntries(
   PRODUCT_CATEGORIES.map((category) => [category, ADMIN_COLOR_VARIANTS]),
-) as Record<ProductCategory, readonly AdminColorVariant[]>;
+) as unknown as Record<ProductCategory, readonly AdminColorVariant[]>;
 
 export function defaultVariantForCategory(category: ProductCategory): string {
   return ADMIN_VARIANT_PRESETS[category][0] ?? "NOIR";

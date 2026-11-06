@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ProductImageFlip, type ProductFlipSide } from "@/components/product-image-flip";
 
 const CLD_WIDTHS = [300, 450, 600, 900] as const;
 
@@ -22,7 +24,7 @@ const priceFormat = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 2,
 });
 
-export type ProductCardData = {
+type ProductCardData = {
   name: string;
   variant: string;
   image: string;
@@ -30,7 +32,9 @@ export type ProductCardData = {
 };
 
 type ProductCardProps = ProductCardData & {
-  onClick?: () => void;
+  backImage?: string;
+  swipeHint?: boolean;
+  onClick?: (side: ProductFlipSide) => void;
   className?: string;
   /** Première rangée visible : charge l'image en priorité (LCP). */
   priority?: boolean;
@@ -41,65 +45,56 @@ export function ProductCard({
   name,
   variant,
   image,
+  backImage,
+  swipeHint = false,
   price,
   onClick,
   className,
   priority = false,
   soldOut = false,
 }: ProductCardProps) {
-  const srcSet = CLD_WIDTHS.map((w) => `${cldOpt(image, w)} ${w}w`).join(", ");
+  const [side, setSide] = useState<ProductFlipSide>("recto");
 
   return (
     <article className={cn("group", className)}>
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={!onClick}
-        className="w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 md:rounded-2xl"
-      >
-        <div className="dingry-product-photo relative aspect-[3/4] overflow-hidden rounded-xl md:rounded-2xl">
-          <img
-            src={cldOpt(image, 600)}
-            srcSet={srcSet}
-            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-            alt={`${name} ${variant}`}
-            loading={priority ? "eager" : "lazy"}
-            fetchPriority={priority ? "high" : "auto"}
-            decoding="async"
-            width={600}
-            height={800}
-            className={cn(
-              "h-full w-full object-cover transition duration-500 ease-out motion-reduce:transition-none",
-              "group-hover:scale-[1.02] group-hover:brightness-[1.03] motion-reduce:group-hover:scale-100",
-              soldOut && "opacity-50",
-            )}
-          />
-          {soldOut ? (
-            <span className="absolute left-2 top-2 bg-black/80 px-2 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
-              Épuisé
-            </span>
-          ) : null}
-        </div>
-        <div className="mt-2 px-0.5 md:mt-3">
+      <div className="w-full rounded-xl text-left md:rounded-2xl">
+        <ProductImageFlip
+          frontImage={image}
+          backImage={backImage}
+          side={side}
+          onSideChange={setSide}
+          swipeHint={swipeHint}
+          priority={priority}
+          soldOut={soldOut}
+          alt={`${name} ${variant}`}
+          imgClassName="transition duration-500 ease-out motion-reduce:transition-none group-hover:brightness-[1.03]"
+          onTap={onClick ? (nextSide) => onClick(nextSide) : undefined}
+        />
+        <button
+          type="button"
+          onClick={() => onClick?.(side)}
+          disabled={!onClick}
+          className="mt-2 w-full px-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 md:mt-3"
+        >
           <p className="text-[9px] uppercase tracking-[0.18em] text-white/45 md:text-[10px] md:tracking-[0.22em]">
             {name}
           </p>
           {variant ? (
-          <div className="mt-1 flex items-start justify-between gap-2">
-            <p className="line-clamp-2 text-[11px] font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-sm md:tracking-widest">
-              {variant}
-            </p>
-            <p className="shrink-0 text-sm font-bold tabular-nums tracking-tight text-white md:text-base">
+            <div className="mt-1 flex items-start justify-between gap-2">
+              <p className="line-clamp-2 text-[11px] font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-sm md:tracking-widest">
+                {variant}
+              </p>
+              <p className="shrink-0 text-sm font-bold tabular-nums tracking-tight text-white md:text-base">
+                {priceFormat.format(price)}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm font-bold tabular-nums tracking-tight text-white md:text-base">
               {priceFormat.format(price)}
             </p>
-          </div>
-          ) : (
-          <p className="mt-1 text-sm font-bold tabular-nums tracking-tight text-white md:text-base">
-            {priceFormat.format(price)}
-          </p>
           )}
-        </div>
-      </button>
+        </button>
+      </div>
     </article>
   );
 }

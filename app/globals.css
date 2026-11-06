@@ -270,6 +270,30 @@ html[data-theme="light"] .dingry-shop .dingry-editorial-frame__inner {
   border-color: #000;
 }
 
+@keyframes dingry-flip-swipe-hint {
+  0%,
+  70%,
+  100% {
+    transform: translateX(0);
+  }
+  18% {
+    transform: translateX(-8%);
+  }
+  36% {
+    transform: translateX(-8%);
+  }
+}
+
+.dingry-flip-swipe-hint {
+  animation: dingry-flip-swipe-hint 2.5s ease-in-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dingry-flip-swipe-hint {
+    animation: none;
+  }
+}
+
 @keyframes dingry-card-gradient-shift {
   0% {
     background-position: 0% 50%;
