@@ -31,6 +31,10 @@ import {
 import { EMPTY_PRODUCT_STORY, type ProductStoryFormFields } from "@/lib/admin/product-story";
 import { prepareProductImage } from "@/lib/client/prepare-product-image";
 import { buildSmartCrmHints, buildSmartDescriptionDraft } from "@/lib/admin/smart-crm";
+import {
+  parseSmartProductText,
+  summarizeSmartParseFilled,
+} from "@/lib/admin/smart-product-text-parser";
 import { DEFAULT_SHOP_PRODUCT_STOCK } from "@/lib/shop-data";
 import type { SaveProductResult } from "./hooks/use-admin-products";
 
@@ -210,6 +214,8 @@ export function ProductEditorModal({
   const [formSuccess, setFormSuccess] = useState("");
   const [formSuccessTone, setFormSuccessTone] = useState<"draft" | "live" | "neutral">("neutral");
   const [customPantWaist, setCustomPantWaist] = useState("");
+  const [smartPasteOpen, setSmartPasteOpen] = useState(false);
+  const [smartPasteText, setSmartPasteText] = useState("");
   const [printSheetOpen, setPrintSheetOpen] = useState(false);
   const [colorListDraft, setColorListDraft] = useState(() =>
     colorDeclinationsLabel(formFrom(initial).colorDeclinations),
@@ -558,6 +564,59 @@ export function ProductEditorModal({
     setEditorTab("story");
   }
 
+  function applySmartPaste() {
+    setFormError("");
+    setFormSuccess("");
+    setFormSuccessTone("neutral");
+    const parsed = parseSmartProductText(smartPasteText, form.category);
+    if (parsed.filled.length === 0) {
+      showFormSuccess(summarizeSmartParseFilled(parsed.filled), "neutral");
+      return;
+    }
+    setForm((prev) => {
+      const targetCategory = parsed.detectedCategory ?? prev.category;
+      let next: FormState =
+        parsed.detectedCategory !== undefined && parsed.detectedCategory !== prev.category
+          ? {
+              ...prev,
+              category: parsed.detectedCategory,
+              sizes: [],
+              ...(editingId ? {} : { variant: "", colorDeclinations: [] }),
+            }
+          : { ...prev, category: targetCategory };
+
+      if (parsed.name !== undefined) next.name = parsed.name;
+      if (parsed.description !== undefined) next.description = parsed.description;
+      if (parsed.materials !== undefined) next.materials = parsed.materials;
+      if (parsed.fabrication !== undefined) next.fabrication = parsed.fabrication;
+      if (parsed.limitedEdition !== undefined) next.limitedEdition = parsed.limitedEdition;
+      if (parsed.price !== undefined) next.price = parsed.price;
+
+      if (parsed.variantColor !== undefined && !isPantsCategory(targetCategory)) {
+        next.variant = parsed.variantColor;
+        next.colorDeclinations = [parsed.variantColor];
+      }
+
+      if (parsed.sizes !== undefined && parsed.sizes.length > 0) {
+        next.sizes = parsed.sizes;
+        if (isPantsCategory(targetCategory)) {
+          next.variant = parsed.sizes.includes(next.variant)
+            ? next.variant
+            : (parsed.sizes[0] ?? next.variant);
+        }
+      }
+      return next;
+    });
+    const appliedCategory = parsed.detectedCategory ?? form.category;
+    if (parsed.sizes !== undefined && parsed.sizes.length > 0 && isPantsCategory(appliedCategory)) {
+      setWaistListDraft(parsed.sizes.join(", "));
+    }
+    if (parsed.variantColor !== undefined && !isPantsCategory(appliedCategory)) {
+      setColorListDraft(colorDeclinationsLabel([parsed.variantColor]));
+    }
+    showFormSuccess(summarizeSmartParseFilled(parsed.filled), "neutral");
+  }
+
   const publishStatus = current?.publishStatus ?? "draft";
   const isPublished = publishStatus === "live";
 
@@ -673,7 +732,7 @@ export function ProductEditorModal({
 
                   <div>
                     <div className="flex flex-wrap items-end justify-between gap-2">
-                      <label className="block flex-1 text-[10px] uppercase tracking-[0.22em] text-zinc-500">
+                      <label className="block flex-1 min-w-[12rem] text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                         Nom / Titre
                         <input
                           value={form.name}
@@ -682,14 +741,54 @@ export function ProductEditorModal({
                           className="mt-2 h-11 w-full rounded-sm border border-zinc-700 bg-zinc-950 px-3 text-sm text-white outline-none transition duration-200 focus:border-zinc-400"
                         />
                       </label>
-                      <button
-                        type="button"
-                        onClick={applySmartDescription}
-                        className="h-11 shrink-0 border border-violet-500/40 bg-violet-950/40 px-3 text-[10px] uppercase tracking-[0.14em] text-violet-100 transition duration-200 hover:border-violet-400/60 hover:bg-violet-900/50"
-                      >
-                        ✨ Smart Description
-                      </button>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSmartPasteOpen((open) => !open)}
+                          aria-expanded={smartPasteOpen}
+                          className={`h-11 border px-3 text-[10px] uppercase tracking-[0.14em] transition duration-200 ${
+                            smartPasteOpen
+                              ? "border-cyan-400/50 bg-cyan-950/50 text-cyan-100"
+                              : "border-cyan-500/35 bg-cyan-950/30 text-cyan-100/90 hover:border-cyan-400/45 hover:bg-cyan-900/40"
+                          }`}
+                        >
+                          Smart collage
+                        </button>
+                        <button
+                          type="button"
+                          onClick={applySmartDescription}
+                          className="h-11 border border-violet-500/40 bg-violet-950/40 px-3 text-[10px] uppercase tracking-[0.14em] text-violet-100 transition duration-200 hover:border-violet-400/60 hover:bg-violet-900/50"
+                        >
+                          ✨ Smart Description
+                        </button>
+                      </div>
                     </div>
+                    {smartPasteOpen ? (
+                      <div className="mt-3 space-y-3 rounded-sm border border-cyan-500/25 bg-cyan-950/15 p-3 sm:p-4">
+                        <label
+                          htmlFor="dingry-smart-paste"
+                          className="block text-[10px] uppercase tracking-[0.18em] text-zinc-500"
+                        >
+                          Coller une fiche produit brute
+                          <textarea
+                            id="dingry-smart-paste"
+                            value={smartPasteText}
+                            onChange={(event) => setSmartPasteText(event.target.value)}
+                            rows={8}
+                            placeholder="Titre en première ligne, puis description, matière (ex. 70 % coton…), prix (80 €), tailles (S M L XL)…"
+                            className="mt-2 w-full resize-y rounded-sm border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm leading-relaxed text-white placeholder:text-zinc-600 outline-none transition duration-200 focus:border-cyan-500/40"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={applySmartPaste}
+                          disabled={saving || convertingImage}
+                          className="h-10 w-full border border-cyan-500/50 bg-cyan-950/40 text-[10px] uppercase tracking-[0.16em] text-cyan-100 transition hover:border-cyan-400 hover:bg-cyan-900/50 disabled:opacity-40 sm:w-auto sm:px-5"
+                        >
+                          Appliquer au formulaire
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div>

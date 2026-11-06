@@ -56,6 +56,23 @@ function filterByPublishStatus(products: AdminProduct[], publishFilter: "live" |
   return products.filter((product) => product.publishStatus === publishFilter);
 }
 
+function productMatchesStockSearch(product: AdminProduct, rawQuery: string): boolean {
+  const q = rawQuery.trim().toLowerCase();
+  if (!q) return true;
+  const categoryNorm = normalizeProductCategory(product.category);
+  const fields = [
+    product.id,
+    product.sku,
+    product.name,
+    product.variant,
+    product.category,
+    categoryNorm,
+    product.description,
+    ...product.colorDeclinations,
+  ];
+  return fields.some((field) => String(field).toLowerCase().includes(q));
+}
+
 export function StockTab({
   products,
   busyProductId,
@@ -75,6 +92,7 @@ export function StockTab({
   const [viewMode, setViewMode] = useState<AdminStockViewMode>("grid");
   const [storefrontPreview, setStorefrontPreview] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<AdminProduct | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const catalogCardProducts = useMemo(
     () => hideCrewneckVersoFromAdminStock(products),
@@ -90,15 +108,20 @@ export function StockTab({
     [products, categoryFilter, publishFilter],
   );
 
+  const searchFiltered = useMemo(
+    () => baseFiltered.filter((product) => productMatchesStockSearch(product, searchQuery)),
+    [baseFiltered, searchQuery],
+  );
+
   const menuSections = useMemo(
-    () => (categoryFilter === "Collection" ? buildAdminStockMenuSections(baseFiltered) : null),
-    [baseFiltered, categoryFilter],
+    () => (categoryFilter === "Collection" ? buildAdminStockMenuSections(searchFiltered) : null),
+    [searchFiltered, categoryFilter],
   );
 
   const visibleProducts = useMemo(() => {
     if (menuSections) return menuSections.flatMap((section) => section.products);
-    return sortAdminProductsLikeShop(baseFiltered);
-  }, [baseFiltered, menuSections]);
+    return sortAdminProductsLikeShop(searchFiltered);
+  }, [searchFiltered, menuSections]);
 
   const indexByProductId = useMemo(() => {
     const map = new Map<string, number>();
@@ -134,6 +157,20 @@ export function StockTab({
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-3">
           <AdminCategoryFilterNav selected={categoryFilter} onChange={setCategoryFilter} />
+          <div>
+            <label htmlFor="dingry-admin-stock-search" className="sr-only">
+              Rechercher un produit
+            </label>
+            <input
+              id="dingry-admin-stock-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Rechercher (nom, SKU, id, variante…)"
+              autoComplete="off"
+              className="w-full max-w-md border border-white/15 bg-black/40 px-3 py-2 text-[11px] tracking-[0.06em] text-white placeholder:text-white/35 focus:border-white/35 focus:outline-none"
+            />
+          </div>
           <p className="text-[9px] uppercase tracking-[0.16em] text-white/35">
             {categoryFilter === "Collection"
               ? "Familles · même ordre que le menu boutique (Hoodies → Caps)"
@@ -175,6 +212,10 @@ export function StockTab({
                 </>
               )}
             </p>
+          ) : baseFiltered.length > 0 && searchQuery.trim() !== "" ? (
+            <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/40">
+              Aucun produit ne correspond à la recherche.
+            </p>
           ) : products.length > 0 ? (
             <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/40">
               Aucun produit dans cette catégorie.
@@ -195,7 +236,11 @@ export function StockTab({
         <AdminStockStorefrontPreview products={catalogCardProducts} categoryFilter={categoryFilter} />
       ) : visibleProducts.length === 0 ? (
         <p className="rounded-sm border border-zinc-800 bg-zinc-900/50 px-4 py-10 text-center text-sm text-white/40">
-          {products.length === 0 ? "Aucun produit." : "Aucun produit dans cette catégorie."}
+          {products.length === 0
+            ? "Aucun produit."
+            : baseFiltered.length > 0 && searchQuery.trim() !== ""
+              ? "Aucun produit ne correspond à la recherche."
+              : "Aucun produit dans cette catégorie."}
         </p>
       ) : viewMode === "grid" ? (
         menuSections ? (

@@ -1,6 +1,6 @@
 import { PANT_WAIST_PRESET_SIZES, isValidPantWaistSize, normalizePantWaistSize } from "@/lib/admin/pant-waist";
 
-/** Grille admin + Smart collage (2XL–5XL, XXS). */
+/** Grille admin + Smart collage (2XL–5XL, XXS). Ordre d'affichage modale produit. */
 export const PRODUCT_SIZES = [
   "XXS",
   "XS",
