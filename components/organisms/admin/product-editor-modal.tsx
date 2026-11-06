@@ -617,6 +617,8 @@ export function ProductEditorModal({
 
       if (parsed.sizes !== undefined && parsed.sizes.length > 0) {
         next.sizes = parsed.sizes;
+        /** Pool global CRM : une quantité = une ligne taille au collage (cf. lib/stock.ts). */
+        next.stock = String(Math.min(parsed.sizes.length, 9999));
         if (isPantsCategory(targetCategory)) {
           next.variant = parsed.sizes.includes(next.variant)
             ? next.variant

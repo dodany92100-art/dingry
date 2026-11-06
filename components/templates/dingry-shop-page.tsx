@@ -125,6 +125,8 @@ export default function DingryShopPage() {
           products={filtered}
           flipPairs={flipPairs}
           onOpenProduct={modal.openProductModal}
+          wishlistIds={wishlist.ids}
+          onToggleWishlist={wishlist.toggle}
         />
         <LookbookCatalogStrip />
         <HeritageSection scrollContainerRef={pageScrollRef} />

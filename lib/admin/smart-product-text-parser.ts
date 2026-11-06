@@ -44,7 +44,7 @@ export type SmartParseDiagnostics = {
   footnoteLinesSkipped: number;
 };
 
-/** Un « slot » Maker pour récap UI (ordre d’affichage fixe). */
+/** Un « slot » Maker pour récap UI — l’ordre suit celui de `filled` (détection). */
 export type MakerSemanticBlock = {
   key:
     | "category"
@@ -139,7 +139,8 @@ const CATEGORY_LEXICON: CategoryLexicon[] = [
   },
   {
     category: "Crop tops",
-    weight: 1,
+    /** Doit battre Pants quand le texte dit « cargo » (poche / style) sans être un pantalon. */
+    weight: 4,
     patterns: [/\bcrop\s*tops?\b/i],
   },
 ];
@@ -337,13 +338,21 @@ function sortSizes(found: Iterable<ProductSize>): ProductSize[] {
 }
 
 /**
- * Tailles valides uniquement ; chiffres EU type 40–46 ignorés comme guide taille (ligne tableau).
+ * Tailles valides uniquement ; chiffres EU (grille XS→40 …) ignorés pour ne pas parasiter le scan lettres.
  */
 function extractLetterSizes(textNoFootnotes: string, allowed: readonly ProductSize[]): ProductSize[] {
   let scan = textNoFootnotes;
   scan = scan.replace(/\b(?:EU|US|UK)\b\s*[:.]?\s*[\d\s,/–-]{6,}/gi, " ");
-  /** Mensurations « vêtement » isolées (40–50) : jamais des tailles lettres. */
-  scan = scan.replace(/(?:^|[\s,;·|])(?:40|41|42|43|44|45|46|47|48|49|50)\b(?=[\s,;·|)]|$)/gi, " ");
+  /** Mensurations EU isolées (40–56), ex. tableau « XS 40 … 5XL* 54 ». */
+  scan = scan.replace(
+    /(?:^|[\s,;·|])(?:4[0-9]|5[0-6])\b(?=[\s,;·|*)\]]|$)/gi,
+    " ",
+  );
+  /** `4XL*` / `5XL*` en fin de cellule tableau. */
+  scan = scan.replace(
+    /\b(XXS|XS|[SML]|XL|2XL|3XL|4XL|5XL)\*(?=\s|$|[,;·|)])/gi,
+    "$1",
+  );
 
   const found = new Set<ProductSize>();
   for (const { pattern, size } of LETTER_SIZE_SCAN) {
@@ -428,56 +437,95 @@ function stripTitleMarketingSuffix(raw: string): string {
   return s;
 }
 
+/** Compare titre / ligne pour éviter de recopier le nom dans la description (espaces, tirets, ·). */
+function normalizeForTitleDedup(s: string): string {
+  return s
+    .normalize("NFKC")
+    .toUpperCase()
+    .replace(/[\s\-–—·|:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function lineDuplicatesProductName(line: string, name: string): boolean {
+  const a = normalizeForTitleDedup(line);
+  const b = normalizeForTitleDedup(name);
+  if (a.length < 2 || b.length < 2) return false;
+  return a === b;
+}
+
 const SEMANTIC_CLIP = (s: string, max: number) => (s.length <= max ? s : `${s.slice(0, max)}…`);
 
+function semanticBlockForField(
+  id: SmartParseFieldId,
+  result: SmartProductParseResult,
+): MakerSemanticBlock | undefined {
+  switch (id) {
+    case "category":
+      return result.detectedCategory !== undefined
+        ? { key: "category", label: "Catégorie", value: result.detectedCategory }
+        : undefined;
+    case "name":
+      return result.name !== undefined
+        ? { key: "title", label: "Titre", value: SEMANTIC_CLIP(result.name, 200) }
+        : undefined;
+    case "variant":
+      return result.variantColor !== undefined
+        ? { key: "color", label: "Couleur", value: result.variantColor }
+        : undefined;
+    case "sizes":
+      return result.sizes !== undefined && result.sizes.length > 0
+        ? { key: "sizes", label: "Tailles", value: result.sizes.join(", ") }
+        : undefined;
+    case "price":
+      return result.price !== undefined
+        ? { key: "price", label: "Prix", value: `${result.price} €` }
+        : undefined;
+    case "materials":
+      return result.materials !== undefined
+        ? {
+            key: "materials",
+            label: "Matières",
+            value: SEMANTIC_CLIP(result.materials, 280),
+          }
+        : undefined;
+    case "fabrication":
+      return result.fabrication !== undefined
+        ? {
+            key: "fabrication",
+            label: "Fabrication",
+            value: SEMANTIC_CLIP(result.fabrication, 200),
+          }
+        : undefined;
+    case "limitedEdition":
+      return result.limitedEdition !== undefined
+        ? {
+            key: "limitedEdition",
+            label: "Édition limitée",
+            value: SEMANTIC_CLIP(result.limitedEdition, 200),
+          }
+        : undefined;
+    case "description":
+      return result.description !== undefined
+        ? {
+            key: "description",
+            label: "Description",
+            value: SEMANTIC_CLIP(result.description, 320),
+          }
+        : undefined;
+    default: {
+      const _exhaustive: never = id;
+      return _exhaustive;
+    }
+  }
+}
+
+/** Ordre = ordre des entrées dans `filled` (détection), pas un ordre canonique fixe. */
 function buildMakerSemanticBlocks(result: SmartProductParseOutput): MakerSemanticBlock[] {
   const blocks: MakerSemanticBlock[] = [];
-  if (result.detectedCategory !== undefined) {
-    blocks.push({
-      key: "category",
-      label: "Catégorie",
-      value: result.detectedCategory,
-    });
-  }
-  if (result.name !== undefined) {
-    blocks.push({ key: "title", label: "Titre", value: SEMANTIC_CLIP(result.name, 200) });
-  }
-  if (result.variantColor !== undefined) {
-    blocks.push({ key: "color", label: "Couleur", value: result.variantColor });
-  }
-  if (result.sizes !== undefined && result.sizes.length > 0) {
-    blocks.push({ key: "sizes", label: "Tailles", value: result.sizes.join(", ") });
-  }
-  if (result.price !== undefined) {
-    blocks.push({ key: "price", label: "Prix", value: `${result.price} €` });
-  }
-  if (result.materials !== undefined) {
-    blocks.push({
-      key: "materials",
-      label: "Matières",
-      value: SEMANTIC_CLIP(result.materials, 280),
-    });
-  }
-  if (result.fabrication !== undefined) {
-    blocks.push({
-      key: "fabrication",
-      label: "Fabrication",
-      value: SEMANTIC_CLIP(result.fabrication, 200),
-    });
-  }
-  if (result.limitedEdition !== undefined) {
-    blocks.push({
-      key: "limitedEdition",
-      label: "Édition limitée",
-      value: SEMANTIC_CLIP(result.limitedEdition, 200),
-    });
-  }
-  if (result.description !== undefined) {
-    blocks.push({
-      key: "description",
-      label: "Description",
-      value: SEMANTIC_CLIP(result.description, 320),
-    });
+  for (const id of result.filled) {
+    const block = semanticBlockForField(id, result);
+    if (block !== undefined) blocks.push(block);
   }
   return blocks;
 }
@@ -656,15 +704,21 @@ export function parseSmartProductText(
   }
 
   let description: string | undefined;
-  const descFiltered = descriptionCandidates.filter((l) => (name ? l.trim() !== name.trim() : true));
+  const descFiltered = descriptionCandidates.filter((l) => {
+    if (!name) return true;
+    if (l.trim() === name.trim()) return false;
+    if (lineDuplicatesProductName(l, name)) return false;
+    return true;
+  });
   if (descFiltered.length > 0) {
     description = trimStoryField(descFiltered.map((l) => normalizeStoryBody(l)).join("\n\n"));
     filled.push("description");
   } else if (materialLines.length === 0 && lines.length > 1 && name !== undefined) {
-    const rest = lines
+    const restParas = lines
       .filter((_, j) => j !== titleLineIndex)
       .filter((l) => !isLineExcludedFromDescription(l))
-      .join("\n\n");
+      .filter((l) => !lineDuplicatesProductName(l, name));
+    const rest = restParas.join("\n\n");
     const fallback = trimStoryField(normalizeStoryBody(rest));
     if (fallback.length >= 10) {
       description = fallback;

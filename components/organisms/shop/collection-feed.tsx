@@ -5,6 +5,7 @@ import { ProductCard } from "@/components/molecules/product-card";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import type { CatalogMenuSection } from "@/lib/shop-catalog";
+import { catalogRectoId } from "@/lib/dingry-product-display";
 import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
 import { catalogBackImageForRecto, type FlipPair } from "@/lib/shop-view";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
@@ -14,6 +15,8 @@ type CollectionFeedProps = {
   flipPairs: FlipPair[];
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
   peekResetKey: string | number;
+  wishlistIds: readonly number[];
+  onToggleWishlist: (rectoId: number) => void;
 };
 
 export function CollectionFeed({
@@ -21,6 +24,8 @@ export function CollectionFeed({
   flipPairs,
   onOpenProduct,
   peekResetKey,
+  wishlistIds,
+  onToggleWishlist,
 }: CollectionFeedProps) {
   let indexOffset = 0;
 
@@ -34,6 +39,7 @@ export function CollectionFeed({
       {sections.map((section) => {
         const cells = section.products.map((product, localIndex) => {
           const globalIndex = indexOffset + localIndex;
+          const rectoId = catalogRectoId(product.id);
           return (
             <ProductCard
               key={product.id}
@@ -48,6 +54,8 @@ export function CollectionFeed({
               priority={globalIndex < 4}
               soldOut={!isShopProductInStock(product)}
               onClick={(side) => onOpenProduct(product, side)}
+              wishlistActive={wishlistIds.includes(rectoId)}
+              onWishlistToggle={() => onToggleWishlist(rectoId)}
             />
           );
         });

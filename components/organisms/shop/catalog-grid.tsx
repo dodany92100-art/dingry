@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import { ProductCard } from "@/components/molecules/product-card";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
+import { catalogRectoId } from "@/lib/dingry-product-display";
 import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
 import { buildCatalogMenuSections } from "@/lib/shop-catalog";
 import { catalogBackImageForRecto, type FlipPair } from "@/lib/shop-view";
@@ -23,6 +24,8 @@ type CatalogGridProps = {
   products: ShopProduct[];
   flipPairs: FlipPair[];
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
+  wishlistIds: readonly number[];
+  onToggleWishlist: (rectoId: number) => void;
 };
 
 function buildProductCells(
@@ -30,10 +33,13 @@ function buildProductCells(
   flipPairs: FlipPair[],
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void,
   catalogPeekResetKey: string,
+  wishlistIds: readonly number[],
+  onToggleWishlist: (rectoId: number) => void,
   indexOffset = 0,
 ): ReactNode[] {
   return products.map((product, index) => {
     const globalIndex = indexOffset + index;
+    const rectoId = catalogRectoId(product.id);
     return (
       <ProductCard
         key={product.id}
@@ -48,6 +54,8 @@ function buildProductCells(
         priority={globalIndex < 4}
         soldOut={!isShopProductInStock(product)}
         onClick={(side) => onOpenProduct(product, side)}
+        wishlistActive={wishlistIds.includes(rectoId)}
+        onWishlistToggle={() => onToggleWishlist(rectoId)}
       />
     );
   });
@@ -56,9 +64,10 @@ function buildProductCells(
 function EmptyCategory() {
   return (
     <div className="col-span-full border border-white/[0.06] py-20 text-center">
-      <p className="mb-4 text-[10px] tracking-[0.35em] text-[#0066FF] uppercase">Bientôt disponible</p>
+      <p className="mb-4 text-[10px] tracking-[0.35em] text-[#0066FF] uppercase">Aucun article ici</p>
       <p className="text-sm tracking-wider text-white/40">
-        Cette catégorie sera bientôt disponible dans Dingry collection.
+        Aucune pièce en ligne dans cette vue pour le moment · vérifie que la fiche est{' '}
+        <span className="text-white/55">mise en ligne</span> avec la bonne catégorie.
       </p>
     </div>
   );
@@ -71,6 +80,8 @@ export function CatalogGrid({
   products,
   flipPairs,
   onOpenProduct,
+  wishlistIds,
+  onToggleWishlist,
 }: CatalogGridProps) {
   if (catalogState === "error") {
     return (
@@ -110,13 +121,15 @@ export function CatalogGrid({
             flipPairs={flipPairs}
             peekResetKey={filterKey}
             onOpenProduct={onOpenProduct}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={onToggleWishlist}
           />
         )}
       </motion.div>
     );
   }
 
-  const cells = buildProductCells(products, flipPairs, onOpenProduct, filterKey);
+  const cells = buildProductCells(products, flipPairs, onOpenProduct, filterKey, wishlistIds, onToggleWishlist);
 
   return (
     <motion.div

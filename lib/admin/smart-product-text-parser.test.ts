@@ -32,6 +32,24 @@ Tailles disponibles : S · M · L · XL · 2XL
     expect(r.sizes).toEqual(["M", "XL", "2XL"]);
   });
 
+  it("grille XS↔EU : ignore les chiffres, accepte 4XL* / 5XL*", () => {
+    const raw = `XS 40 M 44 L 46 XL 48 2XL 50 3XL 52 4XL* 54 5XL*
+56
+*4XL-5XL uniquement disponible(s) dans ces couleurs.`;
+    const r = parseSmartProductText(raw, "Hoodies");
+    expect(r.sizes).toEqual(["XS", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"]);
+  });
+
+  it("crop top + mention « cargo » (poche) → catégorie Crop tops, pas Pants", () => {
+    const raw = `Crop top DINGRY signature
+Détail poche cargo.
+Tailles S M L XL
+75 €`;
+    const r = parseSmartProductText(raw, "T-shirts");
+    expect(r.detectedCategory).toBe("Crop tops");
+    expect(r.sizes).toEqual(["S", "M", "L", "XL"]);
+  });
+
   it("détecte les tours de taille pour Pants (ignore lignes *)", () => {
     const raw = `Pantalon cargo
 *41–50 : tailles spéciales
@@ -109,5 +127,18 @@ Phrase marketing pour le quotidien.
     const r = parseSmartProductText(raw, "Hoodies");
     expect(r.description).toBe("Phrase marketing pour le quotidien.");
     expect(r.price).toBe("80");
+  });
+
+  it("n’inclut pas le titre en double dans la description (variante tiret / tiret cadratin)", () => {
+    const raw = `HOODIES
+
+HOODIE DINGRY SIGNATURE
+
+HOODIE DINGRY - SIGNATURE
+
+Texte descriptif unique sans répéter le nom produit.`;
+    const r = parseSmartProductText(raw, "T-shirts");
+    expect(r.name).toBe("HOODIE DINGRY SIGNATURE");
+    expect(r.description).toBe("Texte descriptif unique sans répéter le nom produit.");
   });
 });

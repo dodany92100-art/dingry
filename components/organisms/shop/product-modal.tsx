@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { DINGRY_MANIFESTO_EN } from "@/lib/dingry-brand-voice";
@@ -342,12 +343,12 @@ function ProductModalContent({
               </div>
             </div>
           ) : null}
-          <div className="flex flex-col gap-3">
+          <div className="flex items-stretch gap-2">
             <button
               type="button"
               onClick={onAddToCart}
               disabled={!selectedSize || cannotPurchase}
-              className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-colors duration-200 ${
+              className={`dingry-add-to-cart-btn min-h-[52px] flex-1 py-4 text-xs font-bold tracking-[0.3em] uppercase transition-colors duration-200 ${
                 selectedSize && !cannotPurchase
                   ? "bg-[#0066FF] text-white shadow-[0_8px_32px_rgba(0,102,255,0.35)] hover:bg-[#0052cc]"
                   : "bg-white/10 text-white/20 cursor-not-allowed"
@@ -359,17 +360,13 @@ function ProductModalContent({
                   ? "Épuisé"
                   : "Ajouter au panier"}
             </button>
-            <button
-              type="button"
+            <WishlistIconButton
+              size="md"
+              active={wishlistActive}
+              label={wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
               onClick={() => onToggleWishlist(rectoId)}
-              className={`w-full border py-3 text-[10px] font-medium tracking-[0.24em] uppercase transition-colors ${
-                wishlistActive
-                  ? "border-[#0066FF] text-[#7EB3FF]"
-                  : "border-white/20 text-white/55 hover:border-white/45 hover:text-white"
-              }`}
-            >
-              {wishlistActive ? "Dans la wishlist" : "Ajouter à la wishlist"}
-            </button>
+              className="shrink-0 self-auto"
+            />
           </div>
         </div>
       </motion.div>

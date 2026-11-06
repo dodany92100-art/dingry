@@ -21,6 +21,8 @@ type CatalogSectionProps = {
   products: ShopProduct[];
   flipPairs: FlipPair[];
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
+  wishlistIds: readonly number[];
+  onToggleWishlist: (rectoId: number) => void;
 };
 
 export function CatalogSection({

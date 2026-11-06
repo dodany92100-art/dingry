@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { cn } from "@/lib/utils";
 import { ProductImageFlip, type ProductFlipSide } from "@/components/molecules/product-image-flip";
 
@@ -49,6 +50,9 @@ type ProductCardProps = ProductCardData & {
   /** Première rangée visible : charge l’image en priorité (LCP). */
   priority?: boolean;
   soldOut?: boolean;
+  /** Bouton wishlist (icône) sur la photo — sans ouvrir la fiche au clic. */
+  wishlistActive?: boolean;
+  onWishlistToggle?: () => void;
 };
 
 export function ProductCard({
@@ -64,6 +68,8 @@ export function ProductCard({
   className,
   priority = false,
   soldOut = false,
+  wishlistActive,
+  onWishlistToggle,
 }: ProductCardProps) {
   const [side, setSide] = useState<ProductFlipSide>("recto");
   /** `true` uniquement pendant l’animation CSS peek (pas pendant le délai 1,5s — la carte reste interactive). */
@@ -105,20 +111,35 @@ export function ProductCard({
   return (
     <article className={cn("group w-full min-w-0 touch-pan-y", className)}>
       <div className="w-full min-w-0 touch-pan-y rounded-lg text-left sm:rounded-xl md:rounded-2xl">
-        <ProductImageFlip
-          frontImage={image}
-          backImage={backImage}
-          side={side}
-          onSideChange={setSide}
-          isFirstInGrid={isFirstInGrid}
-          showPeekAnimation={showPeekAnimation}
-          priority={priority}
-          soldOut={soldOut}
-          alt={`${name} ${variant}`}
-          imgClassName="transition-[filter] duration-300 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:brightness-[1.03]"
-          onTap={onClick}
-          onDoubleTapFlip={flippable ? handleDoubleTapFlip : undefined}
-        />
+        <div className="relative">
+          <ProductImageFlip
+            frontImage={image}
+            backImage={backImage}
+            side={side}
+            onSideChange={setSide}
+            isFirstInGrid={isFirstInGrid}
+            showPeekAnimation={showPeekAnimation}
+            priority={priority}
+            soldOut={soldOut}
+            alt={`${name} ${variant}`}
+            imgClassName="transition-[filter] duration-300 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:brightness-[1.03]"
+            onTap={onClick}
+            onDoubleTapFlip={flippable ? handleDoubleTapFlip : undefined}
+          />
+          {onWishlistToggle !== undefined && wishlistActive !== undefined ? (
+            <div className="pointer-events-none absolute inset-0 z-[4]">
+              <WishlistIconButton
+                active={wishlistActive}
+                label={
+                  wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"
+                }
+                onClick={onWishlistToggle}
+                stopPropagation
+                className="pointer-events-auto absolute right-2 top-2 sm:right-2.5 sm:top-2.5"
+              />
+            </div>
+          ) : null}
+        </div>
         <button
           type="button"
           onClick={() => onClick?.(side)}
