@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ProductImageFlip, type ProductFlipSide } from "@/components/molecules/product-image-flip";
 
@@ -22,6 +22,11 @@ const priceFormat = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 2,
 });
 
+/** Durées alignées sur `dingry-flip-verso-peek` (globals.css) : delay 1,05s + 2×1,85s + marge. */
+const PEEK_ANIMATION_MS = 1050 + 1850 * 2 + 160;
+/** Délai avant l’aperçu automatique recto → verso → recto (première carte seulement). */
+const AUTO_PEEK_START_DELAY_MS = 1500;
+
 type ProductCardData = {
   name: string;
   variant: string;
@@ -31,11 +36,17 @@ type ProductCardData = {
 
 type ProductCardProps = ProductCardData & {
   backImage?: string;
-  /** 1re cellule de la grille courante (effet peek verso, ne suit pas un produit). */
+  /** 1re cellule de la grille : micro-slide CSS + hint « Survoler » (desktop). */
   isFirstInGrid?: boolean;
+  /**
+   * Première carte du catalogue affiché : démo auto recto ↔ verso après montage.
+   * Changement de `peekResetKey` (ex. filtre catégorie) relance l’aperçu sur la nouvelle 1ʳᵉ carte.
+   */
+  isFirstProduct?: boolean;
+  peekResetKey?: string | number;
   onClick?: (side: ProductFlipSide) => void;
   className?: string;
-  /** Première rangée visible : charge l'image en priorité (LCP). */
+  /** Première rangée visible : charge l’image en priorité (LCP). */
   priority?: boolean;
   soldOut?: boolean;
 };
@@ -46,6 +57,8 @@ export function ProductCard({
   image,
   backImage,
   isFirstInGrid = false,
+  isFirstProduct = false,
+  peekResetKey,
   price,
   onClick,
   className,
@@ -53,6 +66,41 @@ export function ProductCard({
   soldOut = false,
 }: ProductCardProps) {
   const [side, setSide] = useState<ProductFlipSide>("recto");
+  /** `true` uniquement pendant l’animation CSS peek (pas pendant le délai 1,5s — la carte reste interactive). */
+  const [showPeekAnimation, setShowPeekAnimation] = useState(false);
+  const flippable = Boolean(backImage);
+  const peekCycleId = useRef(0);
+
+  useEffect(() => {
+    peekCycleId.current += 1;
+    setSide("recto");
+    setShowPeekAnimation(false);
+  }, [peekResetKey]);
+
+  useEffect(() => {
+    if (!isFirstProduct || !flippable) return;
+
+    const cycle = peekCycleId.current;
+    const startTimer = window.setTimeout(() => {
+      if (peekCycleId.current !== cycle) return;
+      setShowPeekAnimation(true);
+    }, AUTO_PEEK_START_DELAY_MS);
+
+    const endTimer = window.setTimeout(() => {
+      if (peekCycleId.current !== cycle) return;
+      setShowPeekAnimation(false);
+    }, AUTO_PEEK_START_DELAY_MS + PEEK_ANIMATION_MS);
+
+    return () => {
+      window.clearTimeout(startTimer);
+      window.clearTimeout(endTimer);
+    };
+  }, [isFirstProduct, flippable, peekResetKey]);
+
+  const handleDoubleTapFlip = useCallback(() => {
+    if (!flippable) return;
+    setSide((s) => (s === "recto" ? "verso" : "recto"));
+  }, [flippable]);
 
   return (
     <article className={cn("group w-full min-w-0 touch-pan-y", className)}>
@@ -63,11 +111,13 @@ export function ProductCard({
           side={side}
           onSideChange={setSide}
           isFirstInGrid={isFirstInGrid}
+          showPeekAnimation={showPeekAnimation}
           priority={priority}
           soldOut={soldOut}
           alt={`${name} ${variant}`}
           imgClassName="transition-[filter] duration-300 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:brightness-[1.03]"
-          onTap={onClick ? (nextSide) => onClick(nextSide) : undefined}
+          onTap={onClick}
+          onDoubleTapFlip={flippable ? handleDoubleTapFlip : undefined}
         />
         <button
           type="button"

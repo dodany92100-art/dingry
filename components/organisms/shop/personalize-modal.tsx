@@ -49,7 +49,11 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
   return (
     <AnimatePresence>
       {open ? (
-        <div key="dingry-personalize-modal" className="fixed inset-0 z-[65] flex items-center justify-center p-4 md:p-8">
+        <div
+          key="dingry-personalize-modal"
+          data-dingry-personalize-modal=""
+          className="fixed inset-0 z-[65] flex items-center justify-center p-4 md:p-8"
+        >
           <motion.div
             className="absolute inset-0 bg-[#050505]/90 backdrop-blur-md"
             initial={{ opacity: 0 }}

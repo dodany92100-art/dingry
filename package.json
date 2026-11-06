@@ -14,6 +14,7 @@
     "knip": "knip --no-exit-code",
     "seed-stock": "tsx scripts/seed-stock.ts",
     "smoke:quote": "tsx scripts/smoke-quote.ts",
+    "test:e2e": "playwright test",
     "vercel:env-preview": "node scripts/push-vercel-preview-env.mjs",
     "preview:setup": "node scripts/setup-preview-paypal-webhook.mjs",
     "preview:deploy": "node scripts/deploy-preview.mjs"

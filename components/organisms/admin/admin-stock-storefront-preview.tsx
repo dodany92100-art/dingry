@@ -44,10 +44,12 @@ function PreviewProductCard({
   product,
   flipPairs,
   globalIndex,
+  peekResetKey,
 }: {
   product: ShopProduct;
   flipPairs: ReturnType<typeof buildFlipPairs>;
   globalIndex: number;
+  peekResetKey: string;
 }) {
   return (
     <ProductCard
@@ -56,6 +58,8 @@ function PreviewProductCard({
       image={product.image}
       backImage={catalogBackImageForRecto(product, flipPairs)}
       isFirstInGrid={globalIndex === 0}
+      isFirstProduct={globalIndex === 0}
+      peekResetKey={peekResetKey}
       price={product.price}
       priority={globalIndex < 4}
       soldOut={!isShopProductInStock(product)}
@@ -66,14 +70,22 @@ function PreviewProductCard({
 function PreviewGrid({
   shopProducts,
   flipPairs,
+  peekResetKey,
 }: {
   shopProducts: ShopProduct[];
   flipPairs: ReturnType<typeof buildFlipPairs>;
+  peekResetKey: string;
 }) {
   return (
     <div className={CATALOG_PRODUCT_GRID_CLASS}>
       {shopProducts.map((product, index) => (
-        <PreviewProductCard key={product.id} product={product} flipPairs={flipPairs} globalIndex={index} />
+        <PreviewProductCard
+          key={product.id}
+          product={product}
+          flipPairs={flipPairs}
+          globalIndex={index}
+          peekResetKey={peekResetKey}
+        />
       ))}
     </div>
   );
@@ -83,10 +95,12 @@ function PreviewCatalogBody({
   shopProducts,
   flipPairs,
   sections,
+  peekResetKey,
 }: {
   shopProducts: ShopProduct[];
   flipPairs: ReturnType<typeof buildFlipPairs>;
   sections: ReturnType<typeof buildCatalogMenuSections> | null;
+  peekResetKey: string;
 }) {
   if (shopProducts.length === 0) {
     return (
@@ -115,6 +129,7 @@ function PreviewCatalogBody({
                 product={product}
                 flipPairs={flipPairs}
                 globalIndex={globalIndex}
+                peekResetKey={peekResetKey}
               />
             );
           });
@@ -130,7 +145,7 @@ function PreviewCatalogBody({
     );
   }
 
-  return <PreviewGrid shopProducts={shopProducts} flipPairs={flipPairs} />;
+  return <PreviewGrid shopProducts={shopProducts} flipPairs={flipPairs} peekResetKey={peekResetKey} />;
 }
 
 export function AdminStockStorefrontPreview({
@@ -161,7 +176,12 @@ export function AdminStockStorefrontPreview({
         <div className="pointer-events-none select-none" aria-hidden>
           <CatalogFilterBar value={catalogTab} onChange={() => {}} />
         </div>
-        <PreviewCatalogBody shopProducts={shopProducts} flipPairs={flipPairs} sections={sections} />
+        <PreviewCatalogBody
+          shopProducts={shopProducts}
+          flipPairs={flipPairs}
+          sections={sections}
+          peekResetKey={catalogTab}
+        />
       </section>
     </div>
   );

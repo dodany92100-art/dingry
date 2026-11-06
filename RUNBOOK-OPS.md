@@ -101,13 +101,13 @@ Une page pour les incidents entre le lancement et le quotidien. **Pas de donnée
 
 ---
 
-## Store Blob `store.json` (passage public → private)
+## Store Blob `store.json` (accès public — aligné console Vercel)
 
-Avant le premier déploiement avec `access: "private"` sur `dingry/admin/store.json` :
+Le code utilise **`get` / `put` avec `access: "public"`** pour `dingry/admin/store.json` (et idem pour `dingry/admin/backup-codes.json`) : le store Vercel Blob est configuré en **Public**.
 
-1. Dashboard Vercel Blob → vérifier l’accès du fichier existant.
-2. S’il est encore **public**, le lire (URL ou `get` public), sauvegarder une copie locale, puis le réécrire avec **`put(..., { access: "private" })`** (même pathname, pas de suffixe aléatoire).
-3. Preview : une commande test doit rester visible dans `/admin` après redéploiement ; un `get` private qui renvoie `missing` alors que le blob existe en public provoquerait un **re-seed** et une perte d’historique.
+Si un ancien déploiement utilisait encore `access: "private"` alors que le blob est public côté console, les appels peuvent échouer ou se comporter de façon incohérente : aligner le code (public) et redéployer.
+
+**Sécurité :** un pathname connu peut être lisible si l’URL fuit ; l’admin reste protégé par session / TOTP, pas par la confidentialité du JSON sur Blob.
 
 ---
 

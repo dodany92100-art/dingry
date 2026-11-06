@@ -4,10 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { cldOpt } from "@/components/molecules/product-card";
 
-const SWIPE_THRESHOLD_PX = 48;
-const DRAG_CLICK_GUARD_PX = 12;
+/** Fenêtre pour distinguer double tap (flip) vs simple tap (modale) sur tactile. */
+const DOUBLE_TAP_MS = 320;
 
-/** Souris / trackpad : drag flip. Tactile (pointer coarse) : pas de drag — scroll natif + tap pour ouvrir la fiche. */
 function useFinePointer(): boolean {
   const [fine, setFine] = useState(false);
   useEffect(() => {
@@ -28,13 +27,21 @@ type ProductImageFlipProps = {
   side: ProductFlipSide;
   onSideChange?: (side: ProductFlipSide) => void;
   alt: string;
-  /** Micro-slide verso : ancré sur la 1re cellule physique de la grille (index 0). */
+  /** 1re cellule : classes CSS peek / hint desktop (survol). */
   isFirstInGrid?: boolean;
+  /** Animation CSS peek (première carte seulement, une fois par cycle). */
+  showPeekAnimation?: boolean;
   priority?: boolean;
   soldOut?: boolean;
   className?: string;
   imgClassName?: string;
+  /**
+   * Simple tap sur l’image (après délai si produit flippable) : ouverture modale avec le côté courant.
+   * Sans verso : appel immédiat.
+   */
   onTap?: (side: ProductFlipSide) => void;
+  /** Double tap rapide : bascule recto ↔ verso (produits avec verso uniquement). */
+  onDoubleTapFlip?: () => void;
 };
 
 export function ProductImageFlip({
@@ -44,115 +51,110 @@ export function ProductImageFlip({
   onSideChange,
   alt,
   isFirstInGrid = false,
+  showPeekAnimation = false,
   priority = false,
   soldOut = false,
   className,
   imgClassName,
   onTap,
+  onDoubleTapFlip,
 }: ProductImageFlipProps) {
   const flippable = Boolean(backImage);
-  const dragFlipEnabled = useFinePointer();
-  const trackRef = useRef<HTMLDivElement>(null);
+  const finePointer = useFinePointer();
   const trackInnerRef = useRef<HTMLDivElement>(null);
-  const dragStartX = useRef<number | null>(null);
-  const dragDelta = useRef(0);
-  const didDrag = useRef(false);
-  const [peekRunDone, setPeekRunDone] = useState(false);
-  const showPeekRun =
-    dragFlipEnabled && isFirstInGrid && flippable && !peekRunDone && side === "recto";
+  const lastTapAtRef = useRef(0);
+  const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!showPeekRun) return;
-    const timer = window.setTimeout(() => setPeekRunDone(true), 1050 + 1850 * 2 + 160);
-    return () => window.clearTimeout(timer);
-  }, [showPeekRun]);
+  const clearSingleTapTimer = useCallback(() => {
+    if (singleTapTimerRef.current !== null) {
+      clearTimeout(singleTapTimerRef.current);
+      singleTapTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => clearSingleTapTimer(), [clearSingleTapTimer]);
 
   const applyTrackTransform = useCallback(
-    (dragPx: number, animate: boolean) => {
+    (animate: boolean) => {
       const el = trackInnerRef.current;
-      if (!el || showPeekRun) return;
+      if (!el) return;
+      if (showPeekAnimation) {
+        el.classList.remove("dingry-flip-track--dragging");
+        el.classList.toggle("dingry-flip-track--verso", side === "verso");
+        el.style.transform = "";
+        return;
+      }
       el.classList.toggle("dingry-flip-track--dragging", !animate);
       el.classList.toggle("dingry-flip-track--verso", side === "verso");
-      if (isFirstInGrid && side === "recto" && dragPx === 0 && animate) {
+      if (isFirstInGrid && side === "recto" && animate) {
         el.style.transform = "";
         return;
       }
       const basePercent = side === "verso" ? -50 : 0;
-      el.style.transform = `translate3d(calc(${basePercent}% + ${dragPx}px), 0, 0)`;
+      el.style.transform = `translate3d(${basePercent}%, 0, 0)`;
     },
-    [showPeekRun, side, isFirstInGrid],
+    [showPeekAnimation, side, isFirstInGrid],
   );
 
   useEffect(() => {
-    applyTrackTransform(0, true);
+    applyTrackTransform(true);
   }, [applyTrackTransform, side]);
 
-  const commitSide = useCallback(
-    (next: ProductFlipSide) => {
-      if (!flippable || next === side) return;
-      onSideChange?.(next);
-    },
-    [flippable, onSideChange, side],
-  );
+  const handleImageClick = () => {
+    if (showPeekAnimation) return;
+    if (!onTap) return;
 
-  const finishDrag = useCallback(() => {
-    const delta = dragDelta.current;
-    dragStartX.current = null;
-    applyTrackTransform(0, true);
-    if (!flippable || Math.abs(delta) < SWIPE_THRESHOLD_PX) return;
-    if (delta < 0 && side === "recto") commitSide("verso");
-    if (delta > 0 && side === "verso") commitSide("recto");
-  }, [applyTrackTransform, commitSide, flippable, side]);
-
-  const onPointerDown = (event: React.PointerEvent) => {
-    if (!flippable || !dragFlipEnabled) return;
-    didDrag.current = false;
-    dragStartX.current = event.clientX;
-    dragDelta.current = 0;
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const onPointerMove = (event: React.PointerEvent) => {
-    if (!flippable || !dragFlipEnabled || dragStartX.current === null) return;
-    const width = trackRef.current?.clientWidth ?? 1;
-    const delta = event.clientX - dragStartX.current;
-    dragDelta.current = delta;
-    if (Math.abs(delta) > DRAG_CLICK_GUARD_PX) didDrag.current = true;
-    const atRecto = side === "recto";
-    const clamped =
-      atRecto ? Math.min(0, Math.max(-width, delta)) : Math.max(0, Math.min(width, delta));
-    applyTrackTransform(clamped, false);
-  };
-
-  const onPointerUp = (event: React.PointerEvent) => {
-    if (!flippable || !dragFlipEnabled) return;
-    finishDrag();
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const onClick = () => {
-    if (dragFlipEnabled && didDrag.current) {
-      didDrag.current = false;
+    if (!flippable || finePointer) {
+      onTap(side);
       return;
     }
-    onTap?.(side);
+
+    if (!onDoubleTapFlip) {
+      onTap(side);
+      return;
+    }
+
+    const now = Date.now();
+    const sinceLast = now - lastTapAtRef.current;
+
+    if (sinceLast > 0 && sinceLast < DOUBLE_TAP_MS) {
+      clearSingleTapTimer();
+      lastTapAtRef.current = 0;
+      onDoubleTapFlip();
+      return;
+    }
+
+    lastTapAtRef.current = now;
+    clearSingleTapTimer();
+    singleTapTimerRef.current = setTimeout(() => {
+      singleTapTimerRef.current = null;
+      lastTapAtRef.current = 0;
+      onTap(side);
+    }, DOUBLE_TAP_MS);
+  };
+
+  const handleImageDoubleClick = (event: React.MouseEvent) => {
+    if (showPeekAnimation || !flippable || !finePointer || !onDoubleTapFlip) return;
+    event.preventDefault();
+    clearSingleTapTimer();
+    lastTapAtRef.current = 0;
+    onDoubleTapFlip();
   };
 
   const frontSrc = cldOpt(frontImage, 600);
   const backSrc = backImage ? cldOpt(backImage, 600) : frontSrc;
 
+  const photoShellClass = cn(
+    "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg [touch-action:pan-y] sm:rounded-xl md:rounded-2xl",
+    className,
+  );
+
   if (!flippable) {
     return (
       <div
-        className={cn(
-          "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl",
-          className,
-        )}
-        onClick={() => onTap?.("recto")}
+        className={photoShellClass}
+        onClick={handleImageClick}
+        onDoubleClick={handleImageDoubleClick}
         role={onTap ? "button" : undefined}
         tabIndex={onTap ? 0 : undefined}
       >
@@ -179,27 +181,15 @@ export function ProductImageFlip({
     );
   }
 
-  const pointerHandlers = dragFlipEnabled
-    ? {
-        onPointerDown,
-        onPointerMove,
-        onPointerUp,
-        onPointerCancel: onPointerUp,
-      }
-    : {};
-
   return (
     <div
-      ref={trackRef}
       className={cn(
-        "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl",
-        flippable && dragFlipEnabled && "cursor-grab active:cursor-grabbing",
-        isFirstInGrid && flippable && dragFlipEnabled && "dingry-flip-first-grid",
-        showPeekRun && "dingry-flip-verso-peek-run",
-        className,
+        photoShellClass,
+        isFirstInGrid && "dingry-flip-first-grid",
+        showPeekAnimation && "dingry-flip-verso-peek-run",
       )}
-      {...pointerHandlers}
-      onClick={onClick}
+      onClick={handleImageClick}
+      onDoubleClick={handleImageDoubleClick}
       role={onTap ? "button" : undefined}
       tabIndex={onTap ? 0 : undefined}
       onKeyDown={
@@ -207,18 +197,15 @@ export function ProductImageFlip({
           ? (event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
+                // Clavier : ouverture modale directe (pas de double tap).
+                clearSingleTapTimer();
+                lastTapAtRef.current = 0;
                 onTap(side);
               }
             }
           : undefined
       }
-      aria-label={
-        flippable
-          ? dragFlipEnabled
-            ? `${alt} — glisser pour voir le verso`
-            : `${alt} — appuyer pour ouvrir la fiche`
-          : alt
-      }
+      aria-label={`${alt} — appuyer pour ouvrir, double appui pour recto ou verso`}
     >
       <div
         ref={trackInnerRef}
@@ -253,22 +240,18 @@ export function ProductImageFlip({
           className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
         />
       </div>
-      {isFirstInGrid && side === "recto" && dragFlipEnabled ? (
+      {isFirstInGrid && side === "recto" ? (
         <span className="dingry-flip-verso-hint pointer-events-none absolute right-2.5 top-2.5 z-[2] flex items-center gap-1.5 border border-white/10 bg-black/35 px-2.5 py-1 text-[7px] uppercase tracking-[0.32em] text-white/70 backdrop-blur-md md:text-[8px]">
           <span aria-hidden className="text-[9px] font-light text-white/45">
             ←
           </span>
           Survoler pour verso
         </span>
-      ) : flippable && !dragFlipEnabled ? (
-        <span className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-black/55 px-2 py-0.5 text-[8px] uppercase tracking-[0.2em] text-white/70 md:text-[9px]">
-          Appuyer pour ouvrir
+      ) : (
+        <span className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-black/55 px-2 py-0.5 text-[7px] uppercase tracking-[0.18em] text-white/70 sm:text-[8px] md:text-[9px]">
+          {side === "recto" ? "Tap ouvrir · double tap verso" : "Tap ouvrir · double tap recto"}
         </span>
-      ) : dragFlipEnabled ? (
-        <span className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-black/55 px-2 py-0.5 text-[8px] uppercase tracking-[0.2em] text-white/70 md:text-[9px]">
-          {side === "recto" ? "Glisser → verso" : "← Recto"}
-        </span>
-      ) : null}
+      )}
       {soldOut ? (
         <span className="pointer-events-none absolute left-2 top-2 bg-black/80 px-2 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
           Épuisé

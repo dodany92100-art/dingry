@@ -114,7 +114,7 @@ function useLocalStoreFiles(): boolean {
 async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
   let result: Awaited<ReturnType<typeof get>>;
   try {
-    result = await get(STORE_PATHNAME, { access: "private" });
+    result = await get(STORE_PATHNAME, { access: "public" });
   } catch (error) {
     console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
     throw new StoreUnavailableError();
@@ -235,7 +235,7 @@ async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promi
   }
 
   await put(STORE_PATHNAME, body, {
-    access: "private",
+    access: "public",
     addRandomSuffix: false,
     allowOverwrite: etag !== null,
     contentType: "application/json",

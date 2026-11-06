@@ -13,12 +13,14 @@ type CollectionFeedProps = {
   sections: CatalogMenuSection[];
   flipPairs: FlipPair[];
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
+  peekResetKey: string | number;
 };
 
 export function CollectionFeed({
   sections,
   flipPairs,
   onOpenProduct,
+  peekResetKey,
 }: CollectionFeedProps) {
   let indexOffset = 0;
 
@@ -39,7 +41,9 @@ export function CollectionFeed({
               variant={storefrontProductSubtitle(product)}
               image={product.image}
               backImage={catalogBackImageForRecto(product, flipPairs)}
-              isFirstInGrid={globalIndex === 0}
+              isFirstInGrid={localIndex === 0}
+              isFirstProduct={globalIndex === 0}
+              peekResetKey={peekResetKey}
               price={product.price}
               priority={globalIndex < 4}
               soldOut={!isShopProductInStock(product)}

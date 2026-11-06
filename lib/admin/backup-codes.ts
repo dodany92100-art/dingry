@@ -78,7 +78,7 @@ function isBackupFile(value: unknown): value is BackupFile {
 async function readCodesSnapshot(): Promise<CodesSnapshot | "missing" | "error"> {
   if (blobConfigured()) {
     try {
-      const result = await get(BLOB_PATH, { access: "private", useCache: false });
+      const result = await get(BLOB_PATH, { access: "public", useCache: false });
       if (!result || result.statusCode !== 200 || !result.stream) return "missing";
       const text = await new Response(result.stream).text();
       const parsed: unknown = JSON.parse(text);
@@ -109,7 +109,7 @@ async function writeCodesSnapshot(file: BackupFile, etag: string | null): Promis
   const body = JSON.stringify(file);
   if (blobConfigured()) {
     await put(BLOB_PATH, body, {
-      access: "private",
+      access: "public",
       addRandomSuffix: false,
       allowOverwrite: etag !== null,
       contentType: "application/json",

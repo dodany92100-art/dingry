@@ -64,6 +64,10 @@ const nextConfig = {
         source: "/admin/:path*",
         headers: noIndex,
       },
+      {
+        source: "/legal/:path*",
+        headers: noIndex,
+      },
     ];
   },
 };

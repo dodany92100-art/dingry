@@ -22,7 +22,7 @@ export const DINGRY_MEDIATOR =
   "En l’absence de désignation définitive : CM2C (www.cm2c.net) ou SAS Médiation Solution (www.mediation-solution.net), selon le litige.";
 
 export const DINGRY_REASSURANCE_LINE =
-  "Livraison offerte en France · retours gratuits sous 14 jours · pièces numérotées.";
+  "Livraison offerte en France · droit de rétractation 14 j · pièces numérotées.";
 
 export const DINGRY_LEGAL_SUBTITLE =
   "Version du 5 novembre 2026. Directeur de la publication et médiateur définitifs à confirmer par la marque.";

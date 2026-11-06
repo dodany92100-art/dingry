@@ -71,33 +71,65 @@ export const LEGAL_DOCUMENTS: Record<
           "Livraison offerte en France métropolitaine uniquement au lancement (extension internationale prévue ultérieurement). Préparation et expédition par l’équipe DINGRY depuis l’adresse logistique indiquée au client. Transporteur : Colissimo / La Poste. Délai d’expédition annoncé : 24 à 48 h ouvrées après commande. Délai de livraison indicatif : 3 à 7 jours ouvrés en France métropolitaine. Les risques sont transférés au client à réception.",
       },
       {
-        heading: "5. Droit de rétractation et retours",
+        heading: "5. Politique de retours — Notre politique",
         body:
-          "Conformément aux articles L.221-18 et suivants du Code de la consommation, le client dispose d’un délai de 14 jours à compter de la réception pour exercer son droit de rétractation. Les retours sont gratuits dans ce délai, selon la procédure communiquée par le service client. Les articles doivent être retournés non portés, non lavés, dans leur emballage d’origine. Adresse de retour : " +
+          "Chez DINGRY, nous souhaitons que chaque client soit satisfait de sa commande. Si un article ne vous convient pas, vous pouvez demander son retour dans les conditions décrites ci-dessous.",
+      },
+      {
+        heading: "6. Droit de rétractation — 14 jours",
+        body:
+          "Conformément à la législation française, vous disposez d'un délai de 14 jours calendaires à compter de la réception de votre commande pour exercer votre droit de rétractation, sans avoir à fournir de justification. Ce droit s'applique également aux articles soldés et aux collections en édition limitée. Pour effectuer une demande, contactez-nous à : dingry@gmail.com. Indiquez votre numéro de commande et les articles concernés.",
+      },
+      {
+        heading: "7. Conditions de retour",
+        body:
+          "Les articles doivent être retournés dans un état permettant leur remise en vente. Ils ne doivent pas avoir été portés, lavés ou détériorés au-delà des manipulations nécessaires pour les essayer. Les étiquettes et emballages d'origine doivent être conservés dans la mesure du possible. En cas de manipulation excessive ayant entraîné une dépréciation du produit, DINGRY pourra appliquer les règles légales correspondantes. Adresse de retour (logistique) : " +
           DINGRY_RETURNS_ADDRESS +
-          ". Les pièces personnalisées sur commande (module Custom) ne bénéficient pas du droit de rétractation (art. L.221-28 du Code de la consommation).",
+          ".",
       },
       {
-        heading: "6. Remboursements",
+        heading: "8. Frais de retour",
         body:
-          "En cas de rétractation ou de remboursement accepté, le montant est recrédité via PayPal dans un délai maximal de 14 jours à compter de la notification de la décision, conformément à la réglementation.",
+          "Sauf indication contraire, les frais de retour liés à l'exercice du droit de rétractation sont à la charge du client, à condition que cette information lui ait été communiquée avant l'achat. En cas d'article défectueux, non conforme ou d'erreur de préparation imputable à DINGRY, les frais de retour sont pris en charge par DINGRY.",
       },
       {
-        heading: "7. Personnalisation (Custom)",
+        heading: "9. Remboursements",
+        body:
+          "Après validation du retour, le remboursement est effectué dans un délai maximum de 14 jours, conformément aux dispositions légales. DINGRY peut toutefois différer le remboursement jusqu'à la récupération des articles ou jusqu'à réception d'une preuve de leur expédition, selon la première de ces éventualités. Le remboursement est effectué via le moyen de paiement utilisé lors de la commande (notamment PayPal), sauf accord contraire du client. Les frais de livraison initiaux standard sont également remboursés en cas de rétractation totale.",
+      },
+      {
+        heading: "10. Articles défectueux ou erreurs de commande",
+        body:
+          "Si vous recevez un article défectueux, endommagé ou différent de celui commandé, contactez-nous rapidement à dingry@gmail.com en précisant votre numéro de commande et en joignant, si possible, des photographies. DINGRY étudiera votre demande et proposera une solution adaptée : remplacement, remboursement ou autre solution prévue par les garanties légales applicables. Les frais de retour seront pris en charge par DINGRY lorsque le problème lui est imputable.",
+      },
+      {
+        heading: "11. Articles non retournables",
+        body:
+          "Les articles personnalisés ou confectionnés selon les spécifications particulières du client peuvent être exclus du droit de rétractation dans les conditions prévues par la loi. Les éditions limitées, les articles soldés et les collections spéciales restent soumis aux droits légaux de rétractation et de garantie.",
+      },
+      {
+        heading: "12. Contact — retours et remboursements",
+        body:
+          "Pour toute question concernant un retour ou un remboursement : E-mail dingry@gmail.com · Site " +
+          DINGRY_SITE_DOMAIN +
+          ". Nous nous engageons à traiter chaque demande dans les meilleurs délais. DINGRY — Des pièces, pas des compromis.",
+      },
+      {
+        heading: "13. Personnalisation (Custom)",
         body: `Le supplément de personnalisation est de ${PERSONALIZATION_SURCHARGE_EUR} € TTC par article personnalisé, en sus du prix du produit. Les visuels validés par le client lors de la commande font foi ; les créations sur mesure ne sont ni reprises ni échangées, sauf vice caché ou non-conformité.`,
       },
       {
-        heading: "8. Garanties et service client",
+        heading: "14. Garanties et service client",
         body:
           "Les produits bénéficient des garanties légales de conformité et des vices cachés. Pour toute réclamation : " +
           `${DINGRY_CONTACT_EMAIL}. Litiges et remboursements opérationnels sont traités via le compte PayPal Business de la marque.`,
       },
       {
-        heading: "9. Médiation de la consommation",
+        heading: "15. Médiation de la consommation",
         body: `À défaut de résolution amiable, le client peut recourir à un médiateur de la consommation. ${DINGRY_MEDIATOR}`,
       },
       {
-        heading: "10. Droit applicable",
+        heading: "16. Droit applicable",
         body:
           "Les présentes CGV sont soumises au droit français. En cas de litige, les tribunaux français seront compétents, sous réserve des dispositions impératives protectrices du consommateur.",
       },

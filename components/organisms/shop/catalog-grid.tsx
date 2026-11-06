@@ -29,6 +29,7 @@ function buildProductCells(
   products: ShopProduct[],
   flipPairs: FlipPair[],
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void,
+  catalogPeekResetKey: string,
   indexOffset = 0,
 ): ReactNode[] {
   return products.map((product, index) => {
@@ -41,6 +42,8 @@ function buildProductCells(
         image={product.image}
         backImage={catalogBackImageForRecto(product, flipPairs)}
         isFirstInGrid={globalIndex === 0}
+        isFirstProduct={globalIndex === 0}
+        peekResetKey={catalogPeekResetKey}
         price={product.price}
         priority={globalIndex < 4}
         soldOut={!isShopProductInStock(product)}
@@ -105,6 +108,7 @@ export function CatalogGrid({
           <CollectionFeed
             sections={sections}
             flipPairs={flipPairs}
+            peekResetKey={filterKey}
             onOpenProduct={onOpenProduct}
           />
         )}
@@ -112,7 +116,7 @@ export function CatalogGrid({
     );
   }
 
-  const cells = buildProductCells(products, flipPairs, onOpenProduct);
+  const cells = buildProductCells(products, flipPairs, onOpenProduct, filterKey);
 
   return (
     <motion.div
