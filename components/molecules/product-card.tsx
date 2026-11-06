@@ -55,8 +55,8 @@ export function ProductCard({
   const [side, setSide] = useState<ProductFlipSide>("recto");
 
   return (
-    <article className={cn("group mx-auto w-full max-w-sm", className)}>
-      <div className="w-full rounded-xl text-left md:rounded-2xl">
+    <article className={cn("group mx-auto w-full max-w-sm touch-pan-y", className)}>
+      <div className="w-full touch-pan-y rounded-xl text-left md:rounded-2xl">
         <ProductImageFlip
           frontImage={image}
           backImage={backImage}
@@ -66,7 +66,7 @@ export function ProductCard({
           priority={priority}
           soldOut={soldOut}
           alt={`${name} ${variant}`}
-          imgClassName="transition-[filter] duration-300 ease-out motion-reduce:transition-none group-hover:brightness-[1.03]"
+          imgClassName="transition-[filter] duration-300 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:brightness-[1.03]"
           onTap={onClick ? (nextSide) => onClick(nextSide) : undefined}
         />
         <button

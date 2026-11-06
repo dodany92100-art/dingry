@@ -7,6 +7,19 @@ import { cldOpt } from "@/components/molecules/product-card";
 const SWIPE_THRESHOLD_PX = 48;
 const DRAG_CLICK_GUARD_PX = 12;
 
+/** Souris / trackpad : drag flip. Tactile (pointer coarse) : pas de drag — scroll natif + tap pour ouvrir la fiche. */
+function useFinePointer(): boolean {
+  const [fine, setFine] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: fine)");
+    const apply = () => setFine(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return fine;
+}
+
 export type ProductFlipSide = "recto" | "verso";
 
 type ProductImageFlipProps = {
@@ -38,13 +51,15 @@ export function ProductImageFlip({
   onTap,
 }: ProductImageFlipProps) {
   const flippable = Boolean(backImage);
+  const dragFlipEnabled = useFinePointer();
   const trackRef = useRef<HTMLDivElement>(null);
   const trackInnerRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
   const dragDelta = useRef(0);
   const didDrag = useRef(false);
   const [peekRunDone, setPeekRunDone] = useState(false);
-  const showPeekRun = isFirstInGrid && flippable && !peekRunDone && side === "recto";
+  const showPeekRun =
+    dragFlipEnabled && isFirstInGrid && flippable && !peekRunDone && side === "recto";
 
   useEffect(() => {
     if (!showPeekRun) return;
@@ -90,7 +105,7 @@ export function ProductImageFlip({
   }, [applyTrackTransform, commitSide, flippable, side]);
 
   const onPointerDown = (event: React.PointerEvent) => {
-    if (!flippable) return;
+    if (!flippable || !dragFlipEnabled) return;
     didDrag.current = false;
     dragStartX.current = event.clientX;
     dragDelta.current = 0;
@@ -98,7 +113,7 @@ export function ProductImageFlip({
   };
 
   const onPointerMove = (event: React.PointerEvent) => {
-    if (!flippable || dragStartX.current === null) return;
+    if (!flippable || !dragFlipEnabled || dragStartX.current === null) return;
     const width = trackRef.current?.clientWidth ?? 1;
     const delta = event.clientX - dragStartX.current;
     dragDelta.current = delta;
@@ -110,7 +125,7 @@ export function ProductImageFlip({
   };
 
   const onPointerUp = (event: React.PointerEvent) => {
-    if (!flippable) return;
+    if (!flippable || !dragFlipEnabled) return;
     finishDrag();
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -120,7 +135,7 @@ export function ProductImageFlip({
   };
 
   const onClick = () => {
-    if (didDrag.current) {
+    if (dragFlipEnabled && didDrag.current) {
       didDrag.current = false;
       return;
     }
@@ -134,7 +149,7 @@ export function ProductImageFlip({
     return (
       <div
         className={cn(
-          "dingry-product-photo relative aspect-[3/4] overflow-hidden rounded-xl md:rounded-2xl",
+          "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-xl md:rounded-2xl",
           className,
         )}
         onClick={() => onTap?.("recto")}
@@ -164,20 +179,26 @@ export function ProductImageFlip({
     );
   }
 
+  const pointerHandlers = dragFlipEnabled
+    ? {
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
+        onPointerCancel: onPointerUp,
+      }
+    : {};
+
   return (
     <div
       ref={trackRef}
       className={cn(
         "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-xl md:rounded-2xl",
-        flippable && "cursor-grab active:cursor-grabbing",
-        isFirstInGrid && flippable && "dingry-flip-first-grid",
+        flippable && dragFlipEnabled && "cursor-grab active:cursor-grabbing",
+        isFirstInGrid && flippable && dragFlipEnabled && "dingry-flip-first-grid",
         showPeekRun && "dingry-flip-verso-peek-run",
         className,
       )}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      {...pointerHandlers}
       onClick={onClick}
       role={onTap ? "button" : undefined}
       tabIndex={onTap ? 0 : undefined}
@@ -191,7 +212,13 @@ export function ProductImageFlip({
             }
           : undefined
       }
-      aria-label={flippable ? `${alt} — glisser pour voir le verso` : alt}
+      aria-label={
+        flippable
+          ? dragFlipEnabled
+            ? `${alt} — glisser pour voir le verso`
+            : `${alt} — appuyer pour ouvrir la fiche`
+          : alt
+      }
     >
       <div
         ref={trackInnerRef}
@@ -226,18 +253,22 @@ export function ProductImageFlip({
           className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
         />
       </div>
-      {isFirstInGrid && side === "recto" ? (
+      {isFirstInGrid && side === "recto" && dragFlipEnabled ? (
         <span className="dingry-flip-verso-hint pointer-events-none absolute right-2.5 top-2.5 z-[2] flex items-center gap-1.5 border border-white/10 bg-black/35 px-2.5 py-1 text-[7px] uppercase tracking-[0.32em] text-white/70 backdrop-blur-md md:text-[8px]">
           <span aria-hidden className="text-[9px] font-light text-white/45">
             ←
           </span>
           Survoler pour verso
         </span>
-      ) : (
+      ) : flippable && !dragFlipEnabled ? (
+        <span className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-black/55 px-2 py-0.5 text-[8px] uppercase tracking-[0.2em] text-white/70 md:text-[9px]">
+          Appuyer pour ouvrir
+        </span>
+      ) : dragFlipEnabled ? (
         <span className="pointer-events-none absolute bottom-2 left-2 rounded-sm bg-black/55 px-2 py-0.5 text-[8px] uppercase tracking-[0.2em] text-white/70 md:text-[9px]">
           {side === "recto" ? "Glisser → verso" : "← Recto"}
         </span>
-      )}
+      ) : null}
       {soldOut ? (
         <span className="pointer-events-none absolute left-2 top-2 bg-black/80 px-2 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
           Épuisé
