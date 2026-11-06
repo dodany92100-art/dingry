@@ -8,6 +8,8 @@ const GREEN = '\x1b[32m';
 const RESET = '\x1b[0m';
 const YELLOW = '\x1b[33m';
 const CODE_EXT = /\.(tsx?|jsx?)$/;
+const ATOMIC_DIRS = ['atoms', 'molecules', 'organisms', 'templates', 'pages'];
+const EXPECTED_SIZES = ['S', 'M', 'L', 'XL', 'TU'];
 
 let errorsCount = 0;
 
@@ -30,68 +32,75 @@ function collectFiles(dir, out = []) {
   return out;
 }
 
-console.log(`\n${YELLOW}🔍 Lancement du contrôle anti-régression DINGRY...${RESET}\n`);
+console.log(`\n${YELLOW}🔍 Contrôle anti-régression DINGRY (invariants métier)…${RESET}\n`);
 
 const componentsDir = path.join(root, 'components');
 const libDir = path.join(root, 'lib');
 const componentsFiles = collectFiles(componentsDir);
 const libFiles = collectFiles(libDir);
 
-const re119 = /\?\?\s*119/;
-const reConsole = /console\.log\(/;
-
+// 1. Fallback fictif ?? 119
 let found119 = false;
-let foundConsole = false;
-let sizesChecked = false;
-
-for (const file of componentsFiles) {
+for (const file of [...componentsFiles, ...libFiles]) {
   const content = fs.readFileSync(file, 'utf8');
-  if (re119.test(content)) {
-    logError(`Fallback interdit '?? 119' trouvé dans : ${path.relative(root, file)}`);
+  if (/\?\?\s*119/.test(content)) {
+    logError(`Fallback '?? 119' dans : ${path.relative(root, file)}`);
     found119 = true;
   }
-  if (reConsole.test(content)) {
-    logError(`console.log de debug trouvé dans : ${path.relative(root, file)}`);
+}
+if (!found119) logSuccess("Aucun fallback '?? 119' résiduel.");
+
+// 2. console.log dans components/
+let foundConsole = false;
+for (const file of componentsFiles) {
+  if (/console\.log\(/.test(fs.readFileSync(file, 'utf8'))) {
+    logError(`console.log dans : ${path.relative(root, file)}`);
     foundConsole = true;
   }
 }
+if (!foundConsole) logSuccess('Aucun console.log dans components/.');
 
+// 3. SIZES (shop-data)
 const shopDataPath = path.join(libDir, 'shop-data.ts');
-
-for (const file of libFiles) {
-  const content = fs.readFileSync(file, 'utf8');
-  if (re119.test(content)) {
-    logError(`Fallback interdit '?? 119' trouvé dans : ${path.relative(root, file)}`);
-    found119 = true;
-  }
-  if (file === shopDataPath) {
-    sizesChecked = true;
-    const sizesMatch = content.match(/export const SIZES = \[([^\]]+)\]/);
-    if (sizesMatch) {
-      const sizes = [...sizesMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-      const expected = ['S', 'M', 'L', 'XL', 'TU'];
-      if (sizes.length !== expected.length || sizes.some((s, i) => s !== expected[i])) {
-        logError(`Grille de tailles SIZES non conforme dans lib/shop-data.ts : ${JSON.stringify(sizes)}`);
-      } else {
-        logSuccess("Grille de tailles SIZES strictement alignée sur ['S', 'M', 'L', 'XL', 'TU'].");
-      }
+if (!fs.existsSync(shopDataPath)) {
+  logError('Fichier lib/shop-data.ts introuvable.');
+} else {
+  const content = fs.readFileSync(shopDataPath, 'utf8');
+  const sizesMatch = content.match(/export const SIZES = \[([^\]]+)\]/);
+  if (!sizesMatch) {
+    logError('export const SIZES introuvable dans lib/shop-data.ts.');
+  } else {
+    const sizes = [...sizesMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    if (sizes.length !== EXPECTED_SIZES.length || sizes.some((s, i) => s !== EXPECTED_SIZES[i])) {
+      logError(`SIZES non conforme : ${JSON.stringify(sizes)} (attendu ${JSON.stringify(EXPECTED_SIZES)}).`);
     } else {
-      logError('Constante export const SIZES introuvable dans lib/shop-data.ts.');
+      logSuccess(`SIZES aligné sur ${JSON.stringify(EXPECTED_SIZES)}.`);
     }
   }
 }
 
-if (!found119) logSuccess("Aucun fallback '?? 119' résiduel dans le code.");
-
-if (!sizesChecked) {
-  logError('Fichier lib/shop-data.ts introuvable.');
+// 4. Structure Atomic Design
+let atomicOk = true;
+for (const dir of ATOMIC_DIRS) {
+  if (!fs.existsSync(path.join(componentsDir, dir))) {
+    logError(`Dossier manquant : components/${dir}/`);
+    atomicOk = false;
+  }
 }
+if (atomicOk) logSuccess('Structure Atomic Design (atoms → pages).');
 
-if (!foundConsole) logSuccess('Aucun console.log de debug dans components/.');
+for (const legacy of ['components/shop', 'components/admin']) {
+  if (fs.existsSync(path.join(root, legacy))) {
+    logError(`Dossier legacy interdit : ${legacy}/ (utiliser components/organisms/)`);
+  }
+}
+if (!fs.existsSync(path.join(root, 'components/shop')) && !fs.existsSync(path.join(root, 'components/admin'))) {
+  logSuccess('Aucun dossier legacy components/{shop,admin}.');
+}
 
 console.log('');
 if (errorsCount > 0) {
-  console.error(`${RED}💥 Vérification échouée avec ${errorsCount} erreur(s). Corrige-les avant le push !${RESET}\n`);
+  console.error(`${RED}💥 ${errorsCount} erreur(s). Corrige avant push/commit.${RESET}\n`);
   process.exit(1);
 }
-console.log(`${GREEN}🚀 Tout est au vert ! Code propre et prêt pour la production.${RESET}\n`);
+console.log(`${GREEN}🚀 Invariants OK — code prêt.${RESET}\n`);

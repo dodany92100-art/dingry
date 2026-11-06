@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { isBlobConfigured, requireAdmin } from "@/lib/admin/auth";
 import { parseProductFields } from "@/lib/admin/parse-product";
 import {
@@ -6,9 +7,11 @@ import {
   StoreConflictError,
   StoreUnavailableError,
   ProductStockAdjustError,
+  PublishValidationError,
   validateImageFile,
 } from "@/lib/admin/store";
 import { readStockQuantity } from "@/lib/stock";
+import { normalizePublishStatus } from "@/lib/admin/types";
 import type { ParsedProductFields } from "@/lib/admin/parse-product";
 import { jsonNoStore } from "@/lib/http";
 
@@ -63,13 +66,17 @@ export async function POST(request: Request) {
   }
 
   const image = formData.get("image");
-  if (!(image instanceof File) || image.size === 0) {
-    return jsonNoStore({ error: "Une image est requise." }, { status: 400 });
+  const publishStatus = normalizePublishStatus(String(formData.get("publishStatus") ?? "live"));
+  const imageRequired = publishStatus === "live";
+  if (imageRequired && (!(image instanceof File) || image.size === 0)) {
+    return jsonNoStore({ error: "Une image est requise pour mettre en ligne." }, { status: 400 });
   }
 
-  const imageError = validateImageFile(image);
-  if (imageError) {
-    return jsonNoStore({ error: imageError }, { status: 400 });
+  if (image instanceof File && image.size > 0) {
+    const imageError = validateImageFile(image);
+    if (imageError) {
+      return jsonNoStore({ error: imageError }, { status: 400 });
+    }
   }
 
   const fields = parsed.fields as ParsedProductFields;
@@ -80,17 +87,24 @@ export async function POST(request: Request) {
       name: fields.name,
       variant: fields.variant ?? "",
       description: fields.description ?? "",
+      fabrication: fields.fabrication ?? "",
+      limitedEdition: fields.limitedEdition ?? "",
+      materials: fields.materials ?? "",
+      sizeGuide: fields.sizeGuide ?? "",
       category: fields.category,
       price: fields.price,
       sizes: fields.sizes,
       stock: fields.stock,
-      file: image,
+      publishStatus: fields.publishStatus ?? publishStatus,
+      file: image instanceof File && image.size > 0 ? image : null,
     });
+    revalidatePath("/api/catalog");
+    revalidatePath("/");
     return jsonNoStore({ product }, { status: 201 });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
       console.error("Création produit indisponible", error.name);
-      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
+      return jsonNoStore({ error: error.message || "Enregistrement indisponible." }, { status: 503 });
     }
     if (error instanceof StoreConflictError) {
       return jsonNoStore({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
@@ -99,7 +113,14 @@ export async function POST(request: Request) {
       const status = error.code === "negative" ? 409 : 503;
       return jsonNoStore({ error: error.message }, { status });
     }
-    console.error("Création produit", error instanceof Error ? error.name : "erreur");
-    return jsonNoStore({ error: "Impossible d'enregistrer le produit." }, { status: 500 });
+    if (error instanceof PublishValidationError) {
+      return jsonNoStore({ error: error.message }, { status: 400 });
+    }
+    console.error("Création produit", error instanceof Error ? error.stack : error);
+    const hint =
+      error instanceof Error && error.message.length > 0 && error.message.length < 160
+        ? error.message
+        : "Impossible d'enregistrer le produit.";
+    return jsonNoStore({ error: hint }, { status: 500 });
   }
 }

@@ -1,6 +1,15 @@
 import type { ShopProduct } from "@/lib/catalog";
 import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 
+/** Taxonomie officielle marque — source {@link ./dingry-product-taxonomy.ts} */
+export {
+  ADMIN_PRODUCT_CATEGORY_NAV,
+  OFFICIAL_PRODUCT_CATEGORIES,
+  isOfficialProductCategory,
+  type AdminProductCategoryFilter,
+  type OfficialProductCategory,
+} from "@/lib/dingry-product-taxonomy";
+
 export const IMAGES = {
   hero1: "https://res.cloudinary.com/dc9xmxpvv/image/upload/f_auto,q_auto,w_1920,c_crop,g_north,h_1430,w_1960/v1793310395/014c39fa-7191-491e-a893-a58b934498dd_no55a0.jpg",
   editorial: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793134245/IMG_4031_o8jpgl.jpg",
@@ -52,6 +61,21 @@ export const IMAGES = {
 };
 
 export const SIZES = ["S", "M", "L", "XL", "TU"] as const;
+
+/** Stock par défaut si une fiche `PRODUCTS` n’a pas de `stock` explicite (admin / Redis). */
+export const DEFAULT_SHOP_PRODUCT_STOCK = 10;
+
+/** Valeurs par défaut ordre / épinglage (CRM + catalogue statique). */
+export const DEFAULT_SHOP_PRODUCT_DISPLAY = {
+  isPinned: false,
+  displayOrder: 0,
+} as const;
+
+/** Quantité effective pour le CRM (jamais exposée au catalogue public). */
+export function resolveShopProductStock(stock: number | undefined): number {
+  if (stock === undefined || !Number.isFinite(stock)) return DEFAULT_SHOP_PRODUCT_STOCK;
+  return Math.max(0, Math.floor(stock));
+}
 
 export const PERSONALIZATION_MAX_LABEL_LENGTH = 28;
 
@@ -108,6 +132,7 @@ export const LOOKBOOK_ENTRIES = [
   [IMAGES.cap1, "DYRON — AFRO PUNK", "Saison capsule"],
 ] as const;
 
+/** Fiches statiques boutique — `stock?: number` optionnel (défaut {@link DEFAULT_SHOP_PRODUCT_STOCK}). */
 export const PRODUCTS: ShopProduct[] = [
   {
     id: 1,
@@ -116,7 +141,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodie1,
     description: "Coton lourd 480g, coupe oversize, capuche doublée. Finitions intérieures ton sur ton.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 2,
@@ -125,7 +150,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodie2,
     description: "Coloris king blue, broderie pink. Édition limitée.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 3,
@@ -134,7 +159,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodie3,
     description: "Coton lourd, coupe oversize et signature DINGRY au dos.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 4,
@@ -143,7 +168,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 90,
     image: IMAGES.hoodie4,
     description: "Hoodie zippé noir, silhouette structurée et détails outline.",
-    category: "Hoodie zippé",
+    category: "Hoodies zippés",
   },
   {
     id: 5,
@@ -152,7 +177,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 90,
     image: IMAGES.hoodie5,
     description: "Vue dos du hoodie zippé outline.",
-    category: "Hoodie zippé",
+    category: "Hoodies zippés",
   },
   {
     id: 6,
@@ -161,7 +186,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodie6,
     description: "Le hoodie original DINGRY en noir, coupe oversize.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 7,
@@ -170,7 +195,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodie7,
     description: "Le modèle original en vert, pensé pour la rue.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 8,
@@ -179,7 +204,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodie8,
     description: "Vue dos du hoodie original noir DINGRY.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   ...Array.from({ length: 11 }, (_, index) => {
     const collection = index + 1;
@@ -239,7 +264,7 @@ export const PRODUCTS: ShopProduct[] = [
     image: IMAGES.hoodieParisBlackRecto,
     description:
       "Hoodie noir avec logo DINGRY Paris sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 26,
@@ -248,7 +273,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodieParisBlackVerso,
     description: "",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 27,
@@ -257,7 +282,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodieParisGreyRecto,
     description: "Hoodie gris chiné, logo DINGRY sur la poitrine et statement au dos.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 28,
@@ -266,7 +291,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodieParisGreyVerso,
     description: "",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 29,
@@ -275,7 +300,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodieRoyalBlueRecto,
     description: "Hoodie chocolat à capuche, logo DINGRY sur la poitrine.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 30,
@@ -284,7 +309,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodieRoyalBlueVerso,
     description: "",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 35,
@@ -293,7 +318,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodieParisWhiteRecto,
     description: "Hoodie blanc, logo DINGRY sur la poitrine et statement au dos.",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 36,
@@ -302,7 +327,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 80,
     image: IMAGES.hoodieParisWhiteVerso,
     description: "",
-    category: "Hoodie",
+    category: "Hoodies",
   },
   {
     id: 31,
@@ -311,7 +336,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 50,
     image: IMAGES.sweatNeonYellowRecto,
     description: "Sweat col rond jaune fluo sans capuche, logo DINGRY Paris noir sur la poitrine.",
-    category: "Sweats",
+    category: "Crewnecks",
   },
   {
     id: 32,
@@ -320,7 +345,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 50,
     image: IMAGES.sweatNeonYellowVerso,
     description: "",
-    category: "Sweats",
+    category: "Crewnecks",
   },
   {
     id: 33,
@@ -329,7 +354,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 50,
     image: IMAGES.sweatRoyalBlueRecto,
     description: "Sweat col rond bleu royal sans capuche, écriture Dingry jaune style rétro sur la poitrine.",
-    category: "Sweats",
+    category: "Crewnecks",
   },
   {
     id: 34,
@@ -338,7 +363,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 50,
     image: IMAGES.sweatRoyalBlueVerso,
     description: "",
-    category: "Sweats",
+    category: "Crewnecks",
   },
   {
     id: 39,
@@ -347,7 +372,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 50,
     image: IMAGES.sweatPurpleRecto,
     description: "Sweat col rond violet sans capuche, logo DINGRY Paris rose sur la poitrine et éclair sur la manche.",
-    category: "Sweats",
+    category: "Crewnecks",
   },
   {
     id: 40,
@@ -356,7 +381,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 50,
     image: IMAGES.sweatPurpleVerso,
     description: "",
-    category: "Sweats",
+    category: "Crewnecks",
   },
   {
     id: 37,
@@ -385,7 +410,7 @@ export const PRODUCTS: ShopProduct[] = [
     price: 129,
     image: DINGRY_PRODUCT_MEDIA.jerseyWhite,
     description: "Jersey mesh blanc, logo DINGRY Paris noir sur la poitrine et éclairs sur les manches.",
-    category: "Jersey",
+    category: "Jerseys",
   },
   {
     id: 42,
@@ -394,6 +419,6 @@ export const PRODUCTS: ShopProduct[] = [
     price: 129,
     image: DINGRY_PRODUCT_MEDIA.jerseyBlack,
     description: "Jersey mesh noir, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
-    category: "Jersey",
+    category: "Jerseys",
   },
 ];

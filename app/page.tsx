@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import DingryShopPage from "@/components/dingry-shop-page";
-import DingryTeaserHome, { teaserHomeMetadata } from "@/components/dingry-teaser-home";
+import DingryShopPage from "@/components/pages/dingry-shop-page";
+import DingryTeaserHome, { teaserHomeMetadata } from "@/components/pages/dingry-teaser-home";
 import { DINGRY_META_DESCRIPTION } from "@/lib/dingry-brand-voice";
 
 /** Lit l’env à la requête (pas au build) pour que la prod reste en teasing jusqu’au 6 nov. */

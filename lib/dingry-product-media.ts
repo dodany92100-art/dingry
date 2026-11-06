@@ -37,6 +37,9 @@ export const DINGRY_PRODUCT_MEDIA = {
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793315162/c613df1f-7feb-4d7f-a1c2-d1018d94302b_tkal8j.jpg",
   teeBlackVerso:
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793315162/f5c4805b-561d-4c9c-92d1-9e61a6c824e4_soqs1x.jpg",
+  /** Bannière catalogue · configurateur custom (tee blanc PARIS). */
+  customConfiguratorBanner:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793947792/10324a1f-74eb-49cc-93b4-f0a118abc4fd_2_qhaxxz.jpg",
   jerseyWhite:
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310835/31908e1d-4023-4ed0-be80-f3c114bbb097_kz5cef.jpg",
   jerseyBlack:

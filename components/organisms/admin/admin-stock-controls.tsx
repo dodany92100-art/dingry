@@ -1,0 +1,106 @@
+"use client";
+
+import { AdminStockInput } from "@/components/organisms/admin/admin-stock-input";
+import type { AdminProduct } from "@/lib/admin/types";
+
+type AdminStockControlsProps = {
+  product: AdminProduct;
+  busy: boolean;
+  onChangeStock: (product: AdminProduct, delta: number) => void;
+  onSetStock: (product: AdminProduct, nextStock: number) => void;
+  onEdit: (product: AdminProduct) => void;
+  layout?: "card" | "row";
+};
+
+const BTN =
+  "flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-sm text-white/80 shadow-none transition hover:border-[#0066FF]/50 hover:bg-[#0066FF]/15 hover:text-white disabled:opacity-30";
+const BTN_COMPACT = `${BTN} h-7 w-7 text-xs`;
+const BTN_ROW = `${BTN} h-8 w-8`;
+
+export function AdminStockControls({
+  product,
+  busy,
+  onChangeStock,
+  onSetStock,
+  onEdit,
+  layout = "card",
+}: AdminStockControlsProps) {
+  const disabled = busy;
+
+  if (layout === "row") {
+    return (
+      <div className="flex shrink-0 items-center gap-1.5 md:gap-2" data-admin-no-reorder>
+        <button
+          type="button"
+          disabled={disabled || product.stock === 0}
+          onClick={() => onChangeStock(product, -1)}
+          className={BTN_ROW}
+          aria-label={`Retirer un ${product.name}`}
+        >
+          −
+        </button>
+        <AdminStockInput
+          product={product}
+          disabled={disabled}
+          onSetStock={onSetStock}
+          className="h-8 w-16 rounded-full border-white/10 bg-white/[0.04] text-center"
+        />
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onChangeStock(product, 1)}
+          className={BTN_ROW}
+          aria-label={`Ajouter un ${product.name}`}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          onClick={() => onEdit(product)}
+          className="ml-1 h-8 shrink-0 rounded-full px-3 text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:bg-white/10 hover:text-white"
+        >
+          Modifier
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mt-1 flex items-center justify-center gap-1 border-t border-white/[0.06] pt-1.5"
+      data-admin-no-reorder
+    >
+      <button
+        type="button"
+        disabled={disabled || product.stock === 0}
+        onClick={() => onChangeStock(product, -1)}
+        className={BTN_COMPACT}
+        aria-label={`Retirer un ${product.name}`}
+      >
+        −
+      </button>
+      <AdminStockInput
+        product={product}
+        disabled={disabled}
+        onSetStock={onSetStock}
+        className="h-7 w-14 rounded-full border-white/10 bg-white/[0.04] text-center text-xs tabular-nums"
+      />
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onChangeStock(product, 1)}
+        className={BTN_COMPACT}
+        aria-label={`Ajouter un ${product.name}`}
+      >
+        +
+      </button>
+      <button
+        type="button"
+        onClick={() => onEdit(product)}
+        className="ml-0.5 h-7 shrink-0 rounded-full px-2.5 text-[9px] uppercase tracking-[0.1em] text-white/50 transition hover:bg-white/10 hover:text-white"
+      >
+        CRM
+      </button>
+    </div>
+  );
+}

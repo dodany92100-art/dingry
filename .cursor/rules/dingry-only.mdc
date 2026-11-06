@@ -11,7 +11,8 @@ Ce workspace est **la boutique DINGRY** (streetwear). **Ne pas** appliquer les c
 
 - Next.js 16 (App Router), React 19, Tailwind CSS 4, TypeScript
 - Paiement : `app/api/checkout/route.ts` + PayPal (`NEXT_PUBLIC_PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`)
-- UI boutique : `components/dingry-shop-page.tsx` ; accueil prod teasing : `DINGRY_PUBLIC_HOME=teaser` + `components/dingry-teaser-home.tsx`
+- UI boutique : `components/templates/dingry-shop-page.tsx` (page Next : `components/pages/`) ; teasing : `DINGRY_PUBLIC_HOME=teaser` + `components/templates/dingry-teaser-home.tsx`
+- Composants : Atomic Design sous `components/{atoms,molecules,organisms,templates,pages}/`
 - Layout / styles : `app/layout.tsx`, `app/globals.css`
 - Contenus client : `public/DINGRY-contenus-client.html`
 

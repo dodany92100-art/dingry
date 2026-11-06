@@ -1,26 +1,28 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AdminHeader } from "@/components/admin/admin-header";
-import { AuthGate } from "@/components/admin/auth-gate";
-import { BackupCodesBanner } from "@/components/admin/backup-codes-banner";
-import { useAdminLookbook } from "@/components/admin/hooks/use-admin-lookbook";
-import { useAdminOrders } from "@/components/admin/hooks/use-admin-orders";
-import { useAdminProducts } from "@/components/admin/hooks/use-admin-products";
-import { useAdminSession } from "@/components/admin/hooks/use-admin-session";
-import { LookbookEditorModal } from "@/components/admin/lookbook-editor-modal";
-import { LookbookTab } from "@/components/admin/lookbook-tab";
-import { OrdersTab } from "@/components/admin/orders-tab";
-import { ProductEditorModal } from "@/components/admin/product-editor-modal";
-import { ReleaseBanner } from "@/components/admin/release-banner";
-import { StockTab } from "@/components/admin/stock-tab";
-import { TabNav, type TabId } from "@/components/admin/tab-nav";
+import { AdminHeader } from "@/components/organisms/admin/admin-header";
+import { AdminGridWorkflowBanner } from "@/components/organisms/admin/admin-grid-workflow-banner";
+import { AuthGate } from "@/components/organisms/admin/auth-gate";
+import { BackupCodesBanner } from "@/components/organisms/admin/backup-codes-banner";
+import { useAdminLookbook } from "@/components/organisms/admin/hooks/use-admin-lookbook";
+import { useAdminOrders } from "@/components/organisms/admin/hooks/use-admin-orders";
+import { useAdminProducts } from "@/components/organisms/admin/hooks/use-admin-products";
+import { useAdminSession } from "@/components/organisms/admin/hooks/use-admin-session";
+import { LookbookEditorModal } from "@/components/organisms/admin/lookbook-editor-modal";
+import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
+import { OrdersTab } from "@/components/organisms/admin/orders-tab";
+import { ProductEditorModal } from "@/components/organisms/admin/product-editor-modal";
+import { ReleaseBanner } from "@/components/organisms/admin/release-banner";
+import { StockTab } from "@/components/organisms/admin/stock-tab";
+import { TabNav, type TabId } from "@/components/organisms/admin/tab-nav";
 import {
   countLowStock,
   countPendingShipments,
   countStockPending,
   selectPaypalOrders,
+  sumProductStock,
 } from "@/lib/admin/order-view";
 import type { AdminLookbookSlide, AdminProduct } from "@/lib/admin/types";
 
@@ -29,7 +31,9 @@ type EditorState = { product: AdminProduct | null } | null;
 type LookbookEditorState = { slide: AdminLookbookSlide | null } | null;
 
 function parseTabParam(value: string | null): TabId {
-  if (value === "produits" || value === "commandes" || value === "lookbook") return value;
+  if (value === "produits" || value === "brouillons" || value === "commandes" || value === "lookbook") {
+    return value;
+  }
   return "commandes";
 }
 
@@ -66,6 +70,30 @@ function AdminDashboard() {
   const [lookbookEditor, setLookbookEditor] = useState<LookbookEditorState>(null);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [visibleDraftIds, setVisibleDraftIds] = useState<string[]>([]);
+
+  const onVisibleDraftIdsChange = useCallback((ids: string[]) => {
+    setVisibleDraftIds(ids);
+  }, []);
+
+  const gridLocked = productsApi.gridValidated && !productsApi.orderDirty;
+  const workflowPhase = productsApi.orderDirty
+    ? ("ordering" as const)
+    : productsApi.gridValidated && visibleDraftIds.length > 0
+      ? ("publish" as const)
+      : null;
+  const showWorkflowBanner = workflowPhase !== null;
+
+  useEffect(() => {
+    if (productsApi.gridValidated && !productsApi.orderDirty && visibleDraftIds.length === 0) {
+      productsApi.clearGridValidated();
+    }
+  }, [
+    productsApi.gridValidated,
+    productsApi.orderDirty,
+    visibleDraftIds.length,
+    productsApi.clearGridValidated,
+  ]);
 
   useEffect(() => {
     setTab(parseTabParam(searchParams.get("tab")));
@@ -117,6 +145,7 @@ function AdminDashboard() {
   const pendingOrders = useMemo(() => countPendingShipments(paypalOrders), [paypalOrders]);
   const stockPendingCount = useMemo(() => countStockPending(ordersApi.orders), [ordersApi.orders]);
   const lowStockCount = useMemo(() => countLowStock(productsApi.products), [productsApi.products]);
+  const totalStock = useMemo(() => sumProductStock(productsApi.products), [productsApi.products]);
 
   function openNew() {
     setEditor({ product: null });
@@ -186,11 +215,12 @@ function AdminDashboard() {
         pendingOrders={pendingOrders}
         stockPendingCount={stockPendingCount}
         lowStockCount={lowStockCount}
+        totalStock={totalStock}
         onLogout={() => void handleLogout()}
       />
       <ReleaseBanner />
 
-      <div className="px-6 py-6 md:px-10">
+      <div className={`px-6 py-6 md:px-10${showWorkflowBanner ? " pb-28" : ""}`}>
         <TabNav tab={tab} onChange={selectTab} />
 
         {loadError ? <p className="mb-6 text-sm text-red-400">{loadError}</p> : null}
@@ -217,14 +247,25 @@ function AdminDashboard() {
           />
         ) : null}
 
-        {tab === "produits" ? (
+        {tab === "produits" || tab === "brouillons" ? (
           <StockTab
             products={productsApi.products}
             busyProductId={productsApi.busyProductId}
             error={productsApi.stockError}
+            publishFilter={tab === "brouillons" ? "draft" : "live"}
+            gridLocked={gridLocked}
+            onVisibleDraftIdsChange={onVisibleDraftIdsChange}
             onChangeStock={(product, delta) => void productsApi.changeStock(product, delta)}
+            onSetStock={(product, next) => void productsApi.setStock(product, next)}
             onEdit={openEdit}
             onNew={openNew}
+            onTogglePin={(product) => void productsApi.togglePin(product)}
+            onDelete={(product) => {
+              void productsApi.remove(product).then((error) => {
+                if (error) window.alert(error);
+              });
+            }}
+            onReorderProducts={productsApi.reorderProductsLocal}
           />
         ) : tab === "lookbook" ? (
           <LookbookTab
@@ -249,6 +290,17 @@ function AdminDashboard() {
           />
         )}
       </div>
+      {showWorkflowBanner && workflowPhase ? (
+        <AdminGridWorkflowBanner
+          phase={workflowPhase}
+          orderSaving={productsApi.orderSaving}
+          publishSaving={productsApi.publishSaving}
+          draftCount={visibleDraftIds.length}
+          onReset={productsApi.discardProductOrder}
+          onValidateGrid={() => void productsApi.saveProductOrder()}
+          onPublishSelection={() => void productsApi.publishSelectionLive(visibleDraftIds)}
+        />
+      ) : null}
     </div>
   );
 }

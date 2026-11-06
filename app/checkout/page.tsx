@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { DingryLogo } from "@/components/dingry-logo";
-import { PayPalPaymentButton } from "@/components/paypal-payment-button";
-import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { DingryLogo } from "@/components/atoms/dingry-logo";
+import { PayPalPaymentButton } from "@/components/molecules/paypal-payment-button";
+import { TurnstileWidget } from "@/components/atoms/turnstile-widget";
 import {
   clearPendingCheckoutOrder,
   readPendingCheckoutOrder,

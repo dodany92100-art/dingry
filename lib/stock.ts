@@ -110,6 +110,20 @@ export async function seedStockIfMissing(productId: number, qty: number): Promis
   await client.set(stockKey(productId), String(safe), { nx: true });
 }
 
+/** Force la quantité Redis (admin CRM) — écrase ou crée la clé. */
+export async function writeStockQuantity(productId: number, qty: number): Promise<boolean> {
+  const client = getSharedRedis();
+  if (!client) return false;
+  const safe = Math.max(0, Math.floor(qty));
+  try {
+    await client.set(stockKey(productId), String(safe));
+    return true;
+  } catch (error) {
+    console.error("[stock] Redis set", error instanceof Error ? error.name : "erreur");
+    return false;
+  }
+}
+
 export async function seedCatalogStockFromProducts(
   products: { id: string; stock: number }[],
 ): Promise<void> {

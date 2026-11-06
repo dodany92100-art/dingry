@@ -23,14 +23,22 @@ function product(
     name,
     variant,
     description,
+    fabrication: "",
+    limitedEdition: "",
+    materials: "",
+    sizeGuide: "",
     category,
     price,
     sizes: [...sizes],
     stock,
+    publishStatus: "live",
+    colorDeclinations: [],
     imageUrl,
     blobUrl: null,
     blobPathname: null,
     createdAt: "2026-10-01T10:00:00.000Z",
+    isPinned: false,
+    displayOrder: 0,
   };
 }
 
@@ -43,7 +51,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122066/HOODIE_DINGRY_ORIGINAL_BLEU_ROI_-_RECTO_m541tv.png",
     "Même coupe que la Nuit Noire. Coloris exclusive, édition numérotée 200 exemplaires.",
-    "Hoodie",
+    "Hoodies",
     14,
   ),
   product(
@@ -54,7 +62,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     90,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/HOODIE_DINGRY_BLACK_ZIPPE%CC%81_OUTLINE_RECTO_iedtrv.png",
     "Hoodie zippé noir, silhouette structurée et détails outline.",
-    "Hoodie zippé",
+    "Hoodies zippés",
     8,
   ),
   product(
@@ -65,7 +73,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/DINGRY_HOODIE_ORIGINAL_BLACK_RECTO_knvlfw.png",
     "Le hoodie original DINGRY en noir, coupe oversize.",
-    "Hoodie",
+    "Hoodies",
     11,
   ),
   product(
@@ -76,7 +84,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122063/DINGRY_HOODIE_ORIGINAL_VERT_RECTO_b4ilsd.png",
     "Le modèle original en vert, pensé pour la rue.",
-    "Hoodie",
+    "Hoodies",
     9,
   ),
   product(
@@ -87,7 +95,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     35,
     DINGRY_PRODUCT_MEDIA.teeWhiteRecto,
     "",
-    "Tee",
+    "T-shirts",
     22,
   ),
   product(
@@ -98,7 +106,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     35,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124726/PHOTO-2026-06-26-22-50-56_8_g8yqde.jpg",
     "",
-    "Tee",
+    "T-shirts",
     18,
   ),
   product(
@@ -109,7 +117,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     35,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_6_dhs3l2.jpg",
     "",
-    "Tee",
+    "T-shirts",
     18,
   ),
   product(
@@ -120,7 +128,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     35,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_7_iowqbr.jpg",
     "",
-    "Tee",
+    "T-shirts",
     14,
   ),
   product(
@@ -131,7 +139,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     35,
     DINGRY_PRODUCT_MEDIA.teeBlackRecto,
     "",
-    "Tee",
+    "T-shirts",
     12,
   ),
   product(
@@ -142,7 +150,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     35,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_19.33.25_yzr0fb.jpg",
     "",
-    "Tee",
+    "T-shirts",
     16,
   ),
   product(
@@ -153,7 +161,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     35,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_21.13.25_ypgmnf.jpg",
     "",
-    "Tee",
+    "T-shirts",
     13,
   ),
   product(
@@ -164,7 +172,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     35,
     DINGRY_PRODUCT_MEDIA.teeBlackRecto,
     "T-shirt noir personnalisable — ville ou texte sous le logo (+5€).",
-    "Tee",
+    "T-shirts",
     20,
   ),
   product(
@@ -175,7 +183,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     DINGRY_PRODUCT_MEDIA.hoodieParisBlackRecto,
     "Hoodie noir avec logo DINGRY Paris sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
-    "Hoodie",
+    "Hoodies",
     12,
   ),
   product(
@@ -186,7 +194,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     DINGRY_PRODUCT_MEDIA.hoodieParisBlackVerso,
     "",
-    "Hoodie",
+    "Hoodies",
     12,
   ),
   product(
@@ -197,7 +205,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     DINGRY_PRODUCT_MEDIA.hoodieParisGreyRecto,
     "Hoodie gris chiné avec logo DINGRY Paris rouge sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
-    "Hoodie",
+    "Hoodies",
     10,
   ),
   product(
@@ -208,7 +216,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     DINGRY_PRODUCT_MEDIA.hoodieParisGreyVerso,
     "",
-    "Hoodie",
+    "Hoodies",
     10,
   ),
   product(
@@ -219,7 +227,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     50,
     DINGRY_PRODUCT_MEDIA.sweatNeonYellowRecto,
     "Sweat col rond jaune fluo sans capuche, logo DINGRY Paris noir sur la poitrine.",
-    "Sweats",
+    "Crewnecks",
     12,
   ),
   product(
@@ -230,7 +238,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     50,
     DINGRY_PRODUCT_MEDIA.sweatNeonYellowVerso,
     "",
-    "Sweats",
+    "Crewnecks",
     12,
   ),
   product(
@@ -241,7 +249,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     50,
     DINGRY_PRODUCT_MEDIA.sweatRoyalBlueRecto,
     "Sweat col rond bleu royal sans capuche, écriture Dingry jaune style rétro sur la poitrine.",
-    "Sweats",
+    "Crewnecks",
     12,
   ),
   product(
@@ -252,7 +260,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     50,
     DINGRY_PRODUCT_MEDIA.sweatRoyalBlueVerso,
     "",
-    "Sweats",
+    "Crewnecks",
     12,
   ),
   product(
@@ -263,7 +271,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     50,
     DINGRY_PRODUCT_MEDIA.sweatPurpleRecto,
     "Sweat col rond violet sans capuche, logo DINGRY Paris rose sur la poitrine et éclair sur la manche.",
-    "Sweats",
+    "Crewnecks",
     12,
   ),
   product(
@@ -274,7 +282,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     50,
     DINGRY_PRODUCT_MEDIA.sweatPurpleVerso,
     "",
-    "Sweats",
+    "Crewnecks",
     12,
   ),
   product(
@@ -285,7 +293,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     DINGRY_PRODUCT_MEDIA.hoodieParisWhiteRecto,
     "Hoodie blanc avec logo DINGRY Paris sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
-    "Hoodie",
+    "Hoodies",
     10,
   ),
   product(
@@ -296,7 +304,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     DINGRY_PRODUCT_MEDIA.hoodieParisWhiteVerso,
     "",
-    "Hoodie",
+    "Hoodies",
     10,
   ),
   product(
@@ -307,7 +315,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     DINGRY_PRODUCT_MEDIA.hoodieRoyalBlueRecto,
     "Hoodie chocolat à capuche, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
-    "Hoodie",
+    "Hoodies",
     12,
   ),
   product(
@@ -318,7 +326,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     80,
     DINGRY_PRODUCT_MEDIA.hoodieRoyalBlueVerso,
     "",
-    "Hoodie",
+    "Hoodies",
     12,
   ),
   product(
@@ -353,7 +361,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     129,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310835/31908e1d-4023-4ed0-be80-f3c114bbb097_kz5cef.jpg",
     "Jersey mesh blanc, logo DINGRY Paris noir sur la poitrine et éclairs sur les manches.",
-    "Jersey",
+    "Jerseys",
     14,
   ),
   product(
@@ -364,7 +372,7 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     129,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310836/e2110850-29a4-4e76-aeb4-1972601d467d_cgyeld.jpg",
     "Jersey mesh noir, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
-    "Jersey",
+    "Jerseys",
     14,
   ),
 ];

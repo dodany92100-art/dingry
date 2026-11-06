@@ -12,6 +12,13 @@ export type StoredCartItem = {
   personalization?: string;
 };
 
+/** Clé stable panier / React : produit + taille (+ texte perso si besoin). */
+export function cartLineKey(item: Pick<StoredCartItem, "product" | "size" | "personalization">): string {
+  const size = item.size.trim();
+  const perso = item.personalization?.trim();
+  return perso ? `${item.product.id}-${size}-${perso}` : `${item.product.id}-${size}`;
+}
+
 export type CheckoutConfirmation = {
   orderId: string;
   payerName: string;

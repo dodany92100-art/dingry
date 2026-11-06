@@ -12,6 +12,7 @@ import {
   removeCartLine,
   sizeGridColumns,
   updateCartLineQuantity,
+  updateCartLineSize,
 } from "@/lib/shop-view";
 
 const hoodie: ShopProduct = {
@@ -53,6 +54,22 @@ describe("panier", () => {
   it("retire une ligne par index", () => {
     const cart = addCartLine(addCartLine([], hoodie, "M", 1), hoodie, "L", 1);
     expect(removeCartLine(cart, 0)).toHaveLength(1);
+  });
+
+  it("change la taille et fusionne si la cible existe", () => {
+    let cart = addCartLine([], hoodie, "M", 2);
+    cart = addCartLine(cart, hoodie, "L", 1);
+    cart = updateCartLineSize(cart, 0, "L");
+    expect(cart).toHaveLength(1);
+    expect(cart[0].size).toBe("L");
+    expect(cart[0].qty).toBe(3);
+  });
+
+  it("sépare deux produits identiques en tailles différentes", () => {
+    const cart = addCartLine(addCartLine([], hoodie, "S", 1), hoodie, "L", 1);
+    expect(cart).toHaveLength(2);
+    expect(cart[0].size).toBe("S");
+    expect(cart[1].size).toBe("L");
   });
 
   it("calcule le sous-total avec le supplément de personnalisation", () => {

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isProductSize } from "@/lib/admin/types";
 import { loadStoreReadOnly } from "@/lib/admin/store";
 import type { AdminProduct } from "@/lib/admin/types";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
@@ -10,7 +11,6 @@ import {
 } from "@/lib/stock";
 
 const PERSONALIZABLE_PRODUCT_ID = 24;
-const SHOP_SIZES = new Set(["XS", "S", "M", "L", "XL", "XXL", "TU"]);
 const MAX_LINES = 50;
 const MAX_QTY = 99;
 const MAX_PERSONALIZATION = 80;
@@ -68,7 +68,7 @@ function readLine(value: unknown): CheckoutLine | null {
   const size = typeof record.size === "string" ? record.size.trim() : "";
   const qty = typeof record.qty === "number" ? record.qty : Number.NaN;
   if (!Number.isInteger(productId) || productId <= 0) return null;
-  if (!SHOP_SIZES.has(size)) return null;
+  if (!isProductSize(size)) return null;
   if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) return null;
 
   if (record.personalization === undefined) return { productId, size, qty };
@@ -120,12 +120,11 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
     const price = product?.price ?? fallback?.price;
     if (!name || price === undefined) return null;
 
-    const allowedSizes = product
-      ? new Set(product.sizes)
-      : fallback
-        ? SHOP_SIZES
-        : null;
-    if (!allowedSizes || !allowedSizes.has(line.size)) {
+    if (product) {
+      if (!product.sizes.includes(line.size)) return null;
+    } else if (fallback) {
+      if (!isProductSize(line.size)) return null;
+    } else {
       return null;
     }
 

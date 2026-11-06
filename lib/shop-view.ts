@@ -1,11 +1,10 @@
 import type { ShopProduct } from "@/lib/catalog";
 import { sortCatalogProducts } from "@/lib/catalog-sort";
-import { cartUnitPrice, type StoredCartItem } from "@/lib/checkout-draft";
+import { cartUnitPrice, cartLineKey, type StoredCartItem } from "@/lib/checkout-draft";
 import { isJerseyShopProduct, resolveJerseyProduct, type JerseyColorKey } from "@/lib/jersey-shop";
 import {
   HOODIE_PAIR_DEFS,
   IMAGES,
-  PERSONALIZABLE_PRODUCT_ID,
   PERSONALIZATION_MAX_LABEL_LENGTH,
   PRODUCTS,
   SIZES,
@@ -19,6 +18,8 @@ import {
 import { buildSweatCatalogPairs } from "@/lib/sweat-catalog-pairs";
 
 export type CartLine = StoredCartItem;
+
+export { cartLineKey };
 export type FlipPair = { recto: ShopProduct; verso: ShopProduct };
 
 /* ---------- Panier (fonctions pures) ---------- */
@@ -35,23 +36,26 @@ export function cartSubtotal(cart: readonly CartLine[]): number {
   return cart.reduce((sum, line) => sum + lineUnitPrice(line) * line.qty, 0);
 }
 
-/** Ajoute une ligne standard ; fusionne avec une ligne identique non personnalisée. */
+/** Ajoute une ligne standard ; fusionne uniquement même id + taille (non personnalisée). */
 export function addCartLine(
   cart: readonly CartLine[],
   product: ShopProduct,
   size: string,
   qty: number,
 ): CartLine[] {
-  const existing = cart.find(
-    (line) => line.product.id === product.id && line.size === size && !line.personalization,
-  );
+  const normalizedSize = size.trim();
+  if (!normalizedSize || qty <= 0) return [...cart];
+  const key = cartLineKey({ product, size: normalizedSize });
+  const existing = cart.find((line) => !line.personalization && cartLineKey(line) === key);
   if (existing) {
-    return cart.map((line) => (line === existing ? { ...line, qty: line.qty + qty } : line));
+    return cart.map((line) =>
+      line === existing ? { ...line, qty: line.qty + qty } : line,
+    );
   }
-  return [...cart, { product, size, qty }];
+  return [...cart, { product, size: normalizedSize, qty }];
 }
 
-/** Ajoute une ligne personnalisée ; fusionne si même taille et même texte. */
+/** Ajoute une ligne personnalisée ; fusionne si même clé (id + taille + texte). */
 export function addPersonalizedCartLine(
   cart: readonly CartLine[],
   product: ShopProduct,
@@ -59,16 +63,15 @@ export function addPersonalizedCartLine(
   qty: number,
   personalization: string,
 ): CartLine[] {
-  const existing = cart.find(
-    (line) =>
-      line.product.id === PERSONALIZABLE_PRODUCT_ID &&
-      line.size === size &&
-      line.personalization === personalization,
-  );
+  const normalizedSize = size.trim();
+  const perso = personalization.trim();
+  if (!normalizedSize || !perso || qty <= 0) return [...cart];
+  const key = cartLineKey({ product, size: normalizedSize, personalization: perso });
+  const existing = cart.find((line) => cartLineKey(line) === key);
   if (existing) {
     return cart.map((line) => (line === existing ? { ...line, qty: line.qty + qty } : line));
   }
-  return [...cart, { product, size, qty, personalization }];
+  return [...cart, { product, size: normalizedSize, qty, personalization: perso }];
 }
 
 export function updateCartLineQuantity(cart: readonly CartLine[], index: number, delta: number): CartLine[] {
@@ -81,6 +84,27 @@ export function updateCartLineQuantity(cart: readonly CartLine[], index: number,
 
 export function removeCartLine(cart: readonly CartLine[], index: number): CartLine[] {
   return cart.filter((_, i) => i !== index);
+}
+
+/** Change la taille d'une ligne ; fusionne les quantités si la cible existe déjà. */
+export function updateCartLineSize(cart: readonly CartLine[], index: number, newSize: string): CartLine[] {
+  const line = cart[index];
+  if (!line) return [...cart];
+  const size = newSize.trim();
+  if (!size || size === line.size) return [...cart];
+
+  const targetKey = cartLineKey({ ...line, size });
+  const next = [...cart];
+  const duplicateIndex = next.findIndex((entry, i) => i !== index && cartLineKey(entry) === targetKey);
+
+  if (duplicateIndex >= 0) {
+    next[duplicateIndex] = { ...next[duplicateIndex], qty: next[duplicateIndex].qty + line.qty };
+    next.splice(index, 1);
+    return next;
+  }
+
+  next[index] = { ...line, size };
+  return next;
 }
 
 /* ---------- Personnalisation ---------- */
@@ -140,7 +164,9 @@ export function resolveSaleProduct(
   products: ShopProduct[],
   jerseyColor: JerseyColorKey,
 ): ShopProduct {
-  return isJerseyShopProduct(product) ? (resolveJerseyProduct(products, jerseyColor) ?? product) : product;
+  if (!isJerseyShopProduct(product)) return product;
+  const jersey = resolveJerseyProduct(products, jerseyColor);
+  return jersey ?? product;
 }
 
 export function modalSizesFor(product: ShopProduct): string[] {

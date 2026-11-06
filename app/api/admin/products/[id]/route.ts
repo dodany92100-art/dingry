@@ -9,7 +9,9 @@ import {
   StoreConflictError,
   StoreUnavailableError,
   ProductStockAdjustError,
+  PublishValidationError,
 } from "@/lib/admin/store";
+import { isDraftPlaceholderImage } from "@/lib/admin/types";
 import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -52,7 +54,23 @@ export async function PATCH(
         file = image;
       }
 
-      const product = await updateProduct(id, parsed.fields, file);
+      const nextPublish =
+        parsed.fields.publishStatus ?? current.publishStatus ?? "live";
+      if (
+        nextPublish === "live" &&
+        !file &&
+        isDraftPlaceholderImage(current.imageUrl)
+      ) {
+        return jsonNoStore(
+          { error: "Ajoute une image WebP pour mettre en ligne." },
+          { status: 400 },
+        );
+      }
+
+      const clearImage = formData.get("clearImage") === "1";
+      const product = await updateProduct(id, { ...parsed.fields, ...(clearImage ? { clearImage: true } : {}) }, file);
+      revalidatePath("/api/catalog");
+      revalidatePath("/");
       return jsonNoStore({ product });
     }
 
@@ -65,6 +83,15 @@ export async function PATCH(
 
     if (typeof body.stockDelta === "number") {
       const product = await updateProduct(id, { stockDelta: body.stockDelta });
+      revalidatePath("/api/catalog");
+      revalidatePath("/");
+      return jsonNoStore({ product });
+    }
+
+    if (typeof body.isPinned === "boolean") {
+      const product = await updateProduct(id, { isPinned: body.isPinned });
+      revalidatePath("/api/catalog");
+      revalidatePath("/");
       return jsonNoStore({ product });
     }
 
@@ -73,6 +100,8 @@ export async function PATCH(
       return jsonNoStore({ error: parsed.error }, { status: 400 });
     }
     const product = await updateProduct(id, parsed.fields);
+    revalidatePath("/api/catalog");
+    revalidatePath("/");
     return jsonNoStore({ product });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
@@ -85,6 +114,9 @@ export async function PATCH(
     if (error instanceof ProductStockAdjustError) {
       const status = error.code === "negative" ? 409 : 503;
       return jsonNoStore({ error: error.message }, { status });
+    }
+    if (error instanceof PublishValidationError) {
+      return jsonNoStore({ error: error.message }, { status: 400 });
     }
     console.error("Mise à jour produit", error instanceof Error ? error.name : "erreur");
     return jsonNoStore({ error: "Impossible de mettre à jour le produit." }, { status: 500 });

@@ -10,7 +10,7 @@ const fallbackProduct = (id: number, price: number): ShopProduct => ({
   price,
   image: "https://example.com/a.jpg",
   description: "",
-  category: "Sweats",
+  category: "Crewnecks",
 });
 
 const liveProduct = (partial: Partial<CatalogProduct> & Pick<CatalogProduct, "id" | "price" | "sku">): CatalogProduct => ({
@@ -19,7 +19,7 @@ const liveProduct = (partial: Partial<CatalogProduct> & Pick<CatalogProduct, "id
   name: partial.name ?? "CRM name",
   variant: partial.variant ?? "CRM variant",
   description: partial.description ?? "",
-  category: partial.category ?? "Sweats",
+  category: partial.category ?? "Crewnecks",
   price: partial.price,
   image: partial.image ?? "https://example.com/crm.jpg",
   sizes: partial.sizes ?? ["S", "M", "L", "XL"],
@@ -98,7 +98,7 @@ describe("shopProductFromUnknown", () => {
       variant: "PURPLE",
       price: 169,
       image: "https://example.com/x.jpg",
-      category: "Sweats",
+      category: "Crewnecks",
       sizes: ["M", "L"],
       inStock: false,
     });

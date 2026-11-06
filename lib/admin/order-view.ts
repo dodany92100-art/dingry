@@ -30,3 +30,7 @@ export function countStockPending(orders: AdminOrder[]): number {
 export function countLowStock(products: AdminProduct[]): number {
   return products.filter((product) => product.stock <= LOW_STOCK_THRESHOLD).length;
 }
+
+export function sumProductStock(products: readonly AdminProduct[]): number {
+  return products.reduce((total, product) => total + Math.max(0, Math.floor(product.stock)), 0);
+}

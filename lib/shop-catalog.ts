@@ -12,7 +12,7 @@ import {
   DINGRY_SWEAT_PRODUCT_IDS,
   DINGRY_TEE_PRODUCT_IDS,
 } from "@/lib/dingry-product-media";
-import type { ProductCategory } from "@/lib/admin/types";
+import { normalizeProductCategory, type ProductCategory } from "@/lib/admin/types";
 import type { ShopProduct } from "@/lib/catalog";
 
 export { filterByCategory, parseCatalogFilter, CATALOG_FILTERS, CATALOG_FILTER_LABEL, CATALOG_MENU_TAB_CUSTOM, CATALOG_MENU_TABS, catalogMenuTabLabel } from "@/lib/catalog-category";
@@ -64,7 +64,11 @@ export function shopCatalogTabLabel(tab: ShopCatalogTab): string {
 }
 
 export function isShopTeeCategory(category: string): boolean {
-  return category === "Tee" || category === SHOP_TEE_CATEGORY;
+  return (
+    category === "Tee" ||
+    category === "T-shirts" ||
+    category === SHOP_TEE_CATEGORY
+  );
 }
 
 export function isShopCategory(category: string): category is ShopCategory {
@@ -76,20 +80,17 @@ export function resolveShopCategory(productId: number, category: string): ShopCa
   if (DINGRY_SWEAT_PRODUCT_IDS.has(productId)) return "Sweats";
   if (DINGRY_TEE_PRODUCT_IDS.has(productId)) return SHOP_TEE_CATEGORY;
   if (DINGRY_JERSEY_PRODUCT_IDS.has(productId)) return "Jersey";
-  if (category === "Tee") return SHOP_TEE_CATEGORY;
+  if (category === "Tee" || category === "T-shirts") return SHOP_TEE_CATEGORY;
+  if (category === "Hoodies") return "Hoodie";
+  if (category === "Hoodies zippés") return "Hoodie zippé";
+  if (category === "Crewnecks") return "Sweats";
+  if (category === "Jerseys") return "Jersey";
+  if (category === "Crop tops") return "Crop Top";
   return category;
 }
 
 export function normalizeAdminCategory(value: string): ProductCategory {
-  const categories: ProductCategory[] = [
-    "Tee",
-    "Hoodie",
-    "Hoodie zippé",
-    "Sweats",
-    "Caps",
-    "Jersey",
-  ];
-  return categories.includes(value as ProductCategory) ? (value as ProductCategory) : "Tee";
+  return normalizeProductCategory(value);
 }
 
 /** Cartes grille : hors doublons retirés et hors vues verso. La catégorie ne filtre pas ici. */

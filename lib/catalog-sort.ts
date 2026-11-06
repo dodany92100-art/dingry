@@ -1,3 +1,4 @@
+import { compareShopFeaturedDisplay } from "@/lib/admin/product-display-order";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 
 export type CatalogSort = "featured" | "price-asc" | "price-desc" | "newest" | "in-stock";
@@ -33,6 +34,6 @@ export function sortCatalogProducts(products: readonly ShopProduct[], sort: Cata
           Number(isShopProductInStock(b)) - Number(isShopProductInStock(a)) || a.id - b.id,
       );
     default:
-      return list.sort((a, b) => a.id - b.id);
+      return list.sort(compareShopFeaturedDisplay);
   }
 }
