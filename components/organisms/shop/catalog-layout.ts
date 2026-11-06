@@ -1,7 +1,7 @@
-/** Grille catalogue : 2 col. mobile · matrice dense md+ (lookbook desktop). */
-export const CATALOG_GRID_DENSE_DESKTOP = "md:grid-cols-4 md:gap-6 lg:grid-cols-5";
+/** Grille catalogue : 1 col. mobile · 2 col. sm · 3 col. lg+ · admin vitrine dense xl+. */
+export const CATALOG_GRID_DENSE_DESKTOP = "xl:grid-cols-4 xl:gap-6 2xl:grid-cols-5";
 
-export const CATALOG_PRODUCT_GRID_CLASS = `grid grid-cols-2 gap-2.5 ${CATALOG_GRID_DENSE_DESKTOP}`;
+export const CATALOG_PRODUCT_GRID_CLASS = `grid grid-cols-1 gap-4 px-0 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-4 ${CATALOG_GRID_DENSE_DESKTOP}`;
 
 /** Surface catalogue boutique (`CatalogSection`). */
 export const CATALOG_SECTION_SURFACE_CLASS =

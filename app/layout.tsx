@@ -42,8 +42,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" data-theme="light">
-      <body className="antialiased">
+    <html lang="fr" data-theme="light" className="overflow-x-hidden">
+      <body className="overflow-x-hidden antialiased">
         {children}
         <CookieConsent />
       </body>

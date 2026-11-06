@@ -9,10 +9,10 @@ import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-
 import { catalogBackImageForRecto, type FlipPair } from "@/lib/shop-view";
 
 const COLLECTION_RAIL =
-  "flex gap-3 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 touch-pan-x snap-x snap-mandatory md:gap-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+  "flex flex-col gap-4 sm:flex-row sm:gap-3 sm:overflow-x-auto sm:overscroll-x-contain sm:scroll-smooth sm:pb-1 sm:touch-pan-x sm:snap-x sm:snap-mandatory md:gap-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 const COLLECTION_CARD_SLOT =
-  "w-[min(72vw,15.5rem)] shrink-0 snap-start sm:w-[min(42vw,16rem)] md:w-[18rem]";
+  "w-full max-w-sm mx-auto sm:w-[min(42vw,16rem)] sm:max-w-none sm:mx-0 sm:shrink-0 sm:snap-start md:w-[18rem]";
 
 type CollectionFeedProps = {
   sections: CatalogMenuSection[];

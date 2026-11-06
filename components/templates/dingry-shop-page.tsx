@@ -106,12 +106,12 @@ export default function DingryShopPage() {
   }
 
   return (
-    <div className="dingry-shop relative h-dvh overflow-hidden text-white">
+    <div className="dingry-shop relative h-dvh overflow-x-hidden overflow-hidden text-white">
       <BackgroundGradientAnimation interactive={false} />
       <ShopNav cartCount={cart.count} onOpenCart={() => cart.setOpen(true)} onScrollToSection={scrollToSection} />
       <div
         ref={pageScrollRef}
-        className="dingry-page relative z-10 h-full overflow-y-auto overscroll-y-contain bg-transparent [overflow-anchor:none]"
+        className="dingry-page relative z-10 h-full overflow-x-hidden overflow-y-auto overscroll-y-contain bg-transparent [overflow-anchor:none]"
       >
         <ShopHero />
         <div id="catalogue-landing" />

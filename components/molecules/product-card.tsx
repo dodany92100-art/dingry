@@ -55,7 +55,7 @@ export function ProductCard({
   const [side, setSide] = useState<ProductFlipSide>("recto");
 
   return (
-    <article className={cn("group", className)}>
+    <article className={cn("group mx-auto w-full max-w-sm", className)}>
       <div className="w-full rounded-xl text-left md:rounded-2xl">
         <ProductImageFlip
           frontImage={image}
