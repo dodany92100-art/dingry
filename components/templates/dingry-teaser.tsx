@@ -130,6 +130,9 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
               </div>
             ))}
           </div>
+          <p className="mt-4 max-w-md text-[10px] leading-relaxed tracking-[0.14em] text-white/65 sm:text-[11px] md:ml-auto md:text-right">
+            Travaux en cours — la boutique arrive.
+          </p>
         </div>
       </div>
 
