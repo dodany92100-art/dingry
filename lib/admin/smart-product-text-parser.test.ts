@@ -17,7 +17,7 @@ Tailles disponibles : S · M · L · XL · 2XL
 
     const r = parseSmartProductText(raw, "T-shirts");
     expect(r.detectedCategory).toBe("Hoodies");
-    expect(r.name).toBe("HOODIE DINGRY SIGNATURE — couleur noir");
+    expect(r.name).toBe("HOODIE DINGRY SIGNATURE");
     expect(r.price).toBe("80");
     expect(r.sizes).toEqual(["S", "M", "L", "XL", "2XL"]);
     expect(r.materials).toContain("440 g/m²");
@@ -96,5 +96,18 @@ Noir · 75 €`;
     expect(r.name).toBe("DINGRY SIGNATURE");
     expect(r.detectedCategory).toBe("Hoodies");
     expect(r.price).toBe("75");
+  });
+
+  it("ne met pas les lignes prix seules ni footnotes dans la description", () => {
+    const raw = `Sweat test
+
+Phrase marketing pour le quotidien.
+
+80 €
+
+*note bas de page`;
+    const r = parseSmartProductText(raw, "Hoodies");
+    expect(r.description).toBe("Phrase marketing pour le quotidien.");
+    expect(r.price).toBe("80");
   });
 });

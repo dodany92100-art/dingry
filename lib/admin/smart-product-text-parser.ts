@@ -74,6 +74,12 @@ const RE_FABRICATION_LINE =
   /fabriqué|made\s+in|confectionn|importé|produit\s+en|manufacturé|cousu/i;
 const RE_LIMITED_LINE =
   /édition\s+limitée|limited\s+edition|numérotée|série\s+limitée|exemplaires?\s+limit/i;
+/** Ligne qui n’est qu’un prix affiché (ne doit pas alimenter la description). */
+const RE_LINE_PRICE_ONLY =
+  /^\s*(?:€|EUR|\$)?\s*\d{1,4}(?:[.,]\d{1,2})?\s*(?:€|EUR|euros?)?\s*$/i;
+/** Suffixe titre du type « — couleur noir » ou « · 75 € » (hors corps marketing). */
+const RE_TITLE_COLOR_SUFFIX = /\s*[—–\-|·]\s*(?:couleur|color|colour|coloris)\s*[:\-]?\s*.+$/i;
+const RE_TITLE_PRICE_SUFFIX = /\s*[—–\-|·]\s*[^—–\-|·]{0,52}\d{1,4}(?:[.,]\d{1,2})?\s*(?:€|EUR)\s*$/i;
 const RE_SECTION_LABEL =
   /^\s*(matière|matériaux|composition|grammage|densité|tailles?|sizes?|couleur|coloris|colour|prix|price|fabriqué|origine)\s*[:\-.]?\s*/i;
 
@@ -414,6 +420,14 @@ function normalizeStoryBody(s: string): string {
     .trim();
 }
 
+/** Retire du libellé produit les mentions couleur / prix (réservées aux champs dédiés). */
+function stripTitleMarketingSuffix(raw: string): string {
+  let s = raw.trim();
+  s = s.replace(RE_TITLE_COLOR_SUFFIX, "").trim();
+  s = s.replace(RE_TITLE_PRICE_SUFFIX, "").trim();
+  return s;
+}
+
 const SEMANTIC_CLIP = (s: string, max: number) => (s.length <= max ? s : `${s.slice(0, max)}…`);
 
 function buildMakerSemanticBlocks(result: SmartProductParseOutput): MakerSemanticBlock[] {
@@ -495,6 +509,9 @@ function extractNameFromLines(
       if (/SIGNATURE|ORIGINAL|COLLECTION|ÉDITION|EDITION/.test(u)) score += 4;
       if (/^[A-Z0-9\s\-–—'«».,]+$/u.test(line) && line.length <= 72) score += 3;
       if (line.length >= 12 && line.length <= 90) score += 2;
+      /** Phrase marketing (souvent la description), pas le libellé produit. */
+      if (/[.!?]\s*$/.test(line.trim()) && line.length >= 28) score -= 10;
+      if (line.split(/\s+/).length >= 12) score -= 4;
       if (detectedCategory) {
         const catFrag = detectedCategory.toUpperCase().replace(/\s+/g, "").slice(0, 7);
         if (catFrag && u.replace(/\s/g, "").includes(catFrag)) score -= 3;
@@ -505,11 +522,24 @@ function extractNameFromLines(
 
   const top = scored[0];
   if (!top || top.score < 0) return undefined;
-  return { name: top.line, titleLineIndex: top.i };
+  const name = stripTitleMarketingSuffix(top.line);
+  if (name.length < 2) return undefined;
+  return { name, titleLineIndex: top.i };
 }
 
 function looksLikeLimitedLine(line: string): boolean {
   return RE_LIMITED_LINE.test(line);
+}
+
+/** Ligne déjà couverte par prix / couleur / notes * — ne pas dupliquer dans la description. */
+function isLineExcludedFromDescription(line: string): boolean {
+  const t = line.trim();
+  if (t.length === 0) return true;
+  if (isFootnoteLine(t)) return true;
+  if (RE_LINE_PRICE_ONLY.test(t)) return true;
+  if (t.length < 72 && /^\s*couleur\s*[:\-]/i.test(t)) return true;
+  if (t.length < 55 && RE_PRICE.test(t) && !RE_MATERIAL_SIGNAL.test(t)) return true;
+  return false;
 }
 
 export function parseSmartProductText(
@@ -586,6 +616,7 @@ export function parseSmartProductText(
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (titleLineIndex !== undefined && i === titleLineIndex) continue;
+    if (isLineExcludedFromDescription(line)) continue;
     if (/^(prix|price)\s*[:\-]/i.test(line) && line.length < 55) continue;
     if (/^(tailles?|sizes?)\s*[:\-]/i.test(line) && line.length < 90) continue;
     if (looksLikeLimitedLine(line)) {
@@ -630,7 +661,10 @@ export function parseSmartProductText(
     description = trimStoryField(descFiltered.map((l) => normalizeStoryBody(l)).join("\n\n"));
     filled.push("description");
   } else if (materialLines.length === 0 && lines.length > 1 && name !== undefined) {
-    const rest = lines.filter((_, j) => j !== titleLineIndex).join("\n\n");
+    const rest = lines
+      .filter((_, j) => j !== titleLineIndex)
+      .filter((l) => !isLineExcludedFromDescription(l))
+      .join("\n\n");
     const fallback = trimStoryField(normalizeStoryBody(rest));
     if (fallback.length >= 10) {
       description = fallback;
