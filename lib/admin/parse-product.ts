@@ -1,7 +1,15 @@
+import { trimStoryField } from "@/lib/admin/product-story";
 import {
   isProductCategory,
   isProductSize,
+  normalizeProductCategory,
+  normalizePantWaistSize,
+  normalizePublishStatus,
+  parseColorDeclinations,
+  PANT_WAIST_MAX,
+  PANT_WAIST_MIN,
   type ProductCategory,
+  type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
 
@@ -10,17 +18,43 @@ export type ParsedProductFields = {
   name: string;
   variant: string;
   description: string;
+  fabrication: string;
+  limitedEdition: string;
+  materials: string;
+  sizeGuide: string;
   category: ProductCategory;
   price: number;
   sizes: ProductSize[];
   stock: number;
+  publishStatus: ProductPublishStatus;
+  colorDeclinations?: string[];
 };
+
+const STORY_KEYS = ["description", "fabrication", "limitedEdition", "materials", "sizeGuide"] as const;
+
+function parseStoryFields(
+  getValue: (key: string) => string,
+  partial: boolean,
+  has: (key: string) => boolean,
+  fields: Partial<ParsedProductFields>,
+): void {
+  for (const key of STORY_KEYS) {
+    if (!partial || has(key)) {
+      fields[key] = trimStoryField(getValue(key));
+    }
+  }
+}
 
 export function parseSizes(value: string): ProductSize[] | null {
   const sizes = value
     .split(",")
-    .map((item) => item.trim().toUpperCase())
-    .filter(Boolean);
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const waist = normalizePantWaistSize(item);
+      if (waist) return waist;
+      return item.toUpperCase();
+    });
   if (sizes.length === 0 || !sizes.every(isProductSize)) return null;
   return Array.from(new Set(sizes));
 }
@@ -58,14 +92,16 @@ export function parseProductFields(
 
   if (!partial || has("variant")) {
     fields.variant = getValue("variant").trim().slice(0, 80);
+  } else if (!partial) {
+    fields.variant = "";
   }
 
-  if (!partial || has("description")) {
-    fields.description = getValue("description").trim().slice(0, 280);
+  if (!partial || STORY_KEYS.some((key) => has(key))) {
+    parseStoryFields(getValue, partial, has, fields);
   }
 
   if (!partial || has("category")) {
-    const category = getValue("category").trim() || "Tee";
+    const category = normalizeProductCategory(getValue("category").trim() || "T-shirts");
     if (!isProductCategory(category)) return { fields, error: "Catégorie invalide." };
     fields.category = category;
   }
@@ -86,10 +122,42 @@ export function parseProductFields(
     fields.stock = stock;
   }
 
+  if (!partial || has("publishStatus")) {
+    fields.publishStatus = normalizePublishStatus(getValue("publishStatus").trim().toLowerCase());
+  } else if (!partial) {
+    fields.publishStatus = "live";
+  }
+
   if (!partial || has("sizes")) {
     const sizes = parseSizes(getValue("sizes"));
-    if (!sizes) return { fields, error: "Sélectionne au moins une taille (S, M, L, XL)." };
+    if (!sizes) {
+      const category = fields.category ?? normalizeProductCategory(getValue("category").trim() || "T-shirts");
+      const message =
+        category === "Pants"
+          ? `Sélectionne au moins un tour de taille (${PANT_WAIST_MIN}–${PANT_WAIST_MAX}).`
+          : "Sélectionne au moins une taille (S, M, L, XL).";
+      return { fields, error: message };
+    }
     fields.sizes = sizes;
+  }
+
+  if (!partial || has("colorDeclinations")) {
+    fields.colorDeclinations = parseColorDeclinations(getValue("colorDeclinations"));
+  }
+
+  const resolvedCategory =
+    fields.category ?? normalizeProductCategory(getValue("category").trim() || "T-shirts");
+
+  if (resolvedCategory === "Pants" && (!partial || has("variant"))) {
+    const rawVariant = fields.variant ?? getValue("variant").trim();
+    const waist = normalizePantWaistSize(rawVariant);
+    if (!waist) {
+      return {
+        fields,
+        error: `Tour de taille variante invalide (${PANT_WAIST_MIN}–${PANT_WAIST_MAX}).`,
+      };
+    }
+    fields.variant = waist;
   }
 
   return { fields, error: null };

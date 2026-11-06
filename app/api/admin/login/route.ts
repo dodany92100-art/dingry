@@ -23,7 +23,10 @@ function loginDenied() {
 async function tooManyAttempts(address: string): Promise<NextResponse | null> {
   const retryAfter = await loginRetryAfterSeconds(address);
   if (retryAfter === "unavailable") {
-    return jsonNoStore({ error: "Connexion indisponible." }, { status: 503 });
+    return jsonNoStore(
+      { error: "Connexion indisponible (Redis). Vérifie UPSTASH_REDIS_* sur Vercel ou réessaie." },
+      { status: 503 },
+    );
   }
   if (retryAfter === 0) return null;
   return jsonNoStore(
@@ -45,7 +48,10 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof TotpMisconfiguredError) {
       console.error("[admin-login] totp misconfigured");
-      return jsonNoStore({ error: "Connexion indisponible." }, { status: 503 });
+      return jsonNoStore(
+        { error: "Admin non configuré : ajoute ADMIN_TOTP_SECRET sur Vercel (même secret que Google Authenticator)." },
+        { status: 503 },
+      );
     }
     throw error;
   }

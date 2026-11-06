@@ -3,19 +3,39 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { BlobPreconditionFailedError, del, get, put } from "@vercel/blob";
 import { isBlobConfigured } from "@/lib/admin/blob-config";
-import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing } from "@/lib/stock";
+import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
+import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
+import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
+import {
+  isVersoCatalogId,
+  resolveRectoCatalogId,
+  VERSO_TO_RECTO_CATALOG_ID,
+} from "@/lib/catalog-verso-recto";
 import { CATALOG_CANONICAL_IMAGE_BY_ID, DINGRY_JERSEY_PRODUCT_IDS, DINGRY_SWEAT_PRODUCT_IDS, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
 import {
+  DRAFT_PRODUCT_PLACEHOLDER_IMAGE,
+  isDraftPlaceholderImage,
   isProductCategory,
   isProductSize,
+  normalizeProductCategory,
+  normalizePublishStatus,
   STORE_VERSION,
+  type AdminLookbookSlide,
   type AdminOrder,
   type AdminProduct,
   type AdminStore,
+  parseColorDeclinations,
   type ProductCategory,
+  type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
+import type { DropBatchItem } from "@/lib/admin/drop-batch";
+import {
+  applyDisplayOrderByIds,
+  normalizeDisplayOrder,
+  normalizeIsPinned,
+} from "@/lib/admin/product-display-order";
 
 const STORE_PATHNAME = "dingry/admin/store.json";
 const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json");
@@ -38,6 +58,8 @@ export class StoreUnavailableError extends Error {
   }
 }
 
+export { PublishValidationError } from "@/lib/admin/assert-publishable";
+
 export class ProductStockAdjustError extends Error {
   constructor(
     message: string,
@@ -51,6 +73,8 @@ export class ProductStockAdjustError extends Error {
 type StoreSnapshot = {
   store: AdminStore;
   etag: string | null;
+  /** Store JSON on disk/blob had an older version before normalize. */
+  migratedFromVersion?: number;
 };
 
 /** Seules les erreurs de concurrence optimiste déclenchent un retry. */
@@ -72,6 +96,7 @@ function cloneStore(store: AdminStore): AdminStore {
     ...store,
     products: store.products.map((product) => ({ ...product, sizes: [...product.sizes] })),
     orders: store.orders.map((order) => ({ ...order })),
+    lookbook: store.lookbook.map((slide) => ({ ...slide })),
   };
 }
 
@@ -81,59 +106,105 @@ function assertStoreBackend(): void {
   }
 }
 
+/** En local le token Blob lit mais l'API d'écriture répond 403. Le fichier local fait foi. */
 function useLocalStoreFiles(): boolean {
-  return process.env.NODE_ENV !== "production" && !isBlobConfigured();
+  return process.env.NODE_ENV !== "production";
+}
+
+async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
+  let result: Awaited<ReturnType<typeof get>>;
+  try {
+    result = await get(STORE_PATHNAME, { access: "public" });
+  } catch (error) {
+    console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
+    throw new StoreUnavailableError();
+  }
+
+  if (!result) {
+    return "missing";
+  }
+  const statusCode = (result as { statusCode?: number }).statusCode;
+  if (statusCode === 404) {
+    return "missing";
+  }
+  if (result.statusCode !== 200 || !result.stream) {
+    console.error("[store] Blob HTTP", result.statusCode ?? "sans réponse");
+    throw new StoreUnavailableError();
+  }
+
+  let text: string;
+  try {
+    text = await new Response(result.stream).text();
+  } catch (error) {
+    console.error("[store] stream Blob", error instanceof Error ? error.name : "erreur");
+    throw new StoreUnavailableError();
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    console.error("[store] JSON blob invalide");
+    throw new StoreUnavailableError();
+  }
+  if (!isAdminStore(parsed)) {
+    console.error("[store] schéma blob invalide");
+    throw new StoreUnavailableError();
+  }
+  const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
+  const normalized = normalizeStore(parsed);
+  return {
+    store: normalized,
+    etag: result.blob.etag,
+    ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
+  };
+}
+
+async function readLocalSnapshot(): Promise<StoreSnapshot | "missing"> {
+  try {
+    const text = await readFile(LOCAL_STORE_PATH, "utf8");
+    const parsed: unknown = JSON.parse(text);
+    if (!isAdminStore(parsed)) {
+      throw new StoreUnavailableError();
+    }
+    const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
+    const normalized = normalizeStore(parsed);
+    return {
+      store: normalized,
+      etag: revisionFromDiskText(text),
+      ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
+    };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === "ENOENT") return "missing";
+    if (error instanceof StoreUnavailableError) throw error;
+    throw new StoreUnavailableError();
+  }
 }
 
 async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
   assertStoreBackend();
 
-  if (isBlobConfigured()) {
-    try {
-      const result = await get(STORE_PATHNAME, { access: "private", useCache: false });
-      if (!result || result.statusCode !== 200 || !result.stream) return "missing";
-      let text: string;
-      try {
-        text = await new Response(result.stream).text();
-      } catch (error) {
-        console.error("[store] stream Blob", error instanceof Error ? error.name : "erreur");
-        return "missing";
+  if (useLocalStoreFiles()) {
+    const local = await readLocalSnapshot();
+    if (local !== "missing") return local;
+    if (isBlobConfigured()) {
+      const remote = await readBlobSnapshot();
+      if (remote !== "missing") {
+        await writeLocalSnapshot(remote.store);
+        return readLocalSnapshot();
       }
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        console.error("[store] JSON blob invalide");
-        return "missing";
-      }
-      if (!isAdminStore(parsed)) return "missing";
-      const raw = parsed as AdminStore;
-      return {
-        store: normalizeStore(raw),
-        etag: result.blob.etag,
-      };
-    } catch (error) {
-      console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
-      return "missing";
     }
-  }
-
-  if (!useLocalStoreFiles()) {
-    throw new StoreUnavailableError();
-  }
-
-  try {
-    const text = await readFile(LOCAL_STORE_PATH, "utf8");
-    const parsed: unknown = JSON.parse(text);
-    if (!isAdminStore(parsed)) return "missing";
-    const raw = parsed as AdminStore;
-    return {
-      store: normalizeStore(raw),
-      etag: revisionFromDiskText(text),
-    };
-  } catch {
     return "missing";
   }
+
+  if (isBlobConfigured()) return readBlobSnapshot();
+  throw new StoreUnavailableError();
+}
+
+async function writeLocalSnapshot(store: AdminStore): Promise<void> {
+  const next: AdminStore = { ...store, version: STORE_VERSION };
+  await mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
+  await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
 }
 
 async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promise<void> {
@@ -141,38 +212,37 @@ async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promi
   const next: AdminStore = { ...store, version: STORE_VERSION };
   const body = JSON.stringify(next);
 
-  if (isBlobConfigured()) {
-    await put(STORE_PATHNAME, body, {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,          // toujours permettre l'écrasement
-      contentType: "application/json",
-      cacheControlMaxAge: 0,
-      ...(etag ? { ifMatch: etag } : {}), // conditionnel uniquement si on a un etag
-    });
+  if (useLocalStoreFiles()) {
+    if (etag) {
+      try {
+        const current = await readFile(LOCAL_STORE_PATH, "utf8");
+        if (revisionFromDiskText(current) !== etag) {
+          throw new StoreConflictError();
+        }
+      } catch (error) {
+        const code = (error as { code?: string }).code;
+        if (code === "ENOENT") throw new StoreConflictError();
+        if (error instanceof StoreConflictError) throw error;
+        throw error;
+      }
+    }
+    await writeLocalSnapshot(next);
     return;
   }
 
-  if (!useLocalStoreFiles()) {
+  if (!isBlobConfigured()) {
     throw new StoreUnavailableError();
   }
 
-  if (etag) {
-    try {
-      const current = await readFile(LOCAL_STORE_PATH, "utf8");
-      if (revisionFromDiskText(current) !== etag) {
-        throw new StoreConflictError();
-      }
-    } catch (error) {
-      const code = (error as { code?: string }).code;
-      if (code === "ENOENT") throw new StoreConflictError();
-      if (error instanceof StoreConflictError) throw error;
-      throw error;
-    }
-  }
-
-  await mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
-  await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
+  await put(STORE_PATHNAME, body, {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: etag !== null,
+    contentType: "application/json",
+    cacheControlMaxAge: 0,
+    ...(etag ? { ifMatch: etag } : {}),
+  });
+  return;
 }
 
 async function withStoreOptimistic<T>(
@@ -215,15 +285,19 @@ function normalizeProduct(value: unknown): AdminProduct | null {
   const id = String(record.id ?? "").trim();
   const name = String(record.name ?? "").trim();
   const price = Number(record.price);
-  const imageUrl = String(record.imageUrl ?? "").trim();
+  const imageUrlRaw = String(record.imageUrl ?? "").trim();
+  const publishStatus = normalizePublishStatus(record.publishStatus);
+  const imageUrl =
+    imageUrlRaw ||
+    (publishStatus === "draft" ? DRAFT_PRODUCT_PLACEHOLDER_IMAGE : "");
   if (!id || !name || !imageUrl || !Number.isFinite(price) || price <= 0) return null;
 
   const sizes = Array.isArray(record.sizes)
     ? record.sizes.filter((item): item is ProductSize => typeof item === "string" && isProductSize(item))
     : (["S", "M", "L", "XL"] as ProductSize[]);
 
-  const categoryValue = String(record.category ?? "Tee");
-  const category: ProductCategory = isProductCategory(categoryValue) ? categoryValue : "Tee";
+  const categoryValue = String(record.category ?? "T-shirts");
+  const category = normalizeProductCategory(categoryValue);
 
   return {
     id,
@@ -231,14 +305,30 @@ function normalizeProduct(value: unknown): AdminProduct | null {
     name,
     variant: String(record.variant ?? "").trim(),
     description: String(record.description ?? "").trim(),
+    fabrication: String(record.fabrication ?? "").trim(),
+    limitedEdition: String(record.limitedEdition ?? "").trim(),
+    materials: String(record.materials ?? "").trim(),
+    sizeGuide: String(record.sizeGuide ?? "").trim(),
     category,
     price,
-    sizes: sizes.length > 0 ? sizes : ["S", "M", "L", "XL"],
+    sizes: sizes.length > 0 ? sizes : [],
     stock: Math.max(0, Math.floor(Number(record.stock) || 0)),
+    publishStatus,
+    colorDeclinations: parseColorDeclinations(record.colorDeclinations),
     imageUrl,
     blobUrl: typeof record.blobUrl === "string" ? record.blobUrl : null,
     blobPathname: typeof record.blobPathname === "string" ? record.blobPathname : null,
     createdAt: typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString(),
+    isPinned: normalizeIsPinned(record.isPinned),
+    displayOrder: normalizeDisplayOrder(record.displayOrder),
+  };
+}
+
+function ensureProductDisplayFields(product: AdminProduct): AdminProduct {
+  return {
+    ...product,
+    isPinned: product.isPinned === true,
+    displayOrder: normalizeDisplayOrder(product.displayOrder),
   };
 }
 
@@ -252,7 +342,9 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
     canonicalImage !== undefined;
   if (!current) return { ...seed, sizes: [...seed.sizes] };
   const genericSku = !current.sku || current.sku === `DINGRY-${current.id}`;
-  const genericCategory = current.category === "Tee" && seed.category !== "Tee";
+  const genericCategory =
+    normalizeProductCategory(current.category) === "T-shirts" &&
+    normalizeProductCategory(seed.category) !== "T-shirts";
   if (catalogLocked) {
     return {
       ...seed,
@@ -261,14 +353,14 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
         canonicalImage ??
         (DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum) && current.imageUrl ? current.imageUrl : seed.imageUrl),
       category: DINGRY_SWEAT_PRODUCT_IDS.has(seedIdNum)
-        ? "Sweats"
+        ? "Crewnecks"
         : DINGRY_TEE_PRODUCT_IDS.has(seedIdNum)
-          ? "Tee"
+          ? "T-shirts"
           : DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum)
-            ? "Jersey"
+            ? "Jerseys"
             : genericCategory
-              ? seed.category
-              : current.category,
+              ? normalizeProductCategory(seed.category)
+              : normalizeProductCategory(current.category),
       name: current.name.includes(" — ") ? seed.name : current.name,
       variant: current.variant.trim() || seed.variant,
       description: current.description.trim() || seed.description,
@@ -291,29 +383,89 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
   };
 }
 
-function migrateStore(raw: AdminStore): AdminStore {
-  const existing = raw.products
-    .map(normalizeProduct)
-    .filter((item): item is AdminProduct => item !== null);
-  const byId = new Map(existing.map((item) => [item.id, item]));
+function normalizeLookbookSlide(value: unknown): AdminLookbookSlide | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const id = String(record.id ?? "").trim();
+  const title = String(record.title ?? "").trim();
+  const imageUrl = String(record.imageUrl ?? "").trim();
+  const sortOrder = Number(record.sortOrder);
+  if (!id || !title || !imageUrl || !Number.isInteger(sortOrder) || sortOrder < 0) return null;
+  return {
+    id,
+    title,
+    caption: String(record.caption ?? "").trim(),
+    imageUrl,
+    blobUrl: typeof record.blobUrl === "string" ? record.blobUrl : null,
+    blobPathname: typeof record.blobPathname === "string" ? record.blobPathname : null,
+    sortOrder,
+    createdAt: typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString(),
+  };
+}
 
-  if (raw.version === STORE_VERSION && existing.length > 0) {
-    const mergedSeed = SEEDED_PRODUCTS.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
-    const extras = existing.filter((item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id));
-    return {
-      version: STORE_VERSION,
-      products: [...mergedSeed, ...extras],
-      orders: raw.orders,
+function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
+  const seeded = seededLookbookSlides();
+  const existing = (Array.isArray(raw.lookbook) ? raw.lookbook : [])
+    .map(normalizeLookbookSlide)
+    .filter((item): item is AdminLookbookSlide => item !== null)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  if (existing.length === 0) return seeded;
+  return existing;
+}
+
+function migrateStore(raw: AdminStore): AdminStore {
+  let source = raw;
+  if (raw.version < 6) {
+    const seedById = new Map(SEEDED_PRODUCTS.map((seed) => [seed.id, seed]));
+    source = {
+      ...raw,
+      products: raw.products.map((item) => {
+        const seed = seedById.get(String(item.id));
+        return seed ? { ...item, price: seed.price } : item;
+      }),
     };
   }
 
-  const mergedSeed = SEEDED_PRODUCTS.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
-  const extras = existing.filter((item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id));
+  const existing = source.products
+    .map(normalizeProduct)
+    .filter((item): item is AdminProduct => item !== null);
+  const byId = new Map(existing.map((item) => [item.id, item]));
+  const removed = new Set(
+    (Array.isArray(raw.removedCatalogIds) ? raw.removedCatalogIds : [])
+      .map((id) => String(id).trim())
+      .filter(Boolean),
+  );
+
+  const activeSeeds = SEEDED_PRODUCTS.filter((seed) => !removed.has(seed.id));
+
+  const finalizeProducts = (items: AdminProduct[]) =>
+    items.map(ensureProductDisplayFields);
+
+  if (raw.version === STORE_VERSION && existing.length > 0) {
+    const mergedSeed = activeSeeds.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
+    const extras = existing.filter(
+      (item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id) && !removed.has(item.id),
+    );
+    return {
+      version: STORE_VERSION,
+      products: finalizeProducts([...mergedSeed, ...extras]),
+      orders: raw.orders,
+      lookbook: mergeLookbookSlides(raw),
+      removedCatalogIds: [...removed],
+    };
+  }
+
+  const mergedSeed = activeSeeds.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
+  const extras = existing.filter(
+    (item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id) && !removed.has(item.id),
+  );
 
   return {
     version: STORE_VERSION,
-    products: [...mergedSeed, ...extras],
+    products: finalizeProducts([...mergedSeed, ...extras]),
     orders: raw.orders,
+    lookbook: mergeLookbookSlides(raw),
+    removedCatalogIds: [...removed],
   };
 }
 
@@ -322,6 +474,8 @@ function normalizeStore(value: AdminStore): AdminStore {
     version: typeof value.version === "number" ? value.version : 0,
     products: Array.isArray(value.products) ? value.products : [],
     orders: Array.isArray(value.orders) ? value.orders : [],
+    lookbook: Array.isArray(value.lookbook) ? value.lookbook : [],
+    removedCatalogIds: Array.isArray(value.removedCatalogIds) ? value.removedCatalogIds : [],
   });
 }
 
@@ -330,11 +484,17 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
   try {
     const snapshot = await readStoreSnapshot();
     if (snapshot === "missing") {
+      if (process.env.NODE_ENV === "production") {
+        throw new StoreUnavailableError();
+      }
       return normalizeStore(createSeededStore());
     }
     return snapshot.store;
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
+      if (process.env.NODE_ENV === "production") {
+        throw error;
+      }
       console.error("[store] lecture seule indisponible, catalogue seed");
       return normalizeStore(createSeededStore());
     }
@@ -363,6 +523,13 @@ export async function loadStore(): Promise<AdminStore> {
   if (snapshot === "missing") {
     return ensureInitialStore();
   }
+  if (snapshot.migratedFromVersion !== undefined) {
+    try {
+      await writeStoreSnapshot(snapshot.store, snapshot.etag);
+    } catch (error) {
+      console.error("[store] persistance migration version", error instanceof Error ? error.name : "erreur");
+    }
+  }
   return snapshot.store;
 }
 
@@ -388,32 +555,37 @@ export async function uploadProductImage(
   const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
   const pathname = `dingry/products/${productId}/${filename}`;
 
-  if (isBlobConfigured()) {
-    const blob = await put(pathname, file, {
-      access: "public",
-      addRandomSuffix: true,
-      contentType: "image/webp",
-    });
+  if (useLocalStoreFiles()) {
+    await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
+    const localName = `${productId}-${Date.now()}-${filename}`;
+    const bytes = Buffer.from(await file.arrayBuffer());
+    await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
     return {
-      imageUrl: blob.url,
-      blobUrl: blob.url,
-      blobPathname: blob.pathname,
+      imageUrl: `/admin-uploads/${localName}`,
+      blobUrl: null,
+      blobPathname: null,
     };
   }
 
-  if (!useLocalStoreFiles()) {
-    throw new StoreUnavailableError();
+  if (isBlobConfigured()) {
+    try {
+      const blob = await put(pathname, file, {
+        access: "public",
+        addRandomSuffix: true,
+        contentType: "image/webp",
+      });
+      return {
+        imageUrl: blob.url,
+        blobUrl: blob.url,
+        blobPathname: blob.pathname,
+      };
+    } catch (error) {
+      console.error("[store] upload Blob produit", error instanceof Error ? error.name : "erreur");
+      throw new StoreUnavailableError("Upload image impossible (Vercel Blob).");
+    }
   }
 
-  await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
-  const localName = `${productId}-${Date.now()}-${filename}`;
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
-  return {
-    imageUrl: `/admin-uploads/${localName}`,
-    blobUrl: null,
-    blobPathname: null,
-  };
+  throw new StoreUnavailableError("Stockage image indisponible.");
 }
 
 async function deleteLocalUpload(imageUrl: string): Promise<void> {
@@ -452,45 +624,198 @@ export type ProductInput = {
   name: string;
   variant: string;
   description: string;
+  fabrication: string;
+  limitedEdition: string;
+  materials: string;
+  sizeGuide: string;
   category: ProductCategory;
   price: number;
   sizes: ProductSize[];
   stock: number;
+  publishStatus: ProductPublishStatus;
+  colorDeclinations?: string[];
+  isPinned?: boolean;
+  displayOrder?: number;
 };
 
-export async function createProduct(input: ProductInput & { file: File }): Promise<AdminProduct> {
+export type PublishSelectionOutcome = {
+  products: AdminProduct[];
+  publishedIds: string[];
+  skipped: { id: string; reason: string }[];
+};
+
+export async function publishAdminProductsToLive(
+  productIds: readonly string[],
+): Promise<PublishSelectionOutcome | null> {
+  const unique = [...new Set(productIds.map((id) => String(id).trim()).filter(Boolean))];
+  if (unique.length === 0) return null;
+
+  return withStoreOptimistic((store) => {
+    const publishedIds: string[] = [];
+    const skipped: { id: string; reason: string }[] = [];
+
+    for (const id of unique) {
+      const product = store.products.find((item) => item.id === id);
+      if (!product) {
+        skipped.push({ id, reason: "Produit introuvable." });
+        continue;
+      }
+      if (product.publishStatus === "live") {
+        continue;
+      }
+      const verdict = assertPublishableProduct(product);
+      if (!verdict.ok) {
+        skipped.push({ id, reason: verdict.reason });
+        continue;
+      }
+      product.publishStatus = "live";
+      publishedIds.push(id);
+    }
+
+    if (publishedIds.length === 0) {
+      return { store, result: { products: store.products, publishedIds, skipped }, skipWrite: true };
+    }
+
+    return { store, result: { products: store.products, publishedIds, skipped } };
+  });
+}
+
+/** Ordre + publication drop : une seule écriture store (batch). */
+export async function applyAdminDropBatch(
+  items: readonly DropBatchItem[],
+): Promise<PublishSelectionOutcome | null> {
+  if (items.length === 0) return null;
+
+  const knownIds = new Set<string>();
+  for (const item of items) {
+    const id = String(item.id).trim();
+    if (!id || knownIds.has(id)) return null;
+    knownIds.add(id);
+    if (!Number.isFinite(item.displayOrder) || item.displayOrder < 0) return null;
+  }
+
+  return withStoreOptimistic((store) => {
+    const storeIds = new Set(store.products.map((product) => product.id));
+    if (items.length !== store.products.length) {
+      return { store, result: null, skipWrite: true };
+    }
+    for (const item of items) {
+      if (!storeIds.has(item.id)) return { store, result: null, skipWrite: true };
+    }
+
+    const orderedIds = [...items]
+      .sort((a, b) => a.displayOrder - b.displayOrder || a.id.localeCompare(b.id))
+      .map((item) => item.id);
+
+    store.products = applyDisplayOrderByIds(store.products, orderedIds);
+
+    const publishedIds: string[] = [];
+    const skipped: { id: string; reason: string }[] = [];
+
+    for (const item of items) {
+      if (item.status !== "published") continue;
+      const product = store.products.find((row) => row.id === item.id);
+      if (!product) continue;
+      if (product.publishStatus === "live") continue;
+      const verdict = assertPublishableProduct(product);
+      if (!verdict.ok) {
+        skipped.push({ id: item.id, reason: verdict.reason });
+        continue;
+      }
+      product.publishStatus = "live";
+      publishedIds.push(item.id);
+    }
+
+    const wantsPublish = items.some((item) => item.status === "published");
+    if (wantsPublish && publishedIds.length === 0) {
+      return {
+        store,
+        result: { products: store.products, publishedIds, skipped },
+        skipWrite: true,
+      };
+    }
+
+    return { store, result: { products: store.products, publishedIds, skipped } };
+  });
+}
+
+export async function reorderAdminProductDisplay(
+  orderedIds: readonly string[],
+): Promise<AdminProduct[] | null> {
+  if (orderedIds.length === 0) return null;
+  const unique = new Set(orderedIds.map((id) => String(id).trim()).filter(Boolean));
+  if (unique.size !== orderedIds.length) return null;
+
+  return withStoreOptimistic((store) => {
+    const known = new Set(store.products.map((item) => item.id));
+    for (const id of orderedIds) {
+      if (!known.has(id)) return { store, result: null, skipWrite: true };
+    }
+    store.products = applyDisplayOrderByIds(store.products, orderedIds);
+    return { store, result: store.products };
+  });
+}
+
+export async function createProduct(input: ProductInput & { file?: File | null }): Promise<AdminProduct> {
   const snapshot = await readStoreSnapshot();
   const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
   const id = nextProductId(base.products);
-  const uploaded = await uploadProductImage(id, input.file);
+  let uploaded: Awaited<ReturnType<typeof uploadProductImage>>;
+  if (input.file && input.file.size > 0) {
+    uploaded = await uploadProductImage(id, input.file);
+  } else if (input.publishStatus === "draft") {
+    uploaded = {
+      imageUrl: DRAFT_PRODUCT_PLACEHOLDER_IMAGE,
+      blobUrl: null,
+      blobPathname: null,
+    };
+  } else {
+    throw new StoreUnavailableError("Une image est requise pour mettre en ligne.");
+  }
   const product: AdminProduct = {
     id,
     sku: input.sku,
     name: input.name,
     variant: input.variant,
     description: input.description,
+    fabrication: input.fabrication,
+    limitedEdition: input.limitedEdition,
+    materials: input.materials,
+    sizeGuide: input.sizeGuide,
     category: input.category,
     price: input.price,
     sizes: input.sizes,
     stock: input.stock,
+    publishStatus: input.publishStatus,
+    colorDeclinations: input.colorDeclinations ?? [],
     imageUrl: uploaded.imageUrl,
     blobUrl: uploaded.blobUrl,
     blobPathname: uploaded.blobPathname,
     createdAt: new Date().toISOString(),
+    isPinned: false,
+    displayOrder: 0,
   };
+
+  if (product.publishStatus === "live") {
+    requirePublishableProduct(product);
+  }
 
   return withStoreOptimistic((store) => {
     store.products = [product, ...store.products];
     return { store, result: product };
   }).then(async (created) => {
-    await seedStockIfMissing(Number(created.id), created.stock);
+    const id = Number(created.id);
+    if (Number.isInteger(id) && id > 0) {
+      const seeded = await writeStockQuantity(id, created.stock);
+      if (!seeded) await seedStockIfMissing(id, created.stock);
+    }
     return created;
   });
 }
 
 export async function updateProduct(
   id: string,
-  input: Partial<ProductInput> & { stockDelta?: number },
+  input: Partial<ProductInput> & { stockDelta?: number; clearImage?: boolean },
   file?: File,
 ): Promise<AdminProduct | null> {
   let uploaded: Awaited<ReturnType<typeof uploadProductImage>> | undefined;
@@ -501,9 +826,23 @@ export async function updateProduct(
   if (typeof fields.stockDelta === "number" && Number.isInteger(productId) && productId > 0) {
     const adjusted = await adjustStock(productId, fields.stockDelta);
     if (!adjusted.ok) {
-      throw new ProductStockAdjustError(adjusted.error, adjusted.code);
+      if (adjusted.code === "negative") {
+        throw new ProductStockAdjustError(adjusted.error, adjusted.code);
+      }
+      if (adjusted.code === "missing") {
+        const snapshot = await readStoreSnapshot();
+        const current = snapshot === "missing" ? null : snapshot.store.products.find((p) => p.id === id);
+        const baseline = Math.max(0, Math.floor(current?.stock ?? 0));
+        const nextStock = Math.max(0, baseline + fields.stockDelta);
+        const written = await writeStockQuantity(productId, nextStock);
+        if (!written) await seedStockIfMissing(productId, nextStock);
+        fields = { ...fields, stock: nextStock, stockDelta: undefined };
+      } else {
+        throw new ProductStockAdjustError(adjusted.error, adjusted.code);
+      }
+    } else {
+      fields = { ...fields, stock: adjusted.quantity, stockDelta: undefined };
     }
-    fields = { ...fields, stock: adjusted.quantity, stockDelta: undefined };
   } else if (typeof fields.stock === "number" && Number.isInteger(productId) && productId > 0) {
     const targetStock = fields.stock;
     const snapshot = await readStoreSnapshot();
@@ -525,19 +864,22 @@ export async function updateProduct(
           if (adjusted.code === "negative") {
             throw new ProductStockAdjustError(adjusted.error, adjusted.code);
           }
+          const written = await writeStockQuantity(productId, targetStock);
+          if (!written) {
+            await seedStockIfMissing(productId, targetStock);
+          }
+          fields = { ...fields, stock: targetStock };
+        } else {
+          fields = { ...fields, stock: adjusted.quantity };
+        }
+      } else {
+        const written = await writeStockQuantity(productId, targetStock);
+        if (!written) {
           try {
             await seedStockIfMissing(productId, targetStock);
           } catch (error) {
             console.error("[stock] seed admin", error instanceof Error ? error.name : "erreur");
           }
-        } else {
-          fields = { ...fields, stock: adjusted.quantity };
-        }
-      } else {
-        try {
-          await seedStockIfMissing(productId, targetStock);
-        } catch (error) {
-          console.error("[stock] seed admin", error instanceof Error ? error.name : "erreur");
         }
       }
     }
@@ -567,17 +909,41 @@ export async function updateProduct(
     if (typeof fields.name === "string") product.name = fields.name;
     if (typeof fields.variant === "string") product.variant = fields.variant;
     if (typeof fields.description === "string") product.description = fields.description;
+    if (typeof fields.fabrication === "string") product.fabrication = fields.fabrication;
+    if (typeof fields.limitedEdition === "string") product.limitedEdition = fields.limitedEdition;
+    if (typeof fields.materials === "string") product.materials = fields.materials;
+    if (typeof fields.sizeGuide === "string") product.sizeGuide = fields.sizeGuide;
     if (fields.category) product.category = fields.category;
     if (typeof fields.price === "number") product.price = fields.price;
     if (fields.sizes) product.sizes = fields.sizes;
     if (typeof fields.stock === "number") {
       product.stock = Math.max(0, Math.floor(fields.stock));
     }
+    if (fields.publishStatus) {
+      product.publishStatus = fields.publishStatus;
+    }
+    if (fields.colorDeclinations !== undefined) {
+      product.colorDeclinations = fields.colorDeclinations;
+    }
+    if (typeof fields.isPinned === "boolean") {
+      product.isPinned = fields.isPinned;
+    }
+    if (typeof fields.displayOrder === "number") {
+      product.displayOrder = normalizeDisplayOrder(fields.displayOrder);
+    }
 
     if (uploaded) {
       product.imageUrl = uploaded.imageUrl;
       product.blobUrl = uploaded.blobUrl;
       product.blobPathname = uploaded.blobPathname;
+    } else if (fields.clearImage && product.publishStatus !== "live") {
+      product.imageUrl = DRAFT_PRODUCT_PLACEHOLDER_IMAGE;
+      product.blobUrl = null;
+      product.blobPathname = null;
+    }
+
+    if (product.publishStatus === "live") {
+      requirePublishableProduct(product);
     }
 
     return { store, result: product };
@@ -593,6 +959,19 @@ export async function updateProductStock(id: string, nextStock: number): Promise
   return updateProduct(id, { stock: nextStock });
 }
 
+function tombstoneCatalogPair(tombstone: Set<string>, id: string): void {
+  tombstone.add(id);
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) return;
+  if (isVersoCatalogId(numericId)) {
+    tombstone.add(String(resolveRectoCatalogId(numericId)));
+    return;
+  }
+  for (const [verso, recto] of VERSO_TO_RECTO_CATALOG_ID) {
+    if (recto === numericId) tombstone.add(String(verso));
+  }
+}
+
 export async function removeProduct(id: string): Promise<boolean> {
   const removed = await withStoreOptimistic((store) => {
     const product = store.products.find((item) => item.id === id);
@@ -601,6 +980,12 @@ export async function removeProduct(id: string): Promise<boolean> {
     }
     const copy = { ...product, sizes: [...product.sizes] };
     store.products = store.products.filter((item) => item.id !== id);
+    if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
+      const tombstone = new Set(store.removedCatalogIds ?? []);
+      tombstoneCatalogPair(tombstone, id);
+      store.removedCatalogIds = [...tombstone];
+      store.products = store.products.filter((item) => !tombstone.has(item.id));
+    }
     return { store, result: copy };
   });
 
@@ -689,5 +1074,179 @@ export async function patchOrder(
     }
     store.orders[index] = { ...current, ...patch };
     return { store, result: { order: store.orders[index], changed: true } };
+  });
+}
+
+export async function uploadLookbookImage(
+  slideId: string,
+  file: File,
+): Promise<{ imageUrl: string; blobUrl: string | null; blobPathname: string | null }> {
+  const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
+  const pathname = `dingry/lookbook/${slideId}/${filename}`;
+
+  if (isBlobConfigured()) {
+    const blob = await put(pathname, file, {
+      access: "public",
+      addRandomSuffix: true,
+      contentType: "image/webp",
+    });
+    return {
+      imageUrl: blob.url,
+      blobUrl: blob.url,
+      blobPathname: blob.pathname,
+    };
+  }
+
+  if (!useLocalStoreFiles()) {
+    throw new StoreUnavailableError();
+  }
+
+  await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
+  const localName = `lookbook-${slideId}-${Date.now()}-${filename}`;
+  const bytes = Buffer.from(await file.arrayBuffer());
+  await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
+  return {
+    imageUrl: `/admin-uploads/${localName}`,
+    blobUrl: null,
+    blobPathname: null,
+  };
+}
+
+async function deleteLookbookImage(slide: AdminLookbookSlide): Promise<void> {
+  if (slide.blobUrl) {
+    await del(slide.blobUrl);
+    return;
+  }
+  if (slide.blobPathname) {
+    await del(slide.blobPathname);
+    return;
+  }
+  await deleteLocalUpload(slide.imageUrl);
+}
+
+function nextLookbookId(slides: AdminLookbookSlide[]): string {
+  const max = slides.reduce((current, item) => {
+    const match = /^lb-(\d+)$/.exec(item.id);
+    if (!match) return current;
+    const value = Number(match[1]);
+    return Number.isInteger(value) && value > current ? value : current;
+  }, 0);
+  return `lb-${max + 1}`;
+}
+
+function sortLookbook(slides: AdminLookbookSlide[]): AdminLookbookSlide[] {
+  return [...slides].sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+}
+
+export type LookbookInput = {
+  title: string;
+  caption: string;
+  sortOrder?: number;
+};
+
+export async function createLookbookSlide(input: LookbookInput & { file: File }): Promise<AdminLookbookSlide> {
+  const snapshot = await readStoreSnapshot();
+  const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
+  const id = nextLookbookId(base.lookbook);
+  const uploaded = await uploadLookbookImage(id, input.file);
+  const sortOrder = input.sortOrder ?? base.lookbook.length;
+  const slide: AdminLookbookSlide = {
+    id,
+    title: input.title,
+    caption: input.caption,
+    imageUrl: uploaded.imageUrl,
+    blobUrl: uploaded.blobUrl,
+    blobPathname: uploaded.blobPathname,
+    sortOrder,
+    createdAt: new Date().toISOString(),
+  };
+
+  return withStoreOptimistic((store) => {
+    store.lookbook = sortLookbook([...store.lookbook, slide]);
+    return { store, result: slide };
+  });
+}
+
+export async function updateLookbookSlide(
+  id: string,
+  input: Partial<LookbookInput>,
+  file?: File,
+): Promise<AdminLookbookSlide | null> {
+  let uploaded: Awaited<ReturnType<typeof uploadLookbookImage>> | undefined;
+  let previous: AdminLookbookSlide | undefined;
+
+  if (file) {
+    uploaded = await uploadLookbookImage(id, file);
+  }
+
+  return withStoreOptimistic((store) => {
+    const index = store.lookbook.findIndex((item) => item.id === id);
+    if (index < 0) {
+      return { store, result: null, skipWrite: true };
+    }
+    previous = { ...store.lookbook[index] };
+    const next: AdminLookbookSlide = {
+      ...store.lookbook[index],
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.caption !== undefined ? { caption: input.caption } : {}),
+      ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+      ...(uploaded
+        ? {
+            imageUrl: uploaded.imageUrl,
+            blobUrl: uploaded.blobUrl,
+            blobPathname: uploaded.blobPathname,
+          }
+        : {}),
+    };
+    store.lookbook[index] = next;
+    store.lookbook = sortLookbook(store.lookbook);
+    return { store, result: next };
+  }).then(async (updated) => {
+    if (uploaded && previous && updated) {
+      await deleteLookbookImage(previous);
+    }
+    return updated;
+  });
+}
+
+export async function removeLookbookSlide(id: string): Promise<boolean> {
+  const removed = await withStoreOptimistic((store) => {
+    const slide = store.lookbook.find((item) => item.id === id);
+    if (!slide) {
+      return { store, result: null, skipWrite: true };
+    }
+    const copy = { ...slide };
+    store.lookbook = store.lookbook.filter((item) => item.id !== id);
+    return { store, result: copy };
+  });
+
+  if (!removed) return false;
+  if (removed.blobUrl || removed.blobPathname || removed.imageUrl.startsWith("/admin-uploads/")) {
+    await deleteLookbookImage(removed);
+  }
+  return true;
+}
+
+export async function reorderLookbookSlide(id: string, direction: "up" | "down"): Promise<AdminLookbookSlide[] | null> {
+  return withStoreOptimistic((store) => {
+    const ordered = sortLookbook(store.lookbook);
+    const index = ordered.findIndex((item) => item.id === id);
+    if (index < 0) {
+      return { store, result: null, skipWrite: true };
+    }
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= ordered.length) {
+      return { store, result: ordered, skipWrite: true };
+    }
+    const current = ordered[index];
+    const swap = ordered[swapIndex];
+    store.lookbook = sortLookbook(
+      store.lookbook.map((item) => {
+        if (item.id === current.id) return { ...item, sortOrder: swap.sortOrder };
+        if (item.id === swap.id) return { ...item, sortOrder: current.sortOrder };
+        return item;
+      }),
+    );
+    return { store, result: sortLookbook(store.lookbook) };
   });
 }

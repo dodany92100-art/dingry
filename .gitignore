@@ -17,6 +17,13 @@ node_modules
 .next/
 .DS_Store
 
+# Playwright
+test-results/
+playwright-report/
+
+# TypeScript build info (local)
+*.tsbuildinfo
+
 # CRM admin local fallback (Vercel Blob in production)
 data/admin/
 public/admin-uploads/

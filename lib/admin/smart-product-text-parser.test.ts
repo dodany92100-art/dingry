@@ -1,0 +1,66 @@
+import { describe, expect, it } from "vitest";
+import { parseSmartProductText } from "@/lib/admin/smart-product-text-parser";
+
+describe("parseSmartProductText", () => {
+  it("extrait titre, prix, tailles, matière, description, couleur ; normalise g/m?", () => {
+    const raw = `HOODIE DINGRY SIGNATURE — couleur noir
+
+Conçu dans un tissu épais premium pour le quotidien.
+
+70 % coton ringspun, 30 % polyester. Densité 440 g/m?.
+
+Prix : 80 €
+
+Tailles disponibles : S · M · L · XL · 2XL
+
+*4XL-5XL uniquement sur commande — délai 3 semaines`;
+
+    const r = parseSmartProductText(raw, "T-shirts");
+    expect(r.detectedCategory).toBe("Hoodies");
+    expect(r.name).toBe("HOODIE DINGRY SIGNATURE — couleur noir");
+    expect(r.price).toBe("80");
+    expect(r.sizes).toEqual(["S", "M", "L", "XL", "2XL"]);
+    expect(r.materials).toContain("440 g/m²");
+    expect(r.variantColor).toBe("NOIR");
+    expect(r.description).toBeTruthy();
+    expect(r.filled).toContain("category");
+    expect(r.filled).toContain("variant");
+  });
+
+  it("XXL normalisé en 2XL", () => {
+    const r = parseSmartProductText("Hoodie test\nTailles M XXL XL", "Hoodies");
+    expect(r.sizes).toEqual(["M", "XL", "2XL"]);
+  });
+
+  it("détecte les tours de taille pour Pants (ignore lignes *)", () => {
+    const raw = `Pantalon cargo
+*41–50 : tailles spéciales
+
+Tour 30 et 32 dispo
+89 €`;
+    const r = parseSmartProductText(raw, "T-shirts");
+    expect(r.detectedCategory).toBe("Pants");
+    expect(r.sizes).toEqual(["30", "32"]);
+    expect(r.price).toBe("89");
+    expect(r.filled).toContain("sizes");
+  });
+
+  it("Caps : TU + casquette", () => {
+    const raw = `CASQUETTE logo
+TU
+35 €`;
+    const r = parseSmartProductText(raw, "Hoodies");
+    expect(r.detectedCategory).toBe("Caps");
+    expect(r.sizes).toEqual(["TU"]);
+    expect(r.price).toBe("35");
+  });
+
+  it("Heather Grey → preset GRIS CHINÉ", () => {
+    const r = parseSmartProductText("T-shirt · Heather Grey\n80 €", "T-shirts");
+    expect(r.variantColor).toBe("GRIS CHINÉ");
+  });
+
+  it("texte vide → rien", () => {
+    expect(parseSmartProductText("   ", "T-shirts").filled).toEqual([]);
+  });
+});

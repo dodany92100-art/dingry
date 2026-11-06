@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TotpMisconfiguredError } from "@/lib/admin/totp";
 
 describe("POST /api/admin/login", () => {
   afterEach(() => {
@@ -7,16 +6,25 @@ describe("POST /api/admin/login", () => {
     vi.resetModules();
     vi.doUnmock("@/lib/admin/totp");
     vi.doUnmock("@/lib/admin/login-rate-limit");
+    vi.doUnmock("@/lib/admin/backup-codes");
   });
 
   it("503 générique si ADMIN_TOTP_SECRET absent en prod", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("ADMIN_TOTP_SECRET", "");
+    vi.doMock("@/lib/admin/backup-codes", () => ({
+      consumeBackupCode: vi.fn(),
+      isBackupCode: vi.fn().mockReturnValue(false),
+      ensureBackupCodes: vi.fn(),
+    }));
     vi.doMock("@/lib/admin/totp", async () => {
       const actual = await vi.importActual<typeof import("@/lib/admin/totp")>("@/lib/admin/totp");
       return {
         ...actual,
-        getTotpSecret: vi.fn().mockRejectedValue(new TotpMisconfiguredError()),
+        getTotpSecret: vi.fn(async () => {
+          throw new actual.TotpMisconfiguredError();
+        }),
         verifyAdminTotp: vi.fn(),
       };
     });
@@ -29,6 +37,7 @@ describe("POST /api/admin/login", () => {
       retryAfterLabel: (s: number) => `${s}s`,
     }));
 
+    vi.resetModules();
     const { POST } = await import("@/app/api/admin/login/route");
     const response = await POST(
       new Request("http://localhost/api/admin/login", {
@@ -39,8 +48,7 @@ describe("POST /api/admin/login", () => {
     );
     expect(response.status).toBe(503);
     const body = (await response.json()) as { error?: string };
-    expect(body.error).toBe("Connexion indisponible.");
-    expect(JSON.stringify(body)).not.toContain("TotpMisconfigured");
+    expect(body.error).toContain("ADMIN_TOTP_SECRET");
   });
 
   it("503 sur la route si IP unknown (prod simulée)", async () => {
@@ -89,6 +97,6 @@ describe("POST /api/admin/login", () => {
       }),
     );
     expect(response.status).toBe(503);
-    expect(((await response.json()) as { error?: string }).error).toBe("Connexion indisponible.");
+    expect(((await response.json()) as { error?: string }).error).toContain("ADMIN_TOTP_SECRET");
   });
 });

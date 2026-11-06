@@ -10,7 +10,7 @@ const fallbackProduct = (id: number, price: number): ShopProduct => ({
   price,
   image: "https://example.com/a.jpg",
   description: "",
-  category: "Sweats",
+  category: "Crewnecks",
 });
 
 const liveProduct = (partial: Partial<CatalogProduct> & Pick<CatalogProduct, "id" | "price" | "sku">): CatalogProduct => ({
@@ -19,7 +19,7 @@ const liveProduct = (partial: Partial<CatalogProduct> & Pick<CatalogProduct, "id
   name: partial.name ?? "CRM name",
   variant: partial.variant ?? "CRM variant",
   description: partial.description ?? "",
-  category: partial.category ?? "Sweats",
+  category: partial.category ?? "Crewnecks",
   price: partial.price,
   image: partial.image ?? "https://example.com/crm.jpg",
   sizes: partial.sizes ?? ["S", "M", "L", "XL"],
@@ -77,6 +77,16 @@ describe("overlayShopCatalog", () => {
     expect(merged[0]?.id).toBe(99);
     expect(merged[0]?.sku).toBe("DINGRY-X99");
   });
+
+  it("masque un id tombstone du fallback (ex. hoodie Paris 25–26)", () => {
+    const merged = overlayShopCatalog(
+      [fallbackProduct(25, 80), { ...fallbackProduct(26, 80), variant: "VERSO" }],
+      [],
+      ["25"],
+    );
+    expect(merged.some((p) => p.id === 25)).toBe(false);
+    expect(merged.some((p) => p.id === 26)).toBe(false);
+  });
 });
 
 describe("shopProductFromUnknown", () => {
@@ -88,7 +98,7 @@ describe("shopProductFromUnknown", () => {
       variant: "PURPLE",
       price: 169,
       image: "https://example.com/x.jpg",
-      category: "Sweats",
+      category: "Crewnecks",
       sizes: ["M", "L"],
       inStock: false,
     });

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isProductSize } from "@/lib/admin/types";
 import { loadStoreReadOnly } from "@/lib/admin/store";
 import type { AdminProduct } from "@/lib/admin/types";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
@@ -10,23 +11,18 @@ import {
 } from "@/lib/stock";
 
 const PERSONALIZABLE_PRODUCT_ID = 24;
-const SHOP_SIZES = new Set(["XS", "S", "M", "L", "XL", "XXL", "TU"]);
 const MAX_LINES = 50;
 const MAX_QTY = 99;
 const MAX_PERSONALIZATION = 80;
 
 /** Pièces affichées sur la vitrine et absentes du catalogue admin. Le prix admin gagne dès qu'il existe. */
 export const VITRINE_ONLY: Record<number, { name: string; variant: string; price: number }> = {
-  1: { name: "PHANTOM HOODIE", variant: "NUIT NOIRE — VERSO", price: 189 },
-  3: { name: "DINGRY ORIGINAL HOODIE", variant: "VERT — VERSO", price: 189 },
-  5: { name: "DINGRY ZIP HOODIE", variant: "BLACK OUTLINE — VERSO", price: 219 },
-  8: { name: "DINGRY ORIGINAL HOODIE", variant: "BLACK — VERSO", price: 189 },
-  12: { name: "DINGRY TEE", variant: "COLLECTION 02 — VERSO", price: 119 },
-  14: { name: "DINGRY TEE", variant: "COLLECTION 04 — VERSO", price: 119 },
-  15: { name: "DINGRY TEE", variant: "COLLECTION 05 — VERSO", price: 119 },
-  16: { name: "DINGRY TEE", variant: "COLLECTION 06 — VERSO", price: 119 },
-  18: { name: "DINGRY TEE", variant: "COLLECTION 08 — VERSO", price: 119 },
-  20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 119 },
+  1: { name: "Hoodie DINGRY Original KING BLUE / PINK", variant: "VERSO", price: 80 },
+  3: { name: "Hoodie DINGRY Original VERT", variant: "VERSO", price: 80 },
+  5: { name: "Hoodie zippé DINGRY Outline / BLACK", variant: "VERSO", price: 90 },
+  8: { name: "Hoodie DINGRY Original BLACK", variant: "VERSO", price: 80 },
+  18: { name: "DINGRY TEE", variant: "COLLECTION 08 — VERSO", price: 35 },
+  20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 35 },
 };
 
 export type CheckoutLine = {
@@ -72,7 +68,7 @@ function readLine(value: unknown): CheckoutLine | null {
   const size = typeof record.size === "string" ? record.size.trim() : "";
   const qty = typeof record.qty === "number" ? record.qty : Number.NaN;
   if (!Number.isInteger(productId) || productId <= 0) return null;
-  if (!SHOP_SIZES.has(size)) return null;
+  if (!isProductSize(size)) return null;
   if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) return null;
 
   if (record.personalization === undefined) return { productId, size, qty };
@@ -124,12 +120,11 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
     const price = product?.price ?? fallback?.price;
     if (!name || price === undefined) return null;
 
-    const allowedSizes = product
-      ? new Set(product.sizes)
-      : fallback
-        ? SHOP_SIZES
-        : null;
-    if (!allowedSizes || !allowedSizes.has(line.size)) {
+    if (product) {
+      if (!product.sizes.includes(line.size)) return null;
+    } else if (fallback) {
+      if (!isProductSize(line.size)) return null;
+    } else {
       return null;
     }
 

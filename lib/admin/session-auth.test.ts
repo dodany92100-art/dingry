@@ -18,6 +18,14 @@ describe("sessionSecretFromEnv", () => {
     vi.unstubAllEnvs();
   });
 
+  it("preview Vercel peut repli sur ADMIN_TOTP_SECRET pour la session", () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ADMIN_SESSION_SECRET", "");
+    vi.stubEnv("ADMIN_TOTP_SECRET", "JBSWY3DPEHPK3PXP");
+    expect(sessionSecretFromEnv()).toBe("JBSWY3DPEHPK3PXP");
+  });
+
   it("production sans ADMIN_SESSION_SECRET refuse le repli TOTP", () => {
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("NODE_ENV", "production");
@@ -61,6 +69,7 @@ describe("createAdminSessionResponse", () => {
     vi.stubEnv("ADMIN_SESSION_SECRET", "");
     const response = await createAdminSessionResponse({ ok: true });
     expect(response.status).toBe(503);
+    expect(((await response.json()) as { error?: string }).error).toBe("Connexion indisponible.");
   });
 
   it("login réussi → Cache-Control no-store", async () => {

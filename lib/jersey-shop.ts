@@ -16,8 +16,9 @@ export type JerseyColorKey = (typeof JERSEY_COLOR_OPTIONS)[number]["key"];
 
 export const JERSEY_ADMIN_COLOR_VARIANTS = ["BLANC", "NOIR"] as const;
 
-export function isJerseyShopProduct(product: { id: number; category: string }): boolean {
-  return DINGRY_JERSEY_PRODUCT_IDS.has(product.id) || product.category === "Jersey";
+/** Mesh jersey 41/42 uniquement — pas toute la catégorie CRM « Jerseys ». */
+export function isJerseyShopProduct(product: { id: number }): boolean {
+  return DINGRY_JERSEY_PRODUCT_IDS.has(product.id);
 }
 
 export function isJerseyCatalogGridProduct(product: { id: number; category: string }): boolean {

@@ -1,13 +1,13 @@
 /** Slugs catalogue boutique. Le CRM garde ses libellés (`Tee`, `Hoodie`…) : on normalise ici. */
 export const CATALOG_CATEGORIES = [
-  "t-shirts",
   "hoodies",
-  "sweats",
-  "caps",
-  "jersey",
   "hoodie-zip",
+  "sweats",
+  "t-shirts",
+  "jersey",
   "pants",
   "crop-top",
+  "caps",
 ] as const;
 
 export type CatalogCategory = (typeof CATALOG_CATEGORIES)[number];
@@ -16,21 +16,28 @@ export type CatalogFilter = "all" | CatalogCategory;
 const CATEGORY_SET = new Set<string>(CATALOG_CATEGORIES);
 
 const ALIASES: Record<string, CatalogCategory> = {
-  "t-shirts": "t-shirts",
-  "t-shirt": "t-shirts",
   tee: "t-shirts",
-  hoodie: "hoodies",
+  "t shirts": "t-shirts",
+  "t-shirts": "t-shirts",
   hoodies: "hoodies",
-  sweat: "sweats",
-  sweats: "sweats",
+  hoodie: "hoodies",
+  "hoodies zippes": "hoodie-zip",
+  "hoodie zippé": "hoodie-zip",
+  "hoodie zippe": "hoodie-zip",
+  crewnecks: "sweats",
+  crewneck: "sweats",
+  jerseys: "jersey",
+  "crop tops": "crop-top",
+  "crop top": "crop-top",
+  pants: "pants",
+  pantalon: "pants",
   caps: "caps",
   cap: "caps",
   jersey: "jersey",
-  "hoodie zippe": "hoodie-zip",
+  sweat: "sweats",
+  sweats: "sweats",
   "hoodie-zip": "hoodie-zip",
   zip: "hoodie-zip",
-  pants: "pants",
-  "crop top": "crop-top",
   "crop-top": "crop-top",
 };
 
@@ -53,22 +60,34 @@ export function normalizeCatalogCategory(value: unknown): CatalogCategory | null
 export function parseCatalogFilter(value: string | null | undefined): CatalogFilter {
   if (!value) return "all";
   const key = slugKey(value);
-  if (key === "all" || key === "tout") return "all";
+  if (key === "all" || key === "tout" || key === "collection" || key === "custom") return "all";
   return normalizeCatalogCategory(value) ?? "all";
 }
 
 export const CATALOG_FILTERS: readonly CatalogFilter[] = ["all", ...CATALOG_CATEGORIES];
 
+/** Onglet menu n°10 — ouvre le configurateur (pas un filtre produit). */
+export const CATALOG_MENU_TAB_CUSTOM = "custom" as const;
+
+export const CATALOG_MENU_TABS = [...CATALOG_FILTERS, CATALOG_MENU_TAB_CUSTOM] as const;
+
+export type CatalogMenuTab = (typeof CATALOG_MENU_TABS)[number];
+
+export function catalogMenuTabLabel(tab: string): string {
+  if (tab === CATALOG_MENU_TAB_CUSTOM) return "Custom";
+  return CATALOG_FILTER_LABEL[parseCatalogFilter(tab)];
+}
+
 export const CATALOG_FILTER_LABEL: Record<CatalogFilter, string> = {
-  all: "Tout",
+  all: "Collection",
+  hoodies: "Hoodies",
+  "hoodie-zip": "Hoodies zippés",
+  sweats: "Crewnecks",
   "t-shirts": "T-shirts",
-  hoodies: "Hoodie",
-  sweats: "Sweats",
-  caps: "Caps",
-  jersey: "Jersey",
-  "hoodie-zip": "Zip",
+  jersey: "Jerseys",
   pants: "Pants",
-  "crop-top": "Crop Top",
+  "crop-top": "Crop tops",
+  caps: "Caps",
 };
 
 export function filterByCategory<T extends { category: string }>(

@@ -1,17 +1,21 @@
 import {
+  CATALOG_CATEGORIES,
+  CATALOG_FILTER_LABEL,
   filterByCategory,
   normalizeCatalogCategory,
+  type CatalogCategory,
   type CatalogFilter,
 } from "@/lib/catalog-category";
+import { sortCatalogProducts } from "@/lib/catalog-sort";
 import {
   DINGRY_JERSEY_PRODUCT_IDS,
   DINGRY_SWEAT_PRODUCT_IDS,
   DINGRY_TEE_PRODUCT_IDS,
 } from "@/lib/dingry-product-media";
-import type { ProductCategory } from "@/lib/admin/types";
+import { normalizeProductCategory, type ProductCategory } from "@/lib/admin/types";
 import type { ShopProduct } from "@/lib/catalog";
 
-export { filterByCategory, parseCatalogFilter, CATALOG_FILTERS, CATALOG_FILTER_LABEL } from "@/lib/catalog-category";
+export { filterByCategory, parseCatalogFilter, CATALOG_FILTERS, CATALOG_FILTER_LABEL, CATALOG_MENU_TAB_CUSTOM, CATALOG_MENU_TABS, catalogMenuTabLabel } from "@/lib/catalog-category";
 export type { CatalogCategory, CatalogFilter } from "@/lib/catalog-category";
 
 /** Catégories affichées sur une fiche produit boutique. */
@@ -27,25 +31,29 @@ export type ShopCategory =
 
 export const SHOP_TEE_CATEGORY = "T-shirts" satisfies ShopCategory;
 
-/** Onglets catégorie (sans « Tout ») — une entrée = un filtre boutique. */
-export const SHOP_CATEGORY_TABS = [
-  "T-shirts",
-  "Hoodie",
-  "Caps",
-  "Sweats",
-  "Hoodie zippé",
-  "Pants",
-  "Jersey",
-  "Crop Top",
-] as const satisfies readonly ShopCategory[];
+/** Onglets catégorie (sans « Tout ») — même ordre que le menu catalogue. */
+const SHOP_CATEGORY_BY_MENU_SLUG: Record<CatalogCategory, ShopCategory> = {
+  hoodies: "Hoodie",
+  "hoodie-zip": "Hoodie zippé",
+  sweats: "Sweats",
+  "t-shirts": SHOP_TEE_CATEGORY,
+  jersey: "Jersey",
+  pants: "Pants",
+  "crop-top": "Crop Top",
+  caps: "Caps",
+};
+
+export const SHOP_CATEGORY_TABS = CATALOG_CATEGORIES.map(
+  (slug) => SHOP_CATEGORY_BY_MENU_SLUG[slug],
+) as readonly ShopCategory[];
 
 /** Barre catalogue : « Tout » + chaque catégorie ci-dessus. */
-export const SHOP_CATALOG_TABS = ["Tout", ...SHOP_CATEGORY_TABS] as const;
+export const SHOP_CATALOG_TABS = ["Collection", ...SHOP_CATEGORY_TABS] as const;
 
 export type ShopCatalogTab = (typeof SHOP_CATALOG_TABS)[number];
 
 /** Retirés boutique (doublon Collection 05 — même photo que 09). */
-export const DINGRY_RETIRED_PRODUCT_IDS = new Set([15, 16]);
+export const DINGRY_RETIRED_PRODUCT_IDS = new Set([12, 13, 14, 15, 16]);
 
 export function isActiveShopProduct(product: { id: number }): boolean {
   return !DINGRY_RETIRED_PRODUCT_IDS.has(product.id);
@@ -56,7 +64,11 @@ export function shopCatalogTabLabel(tab: ShopCatalogTab): string {
 }
 
 export function isShopTeeCategory(category: string): boolean {
-  return category === "Tee" || category === SHOP_TEE_CATEGORY;
+  return (
+    category === "Tee" ||
+    category === "T-shirts" ||
+    category === SHOP_TEE_CATEGORY
+  );
 }
 
 export function isShopCategory(category: string): category is ShopCategory {
@@ -68,20 +80,17 @@ export function resolveShopCategory(productId: number, category: string): ShopCa
   if (DINGRY_SWEAT_PRODUCT_IDS.has(productId)) return "Sweats";
   if (DINGRY_TEE_PRODUCT_IDS.has(productId)) return SHOP_TEE_CATEGORY;
   if (DINGRY_JERSEY_PRODUCT_IDS.has(productId)) return "Jersey";
-  if (category === "Tee") return SHOP_TEE_CATEGORY;
+  if (category === "Tee" || category === "T-shirts") return SHOP_TEE_CATEGORY;
+  if (category === "Hoodies") return "Hoodie";
+  if (category === "Hoodies zippés") return "Hoodie zippé";
+  if (category === "Crewnecks") return "Sweats";
+  if (category === "Jerseys") return "Jersey";
+  if (category === "Crop tops") return "Crop Top";
   return category;
 }
 
 export function normalizeAdminCategory(value: string): ProductCategory {
-  const categories: ProductCategory[] = [
-    "Tee",
-    "Hoodie",
-    "Hoodie zippé",
-    "Sweats",
-    "Caps",
-    "Jersey",
-  ];
-  return categories.includes(value as ProductCategory) ? (value as ProductCategory) : "Tee";
+  return normalizeProductCategory(value);
 }
 
 /** Cartes grille : hors doublons retirés et hors vues verso. La catégorie ne filtre pas ici. */
@@ -97,6 +106,25 @@ export function filterCatalogProducts(
   tab: CatalogFilter,
 ): ShopProduct[] {
   return toCatalogCards(filterByCategory(products, tab));
+}
+
+export type CatalogMenuSection = {
+  category: CatalogCategory;
+  label: string;
+  products: ShopProduct[];
+};
+
+/** Vue « Collection » : blocs produits dans l’ordre du menu (Hoodies → Caps). */
+export function buildCatalogMenuSections(products: readonly ShopProduct[]): CatalogMenuSection[] {
+  const cards = toCatalogCards(products);
+  return CATALOG_CATEGORIES.map((category) => ({
+    category,
+    label: CATALOG_FILTER_LABEL[category],
+    products: sortCatalogProducts(
+      cards.filter((product) => normalizeCatalogCategory(product.category) === category),
+      "featured",
+    ),
+  })).filter((section) => section.products.length > 0);
 }
 
 /** Fiche produit avec bascule recto / verso (hoodies, sweats ; tees via meta dédiée). */

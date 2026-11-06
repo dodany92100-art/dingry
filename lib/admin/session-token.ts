@@ -13,8 +13,9 @@ export function sessionTtlSeconds(): number {
   return SESSION_TTL_SECONDS;
 }
 
+/** Déploiement prod Vercel uniquement (preview ≠ prod pour secrets admin). */
 export function isProductionDeploy(): boolean {
-  return process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+  return process.env.VERCEL_ENV === "production";
 }
 
 function validSessionSecret(raw: string, enforceMinLength: boolean): string {

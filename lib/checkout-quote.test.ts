@@ -20,14 +20,15 @@ describe("quoteCheckout — prix CRM", () => {
       version: 4,
       products: SEEDED_PRODUCTS.map((p) => ({ ...p })),
       orders: [],
+      lookbook: [],
     });
   });
 
   it("utilise le prix admin pour un id seed (39 crewneck)", async () => {
     const seed = SEEDED_PRODUCTS.find((p) => p.id === "39");
-    expect(seed?.price).toBe(169);
+    expect(seed?.price).toBe(50);
     const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
-    expect(quote?.totalCents).toBe(16900);
+    expect(quote?.totalCents).toBe(5000);
   });
 
   it("prend en compte une modification CRM simulée", async () => {
@@ -37,6 +38,7 @@ describe("quoteCheckout — prix CRM", () => {
         p.id === "39" ? { ...p, price: 179, sku: "DINGRY-S03-BIS" } : { ...p },
       ),
       orders: [],
+      lookbook: [],
     });
     const quote = await quoteCheckout([{ productId: 39, size: "L", qty: 2 }]);
     expect(quote?.totalCents).toBe(35800);
@@ -47,10 +49,11 @@ describe("quoteCheckout — prix CRM", () => {
       version: 4,
       products: [],
       orders: [],
+      lookbook: [],
     });
-    expect(VITRINE_ONLY[8]?.price).toBe(189);
+    expect(VITRINE_ONLY[8]?.price).toBe(80);
     const quote = await quoteCheckout([{ productId: 8, size: "M", qty: 1 }]);
-    expect(quote?.totalCents).toBe(18900);
+    expect(quote?.totalCents).toBe(8000);
   });
 
   it("facture le prix CRM du recto pour un verso sans fiche (id 8 → 6)", async () => {
@@ -60,6 +63,7 @@ describe("quoteCheckout — prix CRM", () => {
         p.id === "6" ? { ...p, price: 205 } : { ...p },
       ),
       orders: [],
+      lookbook: [],
     });
     const quote = await quoteCheckout([{ productId: 8, size: "M", qty: 1 }]);
     expect(quote?.totalCents).toBe(20500);
@@ -79,6 +83,7 @@ describe("alignement CRM / vitrine fallback", () => {
       version: 4,
       products: [],
       orders: [],
+      lookbook: [],
     });
     for (const id of Object.keys(VITRINE_ONLY).map(Number)) {
       const quote = await quoteCheckout([{ productId: id, size: "M", qty: 1 }]);

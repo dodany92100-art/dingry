@@ -31,8 +31,15 @@ Une page pour les incidents entre le lancement et le quotidien. **Pas de donnée
 
 1. Vérifier Upstash (quota, URL/token Vercel).
 2. **Ne pas** seed prod depuis preview. `npm run seed-stock` uniquement sur l’env cible après contrôle catalogue Blob.
-3. Cron : `POST /api/cron/stock-reconcile` avec `Authorization: Bearer {CRON_SECRET}` (≥ 32 car.).
-4. Commandes `stockPending` : laisser le cron rejouer ; si rupture → statut **À vérifier** + motif `stock` dans admin.
+3. **Smoke B4 (post-seed)** — même Redis / même déploiement :
+   ```bash
+   npm run check:prod-env          # vars locales = export Vercel cible
+   npm run seed-stock              # confirmer « oui » · clés dingry:stock:*
+   SMOKE_BASE_URL=https://… npm run smoke:quote
+   ```
+   Échec **503** au quote ⇒ stock non initialisé ou Redis autre base que le site.
+4. Cron : `POST /api/cron/stock-reconcile` avec `Authorization: Bearer {CRON_SECRET}` (≥ 32 car.).
+5. Commandes `stockPending` : laisser le cron rejouer ; si rupture → statut **À vérifier** + motif `stock` dans admin.
 
 ---
 
@@ -94,13 +101,13 @@ Une page pour les incidents entre le lancement et le quotidien. **Pas de donnée
 
 ---
 
-## Store Blob `store.json` (passage public → private)
+## Store Blob `store.json` (accès public — aligné console Vercel)
 
-Avant le premier déploiement avec `access: "private"` sur `dingry/admin/store.json` :
+Le code utilise **`get` / `put` avec `access: "public"`** pour `dingry/admin/store.json` (et idem pour `dingry/admin/backup-codes.json`) : le store Vercel Blob est configuré en **Public**.
 
-1. Dashboard Vercel Blob → vérifier l’accès du fichier existant.
-2. S’il est encore **public**, le lire (URL ou `get` public), sauvegarder une copie locale, puis le réécrire avec **`put(..., { access: "private" })`** (même pathname, pas de suffixe aléatoire).
-3. Preview : une commande test doit rester visible dans `/admin` après redéploiement ; un `get` private qui renvoie `missing` alors que le blob existe en public provoquerait un **re-seed** et une perte d’historique.
+Si un ancien déploiement utilisait encore `access: "private"` alors que le blob est public côté console, les appels peuvent échouer ou se comporter de façon incohérente : aligner le code (public) et redéployer.
+
+**Sécurité :** un pathname connu peut être lisible si l’URL fuit ; l’admin reste protégé par session / TOTP, pas par la confidentialité du JSON sur Blob.
 
 ---
 
@@ -122,7 +129,7 @@ Avant le premier déploiement avec `access: "private"` sur `dingry/admin/store.j
 
 **Rollback de bascule :** repasser `PAYPAL_ENV=sandbox`, webhook sandbox sur preview, variables PayPal live retirées ou isolées ; vérifier qu’aucun checkout live n’est possible ; Redis prod non mélangé avec preview.
 
-Nominal checkout · Redis coupé · rejeu webhook (idempotence seulement) · montant modifié (doit échouer) · cron stock · adresse vide → À vérifier · test Lua Upstash test · **`npm run check:prod-env` avec les variables exportées depuis Vercel Production** (le script lit `.env` local — le dashboard prod reste la source de vérité).
+Nominal checkout · Redis coupé · rejeu webhook (idempotence seulement) · montant modifié (doit échouer) · cron stock · adresse vide → À vérifier · test Lua Upstash test · **`npm run check:prod-env` avec les variables exportées depuis Vercel Production** (le script lit `.env` local — le dashboard prod reste la source de vérité) · **`npm run seed-stock` puis `SMOKE_BASE_URL=… npm run smoke:quote`** sur l’URL déployée.
 
 ### Test webhook sandbox — caractères non ASCII (**bloquant J-6**)
 
