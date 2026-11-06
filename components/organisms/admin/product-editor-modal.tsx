@@ -32,8 +32,10 @@ import { EMPTY_PRODUCT_STORY, type ProductStoryFormFields } from "@/lib/admin/pr
 import { prepareProductImage } from "@/lib/client/prepare-product-image";
 import { buildSmartCrmHints, buildSmartDescriptionDraft } from "@/lib/admin/smart-crm";
 import {
+  buildSmartParseRecap,
   parseSmartProductText,
   summarizeSmartParseFilled,
+  type MakerSemanticBlock,
 } from "@/lib/admin/smart-product-text-parser";
 import { DEFAULT_SHOP_PRODUCT_STOCK } from "@/lib/shop-data";
 import type { SaveProductResult } from "./hooks/use-admin-products";
@@ -58,6 +60,17 @@ function parseWaistDeclinationsInput(raw: string): string[] {
   }
   return next;
 }
+
+type FormSuccessState =
+  | { kind: "plain"; message: string; tone: "draft" | "live" | "neutral" }
+  | {
+      kind: "smart-parse";
+      tone: "neutral";
+      title: string;
+      blocks: MakerSemanticBlock[];
+      analysisLine: string;
+      filledSummary: string;
+    };
 
 function parseColorDeclinationsInput(raw: string): string[] {
   const seen = new Set<string>();
@@ -211,8 +224,7 @@ export function ProductEditorModal({
   const [convertingImage, setConvertingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-  const [formSuccess, setFormSuccess] = useState("");
-  const [formSuccessTone, setFormSuccessTone] = useState<"draft" | "live" | "neutral">("neutral");
+  const [formSuccess, setFormSuccess] = useState<FormSuccessState | null>(null);
   const [customPantWaist, setCustomPantWaist] = useState("");
   const [smartPasteOpen, setSmartPasteOpen] = useState(false);
   const [smartPasteText, setSmartPasteText] = useState("");
@@ -283,8 +295,20 @@ export function ProductEditorModal({
   }
 
   function showFormSuccess(message: string, tone: "draft" | "live" | "neutral") {
-    setFormSuccess(message);
-    setFormSuccessTone(tone);
+    setFormSuccess({ kind: "plain", message, tone });
+  }
+
+  function showSmartPasteSuccess(parsed: ReturnType<typeof parseSmartProductText>) {
+    const diag = parsed.diagnostics;
+    const analysisLine = `Analyse Maker · ${diag.blockCount} bloc(s) sémantique(s), ${diag.footnoteLinesSkipped} ligne(s) * exclue(s) du scan des tailles.`;
+    setFormSuccess({
+      kind: "smart-parse",
+      tone: "neutral",
+      title: "Smart collage · champs appliqués",
+      blocks: parsed.semanticBlocks,
+      analysisLine,
+      filledSummary: summarizeSmartParseFilled(parsed.filled),
+    });
   }
 
   function changeCategory(next: ProductCategory) {
@@ -330,9 +354,7 @@ export function ProductEditorModal({
 
   async function acceptImage(selected: File | null) {
     setFormError("");
-    setFormSuccess("");
-    setFormSuccessTone("neutral");
-    setFormSuccessTone("neutral");
+    setFormSuccess(null);
     if (!selected) {
       setImageFile(null);
       setImageCleared(true);
@@ -387,8 +409,7 @@ export function ProductEditorModal({
 
   async function saveProductTab(publishStatus: ProductPublishStatus) {
     setFormError("");
-    setFormSuccess("");
-    setFormSuccessTone("neutral");
+    setFormSuccess(null);
     const validationError = validateProductFields(publishStatus);
     if (validationError) {
       setFormError(validationError);
@@ -425,8 +446,7 @@ export function ProductEditorModal({
 
   async function saveStoryTab(publishStatus: ProductPublishStatus) {
     setFormError("");
-    setFormSuccess("");
-    setFormSuccessTone("neutral");
+    setFormSuccess(null);
 
     if (!editingId) {
       const validationError = validateProductFields(publishStatus);
@@ -556,8 +576,7 @@ export function ProductEditorModal({
 
   function applySmartDescription() {
     setFormError("");
-    setFormSuccess("");
-    setFormSuccessTone("neutral");
+    setFormSuccess(null);
     const draft = buildSmartDescriptionDraft(form.name, form.category, form.variant);
     patch({ description: draft });
     showFormSuccess("Smart Description · texte ajouté à la fiche boutique.", "neutral");
@@ -566,11 +585,10 @@ export function ProductEditorModal({
 
   function applySmartPaste() {
     setFormError("");
-    setFormSuccess("");
-    setFormSuccessTone("neutral");
+    setFormSuccess(null);
     const parsed = parseSmartProductText(smartPasteText, form.category);
     if (parsed.filled.length === 0) {
-      showFormSuccess(summarizeSmartParseFilled(parsed.filled), "neutral");
+      showFormSuccess(buildSmartParseRecap(parsed), "neutral");
       return;
     }
     setForm((prev) => {
@@ -614,7 +632,7 @@ export function ProductEditorModal({
     if (parsed.variantColor !== undefined && !isPantsCategory(appliedCategory)) {
       setColorListDraft(colorDeclinationsLabel([parsed.variantColor]));
     }
-    showFormSuccess(summarizeSmartParseFilled(parsed.filled), "neutral");
+    showSmartPasteSuccess(parsed);
   }
 
   const publishStatus = current?.publishStatus ?? "draft";
@@ -698,17 +716,41 @@ export function ProductEditorModal({
 
           {formError ? <p className="mt-3 text-sm text-red-400">{formError}</p> : null}
           {formSuccess ? (
-            <p
-              className={`mt-3 rounded-sm border px-3 py-2 text-sm ${
-                formSuccessTone === "live"
-                  ? "border-emerald-500/40 bg-emerald-950/35 text-emerald-200"
-                  : formSuccessTone === "draft"
-                    ? "border-yellow-500/45 bg-yellow-950/35 text-yellow-100"
-                    : "border-zinc-700 bg-zinc-900/50 text-white/70"
-              }`}
-            >
-              {formSuccess}
-            </p>
+            formSuccess.kind === "smart-parse" ? (
+              <div
+                role="status"
+                className="mt-3 rounded-sm border border-zinc-600 bg-zinc-900/55 px-3 py-2.5 text-sm text-white/75 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                  {formSuccess.title}
+                </p>
+                <ul className="mt-2 list-inside list-disc space-y-1 text-[13px] leading-snug text-white/85">
+                  {formSuccess.blocks.map((b) => (
+                    <li key={b.key}>
+                      <span className="font-medium text-zinc-300">{b.label}</span>
+                      {" · "}
+                      <span className="text-white/80">{b.value}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 border-t border-zinc-700/80 pt-2 text-[11px] leading-relaxed text-zinc-500">
+                  {formSuccess.analysisLine}
+                </p>
+                <p className="mt-1 text-[12px] text-zinc-400">{formSuccess.filledSummary}</p>
+              </div>
+            ) : (
+              <p
+                className={`mt-3 rounded-sm border px-3 py-2 text-sm ${
+                  formSuccess.tone === "live"
+                    ? "border-emerald-500/40 bg-emerald-950/35 text-emerald-200"
+                    : formSuccess.tone === "draft"
+                      ? "border-yellow-500/45 bg-yellow-950/35 text-yellow-100"
+                      : "border-zinc-700 bg-zinc-900/50 text-white/70"
+                }`}
+              >
+                {formSuccess.message}
+              </p>
+            )
           ) : null}
 
           <div className="mt-5 grid gap-6 lg:grid-cols-2 lg:gap-8">

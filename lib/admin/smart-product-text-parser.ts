@@ -14,7 +14,6 @@ export type SmartParseFieldId =
   | "sizes"
   | "variant";
 
-/** Libellés pour retour visuel « champs remplis ». */
 export const SMART_PARSE_FIELD_LABELS: Record<SmartParseFieldId, string> = {
   category: "Catégorie",
   name: "Nom / Titre",
@@ -28,7 +27,6 @@ export const SMART_PARSE_FIELD_LABELS: Record<SmartParseFieldId, string> = {
 };
 
 export type SmartProductParseResult = {
-  /** Catégorie déduite du texte (sinon le fallback formulaire est utilisé). */
   detectedCategory?: ProductCategory;
   name?: string;
   description?: string;
@@ -37,23 +35,48 @@ export type SmartProductParseResult = {
   limitedEdition?: string;
   price?: string;
   sizes?: ProductSize[];
-  /** Coloris CRM (preset DINGRY) si reconnu. */
   variantColor?: string;
   filled: SmartParseFieldId[];
 };
 
-/** Pas de \b après € (symbole non « mot » JS → échec avant fin de ligne). */
-const RE_PRICE = /\b(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€|EUR|euros?)(?=\s|$|[.,;:!?])/i;
-const RE_MATERIAL_LINE =
-  /%|g\/m²|g\/m2|g\/m\?|gsm|grammage|mg\/m²|mg\/m2|kg|oz\/|coton|polyester|polyamide|laine|viscose|élasthanne|elasthanne|lin|soie|nylon|acrylique|fleece|molleton/i;
-const RE_FABRICATION_LINE = /fabriqué|made\s+in|confectionn|importé|produit\s+en|manufacturé|cousu/i;
-const RE_LIMITED_LINE = /édition\s+limitée|limited\s+edition|numérotée|série\s+limitée|exemplaires?\s+limit/i;
-const RE_TITLE_NOISE = /^(?:prix|price|tailles?|sizes?)\s*[:\-]/i;
+export type SmartParseDiagnostics = {
+  blockCount: number;
+  footnoteLinesSkipped: number;
+};
 
-/**
- * Ordre décroissant (évite que « XL » matche dans « 2XL »).
- * XXL / XXXL (variantes fournisseur) → 2XL / 3XL grille CRM.
- */
+/** Un « slot » Maker pour récap UI (ordre d’affichage fixe). */
+export type MakerSemanticBlock = {
+  key:
+    | "category"
+    | "title"
+    | "color"
+    | "sizes"
+    | "price"
+    | "materials"
+    | "description"
+    | "fabrication"
+    | "limitedEdition";
+  label: string;
+  value: string;
+};
+
+export type SmartProductParseOutput = SmartProductParseResult & {
+  diagnostics: SmartParseDiagnostics;
+  /** Blocs sémantiques remplis (récap détaillé modale). */
+  semanticBlocks: MakerSemanticBlock[];
+};
+
+const RE_PRICE =
+  /(?:^|[\s:()·|])(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€|EUR|euros?)(?=[\s.,;:!?)·|]|$)/i;
+const RE_MATERIAL_SIGNAL =
+  /%|g\/m²|g\/m2|g\/m\?|gsm|grammage|mg\/m²|mg\/m2|\b(coton|polyester|polyamide|laine|viscose|élasthanne|elasthanne|lin|soie|nylon|acrylique|fleece|molleton)\b/i;
+const RE_FABRICATION_LINE =
+  /fabriqué|made\s+in|confectionn|importé|produit\s+en|manufacturé|cousu/i;
+const RE_LIMITED_LINE =
+  /édition\s+limitée|limited\s+edition|numérotée|série\s+limitée|exemplaires?\s+limit/i;
+const RE_SECTION_LABEL =
+  /^\s*(matière|matériaux|composition|grammage|densité|tailles?|sizes?|couleur|coloris|colour|prix|price|fabriqué|origine)\s*[:\-.]?\s*/i;
+
 const LETTER_SIZE_SCAN: readonly { pattern: string; size: ProductSize }[] = [
   { pattern: "5XL", size: "5XL" },
   { pattern: "4XL", size: "4XL" },
@@ -70,70 +93,120 @@ const LETTER_SIZE_SCAN: readonly { pattern: string; size: ProductSize }[] = [
   { pattern: "TU", size: "TU" },
 ];
 
-type CategoryRule = {
-  category: ProductCategory;
-  /** Testé sur les N premiers caractères en majuscules. */
-  test: (headUpper: string) => boolean;
-};
+type CategoryLexicon = { category: ProductCategory; patterns: RegExp[]; weight: number };
 
-const CATEGORY_RULES: CategoryRule[] = [
+const CATEGORY_LEXICON: CategoryLexicon[] = [
   {
     category: "Hoodies zippés",
-    test: (h) =>
-      /\b(ZIP\s*HOO?DIE|HOO?DIE\s*ZIP|SWEAT\s*ZIP|PULL\s*ZIP)\b/.test(h) ||
-      (h.includes("HOODIE") && h.includes("ZIP")) ||
-      (h.includes("SWEAT") && h.includes("ZIPP")),
+    weight: 3,
+    patterns: [/\bhoodie\s*zipp/i, /\bzipp[\sée]*hoodie/i, /\bsweat\s*zip/i, /\bpull\s*zip/i],
   },
-  { category: "Hoodies", test: (h) => /\b(HOO?DIE|HOO?DIS|PULL\s*CAPUCHE|SWEAT\s*SHIRT)\b/.test(h) },
-  { category: "Crewnecks", test: (h) => /\b(CREW\s*NECK|CREWNECK|SWEAT\s*COL\s*ROND)\b/.test(h) },
-  { category: "T-shirts", test: (h) => /\b(T[\s\-]?SHIRT|TEE[\s\-]?SHIRT|\bTEE\b|TSHIRT)\b/.test(h) },
-  { category: "Jerseys", test: (h) => /\b(JERSEY|MAILLOT)\b/.test(h) },
+  {
+    category: "Hoodies",
+    weight: 2,
+    patterns: [/\bhoodies?\b/i, /\bhoodis\b/i, /\bsweat\s*shirt\b/i, /\bpull\s*capuche\b/i, /\bsweat\s*capuche\b/i],
+  },
+  {
+    category: "T-shirts",
+    weight: 2,
+    patterns: [/\bt[\s\-]?shirts?\b/i, /\btshirts?\b/i, /\btee[\s\-]?shirts?\b/i, /\btee\b/i],
+  },
   {
     category: "Pants",
-    test: (h) =>
-      /\b(PANTS?\b|JEAN|PANTALON|CARGO|CHINO|JOGGER|SWEAT\s*PANT)/.test(h) ||
-      /\bPANT\s/.test(h),
+    weight: 2,
+    patterns: [/\bpants?\b/i, /\bpantalons?\b/i, /\bcargo\b/i, /\bchinos?\b/i, /\bjoggers?\b/i, /\bjeans?\b/i],
   },
-  { category: "Crop tops", test: (h) => /\bCROP\s*(TOP|TEE|HOODIE)?\b/.test(h) },
   {
     category: "Caps",
-    test: (h) => /\b(CAP|CASQUETTE|SNAPBACK|TRUCKER|BONNET)\b/.test(h),
+    weight: 2,
+    patterns: [/\bcaps?\b/i, /\bcasquettes?\b/i, /\bsnapback\b/i, /\btrucker\b/i],
+  },
+  {
+    category: "Crewnecks",
+    weight: 1,
+    patterns: [/\bcrew\s*necks?\b/i, /\bcrewneck\b/i, /\bsweat\s*col\s*rond\b/i],
+  },
+  {
+    category: "Jerseys",
+    weight: 1,
+    patterns: [/\bjerseys?\b/i, /\bmaillots?\b/i],
+  },
+  {
+    category: "Crop tops",
+    weight: 1,
+    patterns: [/\bcrop\s*tops?\b/i],
   },
 ];
 
-/**
- * Heuristique sur le début du texte + titre — première règle qui matche.
- */
-export function detectCategoryFromText(raw: string): ProductCategory | undefined {
-  const normalized = normalizePasteText(raw);
-  if (!normalized) return undefined;
-  const lines = normalized
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  const firstLine = lines[0] ?? "";
-  const head = `${firstLine}\n${normalized.slice(0, 600)}`.toUpperCase();
-  for (const rule of CATEGORY_RULES) {
-    if (rule.test(head)) return rule.category;
-  }
-  return undefined;
+const PURE_CATEGORY_LINE =
+  /^(HOODIES?|HOODIE\s*ZIPP[ÉE]?S?|T[\s\-]?SHIRTS?|TEES?|PANTS?|PANTALONS?|CARGO|CAPS?|CASQUETTES?|JERSEYS?|CREW(?:\s*NECKS?)?|SWEATS?|CREWNECKS?)\s*[.\-–—:|]?\s*$/i;
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** Corrige encodage (g/m? → g/m²), espaces insécables. */
-function normalizePasteText(raw: string): string {
+export function normalizePasteText(raw: string): string {
   let t = raw.replace(/\u00a0/g, " ").replace(/\r\n/g, "\n");
-  t = t.replace(/g\/m\s*\?/gi, "g/m²");
+  t = t.normalize("NFKC");
+  t = t.replace(/g\s*\/\s*m\s*\?/gi, "g/m²");
+  t = t.replace(/g\s*\/\s*m\s*2\b/gi, "g/m²");
   t = t.replace(/m\?²/gi, "m²");
-  t = t.replace(/m2\b/gi, "m²");
+  t = t.replace(/\bm2\b/gi, "m²");
+  t = t.replace(/[^\S\r\n]+/g, " ");
   return t.trim();
 }
 
-/** Notes de bas de page / avertissements (* … 4XL-5XL …). */
-function stripLeadingAsteriskFootnotes(text: string): string {
+function linesFromText(text: string): string[] {
   return text
-    .split("\n")
-    .filter((line) => !/^\s*\*/.test(line))
-    .join("\n");
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
+
+function isFootnoteLine(line: string): boolean {
+  return /^\s*\*/.test(line);
+}
+
+function stripFootnoteLines(text: string): { body: string; skipped: number } {
+  const lines = text.split(/\n/);
+  let skipped = 0;
+  const kept: string[] = [];
+  for (const line of lines) {
+    if (isFootnoteLine(line)) {
+      skipped += 1;
+      continue;
+    }
+    kept.push(line);
+  }
+  return { body: kept.join("\n"), skipped };
+}
+
+function scoreCategories(textSample: string): ProductCategory | undefined {
+  const upper = textSample.toUpperCase();
+  let best: ProductCategory | undefined;
+  let bestScore = 0;
+  for (const { category, patterns, weight } of CATEGORY_LEXICON) {
+    let s = 0;
+    for (const re of patterns) {
+      if (re.test(upper)) s += weight;
+    }
+    if (s > bestScore) {
+      bestScore = s;
+      best = category;
+    }
+  }
+  return bestScore > 0 ? best : undefined;
+}
+
+export function detectCategoryFromText(raw: string): ProductCategory | undefined {
+  const normalized = normalizePasteText(raw);
+  if (!normalized) return undefined;
+  const head = `${linesFromText(normalized)[0] ?? ""}\n${normalized.slice(0, 800)}`;
+  return scoreCategories(head);
+}
+
+function isPureCategoryLine(line: string): boolean {
+  return PURE_CATEGORY_LINE.test(line.trim());
 }
 
 function formatPriceEuro(raw: string): string | undefined {
@@ -149,122 +222,314 @@ export function extractEuroPrice(text: string): string | undefined {
   return formatPriceEuro(m[1]);
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function extractBestPrice(text: string): string | undefined {
+  for (const m of text.matchAll(new RegExp(RE_PRICE.source, "gi"))) {
+    const g = m[1];
+    if (g) {
+      const v = formatPriceEuro(g);
+      if (v !== undefined) return v;
+    }
+  }
+  return undefined;
+}
+
+const COLOR_RULES: readonly { re: RegExp; variant: string; score: number }[] = [
+  { re: /\bheather\s+grey\b/i, variant: "GRIS CHINÉ", score: 50 },
+  { re: /\bgris\s+chiné\b/i, variant: "GRIS CHINÉ", score: 48 },
+  { re: /\bgris\s+chine\b/i, variant: "GRIS CHINÉ", score: 48 },
+  { re: /\broyal\s+blue\b/i, variant: "ROYAL BLUE", score: 45 },
+  { re: /\bbleu\s+roi\b/i, variant: "BLEU ROI", score: 45 },
+  { re: /\bking\s+blue\b/i, variant: "KING BLUE", score: 45 },
+  { re: /\bjaune\s+fluo\b/i, variant: "JAUNE FLUO", score: 45 },
+  { re: /\bnoir\b/i, variant: "NOIR", score: 20 },
+  { re: /\bblack\b/i, variant: "BLACK", score: 20 },
+  { re: /\bblanc\b/i, variant: "BLANC", score: 20 },
+  { re: /\bwhite\b/i, variant: "WHITE", score: 20 },
+  { re: /\bvert\b/i, variant: "VERT", score: 18 },
+  { re: /\brouge\b/i, variant: "ROUGE", score: 18 },
+  { re: /\bgris\b/i, variant: "GRIS", score: 15 },
+  { re: /\brose\b/i, variant: "PINK", score: 18 },
+  { re: /\bviolet\b/i, variant: "PURPLE", score: 18 },
+  { re: /\bchocolat\b/i, variant: "CHOCOLAT", score: 20 },
+  { re: /\bzenith\b/i, variant: "ZENITH", score: 22 },
+];
+
+function mapColorToken(raw: string): string | undefined {
+  const t = raw.trim();
+  if (!t) return undefined;
+  const upper = t.toUpperCase();
+  for (const preset of ADMIN_COLOR_VARIANTS) {
+    if (upper === preset.toUpperCase()) return preset;
+  }
+  const lut: Record<string, string> = {
+    NOIR: "NOIR",
+    BLACK: "BLACK",
+    BLANC: "BLANC",
+    WHITE: "WHITE",
+    GRIS: "GRIS",
+    GREY: "GRIS",
+    GRAY: "GRIS",
+    VERT: "VERT",
+    GREEN: "VERT",
+    ROUGE: "ROUGE",
+    RED: "ROUGE",
+    BLEU: "ROYAL BLUE",
+    BLUE: "ROYAL BLUE",
+  };
+  return lut[upper];
+}
+
+function extractVariantColor(fullText: string): string | undefined {
+  let best: { variant: string; score: number } | undefined;
+  const bump = (variant: string | undefined, score: number) => {
+    if (!variant) return;
+    if (!best || score > best.score) best = { variant, score };
+  };
+
+  for (const row of COLOR_RULES) {
+    if (row.re.test(fullText)) bump(row.variant, row.score);
+  }
+
+  for (const m of fullText.matchAll(/\bcouleur\s*[:\-]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-]{1,36})/gi)) {
+    bump(mapColorToken(m[1] ?? ""), 42);
+  }
+  for (const m of fullText.matchAll(/\*+\s*COULEUR\s+([A-Z0-9][A-Z0-9\s\-]{1,24})/gi)) {
+    bump(mapColorToken(m[1] ?? ""), 55);
+  }
+  /** Notes type `*4XL-5XL COULEUR NOIR` — la ligne est exclue des tailles mais la couleur compte. */
+  for (const m of fullText.matchAll(/\*[^\n]*\bCOULEUR\s+([A-ZÀ-ÿ][A-ZÀ-ÿa-z\s\-]{1,28})/gi)) {
+    bump(mapColorToken(m[1] ?? ""), 58);
+  }
+
+  const scan = fullText.slice(0, 2500);
+  for (const preset of ADMIN_COLOR_VARIANTS) {
+    const re = new RegExp(`\\b${escapeRegExp(preset)}\\b`, "i");
+    if (re.test(scan)) bump(preset, 28 + Math.min(12, preset.length));
+  }
+
+  return best?.variant;
+}
+
+const SIZE_ORDER: readonly ProductSize[] = [
+  "XXS",
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "3XL",
+  "4XL",
+  "5XL",
+  "TU",
+];
+
+function sortSizes(found: Iterable<ProductSize>): ProductSize[] {
+  const idx = new Map<ProductSize, number>();
+  SIZE_ORDER.forEach((s, i) => idx.set(s, i));
+  return [...new Set(found)].sort((a, b) => (idx.get(a) ?? 99) - (idx.get(b) ?? 99));
 }
 
 /**
- * Tailles texte : ordre canonique, uniquement celles autorisées pour la catégorie.
- * Ignore les lignes commençant par * (notes).
+ * Tailles valides uniquement ; chiffres EU type 40–46 ignorés comme guide taille (ligne tableau).
  */
-function extractLetterSizes(text: string, allowed: readonly ProductSize[]): ProductSize[] {
-  const clean = stripLeadingAsteriskFootnotes(text);
+function extractLetterSizes(textNoFootnotes: string, allowed: readonly ProductSize[]): ProductSize[] {
+  let scan = textNoFootnotes;
+  scan = scan.replace(/\b(?:EU|US|UK)\b\s*[:.]?\s*[\d\s,/–-]{6,}/gi, " ");
+  /** Mensurations « vêtement » isolées (40–50) : jamais des tailles lettres. */
+  scan = scan.replace(/(?:^|[\s,;·|])(?:40|41|42|43|44|45|46|47|48|49|50)\b(?=[\s,;·|)]|$)/gi, " ");
+
   const found = new Set<ProductSize>();
   for (const { pattern, size } of LETTER_SIZE_SCAN) {
     if (!allowed.includes(size)) continue;
     const re = new RegExp(`\\b${escapeRegExp(pattern)}\\b`, "i");
-    if (re.test(clean)) found.add(size);
+    if (re.test(scan)) found.add(size);
   }
-  const natural = [
-    "XXS",
-    "XS",
-    "S",
-    "M",
-    "L",
-    "XL",
-    "2XL",
-    "3XL",
-    "4XL",
-    "5XL",
-    "TU",
-  ] as const satisfies readonly ProductSize[];
-  const idx = new Map<ProductSize, number>();
-  natural.forEach((s, i) => {
-    idx.set(s, i);
-  });
-  return [...found].sort((a, b) => (idx.get(a) ?? 99) - (idx.get(b) ?? 99));
+  return sortSizes(found);
 }
 
-function extractPantWaists(text: string): ProductSize[] {
-  const clean = stripLeadingAsteriskFootnotes(text);
+function extractPantWaists(textNoFootnotes: string): ProductSize[] {
   const seen = new Set<ProductSize>();
-  for (const m of clean.matchAll(/\b(2[8-9]|3[0-9]|4[0-2])\b/g)) {
+  const lines = linesFromText(textNoFootnotes);
+  const body =
+    lines
+      .filter((line) => {
+        const nums = line.match(/\b\d{2}\b/g) ?? [];
+        if (nums.length >= 5) return false;
+        return true;
+      })
+      .join("\n") || textNoFootnotes;
+
+  for (const m of body.matchAll(/\b(2[8-9]|3[0-9]|4[0-2])\b/g)) {
     const w = normalizePantWaistSize(m[1] ?? "");
     if (w) seen.add(w);
   }
   return Array.from(seen).sort((a, b) => Number(a) - Number(b));
 }
 
-const COLOR_SYNONYMS: readonly { re: RegExp; variant: string }[] = [
-  { re: /\bheather\s+grey\b/i, variant: "GRIS CHINÉ" },
-  { re: /\bgris\s+chiné\b/i, variant: "GRIS CHINÉ" },
-  { re: /\bgris\s+chine\b/i, variant: "GRIS CHINÉ" },
-  { re: /\broyal\s+blue\b/i, variant: "ROYAL BLUE" },
-  { re: /\bbleu\s+roi\b/i, variant: "BLEU ROI" },
-  { re: /\bking\s+blue\b/i, variant: "KING BLUE" },
-  { re: /\bjaune\s+fluo\b/i, variant: "JAUNE FLUO" },
-  { re: /\bnoir\b/i, variant: "NOIR" },
-  { re: /\bblack\b/i, variant: "BLACK" },
-  { re: /\bblanc\b/i, variant: "BLANC" },
-  { re: /\bwhite\b/i, variant: "WHITE" },
-  { re: /\bvert\b/i, variant: "VERT" },
-  { re: /\brouge\b/i, variant: "ROUGE" },
-  { re: /\bgris\b/i, variant: "GRIS" },
-  { re: /\brose\b/i, variant: "PINK" },
-  { re: /\bviolet\b/i, variant: "PURPLE" },
-  { re: /\bchocolat\b/i, variant: "CHOCOLAT" },
-  { re: /\bzenith\b/i, variant: "ZENITH" },
-];
+type TaggedSection = {
+  kind: "material" | "size" | "price" | "color" | "fabrication" | "other";
+  body: string;
+};
 
-/**
- * Première couleur reconnue (synonymes + liste preset DINGRY).
- */
-function extractVariantColor(text: string): string | undefined {
-  const head = `${text.slice(0, 1200)}`;
-  for (const { re, variant } of COLOR_SYNONYMS) {
-    if (re.test(head)) return variant;
+function tagSections(lines: readonly string[]): TaggedSection[] {
+  const out: TaggedSection[] = [];
+  let buffer: string[] = [];
+  function flush() {
+    if (buffer.length) {
+      out.push({ kind: "other", body: buffer.join("\n") });
+      buffer = [];
+    }
   }
-  const upper = head.toUpperCase();
-  for (const preset of ADMIN_COLOR_VARIANTS) {
-    const re = new RegExp(`\\b${escapeRegExp(preset)}\\b`, "i");
-    if (re.test(upper)) return preset;
+  for (const line of lines) {
+    const m = line.match(RE_SECTION_LABEL);
+    if (m) {
+      flush();
+      const rest = line.replace(RE_SECTION_LABEL, "").trim();
+      const label = m[1]?.toLowerCase() ?? "";
+      let kind: TaggedSection["kind"] = "other";
+      if (/matière|matériaux|composition|grammage|densité/.test(label)) kind = "material";
+      else if (/taille|size/.test(label)) kind = "size";
+      else if (/prix|price/.test(label)) kind = "price";
+      else if (/couleur|coloris|colour/.test(label)) kind = "color";
+      else if (/fabriqué|origine/.test(label)) kind = "fabrication";
+      out.push({ kind, body: rest });
+    } else {
+      buffer.push(line);
+    }
   }
-  return undefined;
+  flush();
+  return out;
 }
 
 function looksLikeMaterialLine(line: string): boolean {
-  return RE_MATERIAL_LINE.test(line);
+  return RE_MATERIAL_SIGNAL.test(line);
 }
 
-function looksLikeFabricationLine(line: string): boolean {
-  return RE_FABRICATION_LINE.test(line);
+function normalizeStoryBody(s: string): string {
+  return s
+    .replace(/g\s*\/\s*m\s*\?/gi, "g/m²")
+    .replace(/g\s*\/\s*m\s*2\b/gi, "g/m²")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const SEMANTIC_CLIP = (s: string, max: number) => (s.length <= max ? s : `${s.slice(0, max)}…`);
+
+function buildMakerSemanticBlocks(result: SmartProductParseOutput): MakerSemanticBlock[] {
+  const blocks: MakerSemanticBlock[] = [];
+  if (result.detectedCategory !== undefined) {
+    blocks.push({
+      key: "category",
+      label: "Catégorie",
+      value: result.detectedCategory,
+    });
+  }
+  if (result.name !== undefined) {
+    blocks.push({ key: "title", label: "Titre", value: SEMANTIC_CLIP(result.name, 200) });
+  }
+  if (result.variantColor !== undefined) {
+    blocks.push({ key: "color", label: "Couleur", value: result.variantColor });
+  }
+  if (result.sizes !== undefined && result.sizes.length > 0) {
+    blocks.push({ key: "sizes", label: "Tailles", value: result.sizes.join(", ") });
+  }
+  if (result.price !== undefined) {
+    blocks.push({ key: "price", label: "Prix", value: `${result.price} €` });
+  }
+  if (result.materials !== undefined) {
+    blocks.push({
+      key: "materials",
+      label: "Matières",
+      value: SEMANTIC_CLIP(result.materials, 280),
+    });
+  }
+  if (result.fabrication !== undefined) {
+    blocks.push({
+      key: "fabrication",
+      label: "Fabrication",
+      value: SEMANTIC_CLIP(result.fabrication, 200),
+    });
+  }
+  if (result.limitedEdition !== undefined) {
+    blocks.push({
+      key: "limitedEdition",
+      label: "Édition limitée",
+      value: SEMANTIC_CLIP(result.limitedEdition, 200),
+    });
+  }
+  if (result.description !== undefined) {
+    blocks.push({
+      key: "description",
+      label: "Description",
+      value: SEMANTIC_CLIP(result.description, 320),
+    });
+  }
+  return blocks;
+}
+
+function extractNameFromLines(
+  lines: readonly string[],
+  detectedCategory: ProductCategory | undefined,
+): { name: string; titleLineIndex: number } | undefined {
+  if (lines.length === 0) return undefined;
+  let idx = 0;
+  if (isPureCategoryLine(lines[0] ?? "")) idx = 1;
+  if (idx >= lines.length) idx = 0;
+
+  const candidates: { line: string; i: number }[] = [];
+  for (let i = idx; i < Math.min(lines.length, idx + 5); i++) {
+    const line = lines[i];
+    if (!line) continue;
+    if (isFootnoteLine(line)) continue;
+    if (/^(prix|price|tailles?|sizes?|matière|matériaux)\s*[:\-]/i.test(line)) continue;
+    if (looksLikeMaterialLine(line) && /%/.test(line)) continue;
+    if (line.length >= 3 && line.length <= 140) candidates.push({ line, i });
+  }
+
+  const scored = candidates
+    .map(({ line, i }) => {
+      let score = 0;
+      const u = line.toUpperCase();
+      if (/\bDINGRY\b/.test(u)) score += 8;
+      if (/SIGNATURE|ORIGINAL|COLLECTION|ÉDITION|EDITION/.test(u)) score += 4;
+      if (/^[A-Z0-9\s\-–—'«».,]+$/u.test(line) && line.length <= 72) score += 3;
+      if (line.length >= 12 && line.length <= 90) score += 2;
+      if (detectedCategory) {
+        const catFrag = detectedCategory.toUpperCase().replace(/\s+/g, "").slice(0, 7);
+        if (catFrag && u.replace(/\s/g, "").includes(catFrag)) score -= 3;
+      }
+      return { line: normalizeStoryBody(line), score, i };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const top = scored[0];
+  if (!top || top.score < 0) return undefined;
+  return { name: top.line, titleLineIndex: top.i };
 }
 
 function looksLikeLimitedLine(line: string): boolean {
   return RE_LIMITED_LINE.test(line);
 }
 
-function isNoiseLine(line: string): boolean {
-  if (RE_PRICE.test(line) && line.length < 40) return true;
-  if (/^tailles?\s*[:\-]/i.test(line) && line.length < 80) return true;
-  return false;
-}
-
-function normalizeStoryBody(s: string): string {
-  return s.replace(/g\/m\s*\?/gi, "g/m²").replace(/\s+/g, " ").trim();
-}
-
-/**
- * Analyse un descriptif brut (collage) et remplit les champs CRM correspondants.
- * @param fallbackCategory Catégorie du formulaire si aucune détection fiable.
- */
 export function parseSmartProductText(
   raw: string,
   fallbackCategory: ProductCategory,
-): SmartProductParseResult {
+): SmartProductParseOutput {
   const filled: SmartParseFieldId[] = [];
   const text = normalizePasteText(raw);
-  if (!text) return { filled: [] };
+  if (!text) {
+    return {
+      filled: [],
+      diagnostics: { blockCount: 0, footnoteLinesSkipped: 0 },
+      semanticBlocks: [],
+    };
+  }
+
+  const blocks = text.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  const { body: textNoStarLines, skipped: footnoteSkipped } = stripFootnoteLines(text);
+  const lines = linesFromText(text);
+  const tagged = tagSections(lines);
 
   const detectedCategory = detectCategoryFromText(text);
   const category = detectedCategory ?? fallbackCategory;
@@ -273,48 +538,61 @@ export function parseSmartProductText(
   const allowedSizes = ADMIN_CATEGORY_SIZES[category];
   const pants = isPantsCategory(category);
 
-  const textNoFootnotes = stripLeadingAsteriskFootnotes(text);
-  const lines = textNoFootnotes
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  let name: string | undefined;
-  if (lines.length > 0) {
-    const first = lines[0];
-    if (first.length <= 140 && !RE_TITLE_NOISE.test(first) && !looksLikeMaterialLine(first)) {
-      name = normalizeStoryBody(first);
-      filled.push("name");
-    }
-  }
-
-  const price = extractEuroPrice(text);
+  const priceFromTags = tagged
+    .filter((s) => s.kind === "price")
+    .map((s) => s.body)
+    .join("\n");
+  const price = extractBestPrice(`${priceFromTags}\n${text}`);
   if (price !== undefined) filled.push("price");
 
-  const sizes: ProductSize[] = pants ? extractPantWaists(text) : extractLetterSizes(text, allowedSizes);
+  const sizeSet = new Set<ProductSize>();
+  if (pants) {
+    for (const w of extractPantWaists(textNoStarLines)) sizeSet.add(w);
+  } else {
+    for (const sz of extractLetterSizes(textNoStarLines, allowedSizes)) sizeSet.add(sz);
+    for (const sec of tagged) {
+      if (sec.kind !== "size" || !sec.body) continue;
+      for (const sz of extractLetterSizes(sec.body, allowedSizes)) sizeSet.add(sz);
+    }
+  }
+  const sizes = sortSizes(sizeSet);
   if (sizes.length > 0) filled.push("sizes");
 
   let variantColor: string | undefined;
   if (!pants) {
     variantColor = extractVariantColor(text);
+    for (const sec of tagged) {
+      if (sec.kind !== "color" || !sec.body.trim()) continue;
+      const fromLabel = mapColorToken(sec.body) ?? extractVariantColor(sec.body);
+      if (fromLabel) variantColor = fromLabel;
+    }
     if (variantColor !== undefined) filled.push("variant");
   }
+
+  const nameExtract = extractNameFromLines(lines, detectedCategory);
+  const name = nameExtract?.name;
+  const titleLineIndex = nameExtract?.titleLineIndex;
+  if (name !== undefined) filled.push("name");
 
   const materialLines: string[] = [];
   const fabricationLines: string[] = [];
   const limitedLines: string[] = [];
   const descriptionCandidates: string[] = [];
 
-  const titleLine = name !== undefined ? lines[0] : null;
+  for (const sec of tagged) {
+    if (sec.kind === "material" && sec.body.trim()) materialLines.push(sec.body);
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (titleLine !== null && i === 0) continue;
-    if (isNoiseLine(line)) continue;
+    if (titleLineIndex !== undefined && i === titleLineIndex) continue;
+    if (/^(prix|price)\s*[:\-]/i.test(line) && line.length < 55) continue;
+    if (/^(tailles?|sizes?)\s*[:\-]/i.test(line) && line.length < 90) continue;
     if (looksLikeLimitedLine(line)) {
       limitedLines.push(line);
       continue;
     }
-    if (looksLikeFabricationLine(line) && !looksLikeMaterialLine(line)) {
+    if (RE_FABRICATION_LINE.test(line) && !looksLikeMaterialLine(line)) {
       fabricationLines.push(line);
       continue;
     }
@@ -322,9 +600,8 @@ export function parseSmartProductText(
       materialLines.push(line);
       continue;
     }
-    if (line.length >= 20 || /[.!?]$/.test(line)) {
-      descriptionCandidates.push(line);
-    } else if (line.length >= 8 && !/^\d/.test(line)) {
+    if (line.length >= 18 || /[.!?]$/.test(line)) descriptionCandidates.push(line);
+    else if (line.length >= 8 && !/^\d{2}\b/.test(line) && !isPureCategoryLine(line)) {
       descriptionCandidates.push(line);
     }
   }
@@ -348,11 +625,12 @@ export function parseSmartProductText(
   }
 
   let description: string | undefined;
-  if (descriptionCandidates.length > 0) {
-    description = trimStoryField(descriptionCandidates.map((l) => normalizeStoryBody(l)).join("\n\n"));
+  const descFiltered = descriptionCandidates.filter((l) => (name ? l.trim() !== name.trim() : true));
+  if (descFiltered.length > 0) {
+    description = trimStoryField(descFiltered.map((l) => normalizeStoryBody(l)).join("\n\n"));
     filled.push("description");
   } else if (materialLines.length === 0 && lines.length > 1 && name !== undefined) {
-    const rest = lines.slice(1).join("\n\n");
+    const rest = lines.filter((_, j) => j !== titleLineIndex).join("\n\n");
     const fallback = trimStoryField(normalizeStoryBody(rest));
     if (fallback.length >= 10) {
       description = fallback;
@@ -360,7 +638,11 @@ export function parseSmartProductText(
     }
   }
 
-  const result: SmartProductParseResult = { filled };
+  const result: SmartProductParseOutput = {
+    filled,
+    diagnostics: { blockCount: blocks.length || 1, footnoteLinesSkipped: footnoteSkipped },
+    semanticBlocks: [],
+  };
   if (detectedCategory !== undefined) result.detectedCategory = detectedCategory;
   if (name !== undefined) result.name = name;
   if (description !== undefined) result.description = description;
@@ -371,7 +653,23 @@ export function parseSmartProductText(
   if (sizes.length > 0) result.sizes = sizes;
   if (variantColor !== undefined) result.variantColor = variantColor;
 
+  result.semanticBlocks = buildMakerSemanticBlocks(result);
   return result;
+}
+
+export function buildSmartParseRecap(result: SmartProductParseOutput): string {
+  if (result.filled.length === 0) {
+    return "Smart collage · aucun champ détecté. Colle un pavé plus explicite (titre, prix, tailles, matière) ou vérifie la catégorie.";
+  }
+  const lines: string[] = ["Smart collage · détection :"];
+  const blocks = result.semanticBlocks.length > 0 ? result.semanticBlocks : buildMakerSemanticBlocks(result);
+  for (const b of blocks) {
+    lines.push(`• ${b.label} : ${b.value}`);
+  }
+  lines.push(
+    `• Analyse : ${result.diagnostics.blockCount} bloc(s), ${result.diagnostics.footnoteLinesSkipped} ligne(s) * ignorée(s) pour tailles.`,
+  );
+  return lines.join("\n");
 }
 
 export function summarizeSmartParseFilled(filled: readonly SmartParseFieldId[]): string {

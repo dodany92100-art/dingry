@@ -61,6 +61,40 @@ TU
   });
 
   it("texte vide → rien", () => {
-    expect(parseSmartProductText("   ", "T-shirts").filled).toEqual([]);
+    const empty = parseSmartProductText("   ", "T-shirts");
+    expect(empty.filled).toEqual([]);
+    expect(empty.semanticBlocks).toEqual([]);
+  });
+
+  it("exponse des blocs sémantiques Maker pour le récap", () => {
+    const r = parseSmartProductText("HOODIES\n\nDINGRY SIGNATURE\n\nNoir · 75 €", "T-shirts");
+    const keys = r.semanticBlocks.map((b) => b.key);
+    expect(keys).toContain("category");
+    expect(keys).toContain("title");
+    expect(keys).toContain("price");
+    const title = r.semanticBlocks.find((b) => b.key === "title");
+    expect(title?.value).toBe("DINGRY SIGNATURE");
+  });
+
+  it("lit la couleur dans une note * (hors scan tailles)", () => {
+    const raw = `Pull
+S M L
+*4XL-5XL COULEUR NOIR
+90 €`;
+    const r = parseSmartProductText(raw, "Hoodies");
+    expect(r.variantColor).toBe("NOIR");
+    expect(r.sizes).toEqual(["S", "M", "L"]);
+  });
+
+  it("ignore une première ligne catégorie pure pour le nom", () => {
+    const raw = `HOODIES
+
+DINGRY SIGNATURE
+
+Noir · 75 €`;
+    const r = parseSmartProductText(raw, "T-shirts");
+    expect(r.name).toBe("DINGRY SIGNATURE");
+    expect(r.detectedCategory).toBe("Hoodies");
+    expect(r.price).toBe("75");
   });
 });
