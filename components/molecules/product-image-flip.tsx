@@ -149,7 +149,7 @@ export function ProductImageFlip({
     return (
       <div
         className={cn(
-          "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-xl md:rounded-2xl",
+          "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl",
           className,
         )}
         onClick={() => onTap?.("recto")}
@@ -192,7 +192,7 @@ export function ProductImageFlip({
     <div
       ref={trackRef}
       className={cn(
-        "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-xl md:rounded-2xl",
+        "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl",
         flippable && dragFlipEnabled && "cursor-grab active:cursor-grabbing",
         isFirstInGrid && flippable && dragFlipEnabled && "dingry-flip-first-grid",
         showPeekRun && "dingry-flip-verso-peek-run",

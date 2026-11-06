@@ -55,8 +55,8 @@ export function ProductCard({
   const [side, setSide] = useState<ProductFlipSide>("recto");
 
   return (
-    <article className={cn("group mx-auto w-full max-w-sm touch-pan-y", className)}>
-      <div className="w-full touch-pan-y rounded-xl text-left md:rounded-2xl">
+    <article className={cn("group w-full min-w-0 touch-pan-y", className)}>
+      <div className="w-full min-w-0 touch-pan-y rounded-lg text-left sm:rounded-xl md:rounded-2xl">
         <ProductImageFlip
           frontImage={image}
           backImage={backImage}
@@ -73,22 +73,22 @@ export function ProductCard({
           type="button"
           onClick={() => onClick?.(side)}
           disabled={!onClick}
-          className="mt-2 w-full px-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 md:mt-3"
+          className="mt-1.5 w-full px-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:mt-2 md:mt-3"
         >
-          <p className="text-[9px] uppercase tracking-[0.18em] text-white/45 md:text-[10px] md:tracking-[0.22em]">
+          <p className="text-[8px] uppercase leading-tight tracking-[0.16em] text-white/45 sm:text-[9px] md:text-[10px] md:tracking-[0.22em]">
             {name}
           </p>
           {variant ? (
-            <div className="mt-1 flex items-start justify-between gap-2">
-              <p className="line-clamp-2 text-[11px] font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-sm md:tracking-widest">
+            <div className="mt-0.5 flex items-start justify-between gap-1.5 sm:mt-1 sm:gap-2">
+              <p className="line-clamp-2 min-w-0 text-xs font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-sm md:tracking-widest">
                 {variant}
               </p>
-              <p className="shrink-0 text-sm font-bold tabular-nums tracking-tight text-white md:text-base">
+              <p className="shrink-0 text-xs font-bold tabular-nums tracking-tight text-white sm:text-sm md:text-base">
                 {priceFormat.format(price)}
               </p>
             </div>
           ) : (
-            <p className="mt-1 text-sm font-bold tabular-nums tracking-tight text-white md:text-base">
+            <p className="mt-0.5 text-xs font-bold tabular-nums tracking-tight text-white sm:mt-1 sm:text-sm md:text-base">
               {priceFormat.format(price)}
             </p>
           )}
