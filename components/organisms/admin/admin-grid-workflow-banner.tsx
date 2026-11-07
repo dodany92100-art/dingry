@@ -9,6 +9,8 @@ type AdminGridWorkflowBannerProps = {
   orderSaving: boolean;
   publishSaving: boolean;
   draftCount: number;
+  /** Erreur validation grille (ex. conflit store). */
+  orderError?: string;
   onReset: () => void;
   onValidateGrid: () => void;
   onPublishSelection: () => void;
@@ -22,6 +24,7 @@ export function AdminGridWorkflowBanner({
   orderSaving,
   publishSaving,
   draftCount,
+  orderError = "",
   onReset,
   onValidateGrid,
   onPublishSelection,
@@ -43,9 +46,14 @@ export function AdminGridWorkflowBanner({
         >
           {phase === "ordering" ? (
             <>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">
-                Finalisez le classement avant de valider la grille
-              </p>
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">
+                  Finalisez le classement avant de valider la grille
+                </p>
+                {orderError ? (
+                  <p className="mt-1 text-[10px] leading-snug text-red-400">{orderError}</p>
+                ) : null}
+              </div>
               <div className="flex shrink-0 gap-2">
                 <button
                   type="button"

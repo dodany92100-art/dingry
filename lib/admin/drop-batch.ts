@@ -6,6 +6,36 @@ export type DropBatchItem = {
   status?: DropBatchItemStatus;
 };
 
+type CatalogOrderRow = { id: string; displayOrder: number };
+
+/**
+ * Aligne le lot CRM sur le catalogue serveur (ignore les ids obsolètes côté client).
+ * Permet de valider la grille après un glisser-déposer sans blocage « Mise à jour impossible ».
+ */
+export function reconcileDropBatchWithCatalog(
+  products: readonly CatalogOrderRow[],
+  items: readonly DropBatchItem[],
+): DropBatchItem[] | null {
+  if (products.length === 0) return null;
+  const storeIds = new Set(products.map((product) => product.id));
+  const patch = new Map<string, DropBatchItem>();
+  for (const item of items) {
+    const id = String(item.id).trim();
+    if (!id || patch.has(id)) return null;
+    if (!storeIds.has(id)) continue;
+    if (!Number.isFinite(item.displayOrder) || item.displayOrder < 0) return null;
+    patch.set(id, item);
+  }
+  return products.map((product) => {
+    const item = patch.get(product.id);
+    return {
+      id: product.id,
+      displayOrder: item?.displayOrder ?? product.displayOrder,
+      ...(item?.status ? { status: item.status } : {}),
+    };
+  });
+}
+
 export function normalizeDropBatchItems(raw: unknown): DropBatchItem[] | null {
   if (!Array.isArray(raw)) return null;
   const items: DropBatchItem[] = [];
