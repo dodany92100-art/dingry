@@ -13,4 +13,4 @@ export const ADMIN_CRM_RELEASE = {
   ],
 } as const;
 
-export const ADMIN_CRM_RELEASE_DISMISS_KEY = "dingry-admin-crm-release-dismissed";
+export const ADMIN_CRM_RELEASE_DISMISS_KEY = "dingry-admin-crm-release-dismissed-build";

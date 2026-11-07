@@ -2,33 +2,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatCrmBuildLabel } from "@/lib/admin/crm-build-label";
-import {
-  ADMIN_CRM_RELEASE,
-  ADMIN_CRM_RELEASE_DISMISS_KEY,
-  ADMIN_CRM_VERSION,
-} from "@/lib/admin/crm-release";
+import { ADMIN_CRM_RELEASE } from "@/lib/admin/crm-release";
+import { isCrmReleaseDismissed, persistCrmReleaseDismissed } from "@/lib/admin/crm-release-dismiss";
 
 export function ReleaseBanner() {
-  const [dismissed, setDismissed] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      setDismissed(localStorage.getItem(ADMIN_CRM_RELEASE_DISMISS_KEY) === ADMIN_CRM_VERSION);
-    } catch {
-      setDismissed(false);
-    }
+    setDismissed(isCrmReleaseDismissed());
+    setReady(true);
   }, []);
 
   const dismiss = useCallback(() => {
-    try {
-      localStorage.setItem(ADMIN_CRM_RELEASE_DISMISS_KEY, ADMIN_CRM_VERSION);
-    } catch {
-      /* ignore */
-    }
+    persistCrmReleaseDismissed();
     setDismissed(true);
   }, []);
 
-  if (dismissed) return null;
+  if (!ready || dismissed) return null;
 
   const deployedAt = formatCrmBuildLabel();
 
