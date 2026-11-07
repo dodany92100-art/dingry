@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Anton } from "next/font/google";
 import { DingryTeaser } from "@/components/templates/dingry-teaser";
-import { DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
+import { DINGRY_OPEN_GRAPH_IMAGE, DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
 
 const anton = Anton({ weight: "400", subsets: ["latin"], display: "swap" });
 
@@ -9,6 +9,16 @@ export const teaserHomeMetadata: Metadata = {
   title: "DINGRY Paris — 7 novembre",
   description:
     "Ouverture du site officiel DINGRY Paris le 7 novembre 2026 à 20h (Europe/Paris). Travaux en cours.",
+  openGraph: {
+    title: "DINGRY Paris — 7 novembre",
+    description:
+      "Ouverture du site officiel DINGRY Paris le 7 novembre 2026 à 20h (Europe/Paris). Travaux en cours.",
+    images: [DINGRY_OPEN_GRAPH_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [DINGRY_OPEN_GRAPH_IMAGE.url],
+  },
 };
 
 /** Accueil teasing prod — visuel plein écran sans calques d'assombrissement. */

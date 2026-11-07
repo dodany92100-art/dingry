@@ -5,9 +5,16 @@ export const DINGRY_TEASING_HERO_SRC = "/dingry-teasing.jpg";
 
 export const DINGRY_LOGO_URL = `https://res.cloudinary.com/dc9xmxpvv/image/upload/${LOGO_PATH}`;
 
-const FAVICON_TRANSFORM = "w_32,h_32,c_fit,f_png,e_colorize:100,co_rgb:000000";
-const APPLE_ICON_TRANSFORM = "w_180,h_180,c_fit,f_png,e_colorize:100,co_rgb:000000";
+/** Symbole X · fond noir — favicon, Apple touch, WhatsApp (`public/dingry-favicon.jpg`, 400×400). */
+export const DINGRY_FAVICON_SRC = "/dingry-favicon.jpg";
 
-export const DINGRY_FAVICON_URL = `https://res.cloudinary.com/dc9xmxpvv/image/upload/${FAVICON_TRANSFORM}/${LOGO_PATH}`;
+export const DINGRY_FAVICON_URL = DINGRY_FAVICON_SRC;
+export const DINGRY_APPLE_ICON_URL = DINGRY_FAVICON_SRC;
+export const DINGRY_OG_IMAGE_URL = DINGRY_FAVICON_SRC;
 
-export const DINGRY_APPLE_ICON_URL = `https://res.cloudinary.com/dc9xmxpvv/image/upload/${APPLE_ICON_TRANSFORM}/${LOGO_PATH}`;
+export const DINGRY_OPEN_GRAPH_IMAGE = {
+  url: DINGRY_FAVICON_SRC,
+  width: 400,
+  height: 400,
+  alt: "DINGRY",
+} as const;
