@@ -4,9 +4,9 @@ import { toCatalogProduct } from "@/lib/admin/types";
 import { isInStockFromQuantity, readStockQuantities } from "@/lib/stock";
 
 export const runtime = "nodejs";
-/** Preview : pas de cache edge (aligné prod CRM). Prod : ISR 60 s. */
-export const dynamic = process.env.VERCEL_ENV === "preview" ? "force-dynamic" : "auto";
-export const revalidate = process.env.VERCEL_ENV === "preview" ? 0 : 60;
+/** Données Blob / CRM : toujours à la demande (compat Turbopack + preview/prod). */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   try {
