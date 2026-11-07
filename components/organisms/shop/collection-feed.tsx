@@ -7,23 +7,18 @@ import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import type { CatalogMenuSection } from "@/lib/shop-catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
 import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
-import { catalogBackImageForRecto, type FlipPair } from "@/lib/shop-view";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
 
 type CollectionFeedProps = {
   sections: CatalogMenuSection[];
-  flipPairs: FlipPair[];
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
-  peekResetKey: string | number;
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
 };
 
 export function CollectionFeed({
   sections,
-  flipPairs,
   onOpenProduct,
-  peekResetKey,
   wishlistIds,
   onToggleWishlist,
 }: CollectionFeedProps) {
@@ -46,14 +41,10 @@ export function CollectionFeed({
               name={storefrontProductTitle(product)}
               variant={storefrontProductSubtitle(product)}
               image={product.image}
-              backImage={catalogBackImageForRecto(product, flipPairs)}
-              isFirstInGrid={localIndex === 0}
-              isFirstProduct={globalIndex === 0}
-              peekResetKey={peekResetKey}
               price={product.price}
               priority={globalIndex < 4}
               soldOut={!isShopProductInStock(product)}
-              onClick={(side) => onOpenProduct(product, side)}
+              onClick={() => onOpenProduct(product, "recto")}
               wishlistActive={wishlistIds.includes(rectoId)}
               onWishlistToggle={() => onToggleWishlist(rectoId)}
             />

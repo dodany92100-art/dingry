@@ -8,7 +8,6 @@ import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
 import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
 import { buildCatalogMenuSections } from "@/lib/shop-catalog";
-import { catalogBackImageForRecto, type FlipPair } from "@/lib/shop-view";
 import type { CatalogState } from "./hooks/use-shop-catalog";
 import { CollectionFeed } from "./collection-feed";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
@@ -22,7 +21,6 @@ type CatalogGridProps = {
   /** Clé d'animation : change avec le filtre actif. */
   filterKey: string;
   products: ShopProduct[];
-  flipPairs: FlipPair[];
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
@@ -30,9 +28,7 @@ type CatalogGridProps = {
 
 function buildProductCells(
   products: ShopProduct[],
-  flipPairs: FlipPair[],
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void,
-  catalogPeekResetKey: string,
   wishlistIds: readonly number[],
   onToggleWishlist: (rectoId: number) => void,
   indexOffset = 0,
@@ -46,14 +42,10 @@ function buildProductCells(
         name={storefrontProductTitle(product)}
         variant={storefrontProductSubtitle(product)}
         image={product.image}
-        backImage={catalogBackImageForRecto(product, flipPairs)}
-        isFirstInGrid={globalIndex === 0}
-        isFirstProduct={globalIndex === 0}
-        peekResetKey={catalogPeekResetKey}
         price={product.price}
         priority={globalIndex < 4}
         soldOut={!isShopProductInStock(product)}
-        onClick={(side) => onOpenProduct(product, side)}
+        onClick={() => onOpenProduct(product, "recto")}
         wishlistActive={wishlistIds.includes(rectoId)}
         onWishlistToggle={() => onToggleWishlist(rectoId)}
       />
@@ -78,7 +70,6 @@ export function CatalogGrid({
   onRetry,
   filterKey,
   products,
-  flipPairs,
   onOpenProduct,
   wishlistIds,
   onToggleWishlist,
@@ -118,8 +109,6 @@ export function CatalogGrid({
         ) : (
           <CollectionFeed
             sections={sections}
-            flipPairs={flipPairs}
-            peekResetKey={filterKey}
             onOpenProduct={onOpenProduct}
             wishlistIds={wishlistIds}
             onToggleWishlist={onToggleWishlist}
@@ -129,7 +118,7 @@ export function CatalogGrid({
     );
   }
 
-  const cells = buildProductCells(products, flipPairs, onOpenProduct, filterKey, wishlistIds, onToggleWishlist);
+  const cells = buildProductCells(products, onOpenProduct, wishlistIds, onToggleWishlist);
 
   return (
     <motion.div

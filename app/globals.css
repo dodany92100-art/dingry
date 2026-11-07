@@ -250,6 +250,15 @@
     content: none;
   }
 
+  .dingry-custom-banner-shine {
+    animation: none;
+    opacity: 0;
+  }
+
+  .dingry-custom-banner-gift__bow {
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25);
+  }
+
   .dingry-squish-anim,
   .dingry-squish-on-hover:hover,
   .dingry-squish-on-hover:active {
@@ -996,8 +1005,30 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
 
 .dingry-custom-banner {
   isolation: isolate;
-  background: #111;
   color: #fff;
+  background:
+    linear-gradient(145deg, rgb(108 112 120) 0%, rgb(72 76 84) 18%, rgb(48 50 56) 45%, rgb(28 30 34) 100%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.1) 0%, transparent 38%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    inset 0 -1px 0 rgb(0 0 0 / 0.4),
+    0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+.dingry-custom-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: repeating-linear-gradient(
+    -12deg,
+    transparent 0 3px,
+    rgb(255 255 255 / 0.03) 3px 4px,
+    transparent 4px 9px
+  );
+  mix-blend-mode: overlay;
 }
 
 .dingry-custom-banner .dingry-typo-eyebrow,
@@ -1015,42 +1046,206 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
 }
 
 .dingry-custom-banner-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
   color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+  border: 1px solid rgb(255 255 255 / 0.55);
+  background:
+    linear-gradient(165deg, rgb(52 56 64 / 0.96) 0%, rgb(24 26 30 / 0.98) 55%, rgb(14 16 20 / 0.99) 100%);
+  box-shadow:
+    0 10px 28px rgb(0 0 0 / 0.42),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
-.dingry-custom-banner-mark {
-  font-size: clamp(4rem, 16vw, 9.5rem);
-  font-weight: 600;
-  line-height: 0.85;
-  letter-spacing: 0.16em;
-  color: rgb(255 255 255 / 0.08);
+.dingry-custom-banner:hover .dingry-custom-banner-cta {
+  border-color: rgb(255 255 255 / 0.85);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 0 20px rgb(0 102 255 / 0.15);
+}
+
+.dingry-custom-banner--gift {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
+    inset 0 0 0 5px rgb(0 0 0 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    inset 0 -1px 0 rgb(0 0 0 / 0.4);
+}
+
+.dingry-custom-banner-gift {
+  z-index: 2;
+}
+
+.dingry-custom-banner-gift__ribbon-v {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 58%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.22) 14%,
+    rgb(255 255 255 / 0.42) 50%,
+    rgb(255 255 255 / 0.22) 86%,
+    transparent 100%
+  );
+}
+
+.dingry-custom-banner-gift__ribbon-h {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.16) 12%,
+    rgb(255 255 255 / 0.38) 50%,
+    rgb(255 255 255 / 0.2) 88%,
+    transparent 100%
+  );
+}
+
+.dingry-custom-banner-gift__bow {
+  position: absolute;
+  top: 50%;
+  left: 58%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid rgb(255 255 255 / 0.5);
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.28) 0%, rgb(180 190 200 / 0.14) 100%);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.25),
+    0 0 14px rgb(0 102 255 / 0.18);
+}
+
+@media (max-width: 767px) {
+  .dingry-custom-banner-gift__ribbon-v,
+  .dingry-custom-banner-gift__bow {
+    left: 72%;
+  }
+}
+
+.dingry-custom-banner:hover .dingry-custom-banner-gift__ribbon-v {
+  opacity: 1;
+  filter: brightness(1.15);
+}
+
+.dingry-custom-banner:hover .dingry-custom-banner-gift__ribbon-h {
+  filter: brightness(1.12);
+}
+
+.dingry-custom-banner:hover .dingry-custom-banner-gift__bow {
+  border-color: rgb(255 255 255 / 0.72);
+  box-shadow:
+    0 0 0 1px rgb(0 102 255 / 0.2),
+    0 0 16px rgb(0 102 255 / 0.22);
 }
 
 .dingry-custom-banner-photo {
+  position: relative;
+  z-index: 0;
   object-position: 70% 46%;
-  transform: scale(0.58);
+  transform: scale(0.62);
   transform-origin: 70% 46%;
   opacity: 0.98;
 }
 
+@media (min-width: 768px) {
+  .dingry-custom-banner-photo {
+    object-position: 50% 40%;
+    transform: none;
+    transform-origin: 50% 42%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dingry-custom-banner-photo {
+    object-position: 48% 46%;
+    transform-origin: 48% 46%;
+  }
+}
+
 .dingry-custom-banner-veil {
+  z-index: 1;
   background:
-    linear-gradient(105deg, rgb(5 5 5 / 0.88) 0%, rgb(5 5 5 / 0.55) 38%, rgb(5 5 5 / 0.08) 62%, transparent 78%),
-    radial-gradient(120% 80% at 80% 20%, rgb(0 102 255 / 0.06), transparent 55%);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+    linear-gradient(105deg, rgb(18 20 24 / 0.78) 0%, rgb(18 20 24 / 0.42) 34%, rgb(18 20 24 / 0.06) 58%, transparent 76%),
+    linear-gradient(270deg, rgb(10 12 16 / 0.78) 0%, rgb(10 12 16 / 0.42) 14%, transparent 36%),
+    radial-gradient(95% 110% at 54% 48%, rgb(255 255 255 / 0.07), transparent 52%),
+    radial-gradient(120% 80% at 82% 18%, rgb(0 102 255 / 0.1), transparent 55%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
 }
 
 .dingry-custom-banner-veil::after {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.16;
-  mix-blend-mode: overlay;
+  opacity: 0.12;
+  mix-blend-mode: soft-light;
   background-image: repeating-linear-gradient(
     0deg,
-    rgb(255 255 255 / 0.04) 0 1px,
+    rgb(255 255 255 / 0.05) 0 1px,
     transparent 1px 3px
   );
+}
+
+@keyframes dingry-custom-banner-light {
+  0%,
+  100% {
+    transform: translateX(-125%) skewX(-14deg);
+    opacity: 0;
+  }
+
+  8% {
+    opacity: 0.85;
+  }
+
+  48% {
+    transform: translateX(125%) skewX(-14deg);
+    opacity: 0.9;
+  }
+
+  92% {
+    opacity: 0;
+  }
+}
+
+.dingry-custom-banner-shine {
+  z-index: 2;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.03) 38%,
+    rgb(255 255 255 / 0.2) 47%,
+    rgb(200 220 255 / 0.14) 50%,
+    rgb(0 102 255 / 0.1) 52%,
+    rgb(255 255 255 / 0.16) 56%,
+    transparent 68%
+  );
+  mix-blend-mode: soft-light;
+  animation: dingry-custom-banner-light 9s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.dingry-custom-banner:hover .dingry-custom-banner-shine {
+  animation-duration: 7s;
 }
 
 html[data-theme="light"] .dingry-shop .dingry-custom-banner,
@@ -1066,10 +1261,6 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-typo-body-al
 
 html[data-theme="light"] .dingry-shop .dingry-custom-banner [class*="border-white"] {
   border-color: rgb(255 255 255 / 0.4) !important;
-}
-
-html[data-theme="light"] .dingry-shop .dingry-custom-banner-mark {
-  color: rgb(255 255 255 / 0.08) !important;
 }
 
 .dingry-catalog-logo {

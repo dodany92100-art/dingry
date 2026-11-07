@@ -131,7 +131,6 @@ function ProductModalContent({
               frontImage={effectiveFlipImages.front}
               backImage={effectiveFlipImages.back}
               side={modalSide}
-              onSideChange={modal.showProductSide}
               alt={storefrontProductTitle(product, products)}
               imgClassName="brightness-[0.85] contrast-[1.05] grayscale-[0.2]"
             />

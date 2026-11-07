@@ -25,7 +25,6 @@ type ProductImageFlipProps = {
   frontImage: string;
   backImage?: string;
   side: ProductFlipSide;
-  onSideChange?: (side: ProductFlipSide) => void;
   alt: string;
   /** 1re cellule : classes CSS peek / hint desktop (survol). */
   isFirstInGrid?: boolean;
@@ -48,7 +47,6 @@ export function ProductImageFlip({
   frontImage,
   backImage,
   side,
-  onSideChange,
   alt,
   isFirstInGrid = false,
   showPeekAnimation = false,

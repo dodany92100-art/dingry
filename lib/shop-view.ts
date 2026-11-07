@@ -151,10 +151,6 @@ export function catalogBackImageForRecto(product: ShopProduct, pairs: readonly F
   return undefined;
 }
 
-export function firstSwipeHintIndex(products: readonly ShopProduct[], pairs: readonly FlipPair[]): number {
-  return products.findIndex((product) => catalogBackImageForRecto(product, pairs) !== undefined);
-}
-
 export function findActiveFlipPair(product: ShopProduct | null, pairs: readonly FlipPair[]): FlipPair | undefined {
   if (!product || !isRectoVersoShopCategory(product.category)) return undefined;
   return pairs.find((pair) => pair.verso.id === product.id || pair.recto.id === product.id);

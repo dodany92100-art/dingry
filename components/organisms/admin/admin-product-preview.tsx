@@ -91,12 +91,16 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
 
       <div className="relative flex min-h-[14rem] w-full flex-col items-stretch justify-center bg-zinc-950 px-3 py-4 sm:min-h-[16rem] sm:px-4 lg:min-h-[20rem]">
         {flippable ? (
-          <div className="mx-auto w-full max-w-[14rem] sm:max-w-[16rem]">
+          <div
+            className="mx-auto w-full max-w-[14rem] sm:max-w-[16rem]"
+            onMouseEnter={() => setSide("verso")}
+            onMouseLeave={() => setSide("recto")}
+          >
             <ProductImageFlip
               frontImage={recto}
               backImage={verso}
               side={side}
-              onSideChange={setSide}
+              onDoubleTapFlip={() => setSide((current) => (current === "recto" ? "verso" : "recto"))}
               alt={product.name}
               imgClassName="max-h-64 object-contain object-center sm:max-h-72 lg:max-h-80"
             />

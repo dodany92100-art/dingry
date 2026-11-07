@@ -9,7 +9,6 @@ import { normalizeProductCategory } from "@/lib/admin/types";
 import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
 import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { buildCatalogMenuSections, parseCatalogFilter } from "@/lib/shop-catalog";
-import { catalogBackImageForRecto, buildFlipPairs } from "@/lib/shop-view";
 import {
   ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS,
   CATALOG_PRODUCT_GRID_CLASS,
@@ -42,24 +41,16 @@ function filterPreviewAdminProducts(
 
 function PreviewProductCard({
   product,
-  flipPairs,
   globalIndex,
-  peekResetKey,
 }: {
   product: ShopProduct;
-  flipPairs: ReturnType<typeof buildFlipPairs>;
   globalIndex: number;
-  peekResetKey: string;
 }) {
   return (
     <ProductCard
       name={storefrontProductTitle(product)}
       variant={storefrontProductSubtitle(product)}
       image={product.image}
-      backImage={catalogBackImageForRecto(product, flipPairs)}
-      isFirstInGrid={globalIndex === 0}
-      isFirstProduct={globalIndex === 0}
-      peekResetKey={peekResetKey}
       price={product.price}
       priority={globalIndex < 4}
       soldOut={!isShopProductInStock(product)}
@@ -69,23 +60,13 @@ function PreviewProductCard({
 
 function PreviewGrid({
   shopProducts,
-  flipPairs,
-  peekResetKey,
 }: {
   shopProducts: ShopProduct[];
-  flipPairs: ReturnType<typeof buildFlipPairs>;
-  peekResetKey: string;
 }) {
   return (
     <div className={CATALOG_PRODUCT_GRID_CLASS}>
       {shopProducts.map((product, index) => (
-        <PreviewProductCard
-          key={product.id}
-          product={product}
-          flipPairs={flipPairs}
-          globalIndex={index}
-          peekResetKey={peekResetKey}
-        />
+        <PreviewProductCard key={product.id} product={product} globalIndex={index} />
       ))}
     </div>
   );
@@ -93,14 +74,10 @@ function PreviewGrid({
 
 function PreviewCatalogBody({
   shopProducts,
-  flipPairs,
   sections,
-  peekResetKey,
 }: {
   shopProducts: ShopProduct[];
-  flipPairs: ReturnType<typeof buildFlipPairs>;
   sections: ReturnType<typeof buildCatalogMenuSections> | null;
-  peekResetKey: string;
 }) {
   if (shopProducts.length === 0) {
     return (
@@ -124,13 +101,7 @@ function PreviewCatalogBody({
           const sectionCells = section.products.map((product, localIndex) => {
             const globalIndex = indexOffset + localIndex;
             return (
-              <PreviewProductCard
-                key={product.id}
-                product={product}
-                flipPairs={flipPairs}
-                globalIndex={globalIndex}
-                peekResetKey={peekResetKey}
-              />
+              <PreviewProductCard key={product.id} product={product} globalIndex={globalIndex} />
             );
           });
           indexOffset += section.products.length;
@@ -145,7 +116,7 @@ function PreviewCatalogBody({
     );
   }
 
-  return <PreviewGrid shopProducts={shopProducts} flipPairs={flipPairs} peekResetKey={peekResetKey} />;
+  return <PreviewGrid shopProducts={shopProducts} />;
 }
 
 export function AdminStockStorefrontPreview({
@@ -164,8 +135,6 @@ export function AdminStockStorefrontPreview({
     [categoryFilter, shopProducts],
   );
 
-  const flipPairs = useMemo(() => buildFlipPairs(shopProducts), [shopProducts]);
-
   return (
     <div className={`dingry-shop text-white ${ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS}`}>
       <ShopNav embedded cartCount={0} onOpenCart={() => {}} onScrollToSection={() => {}} />
@@ -176,12 +145,7 @@ export function AdminStockStorefrontPreview({
         <div className="pointer-events-none select-none" aria-hidden>
           <CatalogFilterBar value={catalogTab} onChange={() => {}} />
         </div>
-        <PreviewCatalogBody
-          shopProducts={shopProducts}
-          flipPairs={flipPairs}
-          sections={sections}
-          peekResetKey={catalogTab}
-        />
+        <PreviewCatalogBody shopProducts={shopProducts} sections={sections} />
       </section>
     </div>
   );

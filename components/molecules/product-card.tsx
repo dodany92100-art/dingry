@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { cn } from "@/lib/utils";
 import { ProductImageFlip, type ProductFlipSide } from "@/components/molecules/product-image-flip";
@@ -11,7 +10,6 @@ export function cldOpt(url: string, width: number): string {
   const index = url.indexOf(marker);
   if (!url.includes("res.cloudinary.com") || index < 0) return url;
   const rest = url.slice(index + marker.length);
-  // Segment de transformation déjà présent (ex. "f_auto,q_auto,w_600/").
   if (/^[a-z]{1,3}_[^/]*\//.test(rest)) return url;
   return `${url.slice(0, index + marker.length)}f_auto,q_auto,w_${width}/${rest}`;
 }
@@ -23,11 +21,6 @@ const priceFormat = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 2,
 });
 
-/** Durées alignées sur `dingry-flip-verso-peek` (globals.css) : delay 1,05s + 2×1,85s + marge. */
-const PEEK_ANIMATION_MS = 1050 + 1850 * 2 + 160;
-/** Délai avant l’aperçu automatique recto → verso → recto (première carte seulement). */
-const AUTO_PEEK_START_DELAY_MS = 1500;
-
 type ProductCardData = {
   name: string;
   variant: string;
@@ -36,21 +29,11 @@ type ProductCardData = {
 };
 
 type ProductCardProps = ProductCardData & {
-  backImage?: string;
-  /** 1re cellule de la grille : micro-slide CSS + hint « Survoler » (desktop). */
-  isFirstInGrid?: boolean;
-  /**
-   * Première carte du catalogue affiché : démo auto recto ↔ verso après montage.
-   * Changement de `peekResetKey` (ex. filtre catégorie) relance l’aperçu sur la nouvelle 1ʳᵉ carte.
-   */
-  isFirstProduct?: boolean;
-  peekResetKey?: string | number;
   onClick?: (side: ProductFlipSide) => void;
   className?: string;
   /** Première rangée visible : charge l’image en priorité (LCP). */
   priority?: boolean;
   soldOut?: boolean;
-  /** Bouton wishlist (icône) sur la photo — sans ouvrir la fiche au clic. */
   wishlistActive?: boolean;
   onWishlistToggle?: () => void;
 };
@@ -59,10 +42,6 @@ export function ProductCard({
   name,
   variant,
   image,
-  backImage,
-  isFirstInGrid = false,
-  isFirstProduct = false,
-  peekResetKey,
   price,
   onClick,
   className,
@@ -71,68 +50,24 @@ export function ProductCard({
   wishlistActive,
   onWishlistToggle,
 }: ProductCardProps) {
-  const [side, setSide] = useState<ProductFlipSide>("recto");
-  /** `true` uniquement pendant l’animation CSS peek (pas pendant le délai 1,5s — la carte reste interactive). */
-  const [showPeekAnimation, setShowPeekAnimation] = useState(false);
-  const flippable = Boolean(backImage);
-  const peekCycleId = useRef(0);
-
-  useEffect(() => {
-    peekCycleId.current += 1;
-    setSide("recto");
-    setShowPeekAnimation(false);
-  }, [peekResetKey]);
-
-  useEffect(() => {
-    if (!isFirstProduct || !flippable) return;
-
-    const cycle = peekCycleId.current;
-    const startTimer = window.setTimeout(() => {
-      if (peekCycleId.current !== cycle) return;
-      setShowPeekAnimation(true);
-    }, AUTO_PEEK_START_DELAY_MS);
-
-    const endTimer = window.setTimeout(() => {
-      if (peekCycleId.current !== cycle) return;
-      setShowPeekAnimation(false);
-    }, AUTO_PEEK_START_DELAY_MS + PEEK_ANIMATION_MS);
-
-    return () => {
-      window.clearTimeout(startTimer);
-      window.clearTimeout(endTimer);
-    };
-  }, [isFirstProduct, flippable, peekResetKey]);
-
-  const handleDoubleTapFlip = useCallback(() => {
-    if (!flippable) return;
-    setSide((s) => (s === "recto" ? "verso" : "recto"));
-  }, [flippable]);
-
   return (
     <article className={cn("group w-full min-w-0 touch-pan-y", className)}>
       <div className="w-full min-w-0 touch-pan-y rounded-lg text-left sm:rounded-xl md:rounded-2xl">
         <div className="relative">
           <ProductImageFlip
             frontImage={image}
-            backImage={backImage}
-            side={side}
-            onSideChange={setSide}
-            isFirstInGrid={isFirstInGrid}
-            showPeekAnimation={showPeekAnimation}
+            side="recto"
             priority={priority}
             soldOut={soldOut}
             alt={`${name} ${variant}`}
             imgClassName="transition-[filter] duration-300 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:brightness-[1.03]"
-            onTap={onClick}
-            onDoubleTapFlip={flippable ? handleDoubleTapFlip : undefined}
+            onTap={onClick ? () => onClick("recto") : undefined}
           />
           {onWishlistToggle !== undefined && wishlistActive !== undefined ? (
             <div className="pointer-events-none absolute inset-0 z-[4]">
               <WishlistIconButton
                 active={wishlistActive}
-                label={
-                  wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"
-                }
+                label={wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
                 onClick={onWishlistToggle}
                 stopPropagation
                 className="pointer-events-auto absolute right-2 top-2 sm:right-2.5 sm:top-2.5"
@@ -142,7 +77,7 @@ export function ProductCard({
         </div>
         <button
           type="button"
-          onClick={() => onClick?.(side)}
+          onClick={() => onClick?.("recto")}
           disabled={!onClick}
           className="mt-1.5 w-full px-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:mt-2 md:mt-3"
         >

@@ -76,6 +76,11 @@ function AdminDashboard() {
     setVisibleDraftIds(ids);
   }, []);
 
+  const existingProductSkus = useMemo(
+    () => productsApi.products.map((p) => p.sku),
+    [productsApi.products],
+  );
+
   const gridLocked = productsApi.gridValidated && !productsApi.orderDirty;
   const workflowPhase = productsApi.orderDirty
     ? ("ordering" as const)
@@ -240,6 +245,7 @@ function AdminDashboard() {
           <ProductEditorModal
             key={editor.product?.id ?? "new"}
             initial={editor.product}
+            existingSkus={existingProductSkus}
             busyProductId={productsApi.busyProductId}
             onClose={() => setEditor(null)}
             onSubmit={productsApi.save}
