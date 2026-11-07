@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCrmBuildLabel } from "@/lib/admin/crm-build-label";
-import { ADMIN_CRM_VERSION } from "@/lib/admin/crm-release";
+import { adminCrmVersion } from "@/lib/admin/crm-version";
 
 type AdminHeaderProps = {
   pendingOrders: number;
@@ -26,7 +26,7 @@ export function AdminHeader({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">DINGRY</h1>
           <p className="mt-0.5 text-sm text-zinc-400">
-            CRM v{ADMIN_CRM_VERSION}
+            CRM v{adminCrmVersion()}
             {deployedAt ? (
               <>
                 {" "}

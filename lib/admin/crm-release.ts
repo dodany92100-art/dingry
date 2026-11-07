@@ -1,9 +1,7 @@
-/** Version affichée du CRM admin (bandeau « nouveautés »). */
-export const ADMIN_CRM_VERSION = "1.2";
+import { adminCrmVersion } from "@/lib/admin/crm-version";
 
 export const ADMIN_CRM_RELEASE = {
-  version: ADMIN_CRM_VERSION,
-  title: "CRM v1.2 — Supabase & studio produit",
+  title: "Supabase & studio produit",
   summary:
     "Catalogue et images sur Supabase Storage, fiche produit retravaillée (scroll, typo, panneaux sombres).",
   highlights: [
@@ -12,5 +10,9 @@ export const ADMIN_CRM_RELEASE = {
     "Fiche plein écran : brouillon / en ligne, zones de texte élargies.",
   ],
 } as const;
+
+export function adminCrmReleaseTitle(): string {
+  return `CRM v${adminCrmVersion()} — ${ADMIN_CRM_RELEASE.title}`;
+}
 
 export const ADMIN_CRM_RELEASE_DISMISS_KEY = "dingry-admin-crm-release-dismissed-build";

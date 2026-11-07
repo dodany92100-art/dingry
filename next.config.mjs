@@ -1,4 +1,18 @@
 /** @type {import('next').NextConfig} */
+import { execSync } from "node:child_process";
+
+function crmVersionPatch() {
+  if (process.env.CRM_VERSION_PATCH) return process.env.CRM_VERSION_PATCH;
+  let count = "0";
+  try {
+    count = execSync("git rev-list --count HEAD", { encoding: "utf8" }).trim();
+  } catch {
+    count = String(Math.floor(Date.now() / 1000));
+  }
+  const deploy = (process.env.VERCEL_DEPLOYMENT_ID ?? "").trim();
+  if (deploy) return `${count}.${deploy.slice(-6)}`;
+  return count;
+}
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -48,6 +62,7 @@ const nextConfig = {
       process.env.VERCEL_DEPLOYMENT_CREATED_AT ??
       process.env.CRM_BUILD_AT ??
       new Date().toISOString(),
+    NEXT_PUBLIC_CRM_VERSION_PATCH: crmVersionPatch(),
   },
   typescript: {
     ignoreBuildErrors: false,

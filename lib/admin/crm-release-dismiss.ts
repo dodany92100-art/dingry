@@ -1,8 +1,9 @@
-import { ADMIN_CRM_RELEASE_DISMISS_KEY, ADMIN_CRM_VERSION } from "@/lib/admin/crm-release";
+import { ADMIN_CRM_RELEASE_DISMISS_KEY } from "@/lib/admin/crm-release";
+import { adminCrmVersion } from "@/lib/admin/crm-version";
 
 export function crmReleaseDismissToken(): string {
   const build = (process.env.NEXT_PUBLIC_CRM_BUILD_AT ?? "dev").trim();
-  return `${ADMIN_CRM_VERSION}@${build}`;
+  return `${adminCrmVersion()}@${build}`;
 }
 
 export function isCrmReleaseDismissed(): boolean {
