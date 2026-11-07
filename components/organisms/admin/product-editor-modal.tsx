@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { AdminMediaDropzone } from "@/components/organisms/admin/admin-media-dropzone";
+import { AdminProductEditorLivePreview } from "@/components/organisms/admin/admin-product-editor-live-preview";
 import { AdminProductPreview } from "@/components/organisms/admin/admin-product-preview";
 import { AdminSmartCrmBanner } from "@/components/organisms/admin/admin-smart-crm-banner";
 import {
@@ -303,7 +304,7 @@ const ADMIN_BTN =
 const ADMIN_BTN_ACTIVE =
   "rounded-full border border-white/25 bg-[#121c30] px-3.5 py-2 text-[13px] font-medium text-white ring-1 ring-white/12";
 
-type EditorTab = "product" | "story";
+type EditorTab = "product" | "story" | "preview";
 
 function hydrateModalUiState(
   initial: AdminProduct | null,
@@ -1393,6 +1394,17 @@ export function ProductEditorModal({
               >
                 Fiche boutique
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={editorTab === "preview"}
+                onClick={() => setEditorTab("preview")}
+                className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition ${
+                  editorTab === "preview" ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
+                }`}
+              >
+                Aperçu
+              </button>
             </div>
             </div>
             {formError ? (
@@ -1441,9 +1453,11 @@ export function ProductEditorModal({
           ) : null}
 
           <div className="space-y-6">
-            {editorTab === "product" ? (
-              <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[minmax(220px,22rem)_minmax(0,1fr)] xl:gap-10">
-                <div className="min-w-0 space-y-6 xl:order-2 xl:max-w-none">
+            {editorTab === "preview" ? (
+              <AdminProductEditorLivePreview model={previewModel} productId={editingId} />
+            ) : editorTab === "product" ? (
+              <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(200px,20rem)_minmax(0,1fr)] lg:gap-8 xl:gap-10">
+                <div className="min-w-0 space-y-6 lg:order-2 lg:max-w-none">
                   <div className={sectionClass(sectionDirty.general)}>
                     <p className="mb-1 text-sm font-semibold text-zinc-300">Informations générales</p>
                     <p className="mb-4 text-[12px] leading-relaxed text-white/45">
@@ -1854,7 +1868,7 @@ export function ProductEditorModal({
                   ) : null}
                 </div>
 
-                <div className="min-w-0 space-y-5 xl:order-1 xl:sticky xl:top-24 xl:max-w-[22rem] xl:self-start">
+                <div className="min-w-0 space-y-5 lg:order-1 lg:sticky lg:top-24 lg:max-w-[20rem] lg:self-start">
                   <div className={sectionClass(sectionDirty.media)}>
                     <p className="mb-3 text-sm font-semibold text-zinc-300">
                       Médias
@@ -1881,8 +1895,15 @@ export function ProductEditorModal({
                   </div>
                   <AdminProductPreview
                     model={previewModel}
-                    className="w-full max-w-none border-white/10 bg-transparent xl:max-h-[min(52vh,28rem)] xl:overflow-hidden"
+                    className="w-full max-w-none border-white/10 bg-zinc-950/60"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setEditorTab("preview")}
+                    className={`${ADMIN_BTN} w-full text-center`}
+                  >
+                    Aperçu boutique plein écran
+                  </button>
                 </div>
               </div>
             ) : (

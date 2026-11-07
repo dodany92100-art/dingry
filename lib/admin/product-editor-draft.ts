@@ -20,7 +20,7 @@ export type ProductEditorDraft = {
   form: ProductEditorDraftForm;
   colorListDraft: string;
   waistListDraft: string;
-  editorTab: "product" | "story";
+  editorTab: "product" | "story" | "preview";
   smartPasteOpen: boolean;
   smartPasteText: string;
   imageRectoCleared: boolean;
@@ -65,7 +65,12 @@ export function readProductEditorDraft(sessionId: string): ProductEditorDraft | 
       form: parsed.form,
       colorListDraft: typeof parsed.colorListDraft === "string" ? parsed.colorListDraft : "",
       waistListDraft: typeof parsed.waistListDraft === "string" ? parsed.waistListDraft : "",
-      editorTab: parsed.editorTab === "story" ? "story" : "product",
+      editorTab:
+        parsed.editorTab === "story"
+          ? "story"
+          : parsed.editorTab === "preview"
+            ? "preview"
+            : "product",
       smartPasteOpen: parsed.smartPasteOpen !== false,
       smartPasteText: typeof parsed.smartPasteText === "string" ? parsed.smartPasteText : "",
       imageRectoCleared: parsed.imageRectoCleared === true,

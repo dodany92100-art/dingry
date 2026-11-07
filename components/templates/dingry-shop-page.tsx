@@ -32,7 +32,7 @@ import {
 /** Boutique : orchestre hooks + organisms/shop. */
 export default function DingryShopPage() {
   const router = useRouter();
-  const { pageScrollRef, scrollToSection } = usePageScroll();
+  const { pageScrollRef, scrollToSection, restoreScrollPosition } = usePageScroll();
   const { products, catalogState, retry } = useShopCatalog();
   const { banner: persoBanner } = useShopPersoBanner();
   const cart = useShopCart();
@@ -73,6 +73,11 @@ export default function DingryShopPage() {
       scroller.style.overflow = "";
     };
   }, [cartScrollLocked, pageScrollRef]);
+
+  useEffect(() => {
+    if (catalogState !== "ready") return;
+    restoreScrollPosition();
+  }, [catalogState, restoreScrollPosition]);
 
   function handleTabChange(tab: string) {
     if (tab === CATALOG_MENU_TAB_CUSTOM) {
