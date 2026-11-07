@@ -415,14 +415,20 @@ export default function CheckoutPage() {
                     disabled
                     className="w-full cursor-not-allowed bg-[#e5e7eb] py-4 text-[11px] font-medium tracking-[0.28em] text-[#9ca3af] uppercase"
                   >
-                    {token ? "Paiement indisponible" : "Payer avec PayPal"}
+                    {quoteState === "error"
+                      ? "Panier à mettre à jour"
+                      : token
+                        ? "Paiement indisponible"
+                        : "Payer avec PayPal"}
                   </button>
                 )}
               </div>
               <p className="dingry-checkout-pay-footnote mt-3 text-center">
-                {token
-                  ? "Vérification confirmée. Paiement PayPal sur leur site sécurisé."
-                  : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
+                {quoteState === "error"
+                  ? "Le total n’a pas pu être validé : modifiez ou videz le panier, puis réessayez."
+                  : token
+                    ? "Vérification confirmée. Paiement PayPal sur leur site sécurisé."
+                    : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
               </p>
               {error ? (
                 <p className="mt-4 text-center text-[11px] leading-relaxed text-[#b91c1c]" role="alert">

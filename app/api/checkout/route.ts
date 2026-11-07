@@ -233,7 +233,13 @@ export async function POST(request: Request) {
     return jsonNoStore({ error: "Dingry collection indisponible." }, { status: 503 });
   }
   if (!quote) {
-    return jsonNoStore({ error: "Un article n'est plus dans Dingry collection." }, { status: 400 });
+    return jsonNoStore(
+      {
+        error:
+          "Un article du panier ne correspond plus au catalogue (référence ou taille). Modifiez le panier sur la boutique.",
+      },
+      { status: 400 },
+    );
   }
 
   if (intent === "quote") {

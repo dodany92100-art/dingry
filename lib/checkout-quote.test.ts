@@ -56,6 +56,17 @@ describe("quoteCheckout — prix CRM", () => {
     expect(quote?.totalCents).toBe(8000);
   });
 
+  it("accepte une taille vitrine si la fiche CRM a sizes: []", async () => {
+    vi.mocked(loadStoreReadOnly).mockResolvedValue({
+      version: 4,
+      products: SEEDED_PRODUCTS.map((p) => (p.id === "39" ? { ...p, sizes: [] } : { ...p })),
+      orders: [],
+      lookbook: [],
+    });
+    const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
+    expect(quote?.totalCents).toBe(5000);
+  });
+
   it("facture le prix CRM du recto pour un verso sans fiche (id 8 → 6)", async () => {
     vi.mocked(loadStoreReadOnly).mockResolvedValue({
       version: 4,

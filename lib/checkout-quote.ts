@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { isProductSize } from "@/lib/admin/types";
+import { SIZES } from "@/lib/shop-data";
 import { loadStoreReadOnly } from "@/lib/admin/store";
 import type { AdminProduct } from "@/lib/admin/types";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
@@ -121,7 +122,8 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
     if (!name || price === undefined) return null;
 
     if (product) {
-      if (!product.sizes.includes(line.size)) return null;
+      const sizes = product.sizes.length > 0 ? product.sizes : [...SIZES];
+      if (!sizes.includes(line.size)) return null;
     } else if (fallback) {
       if (!isProductSize(line.size)) return null;
     } else {
