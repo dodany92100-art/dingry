@@ -32,6 +32,32 @@ describe("quoteCheckout — prix CRM", () => {
     expect(quote?.totalCents).toBe(5000);
   });
 
+  it("ignore une fiche CRM brouillon et suit la vitrine PRODUCTS", async () => {
+    vi.mocked(loadStoreReadOnly).mockResolvedValue({
+      version: 4,
+      products: SEEDED_PRODUCTS.map((p) =>
+        p.id === "39"
+          ? { ...p, publishStatus: "draft" as const, price: 1, sizes: ["TU"] }
+          : { ...p },
+      ),
+      orders: [],
+      lookbook: [],
+    });
+    const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
+    expect(quote?.totalCents).toBe(5000);
+  });
+
+  it("accepte un prix CRM à 1 € (pas de plancher au-delà de > 0)", async () => {
+    vi.mocked(loadStoreReadOnly).mockResolvedValue({
+      version: 4,
+      products: SEEDED_PRODUCTS.map((p) => (p.id === "39" ? { ...p, price: 1 } : { ...p })),
+      orders: [],
+      lookbook: [],
+    });
+    const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
+    expect(quote?.totalCents).toBe(100);
+  });
+
   it("prend en compte une modification CRM simulée", async () => {
     vi.mocked(loadStoreReadOnly).mockResolvedValue({
       version: 4,

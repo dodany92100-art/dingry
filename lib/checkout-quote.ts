@@ -111,6 +111,12 @@ function vitrineFallback(productId: number, rectoId: number) {
   return VITRINE_ONLY[productId] ?? (rectoId !== productId ? VITRINE_ONLY[rectoId] : undefined);
 }
 
+/** Brouillons CRM invisibles en boutique : le devis suit la vitrine (overlay), pas une fiche draft. */
+function crmLiveProduct(byId: Map<number, AdminProduct>, productId: number, rectoId: number): AdminProduct | undefined {
+  const row = byId.get(productId) ?? byId.get(rectoId);
+  return row?.publishStatus === "live" ? row : undefined;
+}
+
 function quoteSizesFor(product: AdminProduct | undefined, shop: ShopProduct | undefined): string[] {
   if (product && product.sizes.length > 0) return product.sizes;
   if (shop?.sizes && shop.sizes.length > 0) return shop.sizes;
@@ -155,17 +161,17 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
     if (isShopCatalogIdHidden(line.productId, removed)) return null;
 
     const rectoId = resolveRectoCatalogId(line.productId);
-    const product = byId.get(line.productId) ?? byId.get(rectoId);
+    const crmLive = crmLiveProduct(byId, line.productId, rectoId);
     const shop = shopById.get(line.productId) ?? shopById.get(rectoId);
-    const fallback = product || shop ? undefined : vitrineFallback(line.productId, rectoId);
+    const fallback = crmLive || shop ? undefined : vitrineFallback(line.productId, rectoId);
 
-    const name = product?.name ?? shop?.name ?? fallback?.name;
-    const variant = product?.variant ?? shop?.variant ?? fallback?.variant ?? "";
-    const price = product?.price ?? shop?.price ?? fallback?.price;
+    const name = crmLive?.name ?? shop?.name ?? fallback?.name;
+    const variant = crmLive?.variant ?? shop?.variant ?? fallback?.variant ?? "";
+    const price = crmLive?.price ?? shop?.price ?? fallback?.price;
     if (!name || price === undefined) return null;
 
-    const sizes = quoteSizesFor(product, shop);
-    if (product || shop) {
+    const sizes = quoteSizesFor(crmLive, shop);
+    if (crmLive || shop) {
       if (!lineSizeAllowed(sizes, line.size)) return null;
     } else if (fallback) {
       if (!isProductSize(line.size)) return null;
