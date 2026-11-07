@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeDropBatchItems } from "@/lib/admin/drop-batch";
+import { normalizeDropBatchItems, reconcileDropBatchWithCatalog } from "@/lib/admin/drop-batch";
 
 describe("normalizeDropBatchItems", () => {
   it("accepte un lot ordre + publication", () => {
@@ -10,6 +10,25 @@ describe("normalizeDropBatchItems", () => {
     expect(items).toEqual([
       { id: "1", displayOrder: 0 },
       { id: "2", displayOrder: 1, status: "published" },
+    ]);
+  });
+
+  it("fusionne un lot partiel avec le catalogue serveur", () => {
+    const merged = reconcileDropBatchWithCatalog(
+      [
+        { id: "1", displayOrder: 5 },
+        { id: "2", displayOrder: 1 },
+        { id: "3", displayOrder: 2 },
+      ],
+      [
+        { id: "1", displayOrder: 0 },
+        { id: "2", displayOrder: 1 },
+      ],
+    );
+    expect(merged).toEqual([
+      { id: "1", displayOrder: 0 },
+      { id: "2", displayOrder: 1 },
+      { id: "3", displayOrder: 2 },
     ]);
   });
 

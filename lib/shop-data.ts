@@ -129,7 +129,6 @@ export const HOODIE_PAIR_DEFS = [
 export const LOOKBOOK_ENTRIES = [
   [IMAGES.editorial, "DINGRY — Rock the Street", "Par Sully Sefil"],
   [IMAGES.hero1, "DINGRY Look Book", "Editorial"],
-  [IMAGES.cap1, "DYRON — AFRO PUNK", "Saison capsule"],
 ] as const;
 
 /** Fiches statiques boutique — `stock?: number` optionnel (défaut {@link DEFAULT_SHOP_PRODUCT_STOCK}). */
