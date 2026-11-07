@@ -1148,7 +1148,7 @@ export function ProductEditorModal({
           className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
           <header className="dingry-admin-glass sticky top-0 z-20 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-8">
-            <div className="min-w-0 flex flex-wrap items-center gap-4">
+            <div className="flex min-w-0 flex-wrap items-center gap-4">
               <button
                 type="button"
                 onClick={onClose}
@@ -1158,55 +1158,37 @@ export function ProductEditorModal({
                 ← Retour au stock
               </button>
               <span className="hidden h-4 w-px bg-zinc-700 sm:block" aria-hidden />
-              <div>
-                <p className="text-sm text-zinc-500">Fiche produit</p>
-                <h1 className="mt-0.5 truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                  {form.name.trim() || (editingId ? "Modifier" : "Nouveau")}
-                </h1>
-              </div>
-              <div className="flex gap-0.5 rounded-full bg-white/8 p-0.5 backdrop-blur-md">
-                <button
-                  type="button"
-                  onClick={() => setEditorTab("product")}
-                  className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition ${
-                    editorTab === "product" ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
-                  }`}
-                >
-                  Produit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditorTab("story")}
-                  className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition ${
-                    editorTab === "story" ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
-                  }`}
-                >
-                  Fiche
-                </button>
-              </div>
+              <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                {form.name.trim() || (editingId ? "Modifier" : "Nouveau produit")}
+              </h1>
             </div>
-            <div className="flex shrink-0 items-end gap-3">
-              <div className="w-[min(100%,11rem)] sm:w-48">
-                <label htmlFor="dingry-product-category" className={FIELD_LABEL}>
-                  Catégorie
-                </label>
-                <select
-                  id="dingry-product-category"
-                  name="category"
-                  aria-label="Catégorie produit"
-                  value={form.category}
-                  onChange={(event) => changeCategory(event.target.value as ProductCategory)}
-                  className={`${FIELD_SELECT} mt-1 font-medium ${
-                    sectionDirty.general && form.category !== baselineForm.category ? "border-white/40" : ""
-                  }`}
-                >
-                  {PRODUCT_CATEGORIES.map((item) => (
-                    <option key={item} value={item} className="bg-zinc-950 text-white">
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div
+              className="flex gap-0.5 rounded-full bg-white/8 p-0.5 backdrop-blur-md"
+              role="tablist"
+              aria-label="Produit ou fiche boutique"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={editorTab === "product"}
+                onClick={() => setEditorTab("product")}
+                className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition ${
+                  editorTab === "product" ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
+                }`}
+              >
+                Produit
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={editorTab === "story"}
+                onClick={() => setEditorTab("story")}
+                className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition ${
+                  editorTab === "story" ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
+                }`}
+              >
+                Fiche boutique
+              </button>
             </div>
           </header>
 
@@ -1250,11 +1232,33 @@ export function ProductEditorModal({
               <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[minmax(220px,22rem)_minmax(0,1fr)] xl:gap-10">
                 <div className="min-w-0 space-y-6 xl:order-2 xl:max-w-none">
                   <div className={sectionClass(sectionDirty.general)}>
-                    <p className="mb-4 text-sm font-semibold text-zinc-300">
-                      Informations générales
+                    <p className="mb-1 text-sm font-semibold text-zinc-300">Informations générales</p>
+                    <p className="mb-4 text-[12px] leading-relaxed text-white/45">
+                      Catégorie boutique, référence et nom affichés dans le catalogue.
                     </p>
                     <div className="space-y-5">
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <label htmlFor="dingry-product-category" className={`${FIELD_LABEL} sm:col-span-2 lg:col-span-1`}>
+                          Catégorie
+                          <select
+                            id="dingry-product-category"
+                            name="category"
+                            aria-label="Catégorie produit"
+                            value={form.category}
+                            onChange={(event) => changeCategory(event.target.value as ProductCategory)}
+                            className={`${FIELD_SELECT} font-medium ${
+                              sectionDirty.general && form.category !== baselineForm.category
+                                ? "border-white/40"
+                                : ""
+                            }`}
+                          >
+                            {PRODUCT_CATEGORIES.map((item) => (
+                              <option key={item} value={item} className="bg-zinc-950 text-white">
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                         <label className={FIELD_LABEL}>
                           Référence (SKU)
                           <input
@@ -1265,8 +1269,8 @@ export function ProductEditorModal({
                             className={`${FIELD_INPUT} font-mono text-[12px] uppercase`}
                           />
                         </label>
-                        <label className={FIELD_LABEL}>
-                          Nom
+                        <label className={`${FIELD_LABEL} sm:col-span-2 lg:col-span-1`}>
+                          Nom produit
                           <input
                             value={form.name}
                             onChange={(event) => patch({ name: event.target.value })}

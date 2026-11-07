@@ -37,6 +37,7 @@ export {
 } from "@/lib/dingry-product-taxonomy";
 import type { OfficialProductCategory as ProductCategory } from "@/lib/dingry-product-taxonomy";
 import { OFFICIAL_PRODUCT_CATEGORIES as PRODUCT_CATEGORIES } from "@/lib/dingry-product-taxonomy";
+import { normalizeCatalogCategory, type CatalogCategory } from "@/lib/catalog-category";
 
 const LEGACY_PRODUCT_CATEGORY: Record<string, ProductCategory> = {
   Tee: "T-shirts",
@@ -44,12 +45,32 @@ const LEGACY_PRODUCT_CATEGORY: Record<string, ProductCategory> = {
   "Hoodie zippé": "Hoodies zippés",
   Sweats: "Crewnecks",
   Jersey: "Jerseys",
+  Pant: "Pants",
+  Pantalon: "Pants",
+  Pantalons: "Pants",
+  "Crop Top": "Crop tops",
+  "Crop top": "Crop tops",
+};
+
+const CATALOG_SLUG_TO_OFFICIAL: Record<CatalogCategory, ProductCategory> = {
+  hoodies: "Hoodies",
+  "hoodie-zip": "Hoodies zippés",
+  sweats: "Crewnecks",
+  "t-shirts": "T-shirts",
+  jersey: "Jerseys",
+  pants: "Pants",
+  "crop-top": "Crop tops",
+  caps: "Caps",
 };
 
 /** Normalise anciennes fiches CRM + valeurs boutique. */
 export function normalizeProductCategory(value: string): ProductCategory {
   if ((PRODUCT_CATEGORIES as readonly string[]).includes(value)) return value as ProductCategory;
-  return LEGACY_PRODUCT_CATEGORY[value] ?? "T-shirts";
+  const legacy = LEGACY_PRODUCT_CATEGORY[value];
+  if (legacy) return legacy;
+  const slug = normalizeCatalogCategory(value);
+  if (slug) return CATALOG_SLUG_TO_OFFICIAL[slug];
+  return "T-shirts";
 }
 
 /** Tailles proposées dans le formulaire admin par catégorie. */

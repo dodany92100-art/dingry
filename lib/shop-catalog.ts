@@ -80,12 +80,9 @@ export function resolveShopCategory(productId: number, category: string): ShopCa
   if (DINGRY_SWEAT_PRODUCT_IDS.has(productId)) return "Sweats";
   if (DINGRY_TEE_PRODUCT_IDS.has(productId)) return SHOP_TEE_CATEGORY;
   if (DINGRY_JERSEY_PRODUCT_IDS.has(productId)) return "Jersey";
+  const slug = normalizeCatalogCategory(category);
+  if (slug) return SHOP_CATEGORY_BY_MENU_SLUG[slug];
   if (category === "Tee" || category === "T-shirts") return SHOP_TEE_CATEGORY;
-  if (category === "Hoodies") return "Hoodie";
-  if (category === "Hoodies zippés") return "Hoodie zippé";
-  if (category === "Crewnecks") return "Sweats";
-  if (category === "Jerseys") return "Jersey";
-  if (category === "Crop tops") return "Crop Top";
   return category;
 }
 
@@ -114,6 +111,13 @@ export type CatalogMenuSection = {
   products: ShopProduct[];
 };
 
+/** Blocs Collection visibles même sans fiche (famille lancée progressivement). */
+export const CATALOG_SECTION_ALWAYS_VISIBLE = new Set<CatalogCategory>(["pants", "crop-top"]);
+
+function keepCatalogMenuSection(section: CatalogMenuSection): boolean {
+  return section.products.length > 0 || CATALOG_SECTION_ALWAYS_VISIBLE.has(section.category);
+}
+
 /** Vue « Collection » : blocs produits dans l’ordre du menu (Hoodies → Caps). */
 export function buildCatalogMenuSections(products: readonly ShopProduct[]): CatalogMenuSection[] {
   const cards = toCatalogCards(products);
@@ -124,7 +128,7 @@ export function buildCatalogMenuSections(products: readonly ShopProduct[]): Cata
       cards.filter((product) => normalizeCatalogCategory(product.category) === category),
       "featured",
     ),
-  })).filter((section) => section.products.length > 0);
+  })).filter(keepCatalogMenuSection);
 }
 
 /** Fiche produit avec bascule recto / verso (hoodies, sweats ; tees via meta dédiée). */

@@ -7,6 +7,7 @@ import {
 } from "@/lib/catalog-category";
 import { sortAdminProductsLikeShop } from "@/lib/admin/product-display-order";
 import {
+  CATALOG_SECTION_ALWAYS_VISIBLE,
   DINGRY_RETIRED_PRODUCT_IDS,
   resolveShopCategory,
 } from "@/lib/shop-catalog";
@@ -47,5 +48,7 @@ export function buildAdminStockMenuSections(
     products: sortAdminProductsLikeShop(
       cards.filter((product) => adminProductCatalogSlug(product) === category),
     ),
-  })).filter((section) => section.products.length > 0);
+  })).filter(
+    (section) => section.products.length > 0 || CATALOG_SECTION_ALWAYS_VISIBLE.has(section.category),
+  );
 }

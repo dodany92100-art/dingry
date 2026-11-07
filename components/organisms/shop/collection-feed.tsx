@@ -57,9 +57,16 @@ export function CollectionFeed({
             <h3 className="border-b border-white/[0.08] pb-3 text-sm font-medium uppercase tracking-[0.28em] text-white md:pb-4 md:text-base">
               {section.label}
             </h3>
-            <div className={CATALOG_PRODUCT_GRID_CLASS} aria-label={`Produits ${section.label}`}>
-              {cells}
-            </div>
+            {section.products.length === 0 ? (
+              <p className="text-sm tracking-wider text-white/40">
+                Aucune pièce en ligne pour le moment · vérifie la catégorie{' '}
+                <span className="text-white/55">{section.label}</span> sur les fiches CRM.
+              </p>
+            ) : (
+              <div className={CATALOG_PRODUCT_GRID_CLASS} aria-label={`Produits ${section.label}`}>
+                {cells}
+              </div>
+            )}
           </div>
         );
       })}
