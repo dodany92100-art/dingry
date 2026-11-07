@@ -158,7 +158,7 @@ export function PayPalPaymentButton({
                     endFlow();
                     throw new Error(message);
                   }
-                  onAfterCreateSuccess?.();
+                  /** Pas de refresh Turnstile ici : le re-render fermerait la fenêtre PayPal à l’ouverture. */
                   return payload.orderId;
                 } catch (cause) {
                   endFlow();
@@ -189,12 +189,14 @@ export function PayPalPaymentButton({
                   setError("Le paiement PayPal n'a pas abouti. Vous pouvez réessayer.");
                 } finally {
                   endFlow();
+                  onAfterCreateSuccess?.();
                 }
               }}
               onCancel={() => {
                 endFlow();
                 setError(null);
                 setCancelled(true);
+                onAfterCreateSuccess?.();
               }}
               onError={(err) => {
                 console.error(
@@ -208,6 +210,7 @@ export function PayPalPaymentButton({
                     current ??
                     "Le paiement PayPal n'a pas abouti. Vous pouvez réessayer sans quitter la page.",
                 );
+                onAfterCreateSuccess?.();
               }}
             />
           </div>

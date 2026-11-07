@@ -248,7 +248,7 @@ export default function CheckoutPage() {
     await registerOrder(orderId);
   }
 
-  /** Jeton Turnstile à usage unique : nouveau widget après chaque `create` réussi (relance PayPal). */
+  /** Jeton Turnstile à usage unique : nouveau widget après fin du flux PayPal (pas pendant l’ouverture). */
   function refreshTurnstileAfterCreate() {
     setToken(null);
     setTurnstileKey((key) => key + 1);
