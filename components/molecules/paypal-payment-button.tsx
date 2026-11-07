@@ -159,10 +159,18 @@ export function PayPalPaymentButton({
                 setError(null);
                 setCancelled(true);
               }}
-              onError={() => {
+              onError={(err) => {
+                console.error(
+                  "[paypal] onError",
+                  err instanceof Error ? err.message : err,
+                );
                 endFlow();
                 setCancelled(false);
-                setError("Le paiement PayPal n'a pas abouti. Vous pouvez réessayer sans quitter la page.");
+                setError(
+                  (current) =>
+                    current ??
+                    "Le paiement PayPal n'a pas abouti. Vous pouvez réessayer sans quitter la page.",
+                );
               }}
             />
           </div>
