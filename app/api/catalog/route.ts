@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
-import { loadStoreReadOnly, StoreUnavailableError } from "@/lib/admin/store";
-import { toCatalogProduct } from "@/lib/admin/types";
+import { StoreUnavailableError } from "@/lib/admin/store";
+import { getCachedCatalogProductRows } from "@/lib/server/shop-catalog-cache";
 import { isInStockFromQuantity, readStockQuantities } from "@/lib/stock";
 
 export const runtime = "nodejs";
-/** Données Blob / CRM : toujours à la demande (compat Turbopack + preview/prod). */
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export async function GET() {
   try {
-    const store = await loadStoreReadOnly();
-    const catalogRows = store.products
-      .map((product) => toCatalogProduct(product))
-      .filter((product): product is NonNullable<typeof product> => product !== null);
+    const { products: catalogRows, removedCatalogIds } = await getCachedCatalogProductRows();
     const stockById = await readStockQuantities(catalogRows.map((product) => product.id));
     const products = catalogRows.map((catalog) => {
       const live = stockById.get(catalog.id) ?? "missing";
@@ -21,10 +15,14 @@ export async function GET() {
       const { stock: _stock, ...publicProduct } = catalog;
       return { ...publicProduct, inStock };
     });
-    const removedCatalogIds = (store.removedCatalogIds ?? []).map((id) => Number(id)).filter((id) =>
-      Number.isInteger(id),
+    return NextResponse.json(
+      { products, removedCatalogIds },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        },
+      },
     );
-    return NextResponse.json({ products, removedCatalogIds });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
       console.error("Catalogue injoignable", error.name);

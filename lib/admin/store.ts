@@ -35,6 +35,7 @@ import {
   normalizePublishStatus,
   normalizePrintPlacement,
   STORE_VERSION,
+  type AdminCatalogPersoBanner,
   type AdminLookbookSlide,
   type AdminOrder,
   type AdminProduct,
@@ -51,6 +52,7 @@ import {
   normalizeDisplayOrder,
   normalizeIsPinned,
 } from "@/lib/admin/product-display-order";
+import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 
 const STORE_PATHNAME = "dingry/admin/store.json";
 const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json");
@@ -178,6 +180,7 @@ function cloneStore(store: AdminStore): AdminStore {
     products: store.products.map((product) => ({ ...product, sizes: [...product.sizes] })),
     orders: store.orders.map((order) => ({ ...order })),
     lookbook: store.lookbook.map((slide) => ({ ...slide })),
+    ...(store.catalogPersoBanner ? { catalogPersoBanner: { ...store.catalogPersoBanner } } : {}),
   };
 }
 
@@ -576,6 +579,24 @@ function removedLookbookSlideIdSet(raw: AdminStore): Set<string> {
   );
 }
 
+function normalizeCatalogPersoBannerRecord(value: unknown): AdminCatalogPersoBanner | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const imageUrl = typeof record.imageUrl === "string" ? record.imageUrl.trim() : "";
+  if (!imageUrl) return undefined;
+  return {
+    enabled: record.enabled !== false,
+    imageUrl,
+    blobUrl: typeof record.blobUrl === "string" ? record.blobUrl : null,
+    blobPathname: typeof record.blobPathname === "string" ? record.blobPathname : null,
+    eyebrow: typeof record.eyebrow === "string" ? record.eyebrow.trim() : "",
+    title: typeof record.title === "string" ? record.title.trim() : "",
+    subtitle: typeof record.subtitle === "string" ? record.subtitle.trim() : "",
+    ctaLabel: typeof record.ctaLabel === "string" ? record.ctaLabel.trim() : "",
+    updatedAt: typeof record.updatedAt === "string" ? record.updatedAt : new Date().toISOString(),
+  };
+}
+
 function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
   const tombstone = removedLookbookSlideIdSet(raw);
   const isRetiredLookbookSlide = (item: AdminLookbookSlide) =>
@@ -650,11 +671,13 @@ function migrateStore(raw: AdminStore): AdminStore {
       (item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id) && !removed.has(item.id),
     );
     const products = migrateProductVersoBackUrl([...mergedSeed, ...extras]);
+    const catalogPersoBanner = normalizeCatalogPersoBannerRecord(raw.catalogPersoBanner);
     return {
       version: STORE_VERSION,
       products: finalizeProducts(products),
       orders: raw.orders,
       lookbook: mergeLookbookSlides(raw),
+      ...(catalogPersoBanner ? { catalogPersoBanner } : {}),
       removedCatalogIds: [...removed],
       removedLookbookSlideIds: [...removedLookbookSlides],
     };
@@ -666,11 +689,13 @@ function migrateStore(raw: AdminStore): AdminStore {
   );
   const products = migrateProductVersoBackUrl([...mergedSeed, ...extras]);
 
+  const catalogPersoBanner = normalizeCatalogPersoBannerRecord(raw.catalogPersoBanner);
   return {
     version: STORE_VERSION,
     products: finalizeProducts(products),
     orders: raw.orders,
     lookbook: mergeLookbookSlides(raw),
+    ...(catalogPersoBanner ? { catalogPersoBanner } : {}),
     removedCatalogIds: [...removed],
     removedLookbookSlideIds: [...removedLookbookSlides],
   };
@@ -686,6 +711,7 @@ function normalizeStore(value: AdminStore): AdminStore {
     removedLookbookSlideIds: Array.isArray(value.removedLookbookSlideIds)
       ? value.removedLookbookSlideIds
       : [],
+    catalogPersoBanner: value.catalogPersoBanner,
   });
 }
 
@@ -1696,4 +1722,74 @@ export async function reorderLookbookSlide(id: string, direction: "up" | "down")
     },
     LOOKBOOK_STORE_WRITE_OPTIONS,
   );
+}
+
+const PERSO_BANNER_UPLOAD_ID = "perso";
+
+export async function uploadCatalogPersoBannerImage(file: File): Promise<UploadedAdminImage> {
+  return uploadAdminImageFile(file, {
+    supabaseFolder: `banner/${PERSO_BANNER_UPLOAD_ID}`,
+    blobPathPrefix: `banner/${PERSO_BANNER_UPLOAD_ID}`,
+    localFilePrefix: `banner-${PERSO_BANNER_UPLOAD_ID}`,
+  });
+}
+
+async function deleteCatalogPersoBannerImage(banner: AdminCatalogPersoBanner): Promise<void> {
+  await deleteBlobOrLocal(banner.blobUrl, banner.blobPathname, banner.imageUrl);
+}
+
+export type CatalogPersoBannerInput = {
+  enabled: boolean;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+};
+
+const PERSO_BANNER_STORE_WRITE_OPTIONS: StoreOptimisticOptions = { adminRelaxedFinalize: true };
+
+export async function upsertCatalogPersoBanner(
+  input: CatalogPersoBannerInput,
+  file?: File,
+): Promise<AdminCatalogPersoBanner> {
+  let uploaded: Awaited<ReturnType<typeof uploadCatalogPersoBannerImage>> | undefined;
+  let previous: AdminCatalogPersoBanner | undefined;
+
+  if (file) {
+    uploaded = await uploadCatalogPersoBannerImage(file);
+  }
+
+  const result = await withStoreOptimistic(
+    (store) => {
+      previous = store.catalogPersoBanner ? { ...store.catalogPersoBanner } : undefined;
+      const baseImage =
+        uploaded?.imageUrl ??
+        previous?.imageUrl?.trim() ??
+        DEFAULT_CATALOG_PERSO_BANNER.imageUrl;
+      const next: AdminCatalogPersoBanner = {
+        enabled: input.enabled,
+        imageUrl: baseImage,
+        blobUrl: uploaded ? uploaded.blobUrl : (previous?.blobUrl ?? null),
+        blobPathname: uploaded ? uploaded.blobPathname : (previous?.blobPathname ?? null),
+        eyebrow: input.eyebrow,
+        title: input.title,
+        subtitle: input.subtitle,
+        ctaLabel: input.ctaLabel,
+        updatedAt: new Date().toISOString(),
+      };
+      store.catalogPersoBanner = next;
+      return { store, result: next };
+    },
+    PERSO_BANNER_STORE_WRITE_OPTIONS,
+  );
+
+  if (uploaded && previous?.blobUrl) {
+    const hadLocalOnly =
+      previous.imageUrl.startsWith("/admin-uploads/") || previous.blobUrl || previous.blobPathname;
+    if (hadLocalOnly && previous.imageUrl !== result.imageUrl) {
+      await deleteCatalogPersoBannerImage(previous);
+    }
+  }
+
+  return result;
 }

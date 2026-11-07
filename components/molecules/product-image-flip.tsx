@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
 import { cn } from "@/lib/utils";
 import { cldOpt } from "@/components/molecules/product-card";
 
@@ -156,14 +157,10 @@ export function ProductImageFlip({
         role={onTap ? "button" : undefined}
         tabIndex={onTap ? 0 : undefined}
       >
-        <img
+        <DingryCloudinaryImage
           src={frontSrc}
           alt={alt}
-          loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
-          decoding="async"
-          width={600}
-          height={800}
+          priority={priority}
           className={cn(
             "h-full w-full object-cover transition-[filter] duration-300 ease-out motion-reduce:transition-none",
             imgClassName,
@@ -212,29 +209,19 @@ export function ProductImageFlip({
           side === "verso" && "dingry-flip-track--verso",
         )}
       >
-        <img
+        <DingryCloudinaryImage
           src={frontSrc}
           alt={alt}
-          loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
-          decoding="async"
-          width={600}
-          height={800}
-          draggable={false}
+          priority={priority}
           className={cn(
             "h-full w-1/2 shrink-0 object-cover",
             imgClassName,
             soldOut && "opacity-50",
           )}
         />
-        <img
+        <DingryCloudinaryImage
           src={backSrc}
           alt={`${alt} — verso`}
-          loading="lazy"
-          decoding="async"
-          width={600}
-          height={800}
-          draggable={false}
           className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
         />
       </div>

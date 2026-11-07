@@ -72,10 +72,10 @@ export function AdminMediaDropzone({
           const file = event.dataTransfer.files?.[0] ?? null;
           pickFile(file);
         }}
-        className={`flex w-full flex-col items-center justify-center gap-3 rounded-md border border-dashed px-3 py-5 transition duration-300 ${panelTone} disabled:opacity-50`}
+        className={`flex w-full flex-col items-center justify-center gap-3 overflow-visible rounded-md border border-dashed px-3 py-5 transition duration-300 ${panelTone} disabled:opacity-50`}
       >
         {previewSrc ? (
-          <span className="relative inline-block max-w-[14rem]">
+          <span className="relative inline-block max-w-[14rem] overflow-visible">
             <img
               src={previewSrc}
               alt=""
@@ -83,26 +83,21 @@ export function AdminMediaDropzone({
                 tone === "ghost" ? "border border-white/15" : "rounded-sm border border-white/15 shadow-lg"
               }`}
             />
-            <span
-              role="button"
-              tabIndex={0}
+            <button
+              type="button"
               aria-label="Supprimer le média"
+              disabled={converting}
+              onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 if (converting) return;
                 pickFile(null);
               }}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                event.stopPropagation();
-                if (!converting) pickFile(null);
-              }}
-              className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-[#1a2438] text-xs leading-none text-white/70 shadow-sm hover:border-red-400/50 hover:text-red-300"
+              className="absolute right-0.5 top-0.5 z-20 flex h-10 w-10 touch-manipulation items-center justify-center rounded-full border border-white/30 bg-black/75 text-lg font-medium leading-none text-white shadow-[0_2px_10px_rgba(0,0,0,0.45)] backdrop-blur-sm hover:border-red-400/55 hover:bg-red-950/90 hover:text-red-100 disabled:opacity-50 sm:right-1 sm:top-1 sm:h-8 sm:w-8 sm:text-base"
             >
               ×
-            </span>
+            </button>
           </span>
         ) : (
           <span

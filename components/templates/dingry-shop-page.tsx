@@ -12,6 +12,7 @@ import { usePageScroll } from "@/components/organisms/shop/hooks/use-page-scroll
 import { useProductModal } from "@/components/organisms/shop/hooks/use-product-modal";
 import { useShopCart } from "@/components/organisms/shop/hooks/use-shop-cart";
 import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catalog";
+import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-perso-banner";
 import { useWishlist } from "@/components/organisms/shop/hooks/use-wishlist";
 import { PaymentToast } from "@/components/organisms/shop/payment-toast";
 import { PersonalizeModal, type PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
@@ -33,6 +34,7 @@ export default function DingryShopPage() {
   const router = useRouter();
   const { pageScrollRef, scrollToSection } = usePageScroll();
   const { products, catalogState, retry } = useShopCatalog();
+  const { banner: persoBanner } = useShopPersoBanner();
   const cart = useShopCart();
   const modal = useProductModal({ products, catalogState });
   const wishlist = useWishlist();
@@ -127,6 +129,7 @@ export default function DingryShopPage() {
           onOpenProduct={modal.openProductModal}
           wishlistIds={wishlist.ids}
           onToggleWishlist={wishlist.toggle}
+          persoBanner={persoBanner}
         />
         <LookbookCatalogStrip />
         <HeritageSection scrollContainerRef={pageScrollRef} />

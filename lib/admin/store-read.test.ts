@@ -53,7 +53,7 @@ describe("readBlobSnapshot via withStoreOptimistic", () => {
 
   it("put Blob avec ifMatch quand etag connu (useCache: false sur get)", async () => {
     const storeJson = JSON.stringify({
-      version: 12,
+      version: 13,
       products: [],
       orders: [
         {

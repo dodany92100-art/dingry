@@ -10,6 +10,7 @@ import { CATALOG_SECTION_SURFACE_CLASS } from "./catalog-layout";
 import { CatalogFilterBar, type CatalogTabValue } from "./catalog-filter-bar";
 import { CatalogGrid } from "./catalog-grid";
 import type { CatalogState } from "./hooks/use-shop-catalog";
+import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
 
 type CatalogSectionProps = {
   tabValue: CatalogTabValue;
@@ -23,12 +24,14 @@ type CatalogSectionProps = {
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
+  persoBanner: ShopCatalogPersoBanner;
 };
 
 export function CatalogSection({
   tabValue,
   onTabChange,
   onOpenCustom,
+  persoBanner,
   ...grid
 }: CatalogSectionProps) {
   return (
@@ -52,7 +55,7 @@ export function CatalogSection({
         </div>
       ) : null}
 
-      <CustomConfiguratorBanner onOpen={onOpenCustom} />
+      <CustomConfiguratorBanner onOpen={onOpenCustom} content={persoBanner} />
 
       <CatalogGrid {...grid} />
     </section>

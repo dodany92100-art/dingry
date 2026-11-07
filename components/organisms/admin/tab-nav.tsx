@@ -1,11 +1,12 @@
 "use client";
 
-export type TabId = "produits" | "brouillons" | "commandes" | "lookbook";
+export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "banniere";
 
 const TABS: readonly (readonly [TabId, string])[] = [
   ["produits", "Stock"],
   ["brouillons", "Brouillons"],
   ["commandes", "Commandes"],
+  ["banniere", "Bannière"],
   ["lookbook", "Lookbook"],
 ];
 

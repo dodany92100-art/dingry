@@ -22,8 +22,8 @@ export function WishlistIconButton({
   size = "sm",
   className,
 }: WishlistIconButtonProps) {
-  const dim = size === "md" ? "h-11 w-11" : "h-9 w-9";
   const iconSize = size === "md" ? 22 : 18;
+  const hit = size === "md" ? "h-11 w-11" : "h-9 w-9";
 
   return (
     <button
@@ -39,19 +39,20 @@ export function WishlistIconButton({
         onClick();
       }}
       className={cn(
-        "dingry-interactive-luxe flex items-center justify-center rounded-full border backdrop-blur-md transition-colors duration-200",
-        dim,
+        "dingry-interactive-luxe flex items-center justify-center rounded-md transition-[color,opacity,transform] duration-200",
+        hit,
         active
-          ? "border-[#0066FF]/70 bg-black/50 text-[#7EB3FF] hover:border-[#0066FF] hover:bg-black/65"
-          : "border-white/20 bg-black/45 text-white/80 hover:border-white/45 hover:bg-black/60 hover:text-white",
+          ? "text-[#7EB3FF]/95 drop-shadow-[0_0_12px_rgba(0,102,255,0.35)]"
+          : "text-white/40 hover:text-white/75",
         className,
       )}
     >
       <Heart
         size={iconSize}
-        strokeWidth={1.65}
+        strokeWidth={1.5}
         className="shrink-0"
         fill={active ? "currentColor" : "none"}
+        fillOpacity={active ? 0.35 : 0}
         aria-hidden
       />
     </button>

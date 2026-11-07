@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateShopCatalog } from "@/lib/revalidate-shop-catalog";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { normalizeDropBatchItems, type DropBatchItem } from "@/lib/admin/drop-batch";
 import {
@@ -50,8 +50,7 @@ export async function publishDropBatchAction(
       return { ok: false, error: detail, skipped: result.skipped };
     }
 
-    revalidatePath("/api/catalog");
-    revalidatePath("/");
+    revalidateShopCatalog();
 
     return {
       ok: true,

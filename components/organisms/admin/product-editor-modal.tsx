@@ -50,6 +50,7 @@ import {
   resolveProductSkuForSave,
 } from "@/lib/admin/product-sku";
 import { parseProductFamilyAndPrice } from "@/lib/admin/parse-product-family";
+import { defaultSelectedSizesForCategory } from "@/lib/admin/standard-sizes";
 import {
   clearProductEditorDraft,
   readProductEditorDraft,
@@ -200,7 +201,7 @@ function formFrom(
       category: "T-shirts",
       price: "",
       stock: String(DEFAULT_SHOP_PRODUCT_STOCK),
-      sizes: [],
+      sizes: defaultSelectedSizesForCategory(category) as ProductSize[],
     };
   }
   return {
@@ -656,7 +657,9 @@ export function ProductEditorModal({
 
   function changeCategory(nextCategory: ProductCategory) {
     setForm((prev) => {
-      const nextSizes = filterSizesForCategory(prev.sizes, nextCategory);
+      const nextSizes = editingId
+        ? filterSizesForCategory(prev.sizes, nextCategory)
+        : (defaultSelectedSizesForCategory(nextCategory) as ProductSize[]);
       const nowPants = isPantsCategory(nextCategory);
       const wasPants = isPantsCategory(prev.category);
 
@@ -888,10 +891,12 @@ export function ProductEditorModal({
         return "Ajoute une image pour mettre en ligne.";
       }
     }
-    if (!form.variant.trim()) {
-      return isPantsCategory(form.category)
-        ? "Choisis ou saisis un tour de taille (variante)."
-        : "Choisis ou saisis une couleur (variante).";
+    if (isPantsCategory(form.category)) {
+      if (!form.variant.trim()) {
+        return "Choisis ou saisis un tour de taille (variante).";
+      }
+    } else if (form.colorDeclinations.every((c) => !c.trim())) {
+      return "Sélectionne au moins une couleur (palette ou saisie libre).";
     }
     const priceValue = Number(form.price);
     if (!Number.isFinite(priceValue) || priceValue <= 0 || priceValue > 10000) {
@@ -930,8 +935,12 @@ export function ProductEditorModal({
     }
     try {
       const formToSave = formWithSkuForSave(form, existingSkusRef.current, editingId);
+      const variantForSave =
+        formToSave.variant.trim() ||
+        formToSave.colorDeclinations.find((c) => c.trim())?.trim() ||
+        "";
       const payload = buildFormDataComplete(
-        formToSave,
+        { ...formToSave, variant: variantForSave },
         imageRectoFile,
         imageVersoFile,
         publishStatus,
@@ -1331,7 +1340,8 @@ export function ProductEditorModal({
           }}
           className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
-          <header className="dingry-admin-glass sticky top-0 z-20 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-8">
+          <header className="dingry-admin-glass sticky top-0 z-20 flex shrink-0 flex-col gap-2 border-b border-white/10 px-5 py-4 sm:px-8">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 flex-wrap items-center gap-4">
               <button
                 type="button"
@@ -1384,10 +1394,19 @@ export function ProductEditorModal({
                 Fiche boutique
               </button>
             </div>
+            </div>
+            {formError ? (
+              <p
+                role="alert"
+                aria-live="assertive"
+                className="mx-auto w-full max-w-2xl rounded-xl border border-red-500/40 bg-red-950/50 px-4 py-2.5 text-center text-[13px] font-medium leading-snug text-red-200"
+              >
+                {formError}
+              </p>
+            ) : null}
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 pb-8 sm:px-8 lg:px-10">
-          {formError ? <p className="text-sm text-red-400">{formError}</p> : null}
           {formSuccess ? (
             formSuccess.kind === "smart-parse" ? (
               <div role="status" className="dingry-admin-panel mt-3 rounded-2xl px-4 py-3 text-sm">

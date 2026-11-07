@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidateShopCatalog } from "@/lib/revalidate-shop-catalog";
 import { requireAdmin } from "@/lib/admin/auth";
 import { parseProductFields } from "@/lib/admin/parse-product";
 import {
@@ -88,8 +88,7 @@ export async function PATCH(
         },
         file,
       );
-      revalidatePath("/api/catalog");
-      revalidatePath("/");
+      revalidateShopCatalog();
       return jsonNoStore({ product });
     }
 
@@ -102,15 +101,13 @@ export async function PATCH(
 
     if (typeof body.stockDelta === "number") {
       const product = await updateProduct(id, { stockDelta: body.stockDelta });
-      revalidatePath("/api/catalog");
-      revalidatePath("/");
+      revalidateShopCatalog();
       return jsonNoStore({ product });
     }
 
     if (typeof body.isPinned === "boolean") {
       const product = await updateProduct(id, { isPinned: body.isPinned });
-      revalidatePath("/api/catalog");
-      revalidatePath("/");
+      revalidateShopCatalog();
       return jsonNoStore({ product });
     }
 
@@ -119,8 +116,7 @@ export async function PATCH(
       return jsonNoStore({ error: parsed.error }, { status: 400 });
     }
     const product = await updateProduct(id, parsed.fields);
-    revalidatePath("/api/catalog");
-    revalidatePath("/");
+    revalidateShopCatalog();
     return jsonNoStore({ product });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
@@ -155,8 +151,7 @@ export async function DELETE(
     if (!removed) {
       return jsonNoStore({ error: "Produit introuvable." }, { status: 404 });
     }
-    revalidatePath("/api/catalog");
-    revalidatePath("/");
+    revalidateShopCatalog();
     return jsonNoStore({ ok: true });
   } catch (error) {
     console.error("Suppression produit", error instanceof Error ? error.name : "erreur");

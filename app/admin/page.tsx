@@ -6,11 +6,13 @@ import { AdminHeader } from "@/components/organisms/admin/admin-header";
 import { AdminGridWorkflowBanner } from "@/components/organisms/admin/admin-grid-workflow-banner";
 import { AuthGate } from "@/components/organisms/admin/auth-gate";
 import { BackupCodesBanner } from "@/components/organisms/admin/backup-codes-banner";
+import { useAdminCatalogPersoBanner } from "@/components/organisms/admin/hooks/use-admin-catalog-perso-banner";
 import { useAdminLookbook } from "@/components/organisms/admin/hooks/use-admin-lookbook";
 import { useAdminOrders } from "@/components/organisms/admin/hooks/use-admin-orders";
 import { useAdminProducts } from "@/components/organisms/admin/hooks/use-admin-products";
 import { useAdminSession } from "@/components/organisms/admin/hooks/use-admin-session";
 import { LookbookEditorModal } from "@/components/organisms/admin/lookbook-editor-modal";
+import { CatalogPersoBannerTab } from "@/components/organisms/admin/catalog-perso-banner-tab";
 import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
 import { ProductEditorModal } from "@/components/organisms/admin/product-editor-modal";
@@ -31,7 +33,13 @@ type EditorState = { product: AdminProduct | null } | null;
 type LookbookEditorState = { slide: AdminLookbookSlide | null } | null;
 
 function parseTabParam(value: string | null): TabId {
-  if (value === "produits" || value === "brouillons" || value === "commandes" || value === "lookbook") {
+  if (
+    value === "produits" ||
+    value === "brouillons" ||
+    value === "commandes" ||
+    value === "lookbook" ||
+    value === "banniere"
+  ) {
     return value;
   }
   return "commandes";
@@ -61,9 +69,11 @@ function AdminDashboard() {
   const productsApi = useAdminProducts({ onUnauthorized: expire });
   const ordersApi = useAdminOrders({ onUnauthorized: expire });
   const lookbookApi = useAdminLookbook({ onUnauthorized: expire });
+  const persoBannerApi = useAdminCatalogPersoBanner({ onUnauthorized: expire });
   const { load: loadProducts, reset: resetProducts } = productsApi;
   const { load: loadOrders, reset: resetOrders } = ordersApi;
   const { load: loadLookbook, reset: resetLookbook } = lookbookApi;
+  const { load: loadPersoBanner, reset: resetPersoBanner } = persoBannerApi;
 
   const [tab, setTab] = useState<TabId>(() => parseTabParam(searchParams.get("tab")));
   const [editor, setEditor] = useState<EditorState>(null);
@@ -123,21 +133,28 @@ function AdminDashboard() {
     let cancelled = false;
     void (async () => {
       setLoadError("");
-      const [productsResult, ordersResult, lookbookResult] = await Promise.all([
+      const [productsResult, ordersResult, lookbookResult, bannerResult] = await Promise.all([
         loadProducts(),
         loadOrders(),
         loadLookbook(),
+        loadPersoBanner(),
       ]);
       if (cancelled) return;
       if (
         productsResult === "unauthorized" ||
         ordersResult === "unauthorized" ||
-        lookbookResult === "unauthorized"
+        lookbookResult === "unauthorized" ||
+        bannerResult === "unauthorized"
       ) {
         expire();
         return;
       }
-      if (productsResult !== "ok" || ordersResult !== "ok" || lookbookResult !== "ok") {
+      if (
+        productsResult !== "ok" ||
+        ordersResult !== "ok" ||
+        lookbookResult !== "ok" ||
+        bannerResult !== "ok"
+      ) {
         setLoadError("Impossible de charger le CRM.");
       }
       setLoaded(true);
@@ -145,7 +162,7 @@ function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [authenticated, loadProducts, loadOrders, loadLookbook, expire]);
+  }, [authenticated, loadProducts, loadOrders, loadLookbook, loadPersoBanner, expire]);
 
   const paypalOrders = useMemo(() => selectPaypalOrders(ordersApi.orders), [ordersApi.orders]);
   const pendingOrders = useMemo(() => countPendingShipments(paypalOrders), [paypalOrders]);
@@ -180,6 +197,7 @@ function AdminDashboard() {
     resetProducts();
     resetOrders();
     resetLookbook();
+    resetPersoBanner();
     setEditor(null);
     setLookbookEditor(null);
   }
@@ -278,6 +296,14 @@ function AdminDashboard() {
               });
             }}
             onReorderProducts={productsApi.reorderProductsLocal}
+          />
+        ) : tab === "banniere" ? (
+          <CatalogPersoBannerTab
+            banner={persoBannerApi.banner}
+            customized={persoBannerApi.customized}
+            saving={persoBannerApi.saving}
+            error={persoBannerApi.error}
+            onSave={persoBannerApi.save}
           />
         ) : tab === "lookbook" ? (
           <LookbookTab

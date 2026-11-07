@@ -957,19 +957,28 @@ html[data-theme="light"] .dingry-hero [class*="text-white"] {
   color: rgb(255 255 255 / 0.84);
 }
 
+.dingry-hero-manifesto-lead {
+  margin-top: -1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.dingry-hero-copy .dingry-hero-manifesto-lead .dingry-typo-manifesto-en {
+  line-height: 1.45;
+}
+
 .dingry-hero-copy .dingry-typo-manifesto {
-  font-size: 0.8125rem;
+  font-size: 0.9rem;
   letter-spacing: 0.26em;
 }
 
 .dingry-hero-copy .dingry-typo-manifesto-en {
-  font-size: 0.8125rem;
+  font-size: 0.9rem;
   letter-spacing: 0.26em;
   line-height: 1.65;
 }
 
 .dingry-hero-copy .dingry-typo-street--sm {
-  font-size: clamp(1.35rem, 4vw, 1.85rem);
+  font-size: clamp(1.45rem, 4.2vw, 2rem);
 }
 
 .dingry-hero-copy .dingry-typo-body-alt {
@@ -983,25 +992,56 @@ html[data-theme="light"] .dingry-hero [class*="text-white"] {
   margin-top: 0.35rem;
 }
 
+.dingry-hero-copy .dingry-hero-editorial {
+  font-family: Anton, sans-serif;
+  font-size: clamp(0.875rem, 2.65vw, 1.125rem);
+  line-height: 1.38;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  color: rgb(255 255 255 / 0.82);
+  text-shadow:
+    0 1px 10px rgb(0 0 0 / 0.45),
+    0 0 1px rgb(0 0 0 / 0.35);
+}
+
+.dingry-hero-copy .dingry-hero-editorial span + span {
+  margin-top: 0.4rem;
+}
+
 @media (min-width: 768px) {
+  .dingry-hero-manifesto-lead {
+    margin-top: -2.75rem;
+    margin-bottom: 0.35rem;
+  }
+
   .dingry-hero-copy .dingry-typo-manifesto {
-    font-size: 0.875rem;
+    font-size: 0.975rem;
   }
 
   .dingry-hero-copy .dingry-typo-manifesto-en {
-    font-size: 0.9375rem;
+    font-size: 1.05rem;
     letter-spacing: 0.28em;
     line-height: 1.7;
   }
 
   .dingry-hero-copy .dingry-typo-street--sm {
-    font-size: clamp(1.5rem, 2.8vw, 2.05rem);
+    font-size: clamp(1.65rem, 3vw, 2.25rem);
   }
 
   .dingry-hero-copy .dingry-typo-body-alt {
     font-size: 0.875rem;
     line-height: 1.75;
     letter-spacing: 0.14em;
+  }
+
+  .dingry-hero-copy .dingry-hero-editorial {
+    font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+    line-height: 1.42;
+    margin-top: 3.5rem;
+  }
+
+  .dingry-hero-copy .dingry-hero-editorial span + span {
+    margin-top: 0.5rem;
   }
 }
 
@@ -1011,7 +1051,8 @@ html[data-theme="light"] .dingry-hero .dingry-typo-street {
 }
 
 html[data-theme="light"] .dingry-hero .dingry-typo-manifesto-en,
-html[data-theme="light"] .dingry-hero .dingry-typo-body-alt {
+html[data-theme="light"] .dingry-hero .dingry-typo-body-alt,
+html[data-theme="light"] .dingry-hero .dingry-hero-editorial {
   color: rgb(255 255 255 / 0.88);
   text-shadow: none;
 }

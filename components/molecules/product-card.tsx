@@ -31,8 +31,10 @@ type ProductCardData = {
 type ProductCardProps = ProductCardData & {
   onClick?: (side: ProductFlipSide) => void;
   className?: string;
-  /** Première rangée visible : charge l’image en priorité (LCP). */
+  /** Première cellule catalogue : LCP (lazy pour le reste). */
   priority?: boolean;
+  /** Survol (desktop) : précharge les visuels modale. */
+  onPrefetch?: () => void;
   soldOut?: boolean;
   wishlistActive?: boolean;
   onWishlistToggle?: () => void;
@@ -49,9 +51,14 @@ export function ProductCard({
   soldOut = false,
   wishlistActive,
   onWishlistToggle,
+  onPrefetch,
 }: ProductCardProps) {
   return (
-    <article className={cn("group w-full min-w-0 touch-pan-y", className)}>
+    <article
+      className={cn("group w-full min-w-0 touch-pan-y", className)}
+      onMouseEnter={() => onPrefetch?.()}
+      onFocus={() => onPrefetch?.()}
+    >
       <div className="w-full min-w-0 touch-pan-y rounded-lg text-left sm:rounded-xl md:rounded-2xl">
         <div className="relative">
           <ProductImageFlip
