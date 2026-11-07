@@ -237,18 +237,6 @@ async function writeLocalSnapshot(store: AdminStore): Promise<void> {
   await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
 }
 
-/** Dernier recours Blob : réécriture sans ifMatch (après relecture + mutate dans withStoreOptimistic). */
-async function writeBlobStoreForce(store: AdminStore): Promise<void> {
-  const next: AdminStore = { ...store, version: STORE_VERSION };
-  await put(STORE_PATHNAME, JSON.stringify(next), {
-    access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: "application/json",
-    cacheControlMaxAge: 0,
-  });
-}
-
 async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promise<void> {
   assertStoreBackend();
   const next: AdminStore = { ...store, version: STORE_VERSION };
@@ -264,15 +252,23 @@ async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promi
     throw new StoreUnavailableError();
   }
 
-  /** Pas de ifMatch : le CRM est mono-éditeur ; l’etag Blob/ CDN provoquait des faux conflits. */
   await put(STORE_PATHNAME, body, {
     access: "public",
     addRandomSuffix: false,
-    allowOverwrite: true,
+    allowOverwrite: etag !== null,
     contentType: "application/json",
     cacheControlMaxAge: 0,
+    ...(etag ? { ifMatch: etag } : {}),
   });
   return;
+}
+
+/** Magasin Blob absent (404) : premier enregistrement uniquement (pas d’écrasement). */
+function snapshotForMissingWrite(): StoreSnapshot {
+  return {
+    store: normalizeStore(createSeededStore()),
+    etag: null,
+  };
 }
 
 async function withStoreOptimistic<T>(
@@ -282,10 +278,13 @@ async function withStoreOptimistic<T>(
     for (let attempt = 0; attempt < STORE_WRITE_ATTEMPTS; attempt++) {
       let snapshot = await readStoreSnapshot();
       if (snapshot === "missing") {
-        snapshot = {
-          store: normalizeStore(createSeededStore()),
-          etag: null,
-        };
+        if (isBlobConfigured() && !useLocalStoreFiles()) {
+          snapshot = snapshotForMissingWrite();
+        } else if (useLocalStoreFiles() || allowCatalogSeedFallback()) {
+          snapshot = snapshotForMissingWrite();
+        } else {
+          throw new StoreUnavailableError();
+        }
       }
 
       const working = cloneStore(snapshot.store);
@@ -297,23 +296,6 @@ async function withStoreOptimistic<T>(
         return outcome.result;
       } catch (error) {
         if (!isStoreWriteConflict(error)) throw error;
-        const isLast = attempt >= STORE_WRITE_ATTEMPTS - 1;
-        if (isLast && !useLocalStoreFiles() && isBlobConfigured()) {
-          const latest = await readStoreSnapshot();
-          if (latest !== "missing") {
-            const replay = mutate(cloneStore(latest.store));
-            if (!replay.skipWrite) {
-              try {
-                await writeBlobStoreForce(replay.store);
-                return replay.result;
-              } catch (forceError) {
-                if (!isStoreWriteConflict(forceError)) throw forceError;
-              }
-            } else {
-              return replay.result;
-            }
-          }
-        }
         await storeWriteBackoff(attempt);
       }
     }

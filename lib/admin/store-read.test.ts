@@ -47,6 +47,51 @@ describe("readBlobSnapshot via withStoreOptimistic", () => {
     expect(putMock).not.toHaveBeenCalled();
   });
 
+  it("put Blob avec ifMatch quand etag connu (useCache: false sur get)", async () => {
+    const storeJson = JSON.stringify({
+      version: 12,
+      products: [],
+      orders: [
+        {
+          id: "ORD-1",
+          customerName: "A",
+          email: "a@b.fr",
+          total: 10,
+          items: [],
+          status: "En attente",
+          createdAt: new Date().toISOString(),
+          source: "paypal",
+        },
+      ],
+      lookbook: [],
+      removedCatalogIds: [],
+    });
+    getMock.mockResolvedValue({
+      statusCode: 200,
+      stream: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(storeJson));
+          controller.close();
+        },
+      }),
+      blob: { etag: "etag-live" },
+    });
+    const { patchOrder } = await import("@/lib/admin/store");
+    await patchOrder("ORD-1", () => ({ status: "Expédié" }));
+    expect(getMock).toHaveBeenCalledWith(
+      "dingry/admin/store.json",
+      expect.objectContaining({ useCache: false }),
+    );
+    expect(putMock).toHaveBeenCalledWith(
+      "dingry/admin/store.json",
+      expect.any(String),
+      expect.objectContaining({
+        allowOverwrite: true,
+        ifMatch: "etag-live",
+      }),
+    );
+  });
+
   it("JSON blob invalide ne déclenche aucun put", async () => {
     getMock.mockResolvedValue({
       statusCode: 200,
