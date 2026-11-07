@@ -264,13 +264,13 @@ async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promi
     throw new StoreUnavailableError();
   }
 
+  /** Pas de ifMatch : le CRM est mono-éditeur ; l’etag Blob/ CDN provoquait des faux conflits. */
   await put(STORE_PATHNAME, body, {
     access: "public",
     addRandomSuffix: false,
-    allowOverwrite: etag !== null,
+    allowOverwrite: true,
     contentType: "application/json",
     cacheControlMaxAge: 0,
-    ...(etag ? { ifMatch: etag } : {}),
   });
   return;
 }

@@ -385,6 +385,7 @@ export function ProductEditorModal({
   const [convertingVerso, setConvertingVerso] = useState(false);
   const convertingImage = convertingRecto || convertingVerso;
   const [saving, setSaving] = useState(false);
+  const saveInFlightRef = useRef(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState<FormSuccessState | null>(null);
   const [customPantWaist, setCustomPantWaist] = useState("");
@@ -1107,9 +1108,13 @@ export function ProductEditorModal({
   const dirtyOutlineClass = isDirty ? "ring-1 ring-amber-300/40 ring-inset" : "";
 
   function onSaveClick(publishStatus: ProductPublishStatus) {
+    if (saveInFlightRef.current || saving || convertingImage) return;
+    saveInFlightRef.current = true;
     setFormError("");
     setFormSuccess(null);
-    void (editorTab === "product" ? saveProductTab(publishStatus) : saveStoryTab(publishStatus));
+    void (editorTab === "product" ? saveProductTab(publishStatus) : saveStoryTab(publishStatus)).finally(() => {
+      saveInFlightRef.current = false;
+    });
   }
 
   function sectionClass(dirty: boolean): string {
