@@ -18,7 +18,7 @@ export function AdminHeader({
   onLogout,
 }: AdminHeaderProps) {
   return (
-    <header className="border-b border-[#1e2d45] bg-[#0a1220] px-6 py-5 md:px-10">
+    <header className="dingry-admin-glass sticky top-0 z-30 border-b-0 border-white/10 px-6 py-5 md:px-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">DINGRY</h1>
@@ -35,7 +35,7 @@ export function AdminHeader({
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="border border-white/15 px-3 py-2 text-white/80 transition hover:border-white/40 hover:text-white"
+            className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[13px] text-white/85 backdrop-blur-md transition hover:bg-white/10 hover:text-white"
           >
             Aperçu du site
           </a>

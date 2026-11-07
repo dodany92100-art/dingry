@@ -285,13 +285,13 @@ function sectionDirtyFlags(
 }
 
 const SECTION_CARD =
-  "relative rounded-2xl border border-[#1e2d45] bg-[#111c2e]/90 px-4 py-5 backdrop-blur-sm sm:px-6 sm:py-6";
+  "dingry-admin-glass relative rounded-3xl px-5 py-6 sm:px-7 sm:py-7";
 const SECTION_DIRTY =
   "border-l border-l-white/50 pl-[1.125rem] sm:pl-[1.25rem] before:pointer-events-none before:absolute before:left-2 before:top-5 before:h-1.5 before:w-1.5 before:rounded-full before:bg-white before:content-['']";
 
-const FIELD_LABEL = "block text-sm font-medium text-zinc-300";
+const FIELD_LABEL = "block text-[13px] font-medium tracking-tight text-white/55";
 const FIELD_INPUT =
-  "mt-1.5 h-11 w-full rounded-lg border border-[#2a3d5c] bg-[#0d1728] px-3.5 text-[15px] text-slate-50 outline-none transition placeholder:text-slate-500 focus:border-[#4a6fa5] focus:bg-[#0d1728]";
+  "mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-white/5 px-3.5 text-[15px] text-white outline-none transition placeholder:text-white/30 backdrop-blur-md focus:border-white/25 focus:bg-white/[0.08] focus:ring-2 focus:ring-white/10";
 const FIELD_SELECT = `${FIELD_INPUT} appearance-none cursor-pointer`;
 
 type EditorTab = "product" | "story";
@@ -1096,16 +1096,16 @@ export function ProductEditorModal({
   const saveActionsDisabled = saving || convertingImage;
 
   const draftSaveButtonClass = !isDirty
-    ? "h-11 flex-1 rounded-lg border border-zinc-600 bg-zinc-800 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-700 disabled:opacity-50"
-    : "h-11 flex-1 rounded-lg border border-zinc-500 bg-zinc-800 text-sm font-semibold text-white transition hover:bg-zinc-700 disabled:opacity-50";
+    ? "h-11 flex-1 rounded-full border border-white/12 bg-white/5 text-[13px] font-medium text-white/70 backdrop-blur-md transition hover:bg-white/10 disabled:opacity-50"
+    : "h-11 flex-1 rounded-full border border-white/20 bg-white/10 text-[13px] font-semibold text-white backdrop-blur-md transition hover:bg-white/15 disabled:opacity-50";
 
   const liveSaveButtonClass = !isDirty
     ? isPublished
-      ? "group h-11 flex-[1.2] rounded-lg border border-emerald-600/50 bg-emerald-950/40 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-900/50 disabled:opacity-50"
-      : "group h-11 flex-[1.2] rounded-lg bg-white text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100 disabled:opacity-50"
+      ? "group h-11 flex-[1.2] rounded-full border border-emerald-400/35 bg-emerald-500/15 text-[13px] font-semibold text-emerald-100 backdrop-blur-md transition hover:bg-emerald-500/25 disabled:opacity-50"
+      : "group h-11 flex-[1.2] rounded-full bg-white text-[13px] font-semibold text-black shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition hover:bg-white/90 disabled:opacity-50"
     : isPublished
-      ? "group h-11 flex-[1.2] rounded-lg bg-emerald-500 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:opacity-50"
-      : "group h-11 flex-[1.2] rounded-lg bg-white text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100 disabled:opacity-50";
+      ? "group h-11 flex-[1.2] rounded-full bg-emerald-400 text-[13px] font-semibold text-black transition hover:bg-emerald-300 disabled:opacity-50"
+      : "group h-11 flex-[1.2] rounded-full bg-white text-[13px] font-semibold text-black shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition hover:bg-white/90 disabled:opacity-50";
 
   const dirtyOutlineClass = isDirty ? "ring-1 ring-white/30 ring-inset" : "";
 
@@ -1128,7 +1128,7 @@ export function ProductEditorModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.22 }}
-      className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#0a1220] text-slate-100"
+      className="dingry-admin flex h-dvh max-h-dvh flex-col overflow-hidden text-white"
       aria-label={editingId ? "Fiche produit" : "Nouveau produit"}
     >
       <motion.div
@@ -1143,7 +1143,7 @@ export function ProductEditorModal({
           }}
           className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
-          <header className="sticky top-0 z-20 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-[#1e2d45] bg-[#0a1220]/95 px-5 py-4 backdrop-blur-xl sm:px-8">
+          <header className="dingry-admin-glass sticky top-0 z-20 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-8">
             <div className="min-w-0 flex flex-wrap items-center gap-4">
               <button
                 type="button"
@@ -1160,12 +1160,12 @@ export function ProductEditorModal({
                   {form.name.trim() || (editingId ? "Modifier" : "Nouveau")}
                 </h1>
               </div>
-              <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-0.5">
+              <div className="flex gap-0.5 rounded-full bg-white/8 p-0.5 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => setEditorTab("product")}
-                  className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition ${
-                    editorTab === "product" ? "bg-white text-zinc-950" : "text-zinc-400 hover:text-white"
+                  className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition ${
+                    editorTab === "product" ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
                   }`}
                 >
                   Produit
@@ -1173,8 +1173,8 @@ export function ProductEditorModal({
                 <button
                   type="button"
                   onClick={() => setEditorTab("story")}
-                  className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition ${
-                    editorTab === "story" ? "bg-white text-zinc-950" : "text-zinc-400 hover:text-white"
+                  className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition ${
+                    editorTab === "story" ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
                   }`}
                 >
                   Fiche
@@ -1674,13 +1674,13 @@ export function ProductEditorModal({
             <AdminSmartCrmBanner hints={smartHints} />
           </div>
 
-          <footer className="z-10 shrink-0 border-t border-[#1e2d45] bg-[#0a1220] px-5 py-4 sm:px-8">
+          <footer className="dingry-admin-glass z-10 shrink-0 border-t border-white/10 px-5 py-4 sm:px-8">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={saving}
-                className="h-11 flex-1 rounded-lg text-sm font-medium text-zinc-400 transition hover:text-white disabled:opacity-50 sm:max-w-[140px]"
+                className="h-11 flex-1 rounded-full text-[13px] font-medium text-white/45 transition hover:text-white disabled:opacity-50 sm:max-w-[140px]"
               >
                 Annuler
               </button>

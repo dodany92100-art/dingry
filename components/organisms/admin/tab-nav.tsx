@@ -16,16 +16,21 @@ type TabNavProps = {
 
 export function TabNav({ tab, onChange }: TabNavProps) {
   return (
-    <div className="mb-8 flex gap-2">
+    <div
+      className="dingry-admin-glass mb-8 inline-flex max-w-full flex-wrap gap-1 rounded-full p-1"
+      role="tablist"
+    >
       {TABS.map(([id, label]) => (
         <button
           key={id}
           type="button"
+          role="tab"
+          aria-selected={tab === id}
           onClick={() => onChange(id)}
-          className={`h-10 rounded-md px-4 text-sm font-medium transition ${
+          className={`h-9 rounded-full px-4 text-[13px] font-medium tracking-tight transition duration-200 ${
             tab === id
-              ? "bg-white text-black"
-              : "border border-white/10 text-white/50 hover:text-white"
+              ? "bg-white/95 text-black shadow-sm"
+              : "text-white/55 hover:bg-white/10 hover:text-white"
           }`}
         >
           {label}

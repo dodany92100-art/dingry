@@ -12,7 +12,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="dingry-admin min-h-dvh bg-[#0a1220] text-[15px] text-slate-100 antialiased">
+    <div className="dingry-admin min-h-dvh text-[15px] antialiased">
       {children}
     </div>
   );
