@@ -185,9 +185,15 @@ async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
   const normalized = normalizeStore(parsed);
   return {
     store: normalized,
-    etag: result.blob.etag,
+    etag: normalizeBlobEtag(result.blob.etag),
     ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
   };
+}
+
+function normalizeBlobEtag(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 async function readLocalSnapshot(): Promise<StoreSnapshot | "missing"> {
@@ -237,7 +243,11 @@ async function writeLocalSnapshot(store: AdminStore): Promise<void> {
   await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
 }
 
-async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promise<void> {
+async function writeStoreSnapshot(
+  store: AdminStore,
+  etag: string | null,
+  createIfAbsent = false,
+): Promise<void> {
   assertStoreBackend();
   const next: AdminStore = { ...store, version: STORE_VERSION };
   const body = JSON.stringify(next);
@@ -252,15 +262,38 @@ async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promi
     throw new StoreUnavailableError();
   }
 
+  const ifMatch = normalizeBlobEtag(etag);
+  if (ifMatch) {
+    await put(STORE_PATHNAME, body, {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: "application/json",
+      cacheControlMaxAge: 0,
+      ifMatch,
+    });
+    return;
+  }
+
+  if (createIfAbsent) {
+    await put(STORE_PATHNAME, body, {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: false,
+      contentType: "application/json",
+      cacheControlMaxAge: 0,
+    });
+    return;
+  }
+
+  /** Magasin existant mais etag absent côté API : pas de ifMatch (mono-éditeur). */
   await put(STORE_PATHNAME, body, {
     access: "public",
     addRandomSuffix: false,
-    allowOverwrite: etag !== null,
+    allowOverwrite: true,
     contentType: "application/json",
     cacheControlMaxAge: 0,
-    ...(etag ? { ifMatch: etag } : {}),
   });
-  return;
 }
 
 /** Magasin Blob absent (404) : premier enregistrement uniquement (pas d’écrasement). */
@@ -277,11 +310,14 @@ async function withStoreOptimistic<T>(
   return enqueueStoreWrite(async () => {
     for (let attempt = 0; attempt < STORE_WRITE_ATTEMPTS; attempt++) {
       let snapshot = await readStoreSnapshot();
+      let createIfAbsent = false;
       if (snapshot === "missing") {
         if (isBlobConfigured() && !useLocalStoreFiles()) {
           snapshot = snapshotForMissingWrite();
+          createIfAbsent = true;
         } else if (useLocalStoreFiles() || allowCatalogSeedFallback()) {
           snapshot = snapshotForMissingWrite();
+          createIfAbsent = true;
         } else {
           throw new StoreUnavailableError();
         }
@@ -292,7 +328,7 @@ async function withStoreOptimistic<T>(
       if (outcome.skipWrite) return outcome.result;
 
       try {
-        await writeStoreSnapshot(outcome.store, snapshot.etag);
+        await writeStoreSnapshot(outcome.store, snapshot.etag, createIfAbsent);
         return outcome.result;
       } catch (error) {
         if (!isStoreWriteConflict(error)) throw error;
@@ -570,7 +606,7 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
 async function ensureInitialStore(): Promise<AdminStore> {
   const seeded = normalizeStore(createSeededStore());
   try {
-    await writeStoreSnapshot(seeded, null);
+    await writeStoreSnapshot(seeded, null, true);
     await seedCatalogStockFromProducts(seeded.products);
     return seeded;
   } catch (error) {
