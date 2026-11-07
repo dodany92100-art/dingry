@@ -21,6 +21,11 @@ describe("catalog pants", () => {
     expect(resolveShopCategory(99, "Pants")).toBe("Pants");
   });
 
+  it("priorise la catégorie CRM sur l’id tee historique", () => {
+    expect(resolveShopCategory(24, "Hoodies")).toBe("Hoodie");
+    expect(resolveShopCategory(24, "T-shirts")).toBe("T-shirts");
+  });
+
   it("inclut Pants et Crop tops dans Collection même vide", () => {
     const sections = buildCatalogMenuSections([]);
     expect(sections.some((s) => s.category === "pants")).toBe(true);

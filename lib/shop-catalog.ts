@@ -77,11 +77,11 @@ export function isShopCategory(category: string): category is ShopCategory {
 
 /** Admin → libellé boutique (onglets + filtres). */
 export function resolveShopCategory(productId: number, category: string): ShopCategory | string {
+  const slug = normalizeCatalogCategory(category);
+  if (slug) return SHOP_CATEGORY_BY_MENU_SLUG[slug];
   if (DINGRY_SWEAT_PRODUCT_IDS.has(productId)) return "Sweats";
   if (DINGRY_TEE_PRODUCT_IDS.has(productId)) return SHOP_TEE_CATEGORY;
   if (DINGRY_JERSEY_PRODUCT_IDS.has(productId)) return "Jersey";
-  const slug = normalizeCatalogCategory(category);
-  if (slug) return SHOP_CATEGORY_BY_MENU_SLUG[slug];
   if (category === "Tee" || category === "T-shirts") return SHOP_TEE_CATEGORY;
   return category;
 }
