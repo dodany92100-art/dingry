@@ -87,8 +87,7 @@ function AdminDashboard() {
     : productsApi.gridValidated && visibleDraftIds.length > 0
       ? ("publish" as const)
       : null;
-  const showWorkflowBanner =
-    workflowPhase !== null && (tab === "produits" || tab === "brouillons");
+  const showWorkflowBanner = workflowPhase !== null;
 
   useEffect(() => {
     if (productsApi.gridValidated && !productsApi.orderDirty && visibleDraftIds.length === 0) {
@@ -306,7 +305,6 @@ function AdminDashboard() {
           orderSaving={productsApi.orderSaving}
           publishSaving={productsApi.publishSaving}
           draftCount={visibleDraftIds.length}
-          orderError={productsApi.stockError}
           onReset={productsApi.discardProductOrder}
           onValidateGrid={() => void productsApi.saveProductOrder()}
           onPublishSelection={() => void productsApi.publishSelectionLive(visibleDraftIds)}

@@ -8,13 +8,6 @@ export type SaveLookbookResult = { slide: AdminLookbookSlide } | { error: string
 
 type Options = { onUnauthorized: () => void };
 
-const CONFLICT_HINT =
-  "Conflit d'enregistrement. Ferme les autres onglets admin (prod/preview), attends 3 s et réessaie.";
-
-function isConflictMessage(message: string | undefined): boolean {
-  return Boolean(message?.includes("Conflit"));
-}
-
 export function useAdminLookbook({ onUnauthorized }: Options) {
   const [slides, setSlides] = useState<AdminLookbookSlide[]>([]);
   const [busySlideId, setBusySlideId] = useState<string | null>(null);
@@ -55,8 +48,7 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
         };
         const saved = data.slide;
         if (!response.ok || !saved) {
-          const err = data.error || "Impossible d'enregistrer la slide.";
-          return { error: isConflictMessage(err) ? CONFLICT_HINT : err };
+          return { error: data.error || "Impossible d'enregistrer la slide." };
         }
         setSlides((current) => {
           const next = editingId
@@ -76,33 +68,20 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
     async (slide: AdminLookbookSlide): Promise<string | null> => {
       setError("");
       setBusySlideId(slide.id);
-
-      async function deleteOnce(): Promise<string | null> {
-        try {
-          const response = await fetch(`/api/admin/lookbook/${slide.id}`, { method: "DELETE" });
-          if (response.status === 401) {
-            onUnauthorized();
-            return "Session expirée.";
-          }
-          if (!response.ok) {
-            const data = (await response.json().catch(() => ({}))) as { error?: string };
-            return data.error || "Impossible de supprimer la slide.";
-          }
-          setSlides((current) => current.filter((item) => item.id !== slide.id));
-          return null;
-        } catch {
-          return "Impossible de supprimer la slide.";
-        }
-      }
-
       try {
-        let err = await deleteOnce();
-        if (err && isConflictMessage(err)) {
-          await new Promise((resolve) => setTimeout(resolve, 600));
-          err = await deleteOnce();
+        const response = await fetch(`/api/admin/lookbook/${slide.id}`, { method: "DELETE" });
+        if (response.status === 401) {
+          onUnauthorized();
+          return "Session expirée.";
         }
-        if (err && isConflictMessage(err)) return CONFLICT_HINT;
-        return err;
+        if (!response.ok) {
+          const data = (await response.json().catch(() => ({}))) as { error?: string };
+          return data.error || "Impossible de supprimer la slide.";
+        }
+        setSlides((current) => current.filter((item) => item.id !== slide.id));
+        return null;
+      } catch {
+        return "Impossible de supprimer la slide.";
       } finally {
         setBusySlideId(null);
       }

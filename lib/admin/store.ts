@@ -19,7 +19,7 @@ import { getSharedRedis } from "@/lib/ratelimit";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
 import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
-import { RETIRED_LOOKBOOK_SEED_TITLES, seededLookbookSlides } from "@/lib/admin/lookbook-seed";
+import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
 import {
   isVersoCatalogId,
   resolveRectoCatalogId,
@@ -45,7 +45,7 @@ import {
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
-import { reconcileDropBatchWithCatalog, type DropBatchItem } from "@/lib/admin/drop-batch";
+import type { DropBatchItem } from "@/lib/admin/drop-batch";
 import {
   applyDisplayOrderByIds,
   normalizeDisplayOrder,
@@ -573,7 +573,6 @@ function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
   const existing = (Array.isArray(raw.lookbook) ? raw.lookbook : [])
     .map(normalizeLookbookSlide)
     .filter((item): item is AdminLookbookSlide => item !== null)
-    .filter((item) => !RETIRED_LOOKBOOK_SEED_TITLES.has(item.title))
     .sort((a, b) => a.sortOrder - b.sortOrder);
   if (existing.length === 0) return seeded;
   return existing;
@@ -1009,16 +1008,19 @@ export async function applyAdminDropBatch(
 
   if (isSupabaseStoreEnabled()) {
     const products = await listSupabaseProducts();
-    const merged = reconcileDropBatchWithCatalog(products, items);
-    if (!merged) return null;
-    const orderedIds = [...merged]
+    if (items.length !== products.length) return null;
+    const storeIds = new Set(products.map((product) => product.id));
+    for (const item of items) {
+      if (!storeIds.has(item.id)) return null;
+    }
+    const orderedIds = [...items]
       .sort((a, b) => a.displayOrder - b.displayOrder || a.id.localeCompare(b.id))
       .map((item) => item.id);
     await reorderSupabaseProducts(orderedIds);
     const publishedIds: string[] = [];
     const skipped: { id: string; reason: string }[] = [];
     const refreshed = await listSupabaseProducts();
-    for (const item of merged) {
+    for (const item of items) {
       if (item.status !== "published") continue;
       const product = refreshed.find((row) => row.id === item.id);
       if (!product || product.publishStatus === "live") continue;
@@ -1035,12 +1037,15 @@ export async function applyAdminDropBatch(
   }
 
   return withStoreOptimistic((store) => {
-    const merged = reconcileDropBatchWithCatalog(store.products, items);
-    if (!merged) {
+    const storeIds = new Set(store.products.map((product) => product.id));
+    if (items.length !== store.products.length) {
       return { store, result: null, skipWrite: true };
     }
+    for (const item of items) {
+      if (!storeIds.has(item.id)) return { store, result: null, skipWrite: true };
+    }
 
-    const orderedIds = [...merged]
+    const orderedIds = [...items]
       .sort((a, b) => a.displayOrder - b.displayOrder || a.id.localeCompare(b.id))
       .map((item) => item.id);
 
@@ -1049,7 +1054,7 @@ export async function applyAdminDropBatch(
     const publishedIds: string[] = [];
     const skipped: { id: string; reason: string }[] = [];
 
-    for (const item of merged) {
+    for (const item of items) {
       if (item.status !== "published") continue;
       const product = store.products.find((row) => row.id === item.id);
       if (!product) continue;
@@ -1556,8 +1561,6 @@ export type LookbookInput = {
   sortOrder?: number;
 };
 
-const LOOKBOOK_STORE_WRITE_OPTIONS: StoreOptimisticOptions = { adminRelaxedFinalize: true };
-
 export async function createLookbookSlide(input: LookbookInput & { file: File }): Promise<AdminLookbookSlide> {
   const snapshot = await readStoreSnapshot();
   const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
@@ -1575,13 +1578,10 @@ export async function createLookbookSlide(input: LookbookInput & { file: File })
     createdAt: new Date().toISOString(),
   };
 
-  return withStoreOptimistic(
-    (store) => {
-      store.lookbook = sortLookbook([...store.lookbook, slide]);
-      return { store, result: slide };
-    },
-    LOOKBOOK_STORE_WRITE_OPTIONS,
-  );
+  return withStoreOptimistic((store) => {
+    store.lookbook = sortLookbook([...store.lookbook, slide]);
+    return { store, result: slide };
+  });
 }
 
 export async function updateLookbookSlide(
@@ -1596,32 +1596,29 @@ export async function updateLookbookSlide(
     uploaded = await uploadLookbookImage(id, file);
   }
 
-  return withStoreOptimistic(
-    (store) => {
-      const index = store.lookbook.findIndex((item) => item.id === id);
-      if (index < 0) {
-        return { store, result: null, skipWrite: true };
-      }
-      previous = { ...store.lookbook[index] };
-      const next: AdminLookbookSlide = {
-        ...store.lookbook[index],
-        ...(input.title !== undefined ? { title: input.title } : {}),
-        ...(input.caption !== undefined ? { caption: input.caption } : {}),
-        ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
-        ...(uploaded
-          ? {
-              imageUrl: uploaded.imageUrl,
-              blobUrl: uploaded.blobUrl,
-              blobPathname: uploaded.blobPathname,
-            }
-          : {}),
-      };
-      store.lookbook[index] = next;
-      store.lookbook = sortLookbook(store.lookbook);
-      return { store, result: next };
-    },
-    LOOKBOOK_STORE_WRITE_OPTIONS,
-  ).then(async (updated) => {
+  return withStoreOptimistic((store) => {
+    const index = store.lookbook.findIndex((item) => item.id === id);
+    if (index < 0) {
+      return { store, result: null, skipWrite: true };
+    }
+    previous = { ...store.lookbook[index] };
+    const next: AdminLookbookSlide = {
+      ...store.lookbook[index],
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.caption !== undefined ? { caption: input.caption } : {}),
+      ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+      ...(uploaded
+        ? {
+            imageUrl: uploaded.imageUrl,
+            blobUrl: uploaded.blobUrl,
+            blobPathname: uploaded.blobPathname,
+          }
+        : {}),
+    };
+    store.lookbook[index] = next;
+    store.lookbook = sortLookbook(store.lookbook);
+    return { store, result: next };
+  }).then(async (updated) => {
     if (uploaded && previous && updated) {
       await deleteLookbookImage(previous);
     }
@@ -1630,18 +1627,15 @@ export async function updateLookbookSlide(
 }
 
 export async function removeLookbookSlide(id: string): Promise<boolean> {
-  const removed = await withStoreOptimistic(
-    (store) => {
-      const slide = store.lookbook.find((item) => item.id === id);
-      if (!slide) {
-        return { store, result: null, skipWrite: true };
-      }
-      const copy = { ...slide };
-      store.lookbook = store.lookbook.filter((item) => item.id !== id);
-      return { store, result: copy };
-    },
-    LOOKBOOK_STORE_WRITE_OPTIONS,
-  );
+  const removed = await withStoreOptimistic((store) => {
+    const slide = store.lookbook.find((item) => item.id === id);
+    if (!slide) {
+      return { store, result: null, skipWrite: true };
+    }
+    const copy = { ...slide };
+    store.lookbook = store.lookbook.filter((item) => item.id !== id);
+    return { store, result: copy };
+  });
 
   if (!removed) return false;
   if (removed.blobUrl || removed.blobPathname || removed.imageUrl.startsWith("/admin-uploads/")) {
@@ -1651,28 +1645,25 @@ export async function removeLookbookSlide(id: string): Promise<boolean> {
 }
 
 export async function reorderLookbookSlide(id: string, direction: "up" | "down"): Promise<AdminLookbookSlide[] | null> {
-  return withStoreOptimistic(
-    (store) => {
-      const ordered = sortLookbook(store.lookbook);
-      const index = ordered.findIndex((item) => item.id === id);
-      if (index < 0) {
-        return { store, result: null, skipWrite: true };
-      }
-      const swapIndex = direction === "up" ? index - 1 : index + 1;
-      if (swapIndex < 0 || swapIndex >= ordered.length) {
-        return { store, result: ordered, skipWrite: true };
-      }
-      const current = ordered[index];
-      const swap = ordered[swapIndex];
-      store.lookbook = sortLookbook(
-        store.lookbook.map((item) => {
-          if (item.id === current.id) return { ...item, sortOrder: swap.sortOrder };
-          if (item.id === swap.id) return { ...item, sortOrder: current.sortOrder };
-          return item;
-        }),
-      );
-      return { store, result: sortLookbook(store.lookbook) };
-    },
-    LOOKBOOK_STORE_WRITE_OPTIONS,
-  );
+  return withStoreOptimistic((store) => {
+    const ordered = sortLookbook(store.lookbook);
+    const index = ordered.findIndex((item) => item.id === id);
+    if (index < 0) {
+      return { store, result: null, skipWrite: true };
+    }
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= ordered.length) {
+      return { store, result: ordered, skipWrite: true };
+    }
+    const current = ordered[index];
+    const swap = ordered[swapIndex];
+    store.lookbook = sortLookbook(
+      store.lookbook.map((item) => {
+        if (item.id === current.id) return { ...item, sortOrder: swap.sortOrder };
+        if (item.id === swap.id) return { ...item, sortOrder: current.sortOrder };
+        return item;
+      }),
+    );
+    return { store, result: sortLookbook(store.lookbook) };
+  });
 }
