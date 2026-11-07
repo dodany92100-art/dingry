@@ -1093,14 +1093,16 @@ export function ProductEditorModal({
     return labels;
   }, [sectionDirty]);
 
-  const saveActionsDisabled = saving || convertingImage || !isDirty;
+  const saveActionsDisabled = saving || convertingImage;
 
   const draftSaveButtonClass = !isDirty
-    ? "h-12 flex-1 rounded-full border border-white/10 bg-white/5 text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 transition duration-200 disabled:cursor-not-allowed"
+    ? "h-12 flex-1 rounded-full border border-white/25 bg-white/10 text-[11px] font-bold uppercase tracking-[0.18em] text-white/80 transition duration-200 hover:bg-white/15 disabled:opacity-50"
     : "h-12 flex-1 rounded-full border border-white/20 bg-white/10 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition duration-200 hover:bg-white/15 disabled:opacity-50";
 
   const liveSaveButtonClass = !isDirty
-    ? "group h-12 flex-[1.2] rounded-full border border-white/10 bg-white/5 text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 transition duration-200 disabled:cursor-not-allowed"
+    ? isPublished
+      ? "group h-12 flex-[1.2] rounded-full border border-emerald-400/40 bg-emerald-500/20 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-100 transition duration-200 hover:bg-emerald-500/30 disabled:opacity-50"
+      : "group h-12 flex-[1.2] rounded-full border border-white/30 bg-white text-[11px] font-bold uppercase tracking-[0.18em] text-black transition duration-200 hover:bg-white/90 disabled:opacity-50"
     : isPublished
       ? "group h-12 flex-[1.2] rounded-full bg-emerald-500 text-[11px] font-bold uppercase tracking-[0.18em] text-black transition duration-200 hover:bg-emerald-400 disabled:opacity-50"
       : "group h-12 flex-[1.2] rounded-full bg-white text-[11px] font-bold uppercase tracking-[0.18em] text-black transition duration-200 hover:bg-white/90 disabled:opacity-50";
@@ -1126,20 +1128,20 @@ export function ProductEditorModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.22 }}
-      className="flex min-h-screen flex-col bg-[#050505] text-white"
+      className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#050505] text-white"
       aria-label={editingId ? "Fiche produit" : "Nouveau produit"}
     >
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-        className="flex min-h-screen w-full flex-col"
+        className="flex min-h-0 flex-1 w-full flex-col"
       >
         <form
           onSubmit={(event) => {
             event.preventDefault();
           }}
-          className="flex min-h-screen min-w-0 flex-col"
+          className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
           <header className="sticky top-0 z-20 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-[#050505]/90 px-5 py-4 backdrop-blur-xl sm:px-8">
             <div className="min-w-0 flex flex-wrap items-center gap-4">
@@ -1204,9 +1206,8 @@ export function ProductEditorModal({
             </div>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-8 sm:px-8 lg:px-10">
-
-          {formError ? <p className="mt-3 text-sm text-red-400">{formError}</p> : null}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 pb-8 sm:px-8 lg:px-10">
+          {formError ? <p className="text-sm text-red-400">{formError}</p> : null}
           {formSuccess ? (
             formSuccess.kind === "smart-parse" ? (
               <div
@@ -1670,11 +1671,10 @@ export function ProductEditorModal({
               </div>
             )}
           </div>
+            <AdminSmartCrmBanner hints={smartHints} />
           </div>
 
-          <AdminSmartCrmBanner hints={smartHints} />
-
-          <div className="sticky bottom-0 z-10 mt-8 border-t border-white/10 bg-[#050505]/95 px-5 py-4 backdrop-blur-xl sm:px-8">
+          <footer className="z-10 shrink-0 border-t border-white/10 bg-[#050505] px-5 py-4 sm:px-8">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
@@ -1690,7 +1690,7 @@ export function ProductEditorModal({
                 onClick={() => onSaveClick("draft")}
                 title={
                   !isDirty
-                    ? "Aucune modification · enregistrement indisponible."
+                    ? "Enregistrer l’état actuel en brouillon (admin)."
                     : isPublished
                       ? "Attention · le produit repasse en brouillon (invisible boutique)."
                       : "Enregistrer sans publier sur la boutique."
@@ -1705,7 +1705,7 @@ export function ProductEditorModal({
                 onClick={() => onSaveClick("live")}
                 title={
                   !isDirty
-                    ? "Aucune modification · mise en ligne indisponible."
+                    ? "Publier / synchroniser la boutique sans autre modification."
                     : isPublished
                       ? "Produit déjà visible · enregistre et maintient en ligne."
                       : "Attention · visible immédiatement sur la boutique (image requise)."
@@ -1754,7 +1754,7 @@ export function ProductEditorModal({
                 ) : null}
               </p>
             ) : null}
-          </div>
+          </footer>
         </form>
       </motion.div>
       <PrintSizePickerSheet
