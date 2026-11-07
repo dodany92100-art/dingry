@@ -22,7 +22,7 @@ export function TabNav({ tab, onChange }: TabNavProps) {
           key={id}
           type="button"
           onClick={() => onChange(id)}
-          className={`h-10 px-4 text-[11px] uppercase tracking-[0.22em] transition ${
+          className={`h-10 rounded-md px-4 text-sm font-medium transition ${
             tab === id
               ? "bg-white text-black"
               : "border border-white/10 text-white/50 hover:text-white"

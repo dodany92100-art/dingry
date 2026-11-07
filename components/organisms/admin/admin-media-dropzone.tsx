@@ -39,8 +39,8 @@ export function AdminMediaDropzone({
     <div className={tone === "ghost" ? "mt-0" : "mt-3"}>
       {label ? (
         <p
-          className={`mb-2 text-[10px] font-medium uppercase tracking-[0.18em] ${
-            tone === "ghost" ? "text-stone-500" : "text-white/40"
+          className={`mb-2 text-sm font-medium ${
+            tone === "ghost" ? "text-zinc-500" : "text-zinc-400"
           }`}
         >
           {label}
@@ -106,7 +106,7 @@ export function AdminMediaDropzone({
           </span>
         ) : (
           <span
-            className={`flex h-28 w-full max-w-[10rem] items-center justify-center rounded-md text-[9px] uppercase tracking-[0.2em] ${
+            className={`flex h-28 w-full max-w-[10rem] items-center justify-center rounded-md text-xs text-zinc-500 ${
               tone === "ghost"
                 ? "border border-stone-200/90 bg-amber-50/25 text-stone-500"
                 : "border border-zinc-800 bg-zinc-900 text-zinc-500"
@@ -115,7 +115,7 @@ export function AdminMediaDropzone({
             WebP
           </span>
         )}
-        <span className="text-center text-[9px] uppercase tracking-[0.18em] text-stone-500">
+        <span className="text-center text-sm text-zinc-500">
           {converting
             ? "Conversion WebP…"
             : previewSrc

@@ -39,7 +39,7 @@ function parseTabParam(value: string | null): TabId {
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-[#0a1220]">
       <p className="text-[11px] uppercase tracking-[0.35em] text-white/40">DINGRY</p>
     </div>
   );

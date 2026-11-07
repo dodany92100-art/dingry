@@ -18,15 +18,13 @@ export function AdminHeader({
   onLogout,
 }: AdminHeaderProps) {
   return (
-    <header className="border-b border-white/[0.08] px-6 py-5 md:px-10">
+    <header className="border-b border-[#1e2d45] bg-[#0a1220] px-6 py-5 md:px-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-[0.28em]">DINGRY</h1>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.32em] text-white/35">
-            CRM v{ADMIN_CRM_VERSION}
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">DINGRY</h1>
+          <p className="mt-0.5 text-sm text-zinc-400">CRM · version {ADMIN_CRM_VERSION}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-5 text-[11px] uppercase tracking-[0.2em] text-white/45">
+        <div className="flex flex-wrap items-center gap-5 text-sm text-zinc-400">
           <span>{pendingOrders} à expédier</span>
           <span className="tabular-nums">{totalStock} pièces en stock</span>
           {stockPendingCount > 0 ? (

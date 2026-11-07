@@ -18,12 +18,12 @@ export function AdminSmartCrmBanner({ hints }: AdminSmartCrmBannerProps) {
 
   return (
     <div
-      className={`mt-4 rounded-xl border px-4 py-3 text-[11px] leading-relaxed tracking-[0.04em] transition-opacity duration-300 ${TONE_STYLES[primary.tone]}`}
+      className={`mt-4 rounded-lg border px-4 py-3 text-sm leading-relaxed transition-opacity duration-300 ${TONE_STYLES[primary.tone]}`}
       role="status"
     >
       {primary.message}
       {hints.length > 1 ? (
-        <ul className="mt-2 list-inside list-disc space-y-1 text-[10px] opacity-90">
+        <ul className="mt-2 list-inside list-disc space-y-1 text-sm opacity-90">
           {hints.slice(1, 4).map((hint) => (
             <li key={hint.id}>{hint.message}</li>
           ))}
