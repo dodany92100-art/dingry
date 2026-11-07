@@ -187,12 +187,6 @@ function ProductModalContent({
                 <p className="text-xs leading-relaxed text-white/50">{detail.printPlacement}</p>
               </div>
             ) : null}
-            {detail.fabrication ? (
-              <div className="mb-4">
-                <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Fabrication</p>
-                <p className="text-xs leading-relaxed text-white/50">{detail.fabrication}</p>
-              </div>
-            ) : null}
             {detail.limitedEdition ? (
               <div className="mb-4">
                 <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Édition limitée</p>
@@ -231,18 +225,6 @@ function ProductModalContent({
                     );
                   })}
                 </div>
-              </div>
-            ) : null}
-            {detail.materials ? (
-              <div className="mb-4">
-                <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Matières</p>
-                <p className="text-xs leading-relaxed text-white/50">{detail.materials}</p>
-              </div>
-            ) : null}
-            {detail.sizeGuide ? (
-              <div className="mb-6">
-                <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Guide des tailles</p>
-                <p className="text-xs leading-relaxed text-white/50">{detail.sizeGuide}</p>
               </div>
             ) : null}
             <div className="mb-6 flex items-start justify-between gap-3">

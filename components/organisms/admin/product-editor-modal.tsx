@@ -202,10 +202,10 @@ function formFrom(
           ? [product.variant.trim()]
           : [],
     description: product.description,
-    fabrication: product.fabrication,
+    fabrication: "",
     limitedEdition: product.limitedEdition,
-    materials: product.materials,
-    sizeGuide: product.sizeGuide,
+    materials: "",
+    sizeGuide: "",
     printPlacement: product.printPlacement,
     category: normalizeProductCategory(product.category),
     price: String(product.price),
@@ -229,10 +229,7 @@ function colorDeclinationsEqual(a: readonly string[], b: readonly string[]): boo
 function formStoryMatchesBaseline(form: FormState, ref: FormState): boolean {
   return (
     form.description.trim() === ref.description.trim() &&
-    form.fabrication.trim() === ref.fabrication.trim() &&
-    form.limitedEdition.trim() === ref.limitedEdition.trim() &&
-    form.materials.trim() === ref.materials.trim() &&
-    form.sizeGuide.trim() === ref.sizeGuide.trim()
+    form.limitedEdition.trim() === ref.limitedEdition.trim()
   );
 }
 
@@ -302,10 +299,10 @@ type EditorTab = "product" | "story";
 
 function appendStoryFields(formData: FormData, form: FormState): void {
   formData.set("description", form.description.trim());
-  formData.set("fabrication", form.fabrication.trim());
+  formData.set("fabrication", "");
   formData.set("limitedEdition", form.limitedEdition.trim());
-  formData.set("materials", form.materials.trim());
-  formData.set("sizeGuide", form.sizeGuide.trim());
+  formData.set("materials", "");
+  formData.set("sizeGuide", "");
   formData.set("printPlacement", form.printPlacement);
 }
 
@@ -1001,10 +998,6 @@ export function ProductEditorModal({
       next.name = filledSet.has("name") && parsed.name !== undefined ? parsed.name : "";
       next.description =
         filledSet.has("description") && parsed.description !== undefined ? parsed.description : "";
-      next.materials =
-        filledSet.has("materials") && parsed.materials !== undefined ? parsed.materials : "";
-      next.fabrication =
-        filledSet.has("fabrication") && parsed.fabrication !== undefined ? parsed.fabrication : "";
       next.limitedEdition =
         filledSet.has("limitedEdition") && parsed.limitedEdition !== undefined
           ? parsed.limitedEdition
@@ -1646,15 +1639,12 @@ export function ProductEditorModal({
                   ) : null}
                 </div>
                 <p className="text-[13px] leading-relaxed text-white/50">
-                  Textes du modal client — vides = défauts boutique.
+                  Description et édition limitée — le reste est géré par les défauts boutique.
                 </p>
                 {(
                   [
-                    ["Description", "description", 14, "min-h-[16rem]"],
-                    ["Fabrication", "fabrication", 5, "min-h-[7rem]"],
+                    ["Description", "description", 6, "min-h-[7rem]"],
                     ["Édition limitée", "limitedEdition", 4, "min-h-[5.5rem]"],
-                    ["Matières", "materials", 4, "min-h-[5.5rem]"],
-                    ["Guide des tailles", "sizeGuide", 6, "min-h-[8rem]"],
                   ] as const
                 ).map(([label, key, rows, minHeightClass]) => (
                   <label key={key} className={FIELD_LABEL}>

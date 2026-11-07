@@ -258,13 +258,7 @@ export function productDetailCopy(
 
 function adminLeadFromProduct(product: ShopProduct, story: ProductStoryBlock): string {
   const description = product.description?.trim();
-  if (!description) return story.lead;
-  const hasCrmBlocks =
-    Boolean(product.fabrication?.trim()) ||
-    Boolean(product.limitedEdition?.trim()) ||
-    Boolean(product.materials?.trim()) ||
-    Boolean(product.sizeGuide?.trim());
-  if (hasCrmBlocks || description.length >= 100) return description;
+  if (description) return description;
   return story.lead;
 }
 
