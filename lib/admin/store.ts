@@ -44,7 +44,36 @@ const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json")
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
-const STORE_WRITE_ATTEMPTS = 5;
+const STORE_WRITE_ATTEMPTS = 12;
+
+/** Une file par processus : évite les conflits etag entre requêtes API concurrentes (dev / sauvegarde + stock). */
+let storeWriteQueue: Promise<unknown> = Promise.resolve();
+
+function enqueueStoreWrite<T>(task: () => Promise<T>): Promise<T> {
+  const next = storeWriteQueue.then(task, task);
+  storeWriteQueue = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
+
+let hydratingLocalStore: Promise<void> | null = null;
+
+/** Évite deux lectures Blob qui écrivent `data/admin/store.json` en parallèle au premier démarrage local. */
+async function hydrateLocalStoreFromBlobOnce(): Promise<void> {
+  if (hydratingLocalStore) {
+    await hydratingLocalStore;
+    return;
+  }
+  hydratingLocalStore = enqueueStoreWrite(async () => {
+    const remote = await readBlobSnapshot();
+    if (remote !== "missing") await writeLocalSnapshot(remote.store);
+  }).finally(() => {
+    hydratingLocalStore = null;
+  });
+  await hydratingLocalStore;
+}
 
 export class StoreConflictError extends Error {
   constructor() {
@@ -85,7 +114,7 @@ export function isStoreWriteConflict(error: unknown): boolean {
 }
 
 function storeWriteBackoff(attempt: number): Promise<void> {
-  const ms = 50 + Math.random() * 100 + attempt * 25;
+  const ms = 80 + Math.random() * 120 + attempt * 40;
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -116,7 +145,7 @@ function useLocalStoreFiles(): boolean {
 async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
   let result: Awaited<ReturnType<typeof get>>;
   try {
-    result = await get(STORE_PATHNAME, { access: "public" });
+    result = await get(STORE_PATHNAME, { access: "public", useCache: false });
   } catch (error) {
     console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
     throw new StoreUnavailableError();
@@ -190,11 +219,9 @@ async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
     const local = await readLocalSnapshot();
     if (local !== "missing") return local;
     if (isBlobConfigured()) {
-      const remote = await readBlobSnapshot();
-      if (remote !== "missing") {
-        await writeLocalSnapshot(remote.store);
-        return readLocalSnapshot();
-      }
+      await hydrateLocalStoreFromBlobOnce();
+      const afterHydrate = await readLocalSnapshot();
+      if (afterHydrate !== "missing") return afterHydrate;
     }
     return "missing";
   }
@@ -210,25 +237,25 @@ async function writeLocalSnapshot(store: AdminStore): Promise<void> {
   await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
 }
 
+/** Dernier recours Blob : réécriture sans ifMatch (après relecture + mutate dans withStoreOptimistic). */
+async function writeBlobStoreForce(store: AdminStore): Promise<void> {
+  const next: AdminStore = { ...store, version: STORE_VERSION };
+  await put(STORE_PATHNAME, JSON.stringify(next), {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
+    cacheControlMaxAge: 0,
+  });
+}
+
 async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promise<void> {
   assertStoreBackend();
   const next: AdminStore = { ...store, version: STORE_VERSION };
   const body = JSON.stringify(next);
 
   if (useLocalStoreFiles()) {
-    if (etag) {
-      try {
-        const current = await readFile(LOCAL_STORE_PATH, "utf8");
-        if (revisionFromDiskText(current) !== etag) {
-          throw new StoreConflictError();
-        }
-      } catch (error) {
-        const code = (error as { code?: string }).code;
-        if (code === "ENOENT") throw new StoreConflictError();
-        if (error instanceof StoreConflictError) throw error;
-        throw error;
-      }
-    }
+    /** Dev local : pas de concurrence etag (une seule machine, file `enqueueStoreWrite`). */
     await writeLocalSnapshot(next);
     return;
   }
@@ -251,29 +278,48 @@ async function writeStoreSnapshot(store: AdminStore, etag: string | null): Promi
 async function withStoreOptimistic<T>(
   mutate: (store: AdminStore) => { store: AdminStore; result: T; skipWrite?: boolean },
 ): Promise<T> {
-  for (let attempt = 0; attempt < STORE_WRITE_ATTEMPTS; attempt++) {
-    let snapshot = await readStoreSnapshot();
-    if (snapshot === "missing") {
-      snapshot = {
-        store: normalizeStore(createSeededStore()),
-        etag: null,
-      };
+  return enqueueStoreWrite(async () => {
+    for (let attempt = 0; attempt < STORE_WRITE_ATTEMPTS; attempt++) {
+      let snapshot = await readStoreSnapshot();
+      if (snapshot === "missing") {
+        snapshot = {
+          store: normalizeStore(createSeededStore()),
+          etag: null,
+        };
+      }
+
+      const working = cloneStore(snapshot.store);
+      const outcome = mutate(working);
+      if (outcome.skipWrite) return outcome.result;
+
+      try {
+        await writeStoreSnapshot(outcome.store, snapshot.etag);
+        return outcome.result;
+      } catch (error) {
+        if (!isStoreWriteConflict(error)) throw error;
+        const isLast = attempt >= STORE_WRITE_ATTEMPTS - 1;
+        if (isLast && !useLocalStoreFiles() && isBlobConfigured()) {
+          const latest = await readStoreSnapshot();
+          if (latest !== "missing") {
+            const replay = mutate(cloneStore(latest.store));
+            if (!replay.skipWrite) {
+              try {
+                await writeBlobStoreForce(replay.store);
+                return replay.result;
+              } catch (forceError) {
+                if (!isStoreWriteConflict(forceError)) throw forceError;
+              }
+            } else {
+              return replay.result;
+            }
+          }
+        }
+        await storeWriteBackoff(attempt);
+      }
     }
 
-    const working = cloneStore(snapshot.store);
-    const outcome = mutate(working);
-    if (outcome.skipWrite) return outcome.result;
-
-    try {
-      await writeStoreSnapshot(outcome.store, snapshot.etag);
-      return outcome.result;
-    } catch (error) {
-      if (!isStoreWriteConflict(error)) throw error;
-      await storeWriteBackoff(attempt);
-    }
-  }
-
-  throw new StoreConflictError();
+    throw new StoreConflictError();
+  });
 }
 
 function isAdminStore(value: unknown): value is AdminStore {
@@ -562,7 +608,11 @@ export async function loadStore(): Promise<AdminStore> {
   }
   if (snapshot.migratedFromVersion !== undefined) {
     try {
-      await writeStoreSnapshot(snapshot.store, snapshot.etag);
+      await enqueueStoreWrite(async () => {
+        const fresh = await readStoreSnapshot();
+        if (fresh === "missing") return;
+        await writeStoreSnapshot(fresh.store, fresh.etag);
+      });
     } catch (error) {
       console.error("[store] persistance migration version", error instanceof Error ? error.name : "erreur");
     }

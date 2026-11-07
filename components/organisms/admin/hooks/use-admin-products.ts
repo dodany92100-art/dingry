@@ -76,32 +76,41 @@ export function useAdminProducts({ onUnauthorized }: Options) {
   /** Création (POST multipart) ou modification (PATCH multipart). Stock absolu autorisé via `stock`. */
   const save = useCallback(
     async (editingId: string | null, formData: FormData): Promise<SaveProductResult> => {
-      try {
-        const response = await fetch(
-          editingId ? `/api/admin/products/${editingId}` : "/api/admin/products",
-          { method: editingId ? "PATCH" : "POST", body: formData },
-        );
-        if (response.status === 401) {
-          onUnauthorized();
-          return { error: "Session expirée." };
+      async function postOnce(): Promise<SaveProductResult> {
+        try {
+          const response = await fetch(
+            editingId ? `/api/admin/products/${editingId}` : "/api/admin/products",
+            { method: editingId ? "PATCH" : "POST", body: formData },
+          );
+          if (response.status === 401) {
+            onUnauthorized();
+            return { error: "Session expirée." };
+          }
+          const data = (await response.json().catch(() => ({}))) as {
+            product?: AdminProduct;
+            error?: string;
+          };
+          const saved = data.product;
+          if (!response.ok || !saved) {
+            return { error: data.error || "Impossible d'enregistrer le produit." };
+          }
+          setProducts((current) =>
+            editingId
+              ? current.map((item) => (item.id === editingId ? saved : item))
+              : [saved, ...current],
+          );
+          return { product: saved };
+        } catch {
+          return { error: "Impossible d'enregistrer le produit." };
         }
-        const data = (await response.json().catch(() => ({}))) as {
-          product?: AdminProduct;
-          error?: string;
-        };
-        const saved = data.product;
-        if (!response.ok || !saved) {
-          return { error: data.error || "Impossible d'enregistrer le produit." };
-        }
-        setProducts((current) =>
-          editingId
-            ? current.map((item) => (item.id === editingId ? saved : item))
-            : [saved, ...current],
-        );
-        return { product: saved };
-      } catch {
-        return { error: "Impossible d'enregistrer le produit." };
       }
+
+      let last = await postOnce();
+      for (let attempt = 0; attempt < 3 && "error" in last && last.error.includes("Conflit"); attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 400 + attempt * 300));
+        last = await postOnce();
+      }
+      return last;
     },
     [onUnauthorized],
   );
