@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SEEDED_PRODUCTS } from "@/lib/admin/seed";
 import { quoteCheckout, VITRINE_ONLY, type CheckoutLine } from "@/lib/checkout-quote";
+import { PRODUCTS } from "@/lib/shop-data";
 
 vi.mock("@/lib/admin/store", () => ({
   loadStoreReadOnly: vi.fn(),
@@ -42,6 +43,29 @@ describe("quoteCheckout — prix CRM", () => {
     });
     const quote = await quoteCheckout([{ productId: 39, size: "L", qty: 2 }]);
     expect(quote?.totalCents).toBe(35800);
+  });
+
+  it("retombe sur PRODUCTS (vitrine) si la fiche CRM est absente", async () => {
+    vi.mocked(loadStoreReadOnly).mockResolvedValue({
+      version: 4,
+      products: [],
+      orders: [],
+      lookbook: [],
+    });
+    const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
+    expect(quote?.totalCents).toBe(5000);
+  });
+
+  it("refuse une référence retirée du catalogue (tombstone)", async () => {
+    vi.mocked(loadStoreReadOnly).mockResolvedValue({
+      version: 4,
+      products: SEEDED_PRODUCTS.map((p) => ({ ...p })),
+      orders: [],
+      lookbook: [],
+      removedCatalogIds: ["39"],
+    });
+    const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
+    expect(quote).toBeNull();
   });
 
   it("retombe sur VITRINE_ONLY si ni le verso ni le recto ne sont dans le CRM", async () => {
@@ -98,7 +122,9 @@ describe("alignement CRM / vitrine fallback", () => {
     });
     for (const id of Object.keys(VITRINE_ONLY).map(Number)) {
       const quote = await quoteCheckout([{ productId: id, size: "M", qty: 1 }]);
-      expect(quote?.totalCents).toBe(Math.round(VITRINE_ONLY[id].price * 100));
+      const shop = PRODUCTS.find((product) => product.id === id);
+      const expectedEur = shop?.price ?? VITRINE_ONLY[id].price;
+      expect(quote?.totalCents).toBe(Math.round(expectedEur * 100));
     }
   });
 });

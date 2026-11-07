@@ -1,9 +1,16 @@
 import { createHash } from "node:crypto";
-import { isProductSize } from "@/lib/admin/types";
-import { SIZES } from "@/lib/shop-data";
+import {
+  defaultSizesForCategory,
+  isProductCategory,
+  isProductSize,
+  toCatalogProduct,
+  type AdminProduct,
+} from "@/lib/admin/types";
 import { loadStoreReadOnly } from "@/lib/admin/store";
-import type { AdminProduct } from "@/lib/admin/types";
+import { isShopCatalogIdHidden, overlayShopCatalog, type ShopProduct } from "@/lib/catalog";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
+import { PRODUCTS, SIZES } from "@/lib/shop-data";
+import { normalizePantWaistSize } from "@/lib/admin/pant-waist";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
 import {
   assertCheckoutStock,
@@ -100,8 +107,40 @@ export function checkoutDigest(lines: CheckoutLine[]): string {
   return createHash("sha256").update(payload).digest("hex");
 }
 
+function vitrineFallback(productId: number, rectoId: number) {
+  return VITRINE_ONLY[productId] ?? (rectoId !== productId ? VITRINE_ONLY[rectoId] : undefined);
+}
+
+function quoteSizesFor(product: AdminProduct | undefined, shop: ShopProduct | undefined): string[] {
+  if (product && product.sizes.length > 0) return product.sizes;
+  if (shop?.sizes && shop.sizes.length > 0) return shop.sizes;
+  if (product && isProductCategory(product.category)) {
+    return [...defaultSizesForCategory(product.category)];
+  }
+  return [...SIZES];
+}
+
+function lineSizeAllowed(sizes: readonly string[], size: string): boolean {
+  const waist = normalizePantWaistSize(size);
+  const candidates = waist ? [size.trim(), waist] : [size.trim()];
+  return candidates.some((candidate) => sizes.includes(candidate));
+}
+
 export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuote | null> {
   const store = await loadStoreReadOnly();
+  const removed = new Set(
+    (store.removedCatalogIds ?? [])
+      .map((id) => Number(id))
+      .filter((catalogId) => Number.isInteger(catalogId) && catalogId > 0),
+  );
+
+  const live = store.products
+    .map((row) => toCatalogProduct(row))
+    .filter((row): row is NonNullable<ReturnType<typeof toCatalogProduct>> => row !== null);
+  const shopById = new Map(
+    overlayShopCatalog(PRODUCTS, live, [...removed]).map((product) => [product.id, product]),
+  );
+
   const byId = new Map<number, AdminProduct>();
   for (const product of store.products) {
     const id = Number(product.id);
@@ -113,17 +152,21 @@ export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuot
   const paypalItems: CheckoutQuote["paypalItems"] = [];
 
   for (const line of lines) {
+    if (isShopCatalogIdHidden(line.productId, removed)) return null;
+
     const rectoId = resolveRectoCatalogId(line.productId);
     const product = byId.get(line.productId) ?? byId.get(rectoId);
-    const fallback = product ? undefined : VITRINE_ONLY[line.productId];
-    const name = product?.name ?? fallback?.name;
-    const variant = product?.variant ?? fallback?.variant ?? "";
-    const price = product?.price ?? fallback?.price;
+    const shop = shopById.get(line.productId) ?? shopById.get(rectoId);
+    const fallback = product || shop ? undefined : vitrineFallback(line.productId, rectoId);
+
+    const name = product?.name ?? shop?.name ?? fallback?.name;
+    const variant = product?.variant ?? shop?.variant ?? fallback?.variant ?? "";
+    const price = product?.price ?? shop?.price ?? fallback?.price;
     if (!name || price === undefined) return null;
 
-    if (product) {
-      const sizes = product.sizes.length > 0 ? product.sizes : [...SIZES];
-      if (!sizes.includes(line.size)) return null;
+    const sizes = quoteSizesFor(product, shop);
+    if (product || shop) {
+      if (!lineSizeAllowed(sizes, line.size)) return null;
     } else if (fallback) {
       if (!isProductSize(line.size)) return null;
     } else {

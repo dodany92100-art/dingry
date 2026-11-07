@@ -236,7 +236,7 @@ export async function POST(request: Request) {
     return jsonNoStore(
       {
         error:
-          "Un article du panier ne correspond plus au catalogue (référence ou taille). Modifiez le panier sur la boutique.",
+          "Un article du panier ne correspond plus à Dingry collection (retiré, taille ou référence). Videz le panier, rajoutez la pièce depuis la boutique, puis réessayez.",
       },
       { status: 400 },
     );
