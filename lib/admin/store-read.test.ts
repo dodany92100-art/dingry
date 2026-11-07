@@ -92,4 +92,20 @@ describe("loadStoreReadOnly en production", () => {
     const { loadStoreReadOnly, StoreUnavailableError } = await import("@/lib/admin/store");
     await expect(loadStoreReadOnly()).rejects.toBeInstanceOf(StoreUnavailableError);
   });
+
+  it("preview Vercel sans blob → catalogue seed", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "");
+    const { loadStoreReadOnly } = await import("@/lib/admin/store");
+    const store = await loadStoreReadOnly();
+    expect(store.products.length).toBeGreaterThan(0);
+  });
+
+  it("preview Vercel : erreur blob → catalogue seed", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    getMock.mockRejectedValue(new Error("network"));
+    const { loadStoreReadOnly } = await import("@/lib/admin/store");
+    const store = await loadStoreReadOnly();
+    expect(store.products.length).toBeGreaterThan(0);
+  });
 });

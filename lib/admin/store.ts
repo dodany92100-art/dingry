@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { BlobPreconditionFailedError, del, get, put } from "@vercel/blob";
-import { isBlobConfigured } from "@/lib/admin/blob-config";
+import { allowCatalogSeedFallback, isBlobConfigured } from "@/lib/admin/blob-config";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
 import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
@@ -103,7 +103,7 @@ function cloneStore(store: AdminStore): AdminStore {
 }
 
 function assertStoreBackend(): void {
-  if (process.env.NODE_ENV === "production" && !isBlobConfigured()) {
+  if (process.env.NODE_ENV === "production" && !isBlobConfigured() && !allowCatalogSeedFallback()) {
     throw new StoreUnavailableError("BLOB_READ_WRITE_TOKEN requis en production.");
   }
 }
@@ -200,6 +200,7 @@ async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
   }
 
   if (isBlobConfigured()) return readBlobSnapshot();
+  if (allowCatalogSeedFallback()) return "missing";
   throw new StoreUnavailableError();
 }
 
@@ -519,18 +520,19 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
   try {
     const snapshot = await readStoreSnapshot();
     if (snapshot === "missing") {
-      if (process.env.NODE_ENV === "production") {
+      if (!allowCatalogSeedFallback()) {
         throw new StoreUnavailableError();
       }
+      console.warn("[store] snapshot absent, catalogue seed (preview/dev)");
       return normalizeStore(createSeededStore());
     }
     return snapshot.store;
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
-      if (process.env.NODE_ENV === "production") {
+      if (!allowCatalogSeedFallback()) {
         throw error;
       }
-      console.error("[store] lecture seule indisponible, catalogue seed");
+      console.warn("[store] lecture seule indisponible, catalogue seed (preview/dev)");
       return normalizeStore(createSeededStore());
     }
     throw error;

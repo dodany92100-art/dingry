@@ -16,9 +16,12 @@ export function useShopCatalog() {
     async function loadCatalog() {
       setCatalogState((state) => (state === "ready" ? state : "loading"));
       try {
-        const response = await fetch("/api/catalog");
+        const response = await fetch("/api/catalog", { cache: "no-store" });
         if (!response.ok) {
-          if (!cancelled) setCatalogState("error");
+          if (!cancelled) {
+            setProducts(PRODUCTS);
+            setCatalogState("ready");
+          }
           return;
         }
         const data = (await response.json()) as {
@@ -42,7 +45,10 @@ export function useShopCatalog() {
           setCatalogState("ready");
         }
       } catch {
-        if (!cancelled) setCatalogState("error");
+        if (!cancelled) {
+          setProducts(PRODUCTS);
+          setCatalogState("ready");
+        }
       }
     }
     void loadCatalog();
