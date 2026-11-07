@@ -1,7 +1,7 @@
-/** Grille catalogue : 2 col. mobile (gap serré) · 3 col. lg+ · admin vitrine dense xl+. */
-export const CATALOG_GRID_DENSE_DESKTOP = "xl:grid-cols-4 xl:gap-6 2xl:grid-cols-5";
+/** Grille catalogue : 2 col. mobile · 3 col. tablette · 4 col. desktop (vitine e-commerce classique). */
+export const CATALOG_GRID_DESKTOP = "md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:gap-6";
 
-export const CATALOG_PRODUCT_GRID_CLASS = `grid grid-cols-2 gap-3 px-0 sm:gap-4 lg:grid-cols-3 lg:gap-4 ${CATALOG_GRID_DENSE_DESKTOP}`;
+export const CATALOG_PRODUCT_GRID_CLASS = `mx-auto grid w-full max-w-[1360px] grid-cols-2 gap-3 px-0 sm:gap-4 ${CATALOG_GRID_DESKTOP}`;
 
 /** Surface catalogue boutique (`CatalogSection`). */
 export const CATALOG_SECTION_SURFACE_CLASS =

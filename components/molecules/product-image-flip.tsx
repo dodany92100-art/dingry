@@ -144,7 +144,7 @@ export function ProductImageFlip({
   const backSrc = backImage ? cldOpt(backImage, 600) : frontSrc;
 
   const photoShellClass = cn(
-    "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg [touch-action:pan-y] sm:rounded-xl md:rounded-2xl",
+    "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg [touch-action:pan-y] sm:rounded-xl md:rounded-xl lg:aspect-[4/5] lg:max-h-[22rem]",
     className,
   );
 

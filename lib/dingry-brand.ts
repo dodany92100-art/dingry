@@ -10,11 +10,14 @@ export const DINGRY_FAVICON_SRC = "/dingry-favicon.jpg";
 
 export const DINGRY_FAVICON_URL = DINGRY_FAVICON_SRC;
 export const DINGRY_APPLE_ICON_URL = DINGRY_FAVICON_SRC;
-export const DINGRY_OG_IMAGE_URL = DINGRY_FAVICON_SRC;
+
+/** Open Graph / WhatsApp — logo DINGRY (pas le favicon X), fond sombre 1200×630. */
+const DINGRY_OG_TRANSFORM = "c_pad,b_rgb:050505,w_1200,h_630,q_auto,f_jpg";
+export const DINGRY_OG_IMAGE_URL = `https://res.cloudinary.com/dc9xmxpvv/image/upload/${DINGRY_OG_TRANSFORM}/${LOGO_PATH}`;
 
 export const DINGRY_OPEN_GRAPH_IMAGE = {
-  url: DINGRY_FAVICON_SRC,
-  width: 400,
-  height: 400,
-  alt: "DINGRY",
+  url: DINGRY_OG_IMAGE_URL,
+  width: 1200,
+  height: 630,
+  alt: "DINGRY Paris",
 } as const;
