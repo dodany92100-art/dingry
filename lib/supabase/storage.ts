@@ -52,7 +52,16 @@ export async function uploadPublicImage(
     contentType: "image/webp",
     upsert: false,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    const message = error.message;
+    if (/bucket not found/i.test(message)) {
+      throw new Error("Bucket dgry-images introuvable — exécuter supabase/schema.sql dans Supabase.");
+    }
+    if (/row-level security|policy/i.test(message)) {
+      throw new Error("Policy Storage manquante — réexécuter supabase/schema.sql (section storage).");
+    }
+    throw new Error(message);
+  }
   const { data } = supabaseAdmin().storage.from(bucket).getPublicUrl(objectPath);
   const imageUrl = data.publicUrl;
   return { imageUrl, blobUrl: imageUrl, blobPathname: objectPath };

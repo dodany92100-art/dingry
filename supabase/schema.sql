@@ -45,3 +45,4 @@ drop policy if exists "dgry-images public read" on storage.objects;
 create policy "dgry-images public read"
 on storage.objects for select
 using (bucket_id in ('dgry-images', 'dgry images'));
+-- Upload CRM : API Next avec SUPABASE_SERVICE_ROLE_KEY (contourne le RLS).

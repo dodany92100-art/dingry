@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { BlobPreconditionFailedError, del, get, put } from "@vercel/blob";
+import { BlobPreconditionFailedError, del, get, put, type PutBlobResult } from "@vercel/blob";
 import { allowCatalogSeedFallback, isBlobConfigured } from "@/lib/admin/blob-config";
 import { isSupabaseStoreEnabled } from "@/lib/supabase/server";
 import { isVercelBlobUrl, removePublicImage, storageObjectPath, uploadPublicImage } from "@/lib/supabase/storage";
@@ -773,25 +773,48 @@ export function validateImageFile(file: File): string | null {
 
 type ProductImageFace = "recto" | "verso";
 
-export async function uploadProductImage(
-  productId: string,
+type UploadedAdminImage = { imageUrl: string; blobUrl: string | null; blobPathname: string | null };
+
+const IMAGE_STORAGE_UNAVAILABLE =
+  "Stockage image indisponible : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (bucket dgry-images, voir supabase/schema.sql) ou BLOB_READ_WRITE_TOKEN — cocher Preview sur Vercel.";
+
+async function uploadAdminImageFile(
   file: File,
-  face: ProductImageFace = "recto",
-): Promise<{ imageUrl: string; blobUrl: string | null; blobPathname: string | null }> {
+  options: { supabaseFolder: string; blobPathPrefix: string; localFilePrefix: string },
+): Promise<UploadedAdminImage> {
   const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
 
   if (isSupabaseStoreEnabled()) {
     try {
-      return await uploadPublicImage(storageObjectPath(`products/${productId}/${face}`, filename), file);
+      return await uploadPublicImage(storageObjectPath(options.supabaseFolder, filename), file);
     } catch (error) {
-      console.error("[store] upload Supabase produit", error instanceof Error ? error.message : "erreur");
-      throw new StoreUnavailableError("Upload image impossible (Supabase Storage).");
+      console.error("[store] upload Supabase image", error instanceof Error ? error.message : "erreur");
+      throw new StoreUnavailableError(
+        error instanceof Error && error.message.length > 0
+          ? `Upload image impossible (Supabase) : ${error.message}`
+          : "Upload image impossible (Supabase Storage).",
+      );
+    }
+  }
+
+  if (isBlobConfigured()) {
+    try {
+      const pathname = `dingry/${options.blobPathPrefix}/${filename}`;
+      const blob: PutBlobResult = await put(pathname, file, {
+        access: "public",
+        addRandomSuffix: true,
+        contentType: "image/webp",
+      });
+      return { imageUrl: blob.url, blobUrl: blob.url, blobPathname: blob.pathname };
+    } catch (error) {
+      console.error("[store] upload Blob image", error instanceof Error ? error.name : "erreur");
+      throw new StoreUnavailableError("Upload image impossible (Vercel Blob).");
     }
   }
 
   if (useLocalStoreFiles()) {
     await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
-    const localName = `${productId}-${Date.now()}-${filename}`;
+    const localName = `${options.localFilePrefix}-${Date.now()}-${filename}`;
     const bytes = Buffer.from(await file.arrayBuffer());
     await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
     return {
@@ -801,7 +824,19 @@ export async function uploadProductImage(
     };
   }
 
-  throw new StoreUnavailableError("Stockage image indisponible (Supabase).");
+  throw new StoreUnavailableError(IMAGE_STORAGE_UNAVAILABLE);
+}
+
+export async function uploadProductImage(
+  productId: string,
+  file: File,
+  face: ProductImageFace = "recto",
+): Promise<UploadedAdminImage> {
+  return uploadAdminImageFile(file, {
+    supabaseFolder: `products/${productId}/${face}`,
+    blobPathPrefix: `products/${productId}`,
+    localFilePrefix: productId,
+  });
 }
 
 async function deleteLocalUpload(imageUrl: string): Promise<void> {
@@ -1493,34 +1528,12 @@ export async function patchOrder(
   });
 }
 
-export async function uploadLookbookImage(
-  slideId: string,
-  file: File,
-): Promise<{ imageUrl: string; blobUrl: string | null; blobPathname: string | null }> {
-  const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
-
-  if (isSupabaseStoreEnabled()) {
-    try {
-      return await uploadPublicImage(storageObjectPath(`lookbook/${slideId}`, filename), file);
-    } catch (error) {
-      console.error("[store] upload Supabase lookbook", error instanceof Error ? error.message : "erreur");
-      throw new StoreUnavailableError("Upload image impossible (Supabase Storage).");
-    }
-  }
-
-  if (useLocalStoreFiles()) {
-    await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
-    const localName = `lookbook-${slideId}-${Date.now()}-${filename}`;
-    const bytes = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
-    return {
-      imageUrl: `/admin-uploads/${localName}`,
-      blobUrl: null,
-      blobPathname: null,
-    };
-  }
-
-  throw new StoreUnavailableError("Stockage image indisponible (Supabase).");
+export async function uploadLookbookImage(slideId: string, file: File): Promise<UploadedAdminImage> {
+  return uploadAdminImageFile(file, {
+    supabaseFolder: `lookbook/${slideId}`,
+    blobPathPrefix: `lookbook/${slideId}`,
+    localFilePrefix: `lookbook-${slideId}`,
+  });
 }
 
 async function deleteLookbookImage(slide: AdminLookbookSlide): Promise<void> {
