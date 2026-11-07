@@ -37,6 +37,8 @@ type StockTabProps = {
   onTogglePin: (product: AdminProduct) => void;
   onDelete: (product: AdminProduct) => void;
   onReorderProducts: (orderedIds: string[]) => void;
+  /** Modale fiche ouverte : pas de ± stock (évite conflit Blob avec la sauvegarde). */
+  productEditorOpen?: boolean;
 };
 
 function filterByAdminCategory(
@@ -87,7 +89,9 @@ export function StockTab({
   onTogglePin,
   onDelete,
   onReorderProducts,
+  productEditorOpen = false,
 }: StockTabProps) {
+  const stockControlsBusy = productEditorOpen ? true : false;
   const [categoryFilter, setCategoryFilter] = useState<AdminProductCategoryFilter>("Collection");
   const [viewMode, setViewMode] = useState<AdminStockViewMode>("grid");
   const [storefrontPreview, setStorefrontPreview] = useState(false);
@@ -263,7 +267,7 @@ export function StockTab({
                 key={product.id}
                 product={product}
                 dragIndex={index}
-                busy={busyProductId === product.id}
+                busy={stockControlsBusy || busyProductId === product.id}
                 onChangeStock={onChangeStock}
                 onSetStock={onSetStock}
                 onEdit={onEdit}
@@ -291,7 +295,7 @@ export function StockTab({
                         key={product.id}
                         product={product}
                         dragIndex={dragIndex}
-                        busy={busyProductId === product.id}
+                        busy={stockControlsBusy || busyProductId === product.id}
                         onChangeStock={onChangeStock}
                         onSetStock={onSetStock}
                         onEdit={onEdit}
@@ -308,7 +312,7 @@ export function StockTab({
                   key={product.id}
                   product={product}
                   dragIndex={index}
-                  busy={busyProductId === product.id}
+                  busy={stockControlsBusy || busyProductId === product.id}
                   onChangeStock={onChangeStock}
                   onSetStock={onSetStock}
                   onEdit={onEdit}

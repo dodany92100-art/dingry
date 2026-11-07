@@ -106,9 +106,15 @@ export function useAdminProducts({ onUnauthorized }: Options) {
       }
 
       let last = await postOnce();
-      for (let attempt = 0; attempt < 3 && "error" in last && last.error.includes("Conflit"); attempt++) {
-        await new Promise((resolve) => setTimeout(resolve, 400 + attempt * 300));
+      for (let attempt = 0; attempt < 5 && "error" in last && last.error.includes("Conflit"); attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, 500 + attempt * 350));
         last = await postOnce();
+      }
+      if ("error" in last && last.error.includes("Conflit")) {
+        return {
+          error:
+            "Conflit d'enregistrement. Ferme les autres onglets admin (prod/preview), attends 3 s et réessaie.",
+        };
       }
       return last;
     },

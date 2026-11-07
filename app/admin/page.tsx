@@ -260,6 +260,7 @@ function AdminDashboard() {
             error={productsApi.stockError}
             publishFilter={tab === "brouillons" ? "draft" : "live"}
             gridLocked={gridLocked}
+            productEditorOpen={Boolean(editor)}
             onVisibleDraftIdsChange={onVisibleDraftIdsChange}
             onChangeStock={(product, delta) => void productsApi.changeStock(product, delta)}
             onSetStock={(product, next) => void productsApi.setStock(product, next)}

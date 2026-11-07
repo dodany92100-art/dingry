@@ -304,8 +304,33 @@ function snapshotForMissingWrite(): StoreSnapshot {
   };
 }
 
+type StoreOptimisticOptions = {
+  /** CRM produit : après conflits etag, rejoue sur le store frais (mono-éditeur, pas les commandes PayPal). */
+  adminRelaxedFinalize?: boolean;
+};
+
+async function writeStoreSnapshotRelaxed(store: AdminStore): Promise<void> {
+  assertStoreBackend();
+  if (useLocalStoreFiles()) {
+    await writeLocalSnapshot({ ...store, version: STORE_VERSION });
+    return;
+  }
+  if (!isBlobConfigured()) {
+    throw new StoreUnavailableError();
+  }
+  const body = JSON.stringify({ ...store, version: STORE_VERSION });
+  await put(STORE_PATHNAME, body, {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
+    cacheControlMaxAge: 0,
+  });
+}
+
 async function withStoreOptimistic<T>(
   mutate: (store: AdminStore) => { store: AdminStore; result: T; skipWrite?: boolean },
+  options?: StoreOptimisticOptions,
 ): Promise<T> {
   return enqueueStoreWrite(async () => {
     for (let attempt = 0; attempt < STORE_WRITE_ATTEMPTS; attempt++) {
@@ -333,6 +358,16 @@ async function withStoreOptimistic<T>(
       } catch (error) {
         if (!isStoreWriteConflict(error)) throw error;
         await storeWriteBackoff(attempt);
+      }
+    }
+
+    if (options?.adminRelaxedFinalize) {
+      const latest = await readStoreSnapshot();
+      if (latest !== "missing") {
+        const replay = mutate(cloneStore(latest.store));
+        if (replay.skipWrite) return replay.result;
+        await writeStoreSnapshotRelaxed(replay.store);
+        return replay.result;
       }
     }
 
@@ -950,10 +985,13 @@ export async function createProduct(
     requirePublishableProduct(product);
   }
 
-  return withStoreOptimistic((store) => {
-    store.products = [product, ...store.products];
-    return { store, result: product };
-  }).then(async (created) => {
+  return withStoreOptimistic(
+    (store) => {
+      store.products = [product, ...store.products];
+      return { store, result: product };
+    },
+    { adminRelaxedFinalize: true },
+  ).then(async (created) => {
     const id = Number(created.id);
     if (Number.isInteger(id) && id > 0) {
       const seeded = await writeStockQuantity(id, created.stock);
@@ -1144,7 +1182,7 @@ export async function updateProduct(
     }
 
     return { store, result: product };
-  }).then(async (updated) => {
+  }, { adminRelaxedFinalize: true }).then(async (updated) => {
     if (updated && rectoFile && previousRecto) {
       await deleteProductFaceMedia(previousRecto, "recto");
     }
@@ -1176,21 +1214,24 @@ function tombstoneCatalogPair(tombstone: Set<string>, id: string): void {
 }
 
 export async function removeProduct(id: string): Promise<boolean> {
-  const removed = await withStoreOptimistic((store) => {
-    const product = store.products.find((item) => item.id === id);
-    if (!product) {
-      return { store, result: null, skipWrite: true };
-    }
-    const copy = { ...product, sizes: [...product.sizes] };
-    store.products = store.products.filter((item) => item.id !== id);
-    if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
-      const tombstone = new Set(store.removedCatalogIds ?? []);
-      tombstoneCatalogPair(tombstone, id);
-      store.removedCatalogIds = [...tombstone];
-      store.products = store.products.filter((item) => !tombstone.has(item.id));
-    }
-    return { store, result: copy };
-  });
+  const removed = await withStoreOptimistic(
+    (store) => {
+      const product = store.products.find((item) => item.id === id);
+      if (!product) {
+        return { store, result: null, skipWrite: true };
+      }
+      const copy = { ...product, sizes: [...product.sizes] };
+      store.products = store.products.filter((item) => item.id !== id);
+      if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
+        const tombstone = new Set(store.removedCatalogIds ?? []);
+        tombstoneCatalogPair(tombstone, id);
+        store.removedCatalogIds = [...tombstone];
+        store.products = store.products.filter((item) => !tombstone.has(item.id));
+      }
+      return { store, result: copy };
+    },
+    { adminRelaxedFinalize: true },
+  );
 
   if (!removed) return false;
   await deleteProductImage(removed);
