@@ -30,10 +30,10 @@ export function ShopHero() {
       <div className="pointer-events-none absolute inset-0 z-10 flex items-end px-5 pb-8 pt-[var(--dingry-nav-h)] sm:px-8 sm:pb-10 md:items-center md:px-16 md:pb-0">
         <div className="dingry-brand-reveal dingry-hero-copy w-full max-w-[19rem] sm:max-w-sm md:max-w-md">
           <h1 className="dingry-typo-manifesto">{DINGRY_MANIFESTO_FR}</h1>
-          <p className="dingry-typo-manifesto-en mt-2">{DINGRY_MANIFESTO_EN}</p>
-          <div className="mt-3 h-px w-14 bg-white/70" />
-          <p className="dingry-typo-street dingry-typo-street--sm mt-3">{DINGRY_STREET_LINE}</p>
-          <p className="dingry-typo-body-alt mt-3">
+          <p className="dingry-typo-manifesto-en mt-3">{DINGRY_MANIFESTO_EN}</p>
+          <div className="mt-4 h-px w-14 bg-white/70" />
+          <p className="dingry-typo-street dingry-typo-street--sm mt-4">{DINGRY_STREET_LINE}</p>
+          <p className="dingry-typo-body-alt mt-4">
             {DINGRY_HERO_EDITORIAL_LINES.map((line) => (
               <span key={line} className="block">
                 {line}

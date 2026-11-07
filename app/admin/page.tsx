@@ -289,6 +289,9 @@ function AdminDashboard() {
                 if (err) lookbookApi.setError(err);
               });
             }}
+            onDelete={(slide) => {
+              void handleDeleteLookbookSlide(slide);
+            }}
           />
         ) : (
           <OrdersTab

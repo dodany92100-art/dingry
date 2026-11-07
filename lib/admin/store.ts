@@ -568,12 +568,24 @@ function normalizeLookbookSlide(value: unknown): AdminLookbookSlide | null {
   };
 }
 
+function removedLookbookSlideIdSet(raw: AdminStore): Set<string> {
+  return new Set(
+    (Array.isArray(raw.removedLookbookSlideIds) ? raw.removedLookbookSlideIds : [])
+      .map((id) => String(id).trim())
+      .filter(Boolean),
+  );
+}
+
 function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
-  const seeded = seededLookbookSlides();
+  const tombstone = removedLookbookSlideIdSet(raw);
+  const isRetiredLookbookSlide = (item: AdminLookbookSlide) =>
+    tombstone.has(item.id) || RETIRED_LOOKBOOK_SEED_TITLES.has(item.title);
+
+  const seeded = seededLookbookSlides().filter((item) => !isRetiredLookbookSlide(item));
   const existing = (Array.isArray(raw.lookbook) ? raw.lookbook : [])
     .map(normalizeLookbookSlide)
     .filter((item): item is AdminLookbookSlide => item !== null)
-    .filter((item) => !RETIRED_LOOKBOOK_SEED_TITLES.has(item.title))
+    .filter((item) => !isRetiredLookbookSlide(item))
     .sort((a, b) => a.sortOrder - b.sortOrder);
   if (existing.length === 0) return seeded;
   return existing;
@@ -625,6 +637,7 @@ function migrateStore(raw: AdminStore): AdminStore {
       .map((id) => String(id).trim())
       .filter(Boolean),
   );
+  const removedLookbookSlides = removedLookbookSlideIdSet(raw);
 
   const activeSeeds = SEEDED_PRODUCTS.filter((seed) => !removed.has(seed.id));
 
@@ -643,6 +656,7 @@ function migrateStore(raw: AdminStore): AdminStore {
       orders: raw.orders,
       lookbook: mergeLookbookSlides(raw),
       removedCatalogIds: [...removed],
+      removedLookbookSlideIds: [...removedLookbookSlides],
     };
   }
 
@@ -658,6 +672,7 @@ function migrateStore(raw: AdminStore): AdminStore {
     orders: raw.orders,
     lookbook: mergeLookbookSlides(raw),
     removedCatalogIds: [...removed],
+    removedLookbookSlideIds: [...removedLookbookSlides],
   };
 }
 
@@ -668,6 +683,9 @@ function normalizeStore(value: AdminStore): AdminStore {
     orders: Array.isArray(value.orders) ? value.orders : [],
     lookbook: Array.isArray(value.lookbook) ? value.lookbook : [],
     removedCatalogIds: Array.isArray(value.removedCatalogIds) ? value.removedCatalogIds : [],
+    removedLookbookSlideIds: Array.isArray(value.removedLookbookSlideIds)
+      ? value.removedLookbookSlideIds
+      : [],
   });
 }
 
@@ -1638,6 +1656,9 @@ export async function removeLookbookSlide(id: string): Promise<boolean> {
       }
       const copy = { ...slide };
       store.lookbook = store.lookbook.filter((item) => item.id !== id);
+      const tombstone = new Set(store.removedLookbookSlideIds ?? []);
+      tombstone.add(id);
+      store.removedLookbookSlideIds = [...tombstone];
       return { store, result: copy };
     },
     LOOKBOOK_STORE_WRITE_OPTIONS,

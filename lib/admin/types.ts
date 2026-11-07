@@ -260,6 +260,8 @@ export type AdminStore = {
   lookbook: AdminLookbookSlide[];
   /** Fiches seed retirées du stock admin / catalogue live (ids catalogue). */
   removedCatalogIds?: string[];
+  /** Slides lookbook supprimées — ne pas réinjecter depuis le seed au rechargement. */
+  removedLookbookSlideIds?: string[];
 };
 
 export const STORE_VERSION = 12;
