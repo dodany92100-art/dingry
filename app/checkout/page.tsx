@@ -107,9 +107,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     const root = document.documentElement;
     const previous = root.getAttribute("data-theme");
-    root.setAttribute("data-theme", "dark");
+    root.setAttribute("data-theme", "light");
     return () => {
-      root.setAttribute("data-theme", previous ?? "light");
+      if (previous) root.setAttribute("data-theme", previous);
+      else root.removeAttribute("data-theme");
     };
   }, []);
 
@@ -257,39 +258,39 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="dingry-checkout-page min-h-screen bg-[#f6f6f4] text-[#4b5563]">
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-8 md:px-6 md:py-14">
         <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
           <div>
             <Link href="/" aria-label="Retour à la boutique DINGRY">
-              <DingryLogo animate={false} className="h-8 brightness-0 invert md:h-10" />
+              <DingryLogo animate={false} className="h-8 md:h-10" />
             </Link>
-            <p className="dingry-typo-manifesto mt-3 text-[10px] text-white/70">{DINGRY_MANIFESTO_FR}</p>
+            <p className="dingry-typo-manifesto mt-3 text-[10px]">{DINGRY_MANIFESTO_FR}</p>
             <p className="dingry-typo-street dingry-typo-street--sm mt-2">{DINGRY_STREET_LINE}</p>
           </div>
-          <Link href="/" className="dingry-interactive-luxe text-[10px] tracking-[0.22em] text-white/55 uppercase hover:text-white">
+          <Link href="/" className="dingry-interactive-luxe text-[10px] tracking-[0.22em] text-[#6b7280] uppercase hover:text-[#4b5563]">
             Retour à la boutique
           </Link>
         </header>
 
         {!ready ? (
-          <p className="text-[11px] tracking-[0.22em] text-white/40 uppercase">Chargement…</p>
+          <p className="text-[11px] tracking-[0.22em] text-[#9ca3af] uppercase">Chargement…</p>
         ) : confirmation ? (
-          <section className="border border-white/10 bg-[#0a0a0a] p-4 md:p-8">
-            <p className="text-[10px] tracking-[0.32em] text-[#0066FF] uppercase">Commande confirmée</p>
-            <h1 className="mt-4 text-2xl font-medium tracking-tight">Merci {confirmation.payerName}.</h1>
-            <p className="mt-3 text-sm leading-relaxed text-white/55">
+          <section className="dingry-checkout-pay-surface border p-4 md:p-8">
+            <p className="dingry-checkout-pay-eyebrow">Commande confirmée</p>
+            <h1 className="dingry-checkout-pay-title mt-4">Merci {confirmation.payerName}.</h1>
+            <p className="dingry-checkout-pay-lead mt-3">
               PayPal vous envoie le reçu. DINGRY prépare l’expédition.
             </p>
-            <p className="mt-6 text-[10px] tracking-[0.22em] text-white/35 uppercase">Réf. {confirmation.orderId}</p>
-            <ul className="mt-4 space-y-2 text-sm text-white/80">
+            <p className="mt-6 text-[10px] tracking-[0.22em] text-[#9ca3af] uppercase">Réf. {confirmation.orderId}</p>
+            <ul className="mt-4 space-y-2 text-sm text-[#6b7280]">
               {confirmation.items.map((line) => (
                 <li key={line}>{line}</li>
               ))}
             </ul>
-            <p className="mt-6 text-lg font-medium">{euros(Math.round(confirmation.total * 100))}</p>
+            <p className="dingry-product-price dingry-product-price--on-light mt-6">{euros(Math.round(confirmation.total * 100))}</p>
             {confirmation.shippingAddress ? (
-              <div className="mt-4 text-sm leading-relaxed text-white/50">
+              <div className="mt-4 text-sm leading-relaxed text-[#9ca3af]">
                 <p>{confirmation.shippingName}</p>
                 <p>{confirmation.shippingAddress}</p>
               </div>
@@ -297,34 +298,34 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={backToShop}
-              className="mt-8 w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white"
+              className="mt-8 w-full bg-[#0066FF] py-4 text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#0052cc]"
             >
               Retour à la boutique
             </button>
           </section>
         ) : cart.length === 0 ? (
-          <section className="border border-white/10 bg-[#0a0a0a] p-4 md:p-8">
-            <h1 className="text-2xl font-medium tracking-tight">Votre panier est vide.</h1>
-            <p className="mt-3 text-sm leading-relaxed text-white/55">
+          <section className="dingry-checkout-pay-surface border p-4 md:p-8">
+            <h1 className="dingry-checkout-pay-title">Votre panier est vide.</h1>
+            <p className="dingry-checkout-pay-lead mt-3">
               Ajoutez une pièce avant de passer au paiement.
             </p>
             <Link
               href="/"
-              className="mt-8 block w-full bg-white py-4 text-center text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white"
+              className="mt-8 block w-full bg-[#0066FF] py-4 text-center text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#0052cc]"
             >
               Continuer vos achats
             </Link>
           </section>
         ) : (
           <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
-            <section className="border border-white/10 bg-[#0a0a0a] p-4 md:p-8">
+            <section className="dingry-checkout-pay-surface border p-4 md:p-8">
               <div className="flex items-center justify-between gap-3">
-                <h1 className="text-[10px] tracking-[0.32em] text-white/40 uppercase">Votre commande</h1>
-                <Link href="/?panier=1" className="text-[10px] tracking-[0.18em] text-[#0066FF] uppercase hover:text-white">
+                <h1 className="dingry-checkout-pay-eyebrow">Votre commande</h1>
+                <Link href="/?panier=1" className="text-[10px] tracking-[0.18em] text-[#0066FF] uppercase hover:text-[#4b5563]">
                   Modifier le panier
                 </Link>
               </div>
-              <ul className="mt-6 divide-y divide-white/[0.06]">
+              <ul className="mt-6 divide-y divide-[#e5e7eb]">
                 {(quote?.lines ?? cart.map((item) => ({
                   label: item.product.name,
                   size: item.size,
@@ -338,40 +339,40 @@ export default function CheckoutPage() {
                         <img
                           src={item.product.image}
                           alt={item.product.name}
-                          className="h-20 w-16 bg-black object-cover"
+                          className="h-20 w-16 bg-[#f3f4f6] object-cover"
                         />
                       ) : null}
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm tracking-wide uppercase">{item?.product.name ?? line.label}</p>
+                        <p className="text-sm tracking-wide text-[#4b5563] uppercase">{item?.product.name ?? line.label}</p>
                         {item?.product.variant ? (
-                          <p className="mt-1 text-xs tracking-wider text-white/45 uppercase">{item.product.variant}</p>
+                          <p className="mt-1 text-xs tracking-wider text-[#9ca3af] uppercase">{item.product.variant}</p>
                         ) : null}
                         {item?.personalization ? (
                           <p className="mt-1 text-xs tracking-wider text-[#0066FF] uppercase">« {item.personalization} »</p>
                         ) : null}
-                        <p className="mt-1 text-xs text-white/40">Taille {line.size} · {line.qty}</p>
+                        <p className="mt-1 text-xs text-[#9ca3af]">Taille {line.size} · {line.qty}</p>
                       </div>
-                      <p className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark shrink-0">
+                      <p className="dingry-product-price dingry-product-price--sm dingry-product-price--on-light shrink-0">
                         {quoteState === "ready" ? euros(line.amountCents) : "…"}
                       </p>
                     </li>
                   );
                 })}
               </ul>
-              <div className="mt-4 space-y-2 border-t border-white/[0.06] pt-5 text-sm text-white/55">
+              <div className="mt-4 space-y-2 border-t border-[#e5e7eb] pt-5 text-sm text-[#6b7280]">
                 <div className="flex justify-between items-baseline gap-4">
                   <span>{DINGRY_SHIPPING_LABEL}</span>
-                  <span className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark">0 €</span>
+                  <span className="dingry-product-price dingry-product-price--sm dingry-product-price--on-light">0 €</span>
                 </div>
-                <p className="text-[10px] leading-relaxed tracking-wide text-white/35">{DINGRY_DELIVERY_ESTIMATE}</p>
+                <p className="text-[10px] leading-relaxed tracking-wide text-[#9ca3af]">{DINGRY_DELIVERY_ESTIMATE}</p>
               </div>
-              <div className="mt-4 flex items-baseline justify-between border-t border-white/[0.06] pt-5">
-                <span className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Total TTC</span>
-                <span className="dingry-product-price dingry-product-price--lg dingry-product-price--on-dark">
+              <div className="mt-4 flex items-baseline justify-between border-t border-[#e5e7eb] pt-5">
+                <span className="text-[10px] tracking-[0.28em] text-[#9ca3af] uppercase">Total TTC</span>
+                <span className="dingry-product-price dingry-product-price--lg dingry-product-price--on-light">
                   {quoteState === "ready" && quote ? euros(quote.totalCents) : quoteState === "error" ? "—" : "Calcul…"}
                 </span>
               </div>
-              <p className="mt-3 text-[10px] leading-relaxed tracking-wide text-white/30">
+              <p className="mt-3 text-[10px] leading-relaxed tracking-wide text-[#9ca3af]">
                 Montant validé par DINGRY. Adresse de livraison saisie dans PayPal.
               </p>
             </section>
@@ -385,8 +386,8 @@ export default function CheckoutPage() {
               <TurnstileWidget key={turnstileKey} className="mt-6" tone="light" onToken={setToken} />
               <div className="mt-6">
                 {quoteState === "loading" ? (
-                  <p className="flex items-center justify-center gap-3 py-4 text-[11px] tracking-[0.18em] text-white/45 uppercase">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" aria-hidden />
+                  <p className="flex items-center justify-center gap-3 py-4 text-[11px] tracking-[0.18em] text-[#9ca3af] uppercase">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#d1d5db] border-t-[#6b7280]" aria-hidden />
                     Calcul du total…
                   </p>
                 ) : pendingOrderId ? (
@@ -400,7 +401,7 @@ export default function CheckoutPage() {
                       onClick={() => {
                         if (pendingOrderId) void registerOrder(pendingOrderId);
                       }}
-                      className="w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
+                      className="w-full bg-[#0066FF] py-4 text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:text-[#9ca3af]"
                     >
                       {saving ? "Enregistrement…" : "Confirmer la commande"}
                     </button>
@@ -418,7 +419,7 @@ export default function CheckoutPage() {
                   <button
                     type="button"
                     disabled
-                    className="w-full cursor-not-allowed bg-white/10 py-4 text-[11px] font-medium tracking-[0.28em] text-white/25 uppercase"
+                    className="w-full cursor-not-allowed bg-[#e5e7eb] py-4 text-[11px] font-medium tracking-[0.28em] text-[#9ca3af] uppercase"
                   >
                     {token ? "Paiement indisponible" : "Payer avec PayPal"}
                   </button>
