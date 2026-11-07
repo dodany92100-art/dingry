@@ -92,6 +92,14 @@ export function useAdminProducts({ onUnauthorized }: Options) {
           };
           const saved = data.product;
           if (!response.ok || !saved) {
+            if (response.status === 404) {
+              return {
+                error:
+                  data.error === "Produit introuvable."
+                    ? "Produit introuvable sur le serveur. Recharge l’admin (onglet Produits) ou rouvre la fiche depuis la grille."
+                    : data.error || "Impossible d'enregistrer le produit.",
+              };
+            }
             return { error: data.error || "Impossible d'enregistrer le produit." };
           }
           setProducts((current) =>

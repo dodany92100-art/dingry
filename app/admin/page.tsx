@@ -220,6 +220,8 @@ function AdminDashboard() {
         existingSkus={existingProductSkus}
         busyProductId={productsApi.busyProductId}
         onClose={() => setEditor(null)}
+        onStartNewProduct={() => setEditor({ product: null })}
+        onProductPersisted={(product) => setEditor({ product })}
         onSubmit={productsApi.save}
         onDelete={handleDelete}
       />

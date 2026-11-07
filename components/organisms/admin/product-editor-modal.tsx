@@ -20,7 +20,6 @@ import {
   PANT_WAIST_MIN,
   PANT_WAIST_PRESET_SIZES,
   PRODUCT_CATEGORIES,
-  defaultSizesForCategory,
   normalizePantWaistSize,
   normalizeProductCategory,
   isValidPantWaistSize,
@@ -50,6 +49,13 @@ import {
   normalizeSkuInput,
   resolveProductSkuForSave,
 } from "@/lib/admin/product-sku";
+import { parseProductFamilyAndPrice } from "@/lib/admin/parse-product-family";
+import {
+  clearProductEditorDraft,
+  readProductEditorDraft,
+  writeProductEditorDraft,
+  type ProductEditorDraft,
+} from "@/lib/admin/product-editor-draft";
 import type { SaveProductResult } from "./hooks/use-admin-products";
 
 function colorDeclinationsLabel(colors: readonly string[]): string {
@@ -166,10 +172,16 @@ type FormState = {
   sizes: ProductSize[];
 } & ProductStoryFormFields;
 
-function formWithSkuForSave(form: FormState, existingSkus: readonly string[]): FormState {
+function formWithSkuForSave(
+  form: FormState,
+  existingSkus: readonly string[],
+  editingId: string | null,
+): FormState {
   return {
     ...form,
-    sku: resolveProductSkuForSave(form.category, form.sku, existingSkus),
+    sku: resolveProductSkuForSave(form.category, form.sku, existingSkus, {
+      excludeNormalizedSku: editingId ? form.sku : undefined,
+    }),
   };
 }
 
@@ -186,7 +198,7 @@ function formFrom(
       colorDeclinations: [],
       ...EMPTY_PRODUCT_STORY,
       category: "T-shirts",
-      price: "35",
+      price: "",
       stock: String(DEFAULT_SHOP_PRODUCT_STOCK),
       sizes: [],
     };
@@ -195,12 +207,7 @@ function formFrom(
     sku: normalizeSkuInput(product.sku),
     name: product.name,
     variant: product.variant,
-    colorDeclinations:
-      product.colorDeclinations.length > 0
-        ? [...product.colorDeclinations]
-        : product.variant.trim()
-          ? [product.variant.trim()]
-          : [],
+    colorDeclinations: [...product.colorDeclinations],
     description: product.description,
     fabrication: "",
     limitedEdition: product.limitedEdition,
@@ -297,6 +304,37 @@ const ADMIN_BTN_ACTIVE =
 
 type EditorTab = "product" | "story";
 
+function hydrateModalUiState(
+  initial: AdminProduct | null,
+  existingSkus: readonly string[],
+  sessionKey: string,
+): Pick<
+  ProductEditorDraft,
+  | "form"
+  | "colorListDraft"
+  | "waistListDraft"
+  | "editorTab"
+  | "smartPasteOpen"
+  | "smartPasteText"
+  | "imageRectoCleared"
+  | "imageVersoCleared"
+> {
+  const draft = readProductEditorDraft(sessionKey);
+  const form = draft?.form ?? formFrom(initial, { existingSkus });
+  return {
+    form,
+    colorListDraft:
+      draft?.colorListDraft ?? colorDeclinationsLabel(form.colorDeclinations),
+    waistListDraft:
+      draft?.waistListDraft ?? waistDeclinationsLabel(form.sizes, form.variant),
+    editorTab: draft?.editorTab ?? "product",
+    smartPasteOpen: draft?.smartPasteOpen ?? true,
+    smartPasteText: draft?.smartPasteText ?? "",
+    imageRectoCleared: draft?.imageRectoCleared ?? false,
+    imageVersoCleared: draft?.imageVersoCleared ?? false,
+  };
+}
+
 function appendStoryFields(formData: FormData, form: FormState): void {
   formData.set("description", form.description.trim());
   formData.set("fabrication", "");
@@ -361,25 +399,43 @@ type ProductEditorModalProps = {
   existingSkus?: readonly string[];
   busyProductId: string | null;
   onClose: () => void;
+  /** Ouvre une fiche vierge sans repasser par la grille stock. */
+  onStartNewProduct?: () => void;
   onSubmit: (editingId: string | null, formData: FormData) => Promise<SaveProductResult>;
   /** Retourne true si le produit a été supprimé (le modal se ferme alors). */
   onDelete: (product: AdminProduct) => Promise<boolean>;
+  /** Après création ou mise à jour réussie — aligne la session parent (clé `id`). */
+  onProductPersisted?: (product: AdminProduct) => void;
 };
+
+function mergeStoryFieldsFromProduct(prev: FormState, product: AdminProduct): FormState {
+  return {
+    ...prev,
+    description: product.description,
+    limitedEdition: product.limitedEdition,
+    printPlacement: product.printPlacement,
+  };
+}
 
 export function ProductEditorModal({
   initial,
   existingSkus = [],
   busyProductId,
   onClose,
+  onStartNewProduct,
   onSubmit,
   onDelete,
+  onProductPersisted,
 }: ProductEditorModalProps) {
+  const editorSessionKey = initial?.id ?? "new";
+  const hydratedUi = hydrateModalUiState(initial, existingSkus, editorSessionKey);
+
   const [current, setCurrent] = useState<AdminProduct | null>(initial);
-  const [form, setForm] = useState<FormState>(() => formFrom(initial, { existingSkus }));
+  const [form, setForm] = useState<FormState>(() => hydratedUi.form);
   const [imageRectoFile, setImageRectoFile] = useState<File | null>(null);
   const [imageVersoFile, setImageVersoFile] = useState<File | null>(null);
-  const [imageRectoCleared, setImageRectoCleared] = useState(false);
-  const [imageVersoCleared, setImageVersoCleared] = useState(false);
+  const [imageRectoCleared, setImageRectoCleared] = useState(() => hydratedUi.imageRectoCleared);
+  const [imageVersoCleared, setImageVersoCleared] = useState(() => hydratedUi.imageVersoCleared);
   const [imageRectoPreview, setImageRectoPreview] = useState("");
   const [imageVersoPreview, setImageVersoPreview] = useState("");
   const [convertingRecto, setConvertingRecto] = useState(false);
@@ -391,18 +447,19 @@ export function ProductEditorModal({
   const [formSuccess, setFormSuccess] = useState<FormSuccessState | null>(null);
   const [customPantWaist, setCustomPantWaist] = useState("");
   const [colorPresetPick, setColorPresetPick] = useState("");
-  const [smartPasteOpen, setSmartPasteOpen] = useState(true);
-  const [smartPasteText, setSmartPasteText] = useState("");
+  const [smartPasteOpen, setSmartPasteOpen] = useState(() => hydratedUi.smartPasteOpen);
+  const [smartPasteText, setSmartPasteText] = useState(() => hydratedUi.smartPasteText);
   const [printSheetOpen, setPrintSheetOpen] = useState(false);
-  const [colorListDraft, setColorListDraft] = useState(() =>
-    colorDeclinationsLabel(formFrom(initial, { existingSkus }).colorDeclinations),
-  );
-  const [waistListDraft, setWaistListDraft] = useState(() => {
-    const initialForm = formFrom(initial, { existingSkus });
-    return waistDeclinationsLabel(initialForm.sizes, initialForm.variant);
-  });
+  const [colorListDraft, setColorListDraft] = useState(() => hydratedUi.colorListDraft);
+  const [waistListDraft, setWaistListDraft] = useState(() => hydratedUi.waistListDraft);
+  const [editorTab, setEditorTab] = useState<EditorTab>(() => hydratedUi.editorTab);
+  /** Description avant « Smart Description » · permet d’annuler sans recharger. */
+  const [storyUndoDescription, setStoryUndoDescription] = useState<string | null>(null);
 
   const editingId = current?.id ?? null;
+  const bootstrapSessionRef = useRef<string | null>(null);
+  const initialProductRef = useRef(initial);
+  initialProductRef.current = initial;
 
   /** Liste SKU stable pour `newProductSku` sans remonter le reset formulaire. */
   const existingSkusRef = useRef(existingSkus);
@@ -417,9 +474,6 @@ export function ProductEditorModal({
     () => formFrom(current, { existingSkus: existingSkusRef.current }),
     [current, existingSkusFingerprint],
   );
-
-  /** Ouverture / changement de fiche uniquement — pas à chaque re-render parent (ex. clic grille stock). */
-  const editorSessionKey = initial?.id ?? "new";
 
   useEffect(() => {
     if (!imageRectoFile) {
@@ -441,24 +495,57 @@ export function ProductEditorModal({
     return () => URL.revokeObjectURL(url);
   }, [imageVersoFile]);
 
+  /** Changement de fiche uniquement (id) — ignore les nouvelles refs `initial` du parent. */
   useEffect(() => {
-    setCurrent(initial);
-    const nextForm = formFrom(initial, { existingSkus: existingSkusRef.current });
-    setForm(nextForm);
-    setColorListDraft(colorDeclinationsLabel(nextForm.colorDeclinations));
-    setWaistListDraft(waistDeclinationsLabel(nextForm.sizes, nextForm.variant));
+    if (bootstrapSessionRef.current === editorSessionKey) return;
+    bootstrapSessionRef.current = editorSessionKey;
+
+    const product = initialProductRef.current;
+    const ui = hydrateModalUiState(product, existingSkusRef.current, editorSessionKey);
+    setCurrent(product);
+    setForm(ui.form);
+    setColorListDraft(ui.colorListDraft);
+    setWaistListDraft(ui.waistListDraft);
+    setEditorTab(ui.editorTab);
     setImageRectoFile(null);
     setImageVersoFile(null);
-    setImageRectoCleared(false);
-    setImageVersoCleared(false);
+    setImageRectoCleared(ui.imageRectoCleared);
+    setImageVersoCleared(ui.imageVersoCleared);
     setFormError("");
     setFormSuccess(null);
-    setSmartPasteOpen(true);
-    setSmartPasteText("");
+    setSmartPasteOpen(ui.smartPasteOpen);
+    setSmartPasteText(ui.smartPasteText);
     setPrintSheetOpen(false);
     setColorPresetPick("");
     setStoryUndoDescription(null);
-  }, [editorSessionKey, initial]);
+  }, [editorSessionKey]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      writeProductEditorDraft(editorSessionKey, {
+        v: 1,
+        form,
+        colorListDraft,
+        waistListDraft,
+        editorTab,
+        smartPasteOpen,
+        smartPasteText,
+        imageRectoCleared,
+        imageVersoCleared,
+      });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [
+    editorSessionKey,
+    form,
+    colorListDraft,
+    waistListDraft,
+    editorTab,
+    smartPasteOpen,
+    smartPasteText,
+    imageRectoCleared,
+    imageVersoCleared,
+  ]);
 
   function patch(update: Partial<FormState>) {
     setForm((previous) => ({ ...previous, ...update }));
@@ -473,10 +560,7 @@ export function ProductEditorModal({
       );
       setColorListDraft(colorDeclinationsLabel(nextDecl));
       const variantKey = previous.variant.trim().toUpperCase();
-      const nextVariant =
-        variantKey === key
-          ? nextDecl[0] ?? ""
-          : previous.variant;
+      const nextVariant = variantKey === key ? "" : previous.variant;
       return { ...previous, colorDeclinations: nextDecl, variant: nextVariant };
     });
   }
@@ -508,7 +592,8 @@ export function ProductEditorModal({
     if (!key) return;
     setForm((previous) => {
       const next = previous.sizes.filter((item) => item !== key);
-      const variant = next.includes(previous.variant) ? previous.variant : (next[0] ?? "");
+      const variant =
+        previous.variant && next.includes(previous.variant) ? previous.variant : "";
       setWaistListDraft(waistDeclinationsLabel(next, variant));
       return { ...previous, sizes: next, variant };
     });
@@ -520,18 +605,27 @@ export function ProductEditorModal({
     setForm((previous) => ({
       ...previous,
       sizes: next,
-      variant: next.includes(previous.variant) ? previous.variant : (next[0] ?? ""),
+      variant:
+        previous.variant && next.includes(previous.variant as ProductSize)
+          ? previous.variant
+          : "",
     }));
   }
 
   function onColorListDraftChange(raw: string) {
     setColorListDraft(raw);
     const next = parseColorDeclinationsInput(raw);
-    setForm((previous) => ({
-      ...previous,
-      colorDeclinations: next,
-      variant: next[0] ?? "",
-    }));
+    setForm((previous) => {
+      const variantTrim = previous.variant.trim();
+      const variantStillListed =
+        variantTrim.length > 0 &&
+        next.some((color) => color.trim().toUpperCase() === variantTrim.toUpperCase());
+      return {
+        ...previous,
+        colorDeclinations: next,
+        variant: variantStillListed ? previous.variant : "",
+      };
+    });
   }
 
   function showFormSuccess(message: string, tone: "draft" | "live" | "neutral") {
@@ -562,14 +656,12 @@ export function ProductEditorModal({
 
   function changeCategory(nextCategory: ProductCategory) {
     setForm((prev) => {
-      const filtered = filterSizesForCategory(prev.sizes, nextCategory);
-      const seeded = defaultSizesForCategory(nextCategory);
-      const nextSizes = filtered.length > 0 ? filtered : seeded;
+      const nextSizes = filterSizesForCategory(prev.sizes, nextCategory);
       const nowPants = isPantsCategory(nextCategory);
       const wasPants = isPantsCategory(prev.category);
 
       if (!editingId) {
-        setWaistListDraft("");
+        setWaistListDraft(waistDeclinationsLabel(nextSizes, ""));
         setColorListDraft("");
         const nextSku =
           isAutoGeneratedCategorySku(prev.sku, prev.category) || !prev.sku.trim()
@@ -577,8 +669,7 @@ export function ProductEditorModal({
             : normalizeSkuInput(prev.sku);
         if (nowPants) {
           const w = normalizePantWaistSize(prev.variant.trim());
-          const variant =
-            w && nextSizes.includes(w) ? w : (nextSizes[0] ?? "");
+          const variant = w && nextSizes.includes(w) ? w : "";
           setWaistListDraft(waistDeclinationsLabel(nextSizes, variant));
           return {
             ...prev,
@@ -601,8 +692,7 @@ export function ProductEditorModal({
 
       if (nowPants) {
         const w = normalizePantWaistSize(prev.variant.trim());
-        const nextVariant =
-          w && nextSizes.includes(w) ? w : (nextSizes[0] ?? "");
+        const nextVariant = w && nextSizes.includes(w) ? w : "";
         setWaistListDraft(waistDeclinationsLabel(nextSizes, nextVariant));
         setColorListDraft("");
         return {
@@ -615,23 +705,20 @@ export function ProductEditorModal({
       }
 
       let nextVariant = prev.variant.trim();
-      let nextColors = [...prev.colorDeclinations];
+      const nextColors = [...prev.colorDeclinations];
 
       if (wasPants || isValidPantWaistSize(nextVariant)) {
-        nextVariant = nextColors[0] ?? "";
+        nextVariant = "";
       } else if (
         nextColors.length > 0 &&
+        nextVariant &&
         !nextColors.some((c) => c.trim().toUpperCase() === nextVariant.toUpperCase())
       ) {
-        nextVariant = nextColors[0] ?? "";
+        nextVariant = "";
       }
 
       setWaistListDraft("");
-      setColorListDraft(
-        colorDeclinationsLabel(
-          nextColors.length > 0 ? nextColors : nextVariant ? [nextVariant] : [],
-        ),
-      );
+      setColorListDraft(colorDeclinationsLabel(nextColors));
 
       return {
         ...prev,
@@ -646,16 +733,91 @@ export function ProductEditorModal({
   function toggleSize(size: ProductSize) {
     setForm((previous) => {
       const pants = isPantsCategory(previous.category);
-      const seeded =
-        pants && previous.sizes.length === 0 ? normalizePantWaistSize(previous.variant) : null;
-      const base = seeded ? [seeded] : previous.sizes;
-      const exists = base.includes(size);
-      const next = exists ? base.filter((item) => item !== size) : [...base, size];
+      const exists = previous.sizes.includes(size);
+      const next = exists ? previous.sizes.filter((item) => item !== size) : [...previous.sizes, size];
       if (!pants) return { ...previous, sizes: next };
-      const variant = next.includes(previous.variant) ? previous.variant : (next[0] ?? "");
+      const variant =
+        previous.variant && next.includes(previous.variant as ProductSize)
+          ? previous.variant
+          : "";
       setWaistListDraft(next.join(", "));
       return { ...previous, sizes: next, variant };
     });
+  }
+
+  function selectAllSizesForCategory() {
+    setForm((previous) => {
+      const all = [...ADMIN_CATEGORY_SIZES[previous.category]];
+      if (isPantsCategory(previous.category)) {
+        setWaistListDraft(all.join(", "));
+        return { ...previous, sizes: all };
+      }
+      return { ...previous, sizes: all };
+    });
+  }
+
+  function clearAllSizes() {
+    setForm((previous) => {
+      if (isPantsCategory(previous.category)) {
+        setWaistListDraft("");
+        return { ...previous, sizes: [], variant: "" };
+      }
+      return { ...previous, sizes: [] };
+    });
+  }
+
+  function selectAllColorDeclinations() {
+    setForm((previous) => {
+      if (isPantsCategory(previous.category)) return previous;
+      const presets = [...ADMIN_VARIANT_PRESETS[previous.category]];
+      setColorListDraft(colorDeclinationsLabel(presets));
+      const variant =
+        previous.variant.trim() &&
+        presets.some((c) => c.trim().toUpperCase() === previous.variant.trim().toUpperCase())
+          ? previous.variant
+          : (presets[0] ?? "");
+      return { ...previous, colorDeclinations: presets, variant };
+    });
+  }
+
+  function clearAllColorDeclinations() {
+    setForm((previous) => {
+      if (isPantsCategory(previous.category)) return previous;
+      setColorListDraft("");
+      return { ...previous, colorDeclinations: [], variant: "" };
+    });
+  }
+
+  function applyFamilyDetectionFromName() {
+    setFormError("");
+    const sample = `${form.name}\n${smartPasteText}`.trim();
+    if (sample.length < 2) {
+      setFormError("Saisis un nom ou un texte pour détecter la famille.");
+      return;
+    }
+    const family = parseProductFamilyAndPrice(sample);
+    if (!family.category) {
+      setFormError("Famille non reconnue (t-shirt, hoodie, cargo, casquette…).");
+      return;
+    }
+    const nextPrice =
+      form.price.trim() && Number(form.price) > 0
+        ? form.price
+        : (family.suggestedPriceLabel ?? form.price);
+    setForm((prev) => ({
+      ...prev,
+      category: family.category ?? prev.category,
+      price: nextPrice,
+      sizes: [],
+      variant: "",
+      colorDeclinations: [],
+    }));
+    setWaistListDraft("");
+    setColorListDraft("");
+    showFormSuccess(
+      `Famille : ${family.familyLabel ?? family.category} · prix suggéré ${family.suggestedPriceLabel ?? "—"} € (modifiable).`,
+      "neutral",
+    );
   }
 
   function addCustomPantWaist() {
@@ -714,10 +876,6 @@ export function ProductEditorModal({
     }
   }
 
-  const [editorTab, setEditorTab] = useState<EditorTab>("product");
-  /** Description avant « Smart Description » · permet d’annuler sans recharger. */
-  const [storyUndoDescription, setStoryUndoDescription] = useState<string | null>(null);
-
   function validateProductFields(publishStatus: ProductPublishStatus): string | null {
     if (convertingImage) return "Conversion de l'image en cours.";
     if (form.name.trim().length < 2) return "Nom du produit requis (2 caractères min.).";
@@ -734,6 +892,10 @@ export function ProductEditorModal({
       return isPantsCategory(form.category)
         ? "Choisis ou saisis un tour de taille (variante)."
         : "Choisis ou saisis une couleur (variante).";
+    }
+    const priceValue = Number(form.price);
+    if (!Number.isFinite(priceValue) || priceValue <= 0 || priceValue > 10000) {
+      return "Prix invalide (entre 1 et 10 000 €).";
     }
     if (form.sizes.length === 0) {
       return isPantsCategory(form.category)
@@ -767,7 +929,7 @@ export function ProductEditorModal({
       setCurrent((prev) => (prev ? { ...prev, publishStatus: "live" } : prev));
     }
     try {
-      const formToSave = formWithSkuForSave(form, existingSkusRef.current);
+      const formToSave = formWithSkuForSave(form, existingSkusRef.current, editingId);
       const payload = buildFormDataComplete(
         formToSave,
         imageRectoFile,
@@ -786,6 +948,7 @@ export function ProductEditorModal({
         return;
       }
       setCurrent(result.product);
+      onProductPersisted?.(result.product);
       const nextForm = formFrom(result.product, { existingSkus });
       setForm(nextForm);
       setColorListDraft(colorDeclinationsLabel(nextForm.colorDeclinations));
@@ -794,6 +957,7 @@ export function ProductEditorModal({
       setImageVersoFile(null);
       setImageRectoCleared(false);
       setImageVersoCleared(false);
+      clearProductEditorDraft(editorSessionKey);
       showFormSuccess(
         publishStatus === "live"
           ? "Produit en ligne sur la boutique."
@@ -820,7 +984,7 @@ export function ProductEditorModal({
         isPantsCategory(form.category) ? normalizePantWaistSize(form.variant) ?? undefined : undefined;
       setSaving(true);
       try {
-        const formToSave = formWithSkuForSave(form, existingSkusRef.current);
+        const formToSave = formWithSkuForSave(form, existingSkusRef.current, null);
         const result = await onSubmit(
           null,
           buildFormDataComplete(formToSave, imageRectoFile, imageVersoFile, publishStatus, pantsVariant),
@@ -830,12 +994,14 @@ export function ProductEditorModal({
           return;
         }
         setCurrent(result.product);
+        onProductPersisted?.(result.product);
         const created = formFrom(result.product, { existingSkus });
         setForm(created);
         setColorListDraft(colorDeclinationsLabel(created.colorDeclinations));
         setWaistListDraft(waistDeclinationsLabel(created.sizes, created.variant));
         setImageRectoFile(null);
         setImageVersoFile(null);
+        clearProductEditorDraft(editorSessionKey);
         showFormSuccess(
           publishStatus === "live"
             ? "Produit et fiche boutique en ligne."
@@ -874,10 +1040,9 @@ export function ProductEditorModal({
         return;
       }
       setCurrent(result.product);
-      const saved = formFrom(result.product, { existingSkus });
-      setForm(saved);
-      setColorListDraft(colorDeclinationsLabel(saved.colorDeclinations));
-      setWaistListDraft(waistDeclinationsLabel(saved.sizes, saved.variant));
+      onProductPersisted?.(result.product);
+      setForm((prev) => mergeStoryFieldsFromProduct(prev, result.product));
+      clearProductEditorDraft(editorSessionKey);
       showFormSuccess(
         publishStatus === "live"
           ? "Fiche enregistrée · produit mis en ligne."
@@ -978,18 +1143,20 @@ export function ProductEditorModal({
     setFormError("");
     setFormSuccess(null);
     const parsed = parseSmartProductText(smartPasteText, form.category);
-    if (parsed.filled.length === 0) {
+    const family = parseProductFamilyAndPrice(smartPasteText);
+    if (parsed.filled.length === 0 && !family.category) {
       showFormSuccess(buildSmartParseRecap(parsed), "neutral");
       return;
     }
     const filledSet = new Set<SmartParseFieldId>(parsed.filled);
     setForm((prev) => {
-      const targetCategory = parsed.detectedCategory ?? prev.category;
+      const targetCategory = parsed.detectedCategory ?? family.category ?? prev.category;
       let next: FormState =
-        parsed.detectedCategory !== undefined && parsed.detectedCategory !== prev.category
+        (parsed.detectedCategory !== undefined && parsed.detectedCategory !== prev.category) ||
+        (family.category !== undefined && family.category !== prev.category && !parsed.detectedCategory)
           ? {
               ...prev,
-              category: parsed.detectedCategory,
+              category: targetCategory,
               sizes: [],
               ...(editingId ? {} : { variant: "", colorDeclinations: [] }),
             }
@@ -1006,7 +1173,11 @@ export function ProductEditorModal({
         filledSet.has("printPlacement") && parsed.printPlacement !== undefined
           ? parsed.printPlacement
           : "";
-      next.price = filledSet.has("price") && parsed.price !== undefined ? parsed.price : "";
+      if (filledSet.has("price") && parsed.price !== undefined) {
+        next.price = parsed.price;
+      } else if (family.suggestedPriceLabel) {
+        next.price = prev.price.trim() ? prev.price : family.suggestedPriceLabel;
+      }
 
       const defaultStock = String(DEFAULT_SHOP_PRODUCT_STOCK);
       const pantsNow = isPantsCategory(targetCategory);
@@ -1111,9 +1282,29 @@ export function ProductEditorModal({
     saveInFlightRef.current = true;
     setFormError("");
     setFormSuccess(null);
-    void (editorTab === "product" ? saveProductTab(publishStatus) : saveStoryTab(publishStatus)).finally(() => {
+    const storyOnlySave =
+      editorTab === "story" &&
+      publishStatus === "draft" &&
+      !mediaDirty &&
+      !sectionDirty.general &&
+      !sectionDirty.sizes &&
+      !sectionDirty.price;
+    void (storyOnlySave ? saveStoryTab(publishStatus) : saveProductTab(publishStatus)).finally(() => {
       saveInFlightRef.current = false;
     });
+  }
+
+  function requestNewProduct() {
+    if (!onStartNewProduct) return;
+    if (
+      isDirty &&
+      !window.confirm(
+        "Des modifications ne sont pas enregistrées. Ouvrir une nouvelle fiche quand même ?",
+      )
+    ) {
+      return;
+    }
+    onStartNewProduct();
   }
 
   function sectionClass(dirty: boolean): string {
@@ -1150,6 +1341,16 @@ export function ProductEditorModal({
               >
                 ← Retour au stock
               </button>
+              {onStartNewProduct ? (
+                <button
+                  type="button"
+                  onClick={requestNewProduct}
+                  disabled={saving}
+                  className="text-sm text-[#7EB3FF] transition hover:text-white disabled:opacity-40"
+                >
+                  + Nouvelle fiche
+                </button>
+              ) : null}
               <span className="hidden h-4 w-px bg-zinc-700 sm:block" aria-hidden />
               <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">
                 {form.name.trim() || (editingId ? "Modifier" : "Nouveau produit")}
@@ -1275,6 +1476,16 @@ export function ProductEditorModal({
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
+                          onClick={applyFamilyDetectionFromName}
+                          disabled={saving || convertingImage}
+                          className={ADMIN_BTN}
+                        >
+                          Détecter famille & prix
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
                           onClick={() => setSmartPasteOpen((open) => !open)}
                           aria-expanded={smartPasteOpen}
                           className={smartPasteOpen ? ADMIN_BTN_ACTIVE : ADMIN_BTN}
@@ -1316,9 +1527,27 @@ export function ProductEditorModal({
                   </div>
 
                   <div className={sectionClass(sectionDirty.sizes)}>
-                    <p className="mb-3 text-sm font-semibold text-zinc-300">
-                      {pantsForm ? "Grille tours" : "Grille tailles"}
-                    </p>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-zinc-300">
+                        {pantsForm ? "Grille tours" : "Grille tailles"}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={selectAllSizesForCategory}
+                          className={ADMIN_BTN}
+                        >
+                          Tout sélectionner
+                        </button>
+                        <button
+                          type="button"
+                          onClick={clearAllSizes}
+                          className={ADMIN_BTN}
+                        >
+                          Tout effacer
+                        </button>
+                      </div>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {ADMIN_CATEGORY_SIZES[form.category].map((size) => {
                         const active = form.sizes.includes(size);
@@ -1416,7 +1645,25 @@ export function ProductEditorModal({
                         </div>
                       ) : (
                         <div>
-                          <p className={FIELD_LABEL}>Couleurs · boutique</p>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className={FIELD_LABEL}>Couleurs · boutique</p>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={selectAllColorDeclinations}
+                                className={ADMIN_BTN}
+                              >
+                                Toutes les couleurs
+                              </button>
+                              <button
+                                type="button"
+                                onClick={clearAllColorDeclinations}
+                                className={ADMIN_BTN}
+                              >
+                                Effacer
+                              </button>
+                            </div>
+                          </div>
                           <div
                             className="mt-2 flex flex-wrap gap-1.5"
                             role="group"
@@ -1538,6 +1785,7 @@ export function ProductEditorModal({
                           step="0.01"
                           value={form.price}
                           onChange={(event) => patch({ price: event.target.value })}
+                          placeholder="Grille famille ou saisie libre"
                           required
                           className={`${FIELD_INPUT} tabular-nums`}
                         />
