@@ -43,6 +43,12 @@ const noIndex = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
 
 const nextConfig = {
   reactStrictMode: false,
+  env: {
+    NEXT_PUBLIC_CRM_BUILD_AT:
+      process.env.VERCEL_DEPLOYMENT_CREATED_AT ??
+      process.env.CRM_BUILD_AT ??
+      new Date().toISOString(),
+  },
   typescript: {
     ignoreBuildErrors: false,
   },

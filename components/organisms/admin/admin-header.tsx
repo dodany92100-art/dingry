@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCrmBuildLabel } from "@/lib/admin/crm-build-label";
 import { ADMIN_CRM_VERSION } from "@/lib/admin/crm-release";
 
 type AdminHeaderProps = {
@@ -17,12 +18,25 @@ export function AdminHeader({
   totalStock,
   onLogout,
 }: AdminHeaderProps) {
+  const deployedAt = formatCrmBuildLabel();
+
   return (
     <header className="dingry-admin-glass sticky top-0 z-30 border-b-0 border-white/10 px-6 py-5 md:px-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">DINGRY</h1>
-          <p className="mt-0.5 text-sm text-zinc-400">CRM · version {ADMIN_CRM_VERSION}</p>
+          <p className="mt-0.5 text-sm text-zinc-400">
+            CRM v{ADMIN_CRM_VERSION}
+            {deployedAt ? (
+              <>
+                {" "}
+                · maj.{" "}
+                <time dateTime={process.env.NEXT_PUBLIC_CRM_BUILD_AT} className="text-zinc-300">
+                  {deployedAt}
+                </time>
+              </>
+            ) : null}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-5 text-sm text-zinc-400">
           <span>{pendingOrders} à expédier</span>

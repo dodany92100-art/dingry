@@ -1,15 +1,15 @@
 /** Version affichée du CRM admin (bandeau « nouveautés »). */
-export const ADMIN_CRM_VERSION = "1.1";
+export const ADMIN_CRM_VERSION = "1.2";
 
 export const ADMIN_CRM_RELEASE = {
   version: ADMIN_CRM_VERSION,
-  title: "CRM v1.1 — prix unifiés",
+  title: "CRM v1.2 — Supabase & studio produit",
   summary:
-    "Les prix affichés en boutique et au checkout suivent désormais le stock CRM, sans couche vitrine séparée.",
+    "Catalogue et images sur Supabase Storage, fiche produit retravaillée (scroll, typo, panneaux sombres).",
   highlights: [
-    "Migration automatique (magasin v6) : tarifs catalogue réalignés sur la grille seed.",
-    "Checkout et devis PayPal : même montant que la fiche produit admin.",
-    "Nouveau produit : prix par défaut cohérent avec les tees (35 €).",
+    "Produits en base Supabase : plus de conflits Blob sur les fiches.",
+    "Upload images → bucket dgry-images (WebP compressé côté serveur).",
+    "Fiche plein écran : brouillon / en ligne, zones de texte élargies.",
   ],
 } as const;
 
