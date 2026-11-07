@@ -39,9 +39,7 @@ export function useShopCatalog() {
             )
           : [];
         if (!cancelled) {
-          if (live.length > 0 || removedCatalogIds.length > 0) {
-            setProducts(overlayShopCatalog(PRODUCTS, live, removedCatalogIds));
-          }
+          setProducts(overlayShopCatalog(PRODUCTS, live, removedCatalogIds));
           setCatalogState("ready");
         }
       } catch {

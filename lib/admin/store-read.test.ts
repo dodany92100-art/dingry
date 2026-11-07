@@ -101,11 +101,11 @@ describe("loadStoreReadOnly en production", () => {
     expect(store.products.length).toBeGreaterThan(0);
   });
 
-  it("preview Vercel : erreur blob → catalogue seed", async () => {
+  it("preview Vercel avec token blob : erreur réseau → StoreUnavailableError", async () => {
     vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "test-blob-token");
     getMock.mockRejectedValue(new Error("network"));
-    const { loadStoreReadOnly } = await import("@/lib/admin/store");
-    const store = await loadStoreReadOnly();
-    expect(store.products.length).toBeGreaterThan(0);
+    const { loadStoreReadOnly, StoreUnavailableError } = await import("@/lib/admin/store");
+    await expect(loadStoreReadOnly()).rejects.toBeInstanceOf(StoreUnavailableError);
   });
 });
