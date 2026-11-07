@@ -293,6 +293,10 @@ const FIELD_LABEL = "block text-[13px] font-medium tracking-tight text-white/55"
 const FIELD_INPUT =
   "mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-white/5 px-3.5 text-[15px] text-white outline-none transition placeholder:text-white/30 backdrop-blur-md focus:border-white/25 focus:bg-white/[0.08] focus:ring-2 focus:ring-white/10";
 const FIELD_SELECT = `${FIELD_INPUT} appearance-none cursor-pointer`;
+const ADMIN_BTN =
+  "rounded-full border border-white/12 bg-[#0e1628] px-3.5 py-2 text-[13px] font-medium text-white/65 transition hover:border-white/22 hover:bg-[#121c30] hover:text-white";
+const ADMIN_BTN_ACTIVE =
+  "rounded-full border border-white/25 bg-[#121c30] px-3.5 py-2 text-[13px] font-medium text-white ring-1 ring-white/12";
 
 type EditorTab = "product" | "story";
 
@@ -1210,35 +1214,30 @@ export function ProductEditorModal({
           {formError ? <p className="text-sm text-red-400">{formError}</p> : null}
           {formSuccess ? (
             formSuccess.kind === "smart-parse" ? (
-              <div
-                role="status"
-                className="mt-3 rounded-md border border-stone-200/90 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
-              >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  {formSuccess.title}
-                </p>
-                <ul className="mt-2 list-inside list-disc space-y-1 text-[13px] leading-snug text-stone-700">
+              <div role="status" className="dingry-admin-panel mt-3 rounded-2xl px-4 py-3 text-sm">
+                <p className="text-[13px] font-semibold text-white/80">{formSuccess.title}</p>
+                <ul className="mt-2 list-inside list-disc space-y-1 text-[13px] leading-snug text-white/75">
                   {formSuccess.blocks.map((b, idx) => (
                     <li key={`${b.key}-${idx}`}>
-                      <span className="font-medium text-stone-600">{b.label}</span>
+                      <span className="font-medium text-white/55">{b.label}</span>
                       {" · "}
-                      <span className="text-stone-800">{b.value}</span>
+                      <span>{b.value}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="mt-2 border-t border-stone-200/90 pt-2 text-[11px] leading-relaxed text-stone-500">
+                <p className="mt-2 border-t border-white/10 pt-2 text-[12px] leading-relaxed text-white/50">
                   {formSuccess.analysisLine}
                 </p>
-                <p className="mt-1 text-[12px] text-stone-500">{formSuccess.filledSummary}</p>
+                <p className="mt-1 text-[12px] text-white/45">{formSuccess.filledSummary}</p>
               </div>
             ) : (
               <p
-                className={`mt-3 rounded-sm border px-3 py-2 text-sm ${
+                className={`mt-3 rounded-2xl border px-4 py-2.5 text-sm ${
                   formSuccess.tone === "live"
-                    ? "border-emerald-200 bg-emerald-50/90 text-emerald-900"
+                    ? "border-emerald-500/35 bg-[#0c1f18] text-emerald-100"
                     : formSuccess.tone === "draft"
-                      ? "border-amber-200 bg-amber-50/90 text-amber-950"
-                      : "border-stone-200 bg-stone-50 text-stone-700"
+                      ? "border-sky-500/30 bg-[#0e1628] text-sky-100"
+                      : "dingry-admin-panel"
                 }`}
               >
                 {formSuccess.message}
@@ -1281,24 +1280,20 @@ export function ProductEditorModal({
                           type="button"
                           onClick={() => setSmartPasteOpen((open) => !open)}
                           aria-expanded={smartPasteOpen}
-                          className={`rounded-md border px-3 py-2 text-[10px] font-medium uppercase tracking-[0.14em] transition ${
-                            smartPasteOpen
-                              ? "border-amber-300/70 bg-amber-50/95 text-amber-950 ring-1 ring-amber-200/40"
-                              : "border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-white hover:text-stone-800"
-                          }`}
+                          className={smartPasteOpen ? ADMIN_BTN_ACTIVE : ADMIN_BTN}
                         >
                           Smart collage
                         </button>
                         <button
                           type="button"
                           onClick={applySmartDescription}
-                          className="rounded-md border border-stone-200 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.14em] text-stone-500 transition hover:border-violet-200 hover:bg-violet-50/60 hover:text-violet-900"
+                          className={`${ADMIN_BTN} hover:border-violet-400/30 hover:text-violet-200`}
                         >
                           Smart Description
                         </button>
                       </div>
                       {smartPasteOpen ? (
-                        <div className="space-y-3 rounded-lg border border-amber-200/55 bg-gradient-to-b from-amber-50/90 via-[#faf6f0] to-amber-100/50 p-4 shadow-[inset_0_1px_0_rgba(255,253,248,0.95)]">
+                        <div className="dingry-admin-panel space-y-3 rounded-2xl p-4">
                           <label htmlFor="dingry-smart-paste" className={FIELD_LABEL}>
                             Coller une fiche brute
                             <textarea
@@ -1307,14 +1302,14 @@ export function ProductEditorModal({
                               onChange={(event) => setSmartPasteText(event.target.value)}
                               rows={6}
                               placeholder="Titre, description, matière, prix, tailles…"
-                              className="mt-1.5 min-h-[7rem] w-full resize-y rounded-md border border-amber-200/50 bg-[#faf7f2] px-3 py-3 text-[13px] leading-relaxed text-stone-900 placeholder:text-amber-950/35 outline-none focus:border-amber-300/80 focus:ring-1 focus:ring-amber-200/70"
+                              className={`${FIELD_INPUT} min-h-[7rem] resize-y py-3 leading-relaxed`}
                             />
                           </label>
                           <button
                             type="button"
                             onClick={applySmartPaste}
                             disabled={saving || convertingImage}
-                            className="w-full rounded-md border border-amber-300/70 bg-amber-100/90 py-2 text-[10px] font-medium uppercase tracking-[0.14em] text-amber-950 transition hover:bg-amber-200/60 disabled:opacity-40 sm:w-auto sm:px-4"
+                            className="w-full rounded-full border border-white/20 bg-white py-2 text-[13px] font-semibold text-black transition hover:bg-white/90 disabled:opacity-40 sm:w-auto sm:px-5"
                           >
                             Appliquer
                           </button>
@@ -1371,12 +1366,12 @@ export function ProductEditorModal({
                             setCustomPantWaist(event.target.value.replace(/\D/g, "").slice(0, 2))
                           }
                           placeholder="Perso."
-                          className="h-9 w-14 rounded-md border border-stone-200 bg-white px-2 text-center text-[13px] text-stone-900 outline-none focus:border-stone-400 focus:ring-1 focus:ring-amber-100/90"
+                          className={`${FIELD_INPUT} h-9 w-14 px-2 text-center`}
                         />
                         <button
                           type="button"
                           onClick={addCustomPantWaist}
-                          className="rounded-md border border-stone-200 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.14em] text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-900"
+                          className={ADMIN_BTN}
                         >
                           Ajouter tour
                         </button>
@@ -1403,14 +1398,14 @@ export function ProductEditorModal({
                               {form.sizes.map((w) => (
                                 <span
                                   key={`waist-tag-${w}`}
-                                  className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-100/90 py-0.5 pl-2 pr-1 text-[10px] font-medium uppercase tracking-wide text-stone-700"
+                                  className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-[#0e1628] py-0.5 pl-2 pr-1 text-[12px] font-medium text-white/80"
                                 >
                                   {w}
                                   <button
                                     type="button"
                                     aria-label={`Retirer le tour ${w}`}
                                     onClick={() => removeWaistSize(w)}
-                                    className="rounded-full px-1 text-stone-400 hover:text-stone-900"
+                                    className="rounded-full px-1 text-white/40 hover:text-white"
                                   >
                                     ×
                                   </button>
@@ -1418,7 +1413,7 @@ export function ProductEditorModal({
                               ))}
                             </div>
                           ) : null}
-                          <p className="mt-2 text-[10px] leading-relaxed text-stone-600">
+                          <p className="mt-2 text-[13px] leading-relaxed text-white/50">
                             Saisie libre ou presets via la grille ci-dessus · variante = tour actif.
                           </p>
                         </div>
@@ -1445,10 +1440,10 @@ export function ProductEditorModal({
                                   onClick={() =>
                                     active ? removeColorDeclination(preset) : addColorDeclination(preset)
                                   }
-                                  className={`h-9 w-9 shrink-0 rounded-md border transition hover:scale-[1.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 ${
+                                  className={`h-9 w-9 shrink-0 rounded-lg border transition hover:scale-[1.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40 ${
                                     active
-                                      ? "border-stone-800 ring-2 ring-stone-800/25 ring-offset-2 ring-offset-stone-50"
-                                      : "border-stone-300/90 hover:border-stone-500"
+                                      ? "border-white ring-2 ring-white/25 ring-offset-2 ring-offset-[#0e1628]"
+                                      : "border-white/20 hover:border-white/45"
                                   }`}
                                   style={adminVariantSwatchStyle(preset)}
                                 />
@@ -1472,7 +1467,7 @@ export function ProductEditorModal({
                               type="button"
                               onClick={addColorFromPreset}
                               disabled={!colorPresetPick.trim()}
-                              className="rounded-md border border-stone-200 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.12em] text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-900 disabled:opacity-35"
+                              className={`${ADMIN_BTN} disabled:opacity-35`}
                             >
                               Ajouter
                             </button>
@@ -1488,10 +1483,10 @@ export function ProductEditorModal({
                               {form.colorDeclinations.map((c) => (
                                 <span
                                   key={`color-${c}`}
-                                  className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-100/90 py-0.5 pl-1.5 pr-1 text-[10px] font-medium uppercase tracking-wide text-stone-700"
+                                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-[#0e1628] py-0.5 pl-1.5 pr-1 text-[12px] font-medium text-white/80"
                                 >
                                   <span
-                                    className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-stone-300/80 ring-offset-1 ring-offset-stone-100"
+                                    className="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-white/30 ring-offset-1 ring-offset-[#0e1628]"
                                     style={adminVariantSwatchStyle(c)}
                                     aria-hidden
                                   />
@@ -1500,7 +1495,7 @@ export function ProductEditorModal({
                                     type="button"
                                     aria-label={`Retirer ${c}`}
                                     onClick={() => removeColorDeclination(c)}
-                                    className="rounded-full px-1 text-stone-400 hover:text-stone-900"
+                                    className="rounded-full px-1 text-white/40 hover:text-white"
                                   >
                                     ×
                                   </button>
@@ -1508,7 +1503,7 @@ export function ProductEditorModal({
                               ))}
                             </div>
                           ) : null}
-                          <p className="mt-2 text-[10px] leading-relaxed text-stone-600">
+                          <p className="mt-2 text-[13px] leading-relaxed text-white/50">
                             Variante principale : première couleur de la liste (ou saisie seule).
                           </p>
                         </div>
@@ -1555,7 +1550,7 @@ export function ProductEditorModal({
                           Stock global
                           <span
                             title="Réserve partagée entre les tailles actives."
-                            className="cursor-help rounded-full border border-stone-700 px-1 text-[8px] normal-case tracking-normal text-stone-500"
+                            className="cursor-help rounded-full border border-white/20 px-1.5 text-[11px] text-white/45"
                           >
                             i
                           </span>
@@ -1575,11 +1570,11 @@ export function ProductEditorModal({
                   </div>
 
                   {current ? (
-                    <div className="flex flex-col gap-2 border-t border-stone-200/90 pt-4 sm:flex-row sm:justify-end">
+                    <div className="flex flex-col gap-2 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
                       <button
                         type="button"
                         onClick={() => setPrintSheetOpen(true)}
-                        className="rounded-md border border-stone-200 px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.14em] text-stone-700 transition hover:border-stone-300 hover:bg-white"
+                        className={`${ADMIN_BTN} px-4 py-2.5`}
                       >
                         Imprimer
                       </button>
@@ -1628,11 +1623,11 @@ export function ProductEditorModal({
               </div>
             ) : (
               <div className={`${sectionClass(sectionDirty.story)} space-y-4`}>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200/80 pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
                   <button
                     type="button"
                     onClick={() => setEditorTab("product")}
-                    className="rounded-md border border-stone-200 bg-white/90 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.14em] text-stone-700 transition hover:border-stone-300 hover:bg-stone-50"
+                    className={ADMIN_BTN}
                   >
                     ← Retour produit
                   </button>
@@ -1640,13 +1635,13 @@ export function ProductEditorModal({
                     <button
                       type="button"
                       onClick={undoSmartDescription}
-                      className="rounded-md border border-violet-200/90 bg-violet-50/80 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.14em] text-violet-950 transition hover:border-violet-300 hover:bg-violet-100/80"
+                      className={`${ADMIN_BTN} border-violet-500/30 text-violet-200 hover:border-violet-400/40 hover:bg-[#15102a]`}
                     >
                       Annuler Smart Description
                     </button>
                   ) : null}
                 </div>
-                <p className="text-[11px] leading-relaxed text-stone-500">
+                <p className="text-[13px] leading-relaxed text-white/50">
                   Textes du modal client — vides = défauts boutique.
                 </p>
                 {(

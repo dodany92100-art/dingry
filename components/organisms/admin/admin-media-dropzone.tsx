@@ -29,11 +29,11 @@ export function AdminMediaDropzone({
   const panelTone =
     tone === "ghost"
       ? dragOver
-        ? "border-amber-300/70 bg-amber-50/80"
-        : "border-stone-200/90 bg-stone-50/60 hover:border-amber-200/80 hover:bg-amber-50/30"
+        ? "border-white/30 bg-[#121c30]"
+        : "dingry-admin-panel-muted hover:border-white/20 hover:bg-[#0e1628]"
       : dragOver
-        ? "border-white/50 bg-zinc-800/80"
-        : "border-zinc-700 bg-zinc-950/60 hover:border-zinc-500";
+        ? "border-white/35 bg-[#121c30]"
+        : "dingry-admin-panel-muted hover:border-white/20";
 
   return (
     <div className={tone === "ghost" ? "mt-0" : "mt-3"}>
@@ -80,7 +80,7 @@ export function AdminMediaDropzone({
               src={previewSrc}
               alt=""
               className={`h-36 w-full max-w-[11rem] rounded-md object-contain object-center sm:h-40 sm:max-w-[13rem] ${
-                tone === "ghost" ? "border border-stone-200/90" : "rounded-sm border border-zinc-800 shadow-lg"
+                tone === "ghost" ? "border border-white/15" : "rounded-sm border border-white/15 shadow-lg"
               }`}
             />
             <span
@@ -99,7 +99,7 @@ export function AdminMediaDropzone({
                 event.stopPropagation();
                 if (!converting) pickFile(null);
               }}
-              className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-white/95 text-xs leading-none text-stone-500 shadow-sm backdrop-blur-sm hover:border-red-300 hover:text-red-600"
+              className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-[#1a2438] text-xs leading-none text-white/70 shadow-sm hover:border-red-400/50 hover:text-red-300"
             >
               ×
             </span>
@@ -108,8 +108,8 @@ export function AdminMediaDropzone({
           <span
             className={`flex h-28 w-full max-w-[10rem] items-center justify-center rounded-md text-xs text-zinc-500 ${
               tone === "ghost"
-                ? "border border-stone-200/90 bg-amber-50/25 text-stone-500"
-                : "border border-zinc-800 bg-zinc-900 text-zinc-500"
+                ? "border border-white/15 bg-[#0a101c] text-white/45"
+                : "border border-white/15 bg-[#0a101c] text-white/45"
             }`}
           >
             WebP
