@@ -55,6 +55,8 @@ export function turnstileHostnameAllowed(hostname: string | undefined): boolean 
     if (vercel && hostname === vercel) return true;
     const suffix = process.env.TURNSTILE_PREVIEW_HOST_SUFFIX?.trim();
     if (suffix && hostname.endsWith(suffix)) return true;
+    /** Alias / déploiements Preview : hostname navigateur ≠ `VERCEL_URL` par deployment. */
+    if (hostname.endsWith(".vercel.app")) return true;
   }
   return false;
 }

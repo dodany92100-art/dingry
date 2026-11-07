@@ -19,7 +19,10 @@ type PayPalPaymentButtonProps = {
   onPayPalFlowEnd?: () => void;
   /** Après `create` OK : nouveau jeton Turnstile pour un second paiement (capture sans Turnstile). */
   onAfterCreateSuccess?: () => void;
+  /** `create` refusé : jeton Turnstile déjà consommé côté Cloudflare → renouveler le widget. */
+  onAfterCreateFailure?: () => void;
   disabled?: boolean;
+  tone?: "dark" | "light";
 };
 
 const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID?.trim() ?? "";
@@ -34,8 +37,15 @@ const paypalOptions = {
   disableFunding: "paylater,venmo,credit",
 };
 
-function Spinner() {
-  return <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/15 border-t-white" aria-hidden />;
+function Spinner({ light = false }: { light?: boolean }) {
+  return (
+    <span
+      className={`h-5 w-5 animate-spin rounded-full border-2 ${
+        light ? "border-[#0e1118]/15 border-t-[#0e1118]" : "border-white/15 border-t-white"
+      }`}
+      aria-hidden
+    />
+  );
 }
 
 export function PayPalPaymentButton({
@@ -45,8 +55,11 @@ export function PayPalPaymentButton({
   onPayPalFlowStart,
   onPayPalFlowEnd,
   onAfterCreateSuccess,
+  onAfterCreateFailure,
   disabled = false,
+  tone = "dark",
 }: PayPalPaymentButtonProps) {
+  const isLight = tone === "light";
   const [error, setError] = useState<string | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const [phase, setPhase] = useState<"idle" | "opening" | "capturing">("idle");
@@ -74,14 +87,28 @@ export function PayPalPaymentButton({
   return (
     <div>
       <PayPalScriptProvider options={paypalOptions}>
-        <div className="relative border border-white/10 bg-[#0a0a0a] p-4">
+        <div
+          className={`relative border p-4 ${
+            isLight ? "border-[#0e1118]/10 bg-white" : "border-white/10 bg-[#0a0a0a]"
+          }`}
+        >
           {phase !== "idle" ? (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#0a0a0a]/95 px-6 text-center">
-              <Spinner />
-              <p className="text-[11px] font-medium tracking-[0.18em] text-white uppercase">
+            <div
+              className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 px-6 text-center ${
+                isLight ? "bg-white/96" : "bg-[#0a0a0a]/95"
+              }`}
+            >
+              <Spinner light={isLight} />
+              <p
+                className={`text-[11px] font-medium tracking-[0.18em] uppercase ${
+                  isLight ? "text-[#0e1118]" : "text-white"
+                }`}
+              >
                 {phase === "capturing" ? "Validation du paiement…" : "Ouverture de PayPal…"}
               </p>
-              <p className="max-w-xs text-xs leading-relaxed text-white/60">
+              <p
+                className={`max-w-xs text-xs leading-relaxed ${isLight ? "text-[#0e1118]/60" : "text-white/60"}`}
+              >
                 {phase === "opening"
                   ? "Une fenêtre PayPal s’ouvre par-dessus DINGRY. Fermez-la pour revenir au paiement."
                   : "Ne fermez pas cet onglet."}
@@ -90,7 +117,9 @@ export function PayPalPaymentButton({
                 <button
                   type="button"
                   onClick={() => endFlow()}
-                  className="text-[10px] tracking-[0.16em] text-white/70 uppercase underline"
+                  className={`text-[10px] tracking-[0.16em] uppercase underline ${
+                    isLight ? "text-[#0066FF]" : "text-white/70"
+                  }`}
                 >
                   Revenir au paiement
                 </button>
@@ -114,6 +143,7 @@ export function PayPalPaymentButton({
                   endFlow();
                   throw new Error(message);
                 }
+                const invalidateTurnstile = () => onAfterCreateFailure?.();
                 try {
                   const response = await fetch("/api/checkout", {
                     method: "POST",
@@ -124,6 +154,7 @@ export function PayPalPaymentButton({
                   if (!response.ok || !payload?.orderId) {
                     const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
                     setError(message);
+                    invalidateTurnstile();
                     endFlow();
                     throw new Error(message);
                   }
@@ -131,9 +162,15 @@ export function PayPalPaymentButton({
                   return payload.orderId;
                 } catch (cause) {
                   endFlow();
-                  if (cause instanceof Error && cause.message) throw cause;
+                  if (cause instanceof Error && cause.message) {
+                    if (cause.message !== "Validez le contrôle de sécurité avant de payer.") {
+                      invalidateTurnstile();
+                    }
+                    throw cause;
+                  }
                   const message = "La commande PayPal n'a pas pu être ouverte.";
                   setError(message);
+                  invalidateTurnstile();
                   throw new Error(message);
                 }
               }}
@@ -176,19 +213,33 @@ export function PayPalPaymentButton({
           </div>
         </div>
       </PayPalScriptProvider>
-      <p className="mt-3 text-center text-[10px] leading-relaxed tracking-wide text-white/40">
+      <p
+        className={`mt-3 text-center text-[10px] leading-relaxed tracking-wide ${
+          isLight ? "text-[#0e1118]/45" : "text-white/40"
+        }`}
+      >
         PayPal reste dans une fenêtre. DINGRY ne quitte pas votre écran.
       </p>
       {cancelled ? (
-        <div className="mt-3 border border-white/15 bg-white/[0.03] px-4 py-3 text-center" role="status">
-          <p className="text-sm text-white">Paiement annulé.</p>
-          <p className="mt-1 text-xs leading-relaxed text-white/55">
+        <div
+          className={`mt-3 border px-4 py-3 text-center ${
+            isLight ? "border-[#0e1118]/12 bg-[#f0f0ee]" : "border-white/15 bg-white/[0.03]"
+          }`}
+          role="status"
+        >
+          <p className={`text-sm ${isLight ? "text-[#0e1118]" : "text-white"}`}>Paiement annulé.</p>
+          <p className={`mt-1 text-xs leading-relaxed ${isLight ? "text-[#0e1118]/58" : "text-white/55"}`}>
             Vous êtes toujours sur DINGRY. Le panier est intact : relancez PayPal quand vous voulez.
           </p>
         </div>
       ) : null}
       {error ? (
-        <p className="mt-3 text-center text-[11px] leading-relaxed text-[#ffb4b4]" role="alert">
+        <p
+          className={`mt-3 text-center text-[11px] leading-relaxed ${
+            isLight ? "text-[#b91c1c]" : "text-[#ffb4b4]"
+          }`}
+          role="alert"
+        >
           {error}
         </p>
       ) : null}

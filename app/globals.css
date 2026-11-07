@@ -1632,6 +1632,58 @@ html[data-theme="light"] .dingry-catalog-bar [class*="border-white"] {
     transparent;
 }
 
+/** Checkout — panneau paiement clair (catalogue) + Anton. */
+.dingry-checkout-pay-surface {
+  color: #0e1118;
+  background-color: #f6f6f4;
+  border-color: rgb(14 17 24 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 16px 48px rgb(0 0 0 / 0.28);
+}
+
+.dingry-checkout-pay-surface .dingry-checkout-pay-eyebrow {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #0066ff;
+}
+
+.dingry-checkout-pay-surface .dingry-checkout-pay-title {
+  font-family: Anton, "Arial Narrow", sans-serif;
+  font-size: clamp(1.5rem, 3.4vw, 2rem);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: #0e1118;
+}
+
+.dingry-checkout-pay-surface .dingry-checkout-pay-lead {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: rgb(14 17 24 / 0.58);
+}
+
+.dingry-checkout-pay-surface .dingry-checkout-pay-footnote {
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  line-height: 1.55;
+  color: rgb(14 17 24 / 0.42);
+}
+
+.dingry-checkout-pay-surface .dingry-checkout-pay-secondary {
+  border-color: rgb(14 17 24 / 0.18);
+  color: rgb(14 17 24 / 0.72);
+}
+
+.dingry-checkout-pay-surface .dingry-checkout-pay-secondary:hover {
+  border-color: #0e1118;
+  color: #0e1118;
+}
+
 .dingry-footer-classic {
   font-family: Anton, "Arial Narrow", sans-serif;
   font-weight: 400;

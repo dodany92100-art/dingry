@@ -378,12 +378,13 @@ export default function CheckoutPage() {
               </p>
             </section>
 
-            <section className="border border-white/10 bg-[#0a0a0a] p-4 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto md:p-8">
-              <h2 className="text-[10px] tracking-[0.32em] text-white/40 uppercase">Paiement</h2>
-              <p className="mt-3 text-sm leading-relaxed text-white/55">
+            <section className="dingry-checkout-pay-surface border p-4 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto md:p-8">
+              <p className="dingry-checkout-pay-eyebrow">Sécurisé</p>
+              <h2 className="dingry-checkout-pay-title mt-2">Paiement</h2>
+              <p className="dingry-checkout-pay-lead mt-3">
                 Vous restez sur DINGRY. PayPal s’ouvre dans une fenêtre, que vous pouvez fermer pour revenir ici.
               </p>
-              <TurnstileWidget key={turnstileKey} className="mt-6" onToken={setToken} />
+              <TurnstileWidget key={turnstileKey} className="mt-6" tone="light" onToken={setToken} />
               <div className="mt-6">
                 {quoteState === "loading" ? (
                   <p className="flex items-center justify-center gap-3 py-4 text-[11px] tracking-[0.18em] text-white/45 uppercase">
@@ -392,7 +393,7 @@ export default function CheckoutPage() {
                   </p>
                 ) : pendingOrderId ? (
                   <>
-                    <p className="mb-4 text-center text-xs leading-relaxed text-[#0066FF]">
+                    <p className="mb-4 text-center text-xs leading-relaxed text-[#0052cc]">
                       Réf. PayPal {pendingOrderId}. Finalisez l’enregistrement de la commande (sans repayer).
                     </p>
                     <button
@@ -409,10 +410,12 @@ export default function CheckoutPage() {
                 ) : showPayPalButton ? (
                   <PayPalPaymentButton
                     lines={orderLines(cart)}
+                    tone="light"
                     getTurnstileToken={() => tokenRef.current}
                     onPayPalFlowStart={() => setPayPalFlowActive(true)}
                     onPayPalFlowEnd={() => setPayPalFlowActive(false)}
                     onAfterCreateSuccess={refreshTurnstileAfterCreate}
+                    onAfterCreateFailure={refreshTurnstileAfterCreate}
                     onApproved={handleApproved}
                   />
                 ) : (
@@ -425,19 +428,19 @@ export default function CheckoutPage() {
                   </button>
                 )}
               </div>
-              <p className="mt-3 text-center text-[10px] leading-relaxed tracking-wider text-white/25">
+              <p className="dingry-checkout-pay-footnote mt-3 text-center">
                 {token
                   ? "Vérification confirmée. PayPal ou carte, sans quitter la page."
                   : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
               </p>
               {error ? (
-                <p className="mt-4 text-center text-[11px] leading-relaxed text-[#ffb4b4]" role="alert">
+                <p className="mt-4 text-center text-[11px] leading-relaxed text-[#b91c1c]" role="alert">
                   {error}
                 </p>
               ) : null}
               <Link
                 href="/"
-                className="mt-6 block w-full border border-white/15 py-3 text-center text-[10px] tracking-[0.22em] text-white/70 uppercase hover:border-white hover:text-white"
+                className="dingry-checkout-pay-secondary mt-6 block w-full border py-3 text-center text-[10px] tracking-[0.22em] uppercase"
               >
                 Retour à la boutique
               </Link>
