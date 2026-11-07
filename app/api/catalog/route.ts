@@ -4,8 +4,9 @@ import { toCatalogProduct } from "@/lib/admin/types";
 import { isInStockFromQuantity, readStockQuantities } from "@/lib/stock";
 
 export const runtime = "nodejs";
-/** ISR 60 s — Vercel met en cache la réponse, Blob + Redis ne sont appelés qu'une fois par minute. */
-export const revalidate = 60;
+/** Preview : pas de cache edge (aligné prod CRM). Prod : ISR 60 s. */
+export const dynamic = process.env.VERCEL_ENV === "preview" ? "force-dynamic" : "auto";
+export const revalidate = process.env.VERCEL_ENV === "preview" ? 0 : 60;
 
 export async function GET() {
   try {
