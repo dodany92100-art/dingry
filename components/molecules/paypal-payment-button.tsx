@@ -1,7 +1,7 @@
 "use client";
 
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export type PayPalCartLine = {
   productId: number;
@@ -63,14 +63,21 @@ export function PayPalPaymentButton({
   const [error, setError] = useState<string | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const [phase, setPhase] = useState<"idle" | "opening" | "capturing">("idle");
+  /** PayPal peut rappeler `createOrder` : réutiliser l’ID sans refaire Turnstile/API. */
+  const openPayPalOrderIdRef = useRef<string | null>(null);
   const signature = lines
     .map((line) => `${line.productId}:${line.size}:${line.qty}:${line.personalization ?? ""}`)
     .join("|");
   const buttonsDisabled = disabled && phase === "idle";
   const busy = phase !== "idle" || buttonsDisabled;
 
+  function clearOpenOrder() {
+    openPayPalOrderIdRef.current = null;
+  }
+
   function endFlow() {
     setPhase("idle");
+    clearOpenOrder();
     onPayPalFlowEnd?.();
   }
 
@@ -132,6 +139,10 @@ export function PayPalPaymentButton({
               forceReRender={[signature]}
               disabled={buttonsDisabled}
               createOrder={async () => {
+                const reused = openPayPalOrderIdRef.current;
+                if (reused) {
+                  return reused;
+                }
                 onPayPalFlowStart?.();
                 setPhase("opening");
                 setError(null);
@@ -158,7 +169,9 @@ export function PayPalPaymentButton({
                     endFlow();
                     throw new Error(message);
                   }
-                  /** Pas de refresh Turnstile ici : le re-render fermerait la fenêtre PayPal à l’ouverture. */
+                  openPayPalOrderIdRef.current = payload.orderId;
+                  /** Overlay retiré : laisser PayPal gérer la popup sans re-render bloquant. */
+                  setPhase("idle");
                   return payload.orderId;
                 } catch (cause) {
                   endFlow();
@@ -203,14 +216,19 @@ export function PayPalPaymentButton({
                   "[paypal] onError",
                   err instanceof Error ? err.message : err,
                 );
+                const hadOpenOrder = Boolean(openPayPalOrderIdRef.current);
                 endFlow();
                 setCancelled(false);
                 setError(
                   (current) =>
                     current ??
-                    "Le paiement PayPal n'a pas abouti. Vous pouvez réessayer sans quitter la page.",
+                    (hadOpenOrder
+                      ? "La fenêtre PayPal s’est fermée. Relancez le paiement — le contrôle de sécurité sera à refaire si besoin."
+                      : "Le paiement PayPal n'a pas abouti. Vous pouvez réessayer sans quitter la page."),
                 );
-                onAfterCreateSuccess?.();
+                if (hadOpenOrder) {
+                  onAfterCreateSuccess?.();
+                }
               }}
             />
           </div>
