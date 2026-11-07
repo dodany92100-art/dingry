@@ -1,16 +1,7 @@
 import type { AdminProduct } from "@/lib/admin/types";
-import {
-  CATALOG_CATEGORIES,
-  CATALOG_FILTER_LABEL,
-  normalizeCatalogCategory,
-  type CatalogCategory,
-} from "@/lib/catalog-category";
-import { sortAdminProductsLikeShop } from "@/lib/admin/product-display-order";
-import {
-  CATALOG_SECTION_ALWAYS_VISIBLE,
-  DINGRY_RETIRED_PRODUCT_IDS,
-  resolveShopCategory,
-} from "@/lib/shop-catalog";
+import { CATALOG_CATEGORIES, CATALOG_FILTER_LABEL, type CatalogCategory } from "@/lib/catalog-category";
+import { catalogSlugForAdminProduct, sortAdminProductsLikeShop } from "@/lib/admin/product-display-order";
+import { CATALOG_SECTION_ALWAYS_VISIBLE, DINGRY_RETIRED_PRODUCT_IDS } from "@/lib/shop-catalog";
 import { isVersoCatalogId } from "@/lib/catalog-verso-recto";
 
 export type AdminStockMenuSection = {
@@ -21,9 +12,7 @@ export type AdminStockMenuSection = {
 
 /** Slug catalogue boutique pour une fiche CRM (aligné overlay vitrine). */
 export function adminProductCatalogSlug(product: AdminProduct): CatalogCategory | null {
-  const id = Number(product.id);
-  const shopCategory = resolveShopCategory(Number.isInteger(id) ? id : 0, product.category);
-  return normalizeCatalogCategory(shopCategory) ?? normalizeCatalogCategory(product.category);
+  return catalogSlugForAdminProduct(product);
 }
 
 /** Même filtre cartes que {@link toCatalogCards} côté boutique (recto uniquement, ids retirés). */

@@ -508,21 +508,22 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
     normalizeProductCategory(current.category) === "T-shirts" &&
     normalizeProductCategory(seed.category) !== "T-shirts";
   if (catalogLocked) {
+    const resolvedCategory = current
+      ? normalizeProductCategory(current.category)
+      : DINGRY_SWEAT_PRODUCT_IDS.has(seedIdNum)
+        ? "Crewnecks"
+        : DINGRY_TEE_PRODUCT_IDS.has(seedIdNum)
+          ? "T-shirts"
+          : DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum)
+            ? "Jerseys"
+            : normalizeProductCategory(seed.category);
     return {
       ...seed,
       ...current,
       imageUrl:
         canonicalImage ??
         (DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum) && current.imageUrl ? current.imageUrl : seed.imageUrl),
-      category: DINGRY_SWEAT_PRODUCT_IDS.has(seedIdNum)
-        ? "Crewnecks"
-        : DINGRY_TEE_PRODUCT_IDS.has(seedIdNum)
-          ? "T-shirts"
-          : DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum)
-            ? "Jerseys"
-            : genericCategory
-              ? normalizeProductCategory(seed.category)
-              : normalizeProductCategory(current.category),
+      category: resolvedCategory,
       name: current.name.includes(" — ") ? seed.name : current.name,
       variant: current.variant.trim() || seed.variant,
       description: current.description.trim() || seed.description,

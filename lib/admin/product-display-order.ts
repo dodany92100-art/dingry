@@ -1,5 +1,7 @@
 import { normalizeProductCategory, type AdminProduct, type ProductCategory } from "@/lib/admin/types";
+import { normalizeCatalogCategory, type CatalogCategory } from "@/lib/catalog-category";
 import type { ShopProduct } from "@/lib/catalog";
+import { resolveShopCategory } from "@/lib/shop-catalog";
 
 export function normalizeDisplayOrder(value: unknown): number {
   const n = Number(value);
@@ -54,11 +56,31 @@ export function sortAdminProductsNewest(products: readonly AdminProduct[]): Admi
   return [...products].sort(compareAdminProductNewest);
 }
 
+const CRM_CATEGORY_SLUG: Record<ProductCategory, CatalogCategory> = {
+  Hoodies: "hoodies",
+  "Hoodies zippés": "hoodie-zip",
+  Crewnecks: "sweats",
+  "T-shirts": "t-shirts",
+  Jerseys: "jersey",
+  Pants: "pants",
+  "Crop tops": "crop-top",
+  Caps: "caps",
+};
+
+export function catalogSlugForAdminProduct(product: AdminProduct): CatalogCategory | null {
+  const id = Number(product.id);
+  const shopCategory = resolveShopCategory(Number.isInteger(id) ? id : 0, product.category);
+  return normalizeCatalogCategory(shopCategory) ?? normalizeCatalogCategory(product.category);
+}
+
 export function adminCategoryScope(
   product: AdminProduct,
   filter: ProductCategory | "Collection",
 ): boolean {
   if (filter === "Collection") return true;
+  const targetSlug = CRM_CATEGORY_SLUG[filter];
+  const productSlug = catalogSlugForAdminProduct(product);
+  if (targetSlug && productSlug) return productSlug === targetSlug;
   return normalizeProductCategory(product.category) === filter;
 }
 

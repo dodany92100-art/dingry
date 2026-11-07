@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { AdminProduct } from "@/lib/admin/types";
 import {
+  adminCategoryScope,
   applyDisplayOrderByIds,
+  catalogSlugForAdminProduct,
   compareAdminProductDisplay,
   sortAdminProductsForDisplay,
   sortAdminProductsNewest,
@@ -63,6 +65,13 @@ describe("product-display-order", () => {
     const next = applyDisplayOrderByIds([a, b], ["b", "a"]);
     expect(next.find((p) => p.id === "a")?.displayOrder).toBe(1);
     expect(next.find((p) => p.id === "b")?.displayOrder).toBe(0);
+  });
+
+  it("tee historique classé Hoodies → filtre admin Hoodies", () => {
+    const reclassified = admin({ id: "24", category: "Hoodies" });
+    expect(catalogSlugForAdminProduct(reclassified)).toBe("hoodies");
+    expect(adminCategoryScope(reclassified, "Hoodies")).toBe(true);
+    expect(adminCategoryScope(reclassified, "T-shirts")).toBe(false);
   });
 
   it("tri nouveauté strict sans displayOrder", () => {
