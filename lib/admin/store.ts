@@ -1,8 +1,21 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { BlobPreconditionFailedError, del, get, put } from "@vercel/blob";
 import { allowCatalogSeedFallback, isBlobConfigured } from "@/lib/admin/blob-config";
+import { isSupabaseStoreEnabled } from "@/lib/supabase/server";
+import { isVercelBlobUrl, removePublicImage, storageObjectPath, uploadPublicImage } from "@/lib/supabase/storage";
+import {
+  addRemovedCatalogIds,
+  deleteSupabaseProduct,
+  getSupabaseProduct,
+  listRemovedCatalogIds,
+  listSupabaseProducts,
+  nextSupabaseProductId,
+  reorderSupabaseProducts,
+  upsertSupabaseProduct,
+} from "@/lib/supabase/admin-products";
+import { getSharedRedis } from "@/lib/ratelimit";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
 import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
@@ -44,7 +57,10 @@ const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json")
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
-const STORE_WRITE_ATTEMPTS = 12;
+const STORE_WRITE_ATTEMPTS = 8;
+const STORE_LOCK_KEY = "dingry:store-lock";
+const STORE_LOCK_TTL_SECONDS = 20;
+const STORE_LOCK_WAIT_ATTEMPTS = 25;
 
 /** Une file par processus : évite les conflits etag entre requêtes API concurrentes (dev / sauvegarde + stock). */
 let storeWriteQueue: Promise<unknown> = Promise.resolve();
@@ -56,6 +72,40 @@ function enqueueStoreWrite<T>(task: () => Promise<T>): Promise<T> {
     () => undefined,
   );
   return next;
+}
+
+const STORE_LOCK_RELEASE_LUA = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+end
+return 0`;
+
+async function acquireStoreLock(): Promise<string | null> {
+  const client = getSharedRedis();
+  if (!client) return null;
+  const token = randomUUID();
+  for (let attempt = 0; attempt < STORE_LOCK_WAIT_ATTEMPTS; attempt++) {
+    try {
+      const result = await client.set(STORE_LOCK_KEY, token, { nx: true, ex: STORE_LOCK_TTL_SECONDS });
+      if (result === "OK") return token;
+    } catch (error) {
+      console.error("[store] lock Redis", error instanceof Error ? error.name : "erreur");
+      return null;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 40 + attempt * 20));
+  }
+  throw new StoreConflictError();
+}
+
+async function releaseStoreLock(token: string | null): Promise<void> {
+  if (!token) return;
+  const client = getSharedRedis();
+  if (!client) return;
+  try {
+    await client.eval(STORE_LOCK_RELEASE_LUA, [STORE_LOCK_KEY], [token]);
+  } catch (error) {
+    console.error("[store] unlock Redis", error instanceof Error ? error.name : "erreur");
+  }
 }
 
 let hydratingLocalStore: Promise<void> | null = null;
@@ -333,6 +383,8 @@ async function withStoreOptimistic<T>(
   options?: StoreOptimisticOptions,
 ): Promise<T> {
   return enqueueStoreWrite(async () => {
+    const lockToken = await acquireStoreLock();
+    try {
     for (let attempt = 0; attempt < STORE_WRITE_ATTEMPTS; attempt++) {
       let snapshot = await readStoreSnapshot();
       let createIfAbsent = false;
@@ -372,6 +424,9 @@ async function withStoreOptimistic<T>(
     }
 
     throw new StoreConflictError();
+    } finally {
+      await releaseStoreLock(lockToken);
+    }
   });
 }
 
@@ -614,18 +669,46 @@ function normalizeStore(value: AdminStore): AdminStore {
   });
 }
 
+async function overlaySupabaseProducts(store: AdminStore): Promise<AdminStore> {
+  if (!isSupabaseStoreEnabled()) return store;
+  try {
+    const products = await listSupabaseProducts();
+    if (products.length === 0) return store;
+    const removed = await listRemovedCatalogIds();
+    return {
+      ...store,
+      products,
+      removedCatalogIds: removed.length > 0 ? removed : store.removedCatalogIds,
+    };
+  } catch (error) {
+    console.error("[store] lecture Supabase produits", error instanceof Error ? error.message : "erreur");
+    throw new StoreUnavailableError("Catalogue Supabase indisponible.");
+  }
+}
+
 /** Lecture seule : aucune écriture Blob (catalogue, devis, findOrder). */
 export async function loadStoreReadOnly(): Promise<AdminStore> {
   try {
     const snapshot = await readStoreSnapshot();
     if (snapshot === "missing") {
+      if (isSupabaseStoreEnabled()) {
+        const products = await listSupabaseProducts();
+        const removed = await listRemovedCatalogIds();
+        return {
+          version: STORE_VERSION,
+          products,
+          orders: [],
+          lookbook: [],
+          removedCatalogIds: removed,
+        };
+      }
       if (!allowCatalogSeedFallback()) {
         throw new StoreUnavailableError();
       }
       console.warn("[store] snapshot absent, catalogue seed (preview/dev)");
-      return normalizeStore(createSeededStore());
+      return overlaySupabaseProducts(normalizeStore(createSeededStore()));
     }
-    return snapshot.store;
+    return overlaySupabaseProducts(snapshot.store);
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
       if (!allowCatalogSeedFallback()) {
@@ -696,7 +779,15 @@ export async function uploadProductImage(
   face: ProductImageFace = "recto",
 ): Promise<{ imageUrl: string; blobUrl: string | null; blobPathname: string | null }> {
   const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
-  const pathname = `dingry/products/${productId}/${face}-${filename}`;
+
+  if (isSupabaseStoreEnabled()) {
+    try {
+      return await uploadPublicImage(storageObjectPath(`products/${productId}/${face}`, filename), file);
+    } catch (error) {
+      console.error("[store] upload Supabase produit", error instanceof Error ? error.message : "erreur");
+      throw new StoreUnavailableError("Upload image impossible (Supabase Storage).");
+    }
+  }
 
   if (useLocalStoreFiles()) {
     await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
@@ -710,25 +801,7 @@ export async function uploadProductImage(
     };
   }
 
-  if (isBlobConfigured()) {
-    try {
-      const blob = await put(pathname, file, {
-        access: "public",
-        addRandomSuffix: true,
-        contentType: "image/webp",
-      });
-      return {
-        imageUrl: blob.url,
-        blobUrl: blob.url,
-        blobPathname: blob.pathname,
-      };
-    } catch (error) {
-      console.error("[store] upload Blob produit", error instanceof Error ? error.name : "erreur");
-      throw new StoreUnavailableError("Upload image impossible (Vercel Blob).");
-    }
-  }
-
-  throw new StoreUnavailableError("Stockage image indisponible.");
+  throw new StoreUnavailableError("Stockage image indisponible (Supabase).");
 }
 
 async function deleteLocalUpload(imageUrl: string): Promise<void> {
@@ -747,12 +820,17 @@ async function deleteBlobOrLocal(
   blobPathname: string | null,
   imageUrl: string,
 ): Promise<void> {
-  if (blobUrl) {
-    await del(blobUrl);
+  if (blobPathname && !blobPathname.startsWith("dingry/")) {
+    await removePublicImage(blobPathname);
     return;
   }
-  if (blobPathname) {
-    await del(blobPathname);
+  if (isVercelBlobUrl(blobUrl) || isVercelBlobUrl(imageUrl) || blobPathname?.startsWith("dingry/")) {
+    try {
+      if (blobUrl) await del(blobUrl);
+      else if (blobPathname) await del(blobPathname);
+    } catch (error) {
+      console.error("[store] delete Blob héritage", error instanceof Error ? error.name : "erreur");
+    }
     return;
   }
   await deleteLocalUpload(imageUrl);
@@ -825,6 +903,29 @@ export async function publishAdminProductsToLive(
   const unique = [...new Set(productIds.map((id) => String(id).trim()).filter(Boolean))];
   if (unique.length === 0) return null;
 
+  if (isSupabaseStoreEnabled()) {
+    const products = await listSupabaseProducts();
+    const publishedIds: string[] = [];
+    const skipped: { id: string; reason: string }[] = [];
+    for (const id of unique) {
+      const product = products.find((item) => item.id === id);
+      if (!product) {
+        skipped.push({ id, reason: "Produit introuvable." });
+        continue;
+      }
+      if (product.publishStatus === "live") continue;
+      const verdict = assertPublishableProduct(product);
+      if (!verdict.ok) {
+        skipped.push({ id, reason: verdict.reason });
+        continue;
+      }
+      product.publishStatus = "live";
+      await upsertSupabaseProduct(product);
+      publishedIds.push(id);
+    }
+    return { products: await listSupabaseProducts(), publishedIds, skipped };
+  }
+
   return withStoreOptimistic((store) => {
     const publishedIds: string[] = [];
     const skipped: { id: string; reason: string }[] = [];
@@ -867,6 +968,36 @@ export async function applyAdminDropBatch(
     if (!id || knownIds.has(id)) return null;
     knownIds.add(id);
     if (!Number.isFinite(item.displayOrder) || item.displayOrder < 0) return null;
+  }
+
+  if (isSupabaseStoreEnabled()) {
+    const products = await listSupabaseProducts();
+    if (items.length !== products.length) return null;
+    const storeIds = new Set(products.map((product) => product.id));
+    for (const item of items) {
+      if (!storeIds.has(item.id)) return null;
+    }
+    const orderedIds = [...items]
+      .sort((a, b) => a.displayOrder - b.displayOrder || a.id.localeCompare(b.id))
+      .map((item) => item.id);
+    await reorderSupabaseProducts(orderedIds);
+    const publishedIds: string[] = [];
+    const skipped: { id: string; reason: string }[] = [];
+    const refreshed = await listSupabaseProducts();
+    for (const item of items) {
+      if (item.status !== "published") continue;
+      const product = refreshed.find((row) => row.id === item.id);
+      if (!product || product.publishStatus === "live") continue;
+      const verdict = assertPublishableProduct(product);
+      if (!verdict.ok) {
+        skipped.push({ id: item.id, reason: verdict.reason });
+        continue;
+      }
+      product.publishStatus = "live";
+      await upsertSupabaseProduct(product);
+      publishedIds.push(item.id);
+    }
+    return { products: await listSupabaseProducts(), publishedIds, skipped };
   }
 
   return withStoreOptimistic((store) => {
@@ -921,6 +1052,15 @@ export async function reorderAdminProductDisplay(
   const unique = new Set(orderedIds.map((id) => String(id).trim()).filter(Boolean));
   if (unique.size !== orderedIds.length) return null;
 
+  if (isSupabaseStoreEnabled()) {
+    const products = await listSupabaseProducts();
+    const known = new Set(products.map((item) => item.id));
+    for (const id of orderedIds) {
+      if (!known.has(id)) return null;
+    }
+    return reorderSupabaseProducts([...orderedIds]);
+  }
+
   return withStoreOptimistic((store) => {
     const known = new Set(store.products.map((item) => item.id));
     for (const id of orderedIds) {
@@ -934,9 +1074,17 @@ export async function reorderAdminProductDisplay(
 export async function createProduct(
   input: ProductInput & { file?: File | null; fileBack?: File | null },
 ): Promise<AdminProduct> {
-  const snapshot = await readStoreSnapshot();
-  const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
-  const id = nextProductId(base.products);
+  let existingProducts: AdminProduct[];
+  if (isSupabaseStoreEnabled()) {
+    existingProducts = await listSupabaseProducts();
+  } else {
+    const snapshot = await readStoreSnapshot();
+    existingProducts =
+      snapshot === "missing" ? normalizeStore(createSeededStore()).products : snapshot.store.products;
+  }
+  const id = isSupabaseStoreEnabled()
+    ? await nextSupabaseProductId(existingProducts)
+    : nextProductId(existingProducts);
   let uploaded: Awaited<ReturnType<typeof uploadProductImage>>;
   if (input.file && input.file.size > 0) {
     uploaded = await uploadProductImage(id, input.file, "recto");
@@ -985,6 +1133,16 @@ export async function createProduct(
     requirePublishableProduct(product);
   }
 
+  if (isSupabaseStoreEnabled()) {
+    const created = await upsertSupabaseProduct(product);
+    const createdId = Number(created.id);
+    if (Number.isInteger(createdId) && createdId > 0) {
+      const seeded = await writeStockQuantity(createdId, created.stock);
+      if (!seeded) await seedStockIfMissing(createdId, created.stock);
+    }
+    return created;
+  }
+
   return withStoreOptimistic(
     (store) => {
       store.products = [product, ...store.products];
@@ -999,6 +1157,67 @@ export async function createProduct(
     }
     return created;
   });
+}
+
+function applyFieldsToProduct(
+  product: AdminProduct,
+  fields: Partial<ProductInput> & { clearImage?: boolean },
+  uploadedRecto: Awaited<ReturnType<typeof uploadProductImage>> | undefined,
+  uploadedVerso: Awaited<ReturnType<typeof uploadProductImage>> | undefined,
+  clearImageBack: boolean,
+): AdminProduct {
+  if (typeof fields.sku === "string") product.sku = fields.sku;
+  if (typeof fields.name === "string") product.name = fields.name;
+  if (typeof fields.variant === "string") product.variant = fields.variant;
+  if (typeof fields.description === "string") product.description = fields.description;
+  if (typeof fields.fabrication === "string") product.fabrication = fields.fabrication;
+  if (typeof fields.limitedEdition === "string") product.limitedEdition = fields.limitedEdition;
+  if (typeof fields.materials === "string") product.materials = fields.materials;
+  if (typeof fields.sizeGuide === "string") product.sizeGuide = fields.sizeGuide;
+  if (fields.printPlacement !== undefined) product.printPlacement = fields.printPlacement;
+  if (fields.category) product.category = fields.category;
+  if (typeof fields.price === "number") product.price = fields.price;
+  if (fields.sizes) product.sizes = fields.sizes;
+  if (typeof fields.stock === "number") {
+    product.stock = Math.max(0, Math.floor(fields.stock));
+  }
+  if (fields.publishStatus) product.publishStatus = fields.publishStatus;
+  if (fields.colorDeclinations !== undefined) product.colorDeclinations = fields.colorDeclinations;
+  if (typeof fields.isPinned === "boolean") product.isPinned = fields.isPinned;
+  if (typeof fields.displayOrder === "number") {
+    product.displayOrder = normalizeDisplayOrder(fields.displayOrder);
+  }
+  if (uploadedRecto) {
+    product.imageUrl = uploadedRecto.imageUrl;
+    product.blobUrl = uploadedRecto.blobUrl;
+    product.blobPathname = uploadedRecto.blobPathname;
+  } else if (fields.clearImage && product.publishStatus !== "live") {
+    product.imageUrl = DRAFT_PRODUCT_PLACEHOLDER_IMAGE;
+    product.blobUrl = null;
+    product.blobPathname = null;
+  }
+  if (uploadedVerso) {
+    product.imageBackUrl = uploadedVerso.imageUrl;
+    product.imageBackBlobUrl = uploadedVerso.blobUrl;
+    product.imageBackBlobPathname = uploadedVerso.blobPathname;
+  } else if (clearImageBack) {
+    product.imageBackUrl = "";
+    product.imageBackBlobUrl = null;
+    product.imageBackBlobPathname = null;
+  }
+  if (product.publishStatus === "live") {
+    requirePublishableProduct(product);
+  }
+  return product;
+}
+
+async function findProductRecord(id: string): Promise<AdminProduct | undefined> {
+  if (isSupabaseStoreEnabled()) {
+    return (await getSupabaseProduct(id)) ?? undefined;
+  }
+  const snap = await readStoreSnapshot();
+  if (snap === "missing") return undefined;
+  return snap.store.products.find((item) => item.id === id);
 }
 
 export async function updateProduct(
@@ -1027,8 +1246,7 @@ export async function updateProduct(
         throw new ProductStockAdjustError(adjusted.error, adjusted.code);
       }
       if (adjusted.code === "missing") {
-        const snapshot = await readStoreSnapshot();
-        const current = snapshot === "missing" ? null : snapshot.store.products.find((p) => p.id === id);
+        const current = await findProductRecord(id);
         const baseline = Math.max(0, Math.floor(current?.stock ?? 0));
         const nextStock = Math.max(0, baseline + fields.stockDelta);
         const written = await writeStockQuantity(productId, nextStock);
@@ -1042,8 +1260,7 @@ export async function updateProduct(
     }
   } else if (typeof fields.stock === "number" && Number.isInteger(productId) && productId > 0) {
     const targetStock = fields.stock;
-    const snapshot = await readStoreSnapshot();
-    const current = snapshot === "missing" ? null : snapshot.store.products.find((p) => p.id === id);
+    const current = await findProductRecord(id);
     const storedStock = current?.stock;
     const stockChanged =
       storedStock === undefined || Math.floor(storedStock) !== Math.floor(targetStock);
@@ -1083,44 +1300,33 @@ export async function updateProduct(
   }
 
   if (rectoFile && rectoFile.size > 0) {
-    let snap: StoreSnapshot | "missing";
-    try {
-      snap = await readStoreSnapshot();
-    } catch (error) {
-      console.error("[store] readStoreSnapshot upload", error instanceof Error ? error.name : "erreur");
-      snap = "missing";
-    }
-    const base = snap === "missing" ? null : snap.store;
-    previousRecto = base?.products.find((item) => item.id === id);
+    previousRecto = await findProductRecord(id);
     if (!previousRecto) return null;
     uploadedRecto = await uploadProductImage(id, rectoFile, "recto");
   }
 
   if (versoFile && versoFile.size > 0) {
-    let snap: StoreSnapshot | "missing";
-    try {
-      snap = await readStoreSnapshot();
-    } catch (error) {
-      console.error("[store] readStoreSnapshot upload verso", error instanceof Error ? error.name : "erreur");
-      snap = "missing";
-    }
-    const base = snap === "missing" ? null : snap.store;
-    previousVerso = base?.products.find((item) => item.id === id);
+    previousVerso = await findProductRecord(id);
     if (!previousVerso) return null;
     uploadedVerso = await uploadProductImage(id, versoFile, "verso");
   }
 
   if (clearImageBack) {
-    let snap: StoreSnapshot | "missing";
-    try {
-      snap = await readStoreSnapshot();
-    } catch (error) {
-      console.error("[store] readStoreSnapshot clearImageBack", error instanceof Error ? error.name : "erreur");
-      snap = "missing";
-    }
-    const base = snap === "missing" ? null : snap.store;
-    previousForClearBack = base?.products.find((item) => item.id === id);
+    previousForClearBack = await findProductRecord(id);
     if (!previousForClearBack) return null;
+  }
+
+  if (isSupabaseStoreEnabled()) {
+    const current = await getSupabaseProduct(id);
+    if (!current) return null;
+    applyFieldsToProduct(current, fields, uploadedRecto, uploadedVerso, clearImageBack);
+    const updated = await upsertSupabaseProduct(current);
+    if (rectoFile && previousRecto) await deleteProductFaceMedia(previousRecto, "recto");
+    if (versoFile && previousVerso) await deleteProductFaceMedia(previousVerso, "verso");
+    if (clearImageBack && previousForClearBack?.imageBackUrl.trim()) {
+      await deleteProductFaceMedia(previousForClearBack, "verso");
+    }
+    return updated;
   }
 
   return withStoreOptimistic((store) => {
@@ -1129,58 +1335,7 @@ export async function updateProduct(
       return { store, result: null, skipWrite: true };
     }
 
-    if (typeof fields.sku === "string") product.sku = fields.sku;
-    if (typeof fields.name === "string") product.name = fields.name;
-    if (typeof fields.variant === "string") product.variant = fields.variant;
-    if (typeof fields.description === "string") product.description = fields.description;
-    if (typeof fields.fabrication === "string") product.fabrication = fields.fabrication;
-    if (typeof fields.limitedEdition === "string") product.limitedEdition = fields.limitedEdition;
-    if (typeof fields.materials === "string") product.materials = fields.materials;
-    if (typeof fields.sizeGuide === "string") product.sizeGuide = fields.sizeGuide;
-    if (fields.printPlacement !== undefined) product.printPlacement = fields.printPlacement;
-    if (fields.category) product.category = fields.category;
-    if (typeof fields.price === "number") product.price = fields.price;
-    if (fields.sizes) product.sizes = fields.sizes;
-    if (typeof fields.stock === "number") {
-      product.stock = Math.max(0, Math.floor(fields.stock));
-    }
-    if (fields.publishStatus) {
-      product.publishStatus = fields.publishStatus;
-    }
-    if (fields.colorDeclinations !== undefined) {
-      product.colorDeclinations = fields.colorDeclinations;
-    }
-    if (typeof fields.isPinned === "boolean") {
-      product.isPinned = fields.isPinned;
-    }
-    if (typeof fields.displayOrder === "number") {
-      product.displayOrder = normalizeDisplayOrder(fields.displayOrder);
-    }
-
-    if (uploadedRecto) {
-      product.imageUrl = uploadedRecto.imageUrl;
-      product.blobUrl = uploadedRecto.blobUrl;
-      product.blobPathname = uploadedRecto.blobPathname;
-    } else if (fields.clearImage && product.publishStatus !== "live") {
-      product.imageUrl = DRAFT_PRODUCT_PLACEHOLDER_IMAGE;
-      product.blobUrl = null;
-      product.blobPathname = null;
-    }
-
-    if (uploadedVerso) {
-      product.imageBackUrl = uploadedVerso.imageUrl;
-      product.imageBackBlobUrl = uploadedVerso.blobUrl;
-      product.imageBackBlobPathname = uploadedVerso.blobPathname;
-    } else if (clearImageBack) {
-      product.imageBackUrl = "";
-      product.imageBackBlobUrl = null;
-      product.imageBackBlobPathname = null;
-    }
-
-    if (product.publishStatus === "live") {
-      requirePublishableProduct(product);
-    }
-
+    applyFieldsToProduct(product, fields, uploadedRecto, uploadedVerso, clearImageBack);
     return { store, result: product };
   }, { adminRelaxedFinalize: true }).then(async (updated) => {
     if (updated && rectoFile && previousRecto) {
@@ -1214,6 +1369,23 @@ function tombstoneCatalogPair(tombstone: Set<string>, id: string): void {
 }
 
 export async function removeProduct(id: string): Promise<boolean> {
+  if (isSupabaseStoreEnabled()) {
+    const existing = await getSupabaseProduct(id);
+    if (!existing) return false;
+    const ok = await deleteSupabaseProduct(id);
+    if (!ok) return false;
+    if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
+      const tombstone = new Set<string>();
+      tombstoneCatalogPair(tombstone, id);
+      await addRemovedCatalogIds([...tombstone]);
+      for (const extra of tombstone) {
+        if (extra !== id) await deleteSupabaseProduct(extra);
+      }
+    }
+    await deleteProductImage(existing);
+    return true;
+  }
+
   const removed = await withStoreOptimistic(
     (store) => {
       const product = store.products.find((item) => item.id === id);
@@ -1326,9 +1498,16 @@ export async function uploadLookbookImage(
   file: File,
 ): Promise<{ imageUrl: string; blobUrl: string | null; blobPathname: string | null }> {
   const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
-  const pathname = `dingry/lookbook/${slideId}/${filename}`;
 
-  /** Aligné sur {@link uploadProductImage} : en dev, fichier local (token Blob souvent lecture seule). */
+  if (isSupabaseStoreEnabled()) {
+    try {
+      return await uploadPublicImage(storageObjectPath(`lookbook/${slideId}`, filename), file);
+    } catch (error) {
+      console.error("[store] upload Supabase lookbook", error instanceof Error ? error.message : "erreur");
+      throw new StoreUnavailableError("Upload image impossible (Supabase Storage).");
+    }
+  }
+
   if (useLocalStoreFiles()) {
     await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
     const localName = `lookbook-${slideId}-${Date.now()}-${filename}`;
@@ -1341,37 +1520,11 @@ export async function uploadLookbookImage(
     };
   }
 
-  if (isBlobConfigured()) {
-    try {
-      const blob = await put(pathname, file, {
-        access: "public",
-        addRandomSuffix: true,
-        contentType: "image/webp",
-      });
-      return {
-        imageUrl: blob.url,
-        blobUrl: blob.url,
-        blobPathname: blob.pathname,
-      };
-    } catch (error) {
-      console.error("[store] upload Blob lookbook", error instanceof Error ? error.name : "erreur");
-      throw new StoreUnavailableError("Upload image impossible (Vercel Blob).");
-    }
-  }
-
-  throw new StoreUnavailableError("Stockage image indisponible.");
+  throw new StoreUnavailableError("Stockage image indisponible (Supabase).");
 }
 
 async function deleteLookbookImage(slide: AdminLookbookSlide): Promise<void> {
-  if (slide.blobUrl) {
-    await del(slide.blobUrl);
-    return;
-  }
-  if (slide.blobPathname) {
-    await del(slide.blobPathname);
-    return;
-  }
-  await deleteLocalUpload(slide.imageUrl);
+  await deleteBlobOrLocal(slide.blobUrl, slide.blobPathname, slide.imageUrl);
 }
 
 function nextLookbookId(slides: AdminLookbookSlide[]): string {

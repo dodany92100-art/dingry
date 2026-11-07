@@ -38,7 +38,13 @@ export function AdminMediaDropzone({
   return (
     <div className={tone === "ghost" ? "mt-0" : "mt-3"}>
       {label ? (
-        <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500">{label}</p>
+        <p
+          className={`mb-2 text-[10px] font-medium uppercase tracking-[0.18em] ${
+            tone === "ghost" ? "text-stone-500" : "text-white/40"
+          }`}
+        >
+          {label}
+        </p>
       ) : null}
       <input
         ref={inputRef}

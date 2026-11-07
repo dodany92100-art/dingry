@@ -211,6 +211,20 @@ function AdminDashboard() {
     );
   }
 
+  if (editor) {
+    return (
+      <ProductEditorModal
+        key={editor.product?.id ?? "new"}
+        initial={editor.product}
+        existingSkus={existingProductSkus}
+        busyProductId={productsApi.busyProductId}
+        onClose={() => setEditor(null)}
+        onSubmit={productsApi.save}
+        onDelete={handleDelete}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {session.backupCodes ? (
@@ -241,18 +255,6 @@ function AdminDashboard() {
           />
         ) : null}
 
-        {editor ? (
-          <ProductEditorModal
-            key={editor.product?.id ?? "new"}
-            initial={editor.product}
-            existingSkus={existingProductSkus}
-            busyProductId={productsApi.busyProductId}
-            onClose={() => setEditor(null)}
-            onSubmit={productsApi.save}
-            onDelete={handleDelete}
-          />
-        ) : null}
-
         {tab === "produits" || tab === "brouillons" ? (
           <StockTab
             products={productsApi.products}
@@ -260,7 +262,7 @@ function AdminDashboard() {
             error={productsApi.stockError}
             publishFilter={tab === "brouillons" ? "draft" : "live"}
             gridLocked={gridLocked}
-            productEditorOpen={Boolean(editor)}
+            productEditorOpen={false}
             onVisibleDraftIdsChange={onVisibleDraftIdsChange}
             onChangeStock={(product, delta) => void productsApi.changeStock(product, delta)}
             onSetStock={(product, next) => void productsApi.setStock(product, next)}

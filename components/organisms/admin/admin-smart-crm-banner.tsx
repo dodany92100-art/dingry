@@ -3,9 +3,9 @@
 import type { SmartCrmHint } from "@/lib/admin/smart-crm";
 
 const TONE_STYLES: Record<SmartCrmHint["tone"], string> = {
-  info: "border-sky-200 bg-sky-50/95 text-sky-900",
-  warn: "border-amber-200 bg-amber-50/95 text-amber-950",
-  success: "border-emerald-200 bg-emerald-50/95 text-emerald-900",
+  info: "border-white/15 bg-white/5 text-white/80",
+  warn: "border-amber-400/30 bg-amber-500/10 text-amber-100",
+  success: "border-emerald-400/30 bg-emerald-500/10 text-emerald-100",
 };
 
 type AdminSmartCrmBannerProps = {
@@ -18,7 +18,7 @@ export function AdminSmartCrmBanner({ hints }: AdminSmartCrmBannerProps) {
 
   return (
     <div
-      className={`mt-4 rounded-md border px-4 py-3 text-[11px] leading-relaxed tracking-[0.04em] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] transition-opacity duration-300 ${TONE_STYLES[primary.tone]}`}
+      className={`mt-4 rounded-xl border px-4 py-3 text-[11px] leading-relaxed tracking-[0.04em] transition-opacity duration-300 ${TONE_STYLES[primary.tone]}`}
       role="status"
     >
       {primary.message}

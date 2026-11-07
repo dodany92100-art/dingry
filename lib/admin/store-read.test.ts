@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const getMock = vi.hoisted(() => vi.fn());
 const putMock = vi.hoisted(() => vi.fn());
 
+vi.mock("@/lib/ratelimit", () => ({
+  getSharedRedis: () => null,
+}));
+
 vi.mock("@vercel/blob", () => ({
   get: (...args: unknown[]) => getMock(...args),
   put: (...args: unknown[]) => putMock(...args),

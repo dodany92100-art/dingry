@@ -13,6 +13,7 @@
     "prepare": "husky",
     "knip": "knip --no-exit-code",
     "seed-stock": "tsx scripts/seed-stock.ts",
+    "import:supabase": "tsx scripts/import-store-to-supabase.ts",
     "smoke:quote": "tsx scripts/smoke-quote.ts",
     "test:e2e": "playwright test",
     "vercel:env-preview": "node scripts/push-vercel-preview-env.mjs",
@@ -23,6 +24,7 @@
     "@base-ui/react": "^1.5.0",
     "@marsidev/react-turnstile": "^1.6.3",
     "@paypal/react-paypal-js": "^10.6.1",
+    "@supabase/supabase-js": "^2.119.0",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.40.0",
     "@vercel/analytics": "1.6.1",
@@ -36,6 +38,7 @@
     "qrcode": "^1.5.4",
     "react": "^19",
     "react-dom": "^19",
+    "sharp": "^0.35.5",
     "shadcn": "^4.11.0",
     "tailwind-merge": "^3.3.1",
     "tw-animate-css": "^1.4.0"

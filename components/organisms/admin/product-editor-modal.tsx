@@ -285,13 +285,13 @@ function sectionDirtyFlags(
 }
 
 const SECTION_CARD =
-  "relative rounded-xl border border-stone-200/85 bg-gradient-to-br from-white via-stone-50/90 to-amber-50/25 px-4 py-4 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_1px_3px_rgba(120,113,108,0.06)] sm:px-5 sm:py-5";
+  "relative rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5 backdrop-blur-sm sm:px-6 sm:py-6";
 const SECTION_DIRTY =
-  "border-l border-l-amber-400/55 pl-[1.125rem] sm:pl-[1.25rem] before:pointer-events-none before:absolute before:left-2 before:top-4 before:h-1 before:w-1 before:rounded-full before:bg-amber-500/85 before:shadow-[0_0_6px_rgba(245,158,11,0.4)] before:content-['']";
+  "border-l border-l-white/50 pl-[1.125rem] sm:pl-[1.25rem] before:pointer-events-none before:absolute before:left-2 before:top-5 before:h-1.5 before:w-1.5 before:rounded-full before:bg-white before:content-['']";
 
-const FIELD_LABEL = "block text-[10px] font-medium uppercase tracking-[0.2em] text-stone-500";
+const FIELD_LABEL = "block text-[10px] font-medium uppercase tracking-[0.22em] text-white/40";
 const FIELD_INPUT =
-  "mt-1.5 h-10 w-full rounded-lg border border-stone-200/95 bg-stone-50/70 px-3 text-[13px] text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-400 focus:ring-1 focus:ring-amber-100/90";
+  "mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-black/40 px-3.5 text-[13px] text-white outline-none transition placeholder:text-white/25 focus:border-white/35 focus:bg-black/55";
 const FIELD_SELECT = `${FIELD_INPUT} appearance-none cursor-pointer`;
 
 type EditorTab = "product" | "story";
@@ -1096,16 +1096,16 @@ export function ProductEditorModal({
   const saveActionsDisabled = saving || convertingImage || !isDirty;
 
   const draftSaveButtonClass = !isDirty
-    ? "h-12 flex-1 border border-stone-200/90 bg-stone-200/75 text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400 transition duration-200 disabled:cursor-not-allowed"
-    : "h-12 flex-1 border border-amber-300/75 bg-gradient-to-b from-amber-100/95 to-stone-200/90 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-950 shadow-[inset_0_1px_0_rgba(255,253,248,0.85)] transition duration-200 hover:border-amber-400/90 hover:from-amber-200/80 hover:to-stone-200/95 disabled:opacity-50";
+    ? "h-12 flex-1 rounded-full border border-white/10 bg-white/5 text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 transition duration-200 disabled:cursor-not-allowed"
+    : "h-12 flex-1 rounded-full border border-white/20 bg-white/10 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition duration-200 hover:bg-white/15 disabled:opacity-50";
 
   const liveSaveButtonClass = !isDirty
-    ? "group h-12 flex-[1.2] border border-stone-200/90 bg-stone-200/75 text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400 transition duration-200 disabled:cursor-not-allowed"
+    ? "group h-12 flex-[1.2] rounded-full border border-white/10 bg-white/5 text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 transition duration-200 disabled:cursor-not-allowed"
     : isPublished
-      ? "group h-12 flex-[1.2] bg-emerald-600 text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_0_24px_rgba(5,150,105,0.42)] transition duration-200 hover:bg-emerald-500 disabled:opacity-50"
-      : "group h-12 flex-[1.2] bg-[#1d4ed8] text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_4px_20px_rgba(29,78,216,0.28)] transition duration-200 hover:bg-[#1e40af] disabled:opacity-50";
+      ? "group h-12 flex-[1.2] rounded-full bg-emerald-500 text-[11px] font-bold uppercase tracking-[0.18em] text-black transition duration-200 hover:bg-emerald-400 disabled:opacity-50"
+      : "group h-12 flex-[1.2] rounded-full bg-white text-[11px] font-bold uppercase tracking-[0.18em] text-black transition duration-200 hover:bg-white/90 disabled:opacity-50";
 
-  const dirtyOutlineClass = isDirty ? "ring-1 ring-amber-300/40 ring-inset" : "";
+  const dirtyOutlineClass = isDirty ? "ring-1 ring-white/30 ring-inset" : "";
 
   function onSaveClick(publishStatus: ProductPublishStatus) {
     if (saveInFlightRef.current || saving || convertingImage) return;
@@ -1126,41 +1126,44 @@ export function ProductEditorModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.22 }}
-      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-amber-950/15 p-4 pb-10 backdrop-blur-md sm:bg-stone-200/50 sm:p-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label={editingId ? "Modifier le produit" : "Nouveau produit"}
-      onClick={() => {
-        if (!saving) onClose();
-      }}
+      className="flex min-h-screen flex-col bg-[#050505] text-white"
+      aria-label={editingId ? "Fiche produit" : "Nouveau produit"}
     >
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-[min(100%,72rem)] max-h-[min(100dvh-1.5rem,calc(100dvh-2rem))] overflow-hidden overscroll-contain rounded-2xl border border-stone-200/80 bg-gradient-to-b from-amber-50/40 via-white to-stone-100/60 shadow-[0_0_0_1px_rgba(120,113,108,0.06),0_22px_48px_rgba(68,64,60,0.09)] sm:to-amber-50/20"
-        onClick={(event) => event.stopPropagation()}
+        className="flex min-h-screen w-full flex-col"
       >
         <form
           onSubmit={(event) => {
             event.preventDefault();
           }}
-          className="flex max-h-[min(100dvh-1.5rem,calc(100dvh-2rem))] min-h-0 flex-col"
+          className="flex min-h-screen min-w-0 flex-col"
         >
-          <div className="flex shrink-0 flex-wrap items-start justify-between gap-4 border-b border-stone-200/70 bg-gradient-to-r from-stone-50/90 via-white to-amber-50/30 px-6 py-5">
-            <div className="min-w-0 flex flex-wrap items-center gap-3">
-              <h2 className="text-sm font-medium tracking-tight text-stone-900">
-                {editingId ? "Modifier le produit" : "Nouveau produit"}
-              </h2>
-              <span className="hidden h-3 w-px bg-stone-200 sm:block" aria-hidden />
-              <div className="flex gap-1 rounded-lg border border-stone-200/80 bg-stone-100/70 p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+          <header className="sticky top-0 z-20 flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-[#050505]/90 px-5 py-4 backdrop-blur-xl sm:px-8">
+            <div className="min-w-0 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/45 transition hover:text-white disabled:opacity-40"
+              >
+                ← Collection
+              </button>
+              <span className="hidden h-4 w-px bg-white/15 sm:block" aria-hidden />
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.28em] text-white/30">Studio produit</p>
+                <h1 className="mt-0.5 truncate text-lg font-medium tracking-tight text-white sm:text-xl">
+                  {form.name.trim() || (editingId ? "Modifier" : "Nouveau")}
+                </h1>
+              </div>
+              <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-0.5">
                 <button
                   type="button"
                   onClick={() => setEditorTab("product")}
-                  className={`rounded-md px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] transition ${
-                    editorTab === "product"
-                      ? "bg-stone-800 text-amber-50 shadow-sm ring-1 ring-stone-700/20"
-                      : "text-stone-600 hover:bg-white/80 hover:text-stone-900"
+                  className={`rounded-full px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] transition ${
+                    editorTab === "product" ? "bg-white text-black" : "text-white/50 hover:text-white"
                   }`}
                 >
                   Produit
@@ -1168,18 +1171,16 @@ export function ProductEditorModal({
                 <button
                   type="button"
                   onClick={() => setEditorTab("story")}
-                  className={`rounded-md px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] transition ${
-                    editorTab === "story"
-                      ? "bg-stone-800 text-amber-50 shadow-sm ring-1 ring-stone-700/20"
-                      : "text-stone-600 hover:bg-white/80 hover:text-stone-900"
+                  className={`rounded-full px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] transition ${
+                    editorTab === "story" ? "bg-white text-black" : "text-white/50 hover:text-white"
                   }`}
                 >
                   Fiche
                 </button>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <div className="w-[min(100%,11rem)] sm:w-52">
+            <div className="flex shrink-0 items-end gap-3">
+              <div className="w-[min(100%,11rem)] sm:w-48">
                 <label htmlFor="dingry-product-category" className={FIELD_LABEL}>
                   Catégorie
                 </label>
@@ -1189,32 +1190,21 @@ export function ProductEditorModal({
                   aria-label="Catégorie produit"
                   value={form.category}
                   onChange={(event) => changeCategory(event.target.value as ProductCategory)}
-                  className={`${FIELD_SELECT} mt-1 font-medium text-stone-900 ${
-                    sectionDirty.general && form.category !== baselineForm.category
-                      ? "border-amber-400/60 ring-1 ring-amber-200/80"
-                      : ""
+                  className={`${FIELD_SELECT} mt-1 font-medium ${
+                    sectionDirty.general && form.category !== baselineForm.category ? "border-white/40" : ""
                   }`}
                 >
                   {PRODUCT_CATEGORIES.map((item) => (
-                    <option key={item} value={item}>
+                    <option key={item} value={item} className="bg-zinc-950 text-white">
                       {item}
                     </option>
                   ))}
                 </select>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={saving}
-                aria-label="Fermer"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-stone-200 text-stone-500 transition hover:border-stone-300 hover:bg-stone-100 hover:text-stone-800 disabled:opacity-40"
-              >
-                ×
-              </button>
             </div>
-          </div>
+          </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-gradient-to-b from-stone-100/30 via-amber-50/12 to-stone-50/35 px-6 py-6">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-8 sm:px-8 lg:px-10">
 
           {formError ? <p className="mt-3 text-sm text-red-400">{formError}</p> : null}
           {formSuccess ? (
@@ -1257,10 +1247,10 @@ export function ProductEditorModal({
 
           <div className="space-y-6">
             {editorTab === "product" ? (
-              <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,26rem)] lg:gap-10">
-                <div className="min-w-0 space-y-6">
+              <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.15fr)] xl:gap-14">
+                <div className="min-w-0 space-y-6 xl:order-2">
                   <div className={sectionClass(sectionDirty.general)}>
-                    <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
                       Informations générales
                     </p>
                     <div className="space-y-5">
@@ -1333,7 +1323,7 @@ export function ProductEditorModal({
                   </div>
 
                   <div className={sectionClass(sectionDirty.sizes)}>
-                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
                       {pantsForm ? "Grille tours" : "Grille tailles"}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -1344,10 +1334,10 @@ export function ProductEditorModal({
                             key={size}
                             type="button"
                             onClick={() => toggleSize(size)}
-                            className={`min-w-[2.5rem] rounded-md border px-2.5 py-2 text-[11px] font-medium tabular-nums tracking-wide transition ${
+                            className={`min-w-[2.5rem] rounded-full border px-2.5 py-2 text-[11px] font-medium tabular-nums tracking-wide transition ${
                               active
-                                ? "border-stone-800 bg-stone-800 text-amber-50 shadow-[0_1px_2px_rgba(68,64,60,0.12)]"
-                                : "border-stone-200 bg-white/85 text-stone-600 hover:border-amber-200/80 hover:bg-amber-50/40 hover:text-stone-900"
+                                ? "border-white bg-white text-black"
+                                : "border-white/15 bg-white/5 text-white/60 hover:border-white/30 hover:text-white"
                             }`}
                           >
                             {size}
@@ -1359,10 +1349,10 @@ export function ProductEditorModal({
                           key={`custom-${size}`}
                           type="button"
                           onClick={() => toggleSize(size)}
-                          className={`min-w-[2.5rem] rounded-md border px-2.5 py-2 text-[11px] font-medium tabular-nums tracking-wide transition ${
+                          className={`min-w-[2.5rem] rounded-full border px-2.5 py-2 text-[11px] font-medium tabular-nums tracking-wide transition ${
                             form.sizes.includes(size)
-                              ? "border-stone-800 bg-stone-800 text-amber-50 shadow-[0_1px_2px_rgba(68,64,60,0.12)]"
-                              : "border-stone-200 bg-white/85 text-stone-600 hover:border-amber-200/80 hover:bg-amber-50/40 hover:text-stone-900"
+                              ? "border-white bg-white text-black"
+                              : "border-white/15 bg-white/5 text-white/60 hover:border-white/30 hover:text-white"
                           }`}
                         >
                           {size}
@@ -1394,7 +1384,7 @@ export function ProductEditorModal({
                   </div>
 
                   <div className={sectionClass(sectionDirty.general)}>
-                    <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
                       Variantes boutique
                     </p>
                     <div className="space-y-5">
@@ -1543,7 +1533,7 @@ export function ProductEditorModal({
                   </div>
 
                   <div className={sectionClass(sectionDirty.price)}>
-                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
                       Prix · stock
                     </p>
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -1604,34 +1594,34 @@ export function ProductEditorModal({
                   ) : null}
                 </div>
 
-                <div className="min-w-0 space-y-5 lg:sticky lg:top-0 lg:self-start">
+                <div className="min-w-0 space-y-5 xl:order-1 xl:sticky xl:top-24 xl:self-start">
                   <div className={sectionClass(sectionDirty.media)}>
-                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
                       Médias
                     </p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                       <AdminMediaDropzone
-                        tone="ghost"
+                        tone="default"
                         label="Recto"
                         previewSrc={previewRectoSrc}
                         converting={convertingRecto}
                         onFile={(file) => void acceptImageRecto(file)}
                       />
                       <AdminMediaDropzone
-                        tone="ghost"
+                        tone="default"
                         label="Verso"
                         previewSrc={previewVersoSrc}
                         converting={convertingVerso}
                         onFile={(file) => void acceptImageVerso(file)}
                       />
                     </div>
-                    <p className="mt-3 text-[9px] uppercase tracking-[0.16em] text-stone-600">
+                    <p className="mt-3 text-[9px] uppercase tracking-[0.16em] text-white/35">
                       WebP · 10 Mo max · conversion auto
                     </p>
                   </div>
                   <AdminProductPreview
                     model={previewModel}
-                    className="w-full max-w-none border-stone-200/95 bg-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]"
+                    className="w-full max-w-none border-white/10 bg-zinc-950"
                   />
                 </div>
               </div>
@@ -1673,7 +1663,7 @@ export function ProductEditorModal({
                       rows={rows}
                       value={form[key]}
                       onChange={(event) => patch({ [key]: event.target.value })}
-                      className="mt-1.5 min-h-[4.5rem] w-full resize-y rounded-md border border-stone-200 bg-white px-3 py-2.5 text-[13px] leading-relaxed text-stone-900 outline-none focus:border-stone-400 focus:ring-1 focus:ring-amber-100/90"
+                      className="mt-1.5 min-h-[4.5rem] w-full resize-y rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-[13px] leading-relaxed text-white outline-none focus:border-white/35"
                     />
                   </label>
                 ))}
@@ -1684,13 +1674,13 @@ export function ProductEditorModal({
 
           <AdminSmartCrmBanner hints={smartHints} />
 
-          <div className="sticky bottom-0 z-10 mt-6 border-t border-stone-200/90 bg-gradient-to-t from-amber-50/50 via-stone-50/95 to-white py-4 backdrop-blur-sm">
+          <div className="sticky bottom-0 z-10 mt-8 border-t border-white/10 bg-[#050505]/95 px-5 py-4 backdrop-blur-xl sm:px-8">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={saving}
-                className="h-12 flex-1 border border-transparent text-[11px] font-bold uppercase tracking-[0.18em] text-stone-500 transition hover:text-stone-900 disabled:opacity-50 sm:max-w-[140px]"
+                className="h-12 flex-1 rounded-full text-[11px] font-bold uppercase tracking-[0.18em] text-white/40 transition hover:text-white disabled:opacity-50 sm:max-w-[140px]"
               >
                 Annuler
               </button>
@@ -1738,27 +1728,27 @@ export function ProductEditorModal({
                 )}
               </button>
             </div>
-            <p className="mt-2 text-center text-[9px] uppercase tracking-[0.12em] text-stone-500">
+            <p className="mt-2 text-center text-[9px] uppercase tracking-[0.12em] text-white/35">
               {isPublished ? (
                 <>
-                  <span className="text-amber-700">Brouillon</span> = retire de la boutique ·{" "}
-                  <span className="text-stone-600">En ligne</span> = déjà publié
+                  <span className="text-white/70">Brouillon</span> = retire de la boutique ·{" "}
+                  <span className="text-white/70">En ligne</span> = déjà publié
                 </>
               ) : (
                 <>
-                  <span className="text-stone-600">Brouillon</span> = admin seulement ·{" "}
-                  <span className="text-stone-600">En ligne</span> = visible boutique
+                  <span className="text-white/70">Brouillon</span> = admin seulement ·{" "}
+                  <span className="text-white/70">En ligne</span> = visible boutique
                 </>
               )}
             </p>
             {isDirty ? (
               <p
-                className="mt-1.5 text-center text-[9px] uppercase tracking-[0.14em] text-amber-700/90"
+                className="mt-1.5 text-center text-[9px] uppercase tracking-[0.14em] text-white/55"
                 aria-live="polite"
               >
                 Modifications non enregistrées
                 {dirtySectionLabels.length > 0 ? (
-                  <span className="mt-0.5 block normal-case tracking-normal text-stone-500">
+                  <span className="mt-0.5 block normal-case tracking-normal text-white/35">
                     Sections · {dirtySectionLabels.join(" · ")}
                   </span>
                 ) : null}
