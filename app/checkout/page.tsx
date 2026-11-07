@@ -82,7 +82,6 @@ export default function CheckoutPage() {
   const tokenRef = useRef<string | null>(null);
   tokenRef.current = token;
   const retryTimerRef = useRef<number | null>(null);
-  const [payPalFlowActive, setPayPalFlowActive] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -166,8 +165,7 @@ export default function CheckoutPage() {
   }, [ready, cart]);
 
   const canPay = Boolean(token) && !saving && !confirmation && quoteState === "ready" && quote !== null;
-  const showPayPalButton =
-    quoteState === "ready" && quote !== null && !confirmation && !pendingOrderId && (canPay || payPalFlowActive);
+  const showPayPalButton = quoteState === "ready" && quote !== null && !confirmation && !pendingOrderId && canPay;
 
   function syncPendingOrder(orderId: string, status: number) {
     if (shouldPersistPendingCapture(status)) {
@@ -412,8 +410,6 @@ export default function CheckoutPage() {
                     lines={orderLines(cart)}
                     tone="light"
                     getTurnstileToken={() => tokenRef.current}
-                    onPayPalFlowStart={() => setPayPalFlowActive(true)}
-                    onPayPalFlowEnd={() => setPayPalFlowActive(false)}
                     onAfterCreateSuccess={refreshTurnstileAfterCreate}
                     onAfterCreateFailure={refreshTurnstileAfterCreate}
                     onApproved={handleApproved}

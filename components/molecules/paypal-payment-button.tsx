@@ -15,8 +15,6 @@ type PayPalPaymentButtonProps = {
   /** Jeton au clic « Payer » (ref parent), pas dans le rendu des boutons. */
   getTurnstileToken: () => string | null;
   onApproved: (orderId: string) => void | Promise<void>;
-  onPayPalFlowStart?: () => void;
-  onPayPalFlowEnd?: () => void;
   /** Après `create` OK : nouveau jeton Turnstile pour un second paiement (capture sans Turnstile). */
   onAfterCreateSuccess?: () => void;
   /** `create` refusé : jeton Turnstile déjà consommé côté Cloudflare → renouveler le widget. */
@@ -52,8 +50,6 @@ export function PayPalPaymentButton({
   lines,
   getTurnstileToken,
   onApproved,
-  onPayPalFlowStart,
-  onPayPalFlowEnd,
   onAfterCreateSuccess,
   onAfterCreateFailure,
   disabled = false,
@@ -62,7 +58,7 @@ export function PayPalPaymentButton({
   const isLight = tone === "light";
   const [error, setError] = useState<string | null>(null);
   const [cancelled, setCancelled] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "opening" | "capturing">("idle");
+  const [phase, setPhase] = useState<"idle" | "capturing">("idle");
   /** PayPal peut rappeler `createOrder` : réutiliser l’ID sans refaire Turnstile/API. */
   const openPayPalOrderIdRef = useRef<string | null>(null);
   const signature = lines
@@ -78,7 +74,6 @@ export function PayPalPaymentButton({
   function endFlow() {
     setPhase("idle");
     clearOpenOrder();
-    onPayPalFlowEnd?.();
   }
 
   if (!paypalClientId) {
@@ -99,7 +94,7 @@ export function PayPalPaymentButton({
             isLight ? "border-[#0e1118]/10 bg-white" : "border-white/10 bg-[#0a0a0a]"
           }`}
         >
-          {phase !== "idle" ? (
+          {phase === "capturing" ? (
             <div
               className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 px-6 text-center ${
                 isLight ? "bg-white/96" : "bg-[#0a0a0a]/95"
@@ -111,26 +106,11 @@ export function PayPalPaymentButton({
                   isLight ? "text-[#0e1118]" : "text-white"
                 }`}
               >
-                {phase === "capturing" ? "Validation du paiement…" : "Ouverture de PayPal…"}
+                Validation du paiement…
               </p>
-              <p
-                className={`max-w-xs text-xs leading-relaxed ${isLight ? "text-[#0e1118]/60" : "text-white/60"}`}
-              >
-                {phase === "opening"
-                  ? "Une fenêtre PayPal s’ouvre par-dessus DINGRY. Fermez-la pour revenir au paiement."
-                  : "Ne fermez pas cet onglet."}
+              <p className={`max-w-xs text-xs leading-relaxed ${isLight ? "text-[#0e1118]/60" : "text-white/60"}`}>
+                Ne fermez pas cet onglet.
               </p>
-              {phase === "opening" ? (
-                <button
-                  type="button"
-                  onClick={() => endFlow()}
-                  className={`text-[10px] tracking-[0.16em] uppercase underline ${
-                    isLight ? "text-[#0066FF]" : "text-white/70"
-                  }`}
-                >
-                  Revenir au paiement
-                </button>
-              ) : null}
             </div>
           ) : null}
           <div className={busy ? "pointer-events-none opacity-50" : undefined}>
@@ -143,10 +123,6 @@ export function PayPalPaymentButton({
                 if (reused) {
                   return reused;
                 }
-                onPayPalFlowStart?.();
-                setPhase("opening");
-                setError(null);
-                setCancelled(false);
                 const turnstileToken = getTurnstileToken();
                 if (!turnstileToken) {
                   const message = "Validez le contrôle de sécurité avant de payer.";
@@ -166,12 +142,10 @@ export function PayPalPaymentButton({
                     const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
                     setError(message);
                     invalidateTurnstile();
-                    endFlow();
+                    clearOpenOrder();
                     throw new Error(message);
                   }
                   openPayPalOrderIdRef.current = payload.orderId;
-                  /** Overlay retiré : laisser PayPal gérer la popup sans re-render bloquant. */
-                  setPhase("idle");
                   return payload.orderId;
                 } catch (cause) {
                   endFlow();
@@ -194,8 +168,6 @@ export function PayPalPaymentButton({
                   return;
                 }
                 setPhase("capturing");
-                setError(null);
-                setCancelled(false);
                 try {
                   await onApproved(data.orderID);
                 } catch {
