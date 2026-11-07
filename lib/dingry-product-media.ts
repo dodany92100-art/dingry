@@ -44,10 +44,16 @@ export const DINGRY_PRODUCT_MEDIA = {
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310835/31908e1d-4023-4ed0-be80-f3c114bbb097_kz5cef.jpg",
   jerseyBlack:
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310836/e2110850-29a4-4e76-aeb4-1972601d467d_cgyeld.jpg",
+  hoodieZipOutlineRecto:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/HOODIE_DINGRY_BLACK_ZIPPE%CC%81_OUTLINE_RECTO_iedtrv.png",
+  hoodieZipOutlineVerso:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/HOODIE_DINGRY_BLACK_ZIPPE%CC%81_OUTLINE_VERSO_ljjxwj.png",
 } as const;
 
 /** Images catalogue figées (priorité sur l’admin pour ces ids). */
 export const CATALOG_CANONICAL_IMAGE_BY_ID: Readonly<Record<number, string>> = {
+  4: DINGRY_PRODUCT_MEDIA.hoodieZipOutlineRecto,
+  5: DINGRY_PRODUCT_MEDIA.hoodieZipOutlineVerso,
   25: DINGRY_PRODUCT_MEDIA.hoodieParisBlackRecto,
   26: DINGRY_PRODUCT_MEDIA.hoodieParisBlackVerso,
   27: DINGRY_PRODUCT_MEDIA.hoodieParisGreyRecto,
