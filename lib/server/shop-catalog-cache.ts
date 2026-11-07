@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { loadStoreReadOnly } from "@/lib/admin/store";
-import { toCatalogProduct } from "@/lib/admin/types";
+import type { toCatalogProduct } from "@/lib/admin/types";
+import { publicLiveCatalogRows, removedCatalogIdSet } from "@/lib/shop-catalog-snapshot";
 
 export const SHOP_CATALOG_CACHE_TAG = "dingry-shop-catalog";
 
@@ -11,12 +12,8 @@ type CachedCatalogRows = {
 
 async function loadCatalogProductRows(): Promise<CachedCatalogRows> {
   const store = await loadStoreReadOnly();
-  const products = store.products
-    .map((product) => toCatalogProduct(product))
-    .filter((product): product is NonNullable<ReturnType<typeof toCatalogProduct>> => product !== null);
-  const removedCatalogIds = (store.removedCatalogIds ?? [])
-    .map((id) => Number(id))
-    .filter((id) => Number.isInteger(id));
+  const products = publicLiveCatalogRows(store);
+  const removedCatalogIds = [...removedCatalogIdSet(store)];
   return { products, removedCatalogIds };
 }
 

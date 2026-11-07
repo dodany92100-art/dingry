@@ -8,7 +8,6 @@ import {
   DINGRY_COMPANY,
   DINGRY_CONTACT_EMAIL,
   DINGRY_REASSURANCE_LINE,
-  DINGRY_RETURNS_ADDRESS,
 } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 
@@ -121,7 +120,6 @@ export function ShopFooter({ onScrollToCatalogue }: ShopFooterProps) {
                 <li className="text-white/40">
                   {DINGRY_COMPANY.legalName} · {DINGRY_COMPANY.registeredOffice}
                 </li>
-                <li className="text-white/35">Retours · {DINGRY_RETURNS_ADDRESS}</li>
               </ul>
             </div>
           </div>

@@ -1,44 +1,24 @@
 import { createHash } from "node:crypto";
-import {
-  defaultSizesForCategory,
-  isProductCategory,
-  isProductSize,
-  toCatalogProduct,
-  type AdminProduct,
-} from "@/lib/admin/types";
+import { isProductSize } from "@/lib/admin/types";
 import { loadStoreReadOnly } from "@/lib/admin/store";
-import { isShopCatalogIdHidden, overlayShopCatalog, type ShopProduct } from "@/lib/catalog";
-import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
-import { PRODUCTS, SIZES } from "@/lib/shop-data";
-import { normalizePantWaistSize } from "@/lib/admin/pant-waist";
-import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
+import {
+  resolveCheckoutLine,
+  VITRINE_ONLY,
+  type CheckoutLine,
+} from "@/lib/checkout-line-resolve";
+import { buildShopCatalogSnapshot } from "@/lib/shop-catalog-snapshot";
 import {
   assertCheckoutStock,
   StockCheckoutError,
   stockLinesFromCheckout,
 } from "@/lib/stock";
 
-const PERSONALIZABLE_PRODUCT_ID = 24;
+export { VITRINE_ONLY };
+export type { CheckoutLine };
+
 const MAX_LINES = 50;
 const MAX_QTY = 99;
 const MAX_PERSONALIZATION = 80;
-
-/** Pièces affichées sur la vitrine et absentes du catalogue admin. Le prix admin gagne dès qu'il existe. */
-export const VITRINE_ONLY: Record<number, { name: string; variant: string; price: number }> = {
-  1: { name: "Hoodie DINGRY Original KING BLUE / PINK", variant: "VERSO", price: 80 },
-  3: { name: "Hoodie DINGRY Original VERT", variant: "VERSO", price: 80 },
-  5: { name: "Hoodie zippé DINGRY Outline / BLACK", variant: "VERSO", price: 90 },
-  8: { name: "Hoodie DINGRY Original BLACK", variant: "VERSO", price: 80 },
-  18: { name: "DINGRY TEE", variant: "COLLECTION 08 — VERSO", price: 35 },
-  20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 35 },
-};
-
-export type CheckoutLine = {
-  productId: number;
-  size: string;
-  qty: number;
-  personalization?: string;
-};
 
 export type CheckoutQuote = {
   lines: CheckoutLine[];
@@ -48,13 +28,6 @@ export type CheckoutQuote = {
   paypalItems: { name: string; quantity: string; unitCents: number }[];
   digest: string;
 };
-
-function priceToCents(price: number): number | null {
-  if (!Number.isFinite(price) || price <= 0 || price >= 100_000) return null;
-  const cents = Math.round(price * 100);
-  if (Math.abs(price * 100 - cents) > 0.001) return null;
-  return cents;
-}
 
 export function formatCents(cents: number): string {
   const euros = Math.trunc(cents / 100);
@@ -107,94 +80,26 @@ export function checkoutDigest(lines: CheckoutLine[]): string {
   return createHash("sha256").update(payload).digest("hex");
 }
 
-function vitrineFallback(productId: number, rectoId: number) {
-  return VITRINE_ONLY[productId] ?? (rectoId !== productId ? VITRINE_ONLY[rectoId] : undefined);
-}
-
-/** Brouillons CRM invisibles en boutique : le devis suit la vitrine (overlay), pas une fiche draft. */
-function crmLiveProduct(byId: Map<number, AdminProduct>, productId: number, rectoId: number): AdminProduct | undefined {
-  const row = byId.get(productId) ?? byId.get(rectoId);
-  return row?.publishStatus === "live" ? row : undefined;
-}
-
-function quoteSizesFor(product: AdminProduct | undefined, shop: ShopProduct | undefined): string[] {
-  if (product && product.sizes.length > 0) return product.sizes;
-  if (shop?.sizes && shop.sizes.length > 0) return shop.sizes;
-  if (product && isProductCategory(product.category)) {
-    return [...defaultSizesForCategory(product.category)];
-  }
-  return [...SIZES];
-}
-
-function lineSizeAllowed(sizes: readonly string[], size: string): boolean {
-  const waist = normalizePantWaistSize(size);
-  const candidates = waist ? [size.trim(), waist] : [size.trim()];
-  return candidates.some((candidate) => sizes.includes(candidate));
-}
-
 export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuote | null> {
   const store = await loadStoreReadOnly();
-  const removed = new Set(
-    (store.removedCatalogIds ?? [])
-      .map((id) => Number(id))
-      .filter((catalogId) => Number.isInteger(catalogId) && catalogId > 0),
-  );
-
-  const live = store.products
-    .map((row) => toCatalogProduct(row))
-    .filter((row): row is NonNullable<ReturnType<typeof toCatalogProduct>> => row !== null);
-  const shopById = new Map(
-    overlayShopCatalog(PRODUCTS, live, [...removed]).map((product) => [product.id, product]),
-  );
-
-  const byId = new Map<number, AdminProduct>();
-  for (const product of store.products) {
-    const id = Number(product.id);
-    if (Number.isInteger(id) && id > 0) byId.set(id, product);
-  }
+  const snapshot = buildShopCatalogSnapshot(store);
 
   let totalCents = 0;
   const items: string[] = [];
   const paypalItems: CheckoutQuote["paypalItems"] = [];
 
   for (const line of lines) {
-    if (isShopCatalogIdHidden(line.productId, removed)) return null;
+    const resolved = resolveCheckoutLine(line, snapshot);
+    if (!resolved.ok) return null;
 
-    const rectoId = resolveRectoCatalogId(line.productId);
-    const crmLive = crmLiveProduct(byId, line.productId, rectoId);
-    const shop = shopById.get(line.productId) ?? shopById.get(rectoId);
-    const fallback = crmLive || shop ? undefined : vitrineFallback(line.productId, rectoId);
-
-    const name = crmLive?.name ?? shop?.name ?? fallback?.name;
-    const variant = crmLive?.variant ?? shop?.variant ?? fallback?.variant ?? "";
-    const price = crmLive?.price ?? shop?.price ?? fallback?.price;
-    if (!name || price === undefined) return null;
-
-    const sizes = quoteSizesFor(crmLive, shop);
-    if (crmLive || shop) {
-      if (!lineSizeAllowed(sizes, line.size)) return null;
-    } else if (fallback) {
-      if (!isProductSize(line.size)) return null;
-    } else {
-      return null;
-    }
-
-    const baseCents = priceToCents(price);
-    if (baseCents === null) return null;
-
-    const personalized = line.personalization !== undefined;
-    if (personalized && line.productId !== PERSONALIZABLE_PRODUCT_ID) return null;
-    const unitCents = baseCents + (personalized ? PERSONALIZATION_SURCHARGE_EUR * 100 : 0);
-    const lineCents = unitCents * line.qty;
+    const { unitCents, qty, label, paypalName } = resolved.line;
+    const lineCents = unitCents * qty;
     if (!Number.isSafeInteger(lineCents) || totalCents + lineCents >= 10_000_000) return null;
     totalCents += lineCents;
-
-    const label = `${name}${variant ? ` — ${variant}` : ""}`.slice(0, 120);
-    const detail = personalized ? `${label} — ${line.personalization}` : label;
-    items.push(`${detail} — ${line.size} ×${line.qty}`.slice(0, 180));
+    items.push(label);
     paypalItems.push({
-      name: (personalized ? `${name} perso` : `${name} ${variant}`).trim().slice(0, 127),
-      quantity: String(line.qty),
+      name: paypalName,
+      quantity: String(qty),
       unitCents,
     });
   }
