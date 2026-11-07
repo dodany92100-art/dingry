@@ -1,6 +1,6 @@
 import type { AdminProduct, AdminStore } from "@/lib/admin/types";
 import { toCatalogProduct } from "@/lib/admin/types";
-import { isShopCatalogIdHidden, overlayShopCatalog, type ShopProduct } from "@/lib/catalog";
+import { overlayShopCatalog, type ShopProduct } from "@/lib/catalog";
 import { PRODUCTS } from "@/lib/shop-data";
 
 export type ShopCatalogSnapshot = {
@@ -25,7 +25,7 @@ export function publicLiveCatalogRows(
     .filter((row): row is NonNullable<ReturnType<typeof toCatalogProduct>> => row !== null);
 }
 
-export function adminProductById(store: AdminStore): ReadonlyMap<number, AdminProduct> {
+function adminProductById(store: AdminStore): ReadonlyMap<number, AdminProduct> {
   const map = new Map<number, AdminProduct>();
   for (const product of store.products) {
     const id = Number(product.id);
@@ -42,16 +42,4 @@ export function buildShopCatalogSnapshot(store: AdminStore): ShopCatalogSnapshot
     overlayShopCatalog(PRODUCTS, live, [...removed]).map((product) => [product.id, product]),
   );
   return { shopById, removed, adminById: adminProductById(store) };
-}
-
-export function snapshotShopProduct(
-  snapshot: ShopCatalogSnapshot,
-  productId: number,
-  rectoId: number,
-): ShopProduct | undefined {
-  return snapshot.shopById.get(productId) ?? snapshot.shopById.get(rectoId);
-}
-
-export function isCatalogLineSellable(snapshot: ShopCatalogSnapshot, productId: number): boolean {
-  return !isShopCatalogIdHidden(productId, snapshot.removed);
 }

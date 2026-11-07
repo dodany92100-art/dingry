@@ -15,9 +15,6 @@ export const DINGRY_COMPANY = {
   createdAt: "19 juin 2017",
 } as const;
 
-/** Adresse logistique / retours (provisoire, questionnaire lancement). */
-export const DINGRY_RETURNS_ADDRESS = "12 rue du Temple, 75004 Paris";
-
 export const DINGRY_MEDIATOR =
   "En l’absence de désignation définitive : CM2C (www.cm2c.net) ou SAS Médiation Solution (www.mediation-solution.net), selon le litige.";
 

@@ -5,20 +5,10 @@ import {
   type AdminProduct,
 } from "@/lib/admin/types";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
-export type CheckoutLine = {
-  productId: number;
-  size: string;
-  qty: number;
-  personalization?: string;
-};
 import { normalizePantWaistSize } from "@/lib/admin/pant-waist";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
-import type { ShopProduct } from "@/lib/catalog";
-import {
-  type ShopCatalogSnapshot,
-  isCatalogLineSellable,
-  snapshotShopProduct,
-} from "@/lib/shop-catalog-snapshot";
+import { isShopCatalogIdHidden, type ShopProduct } from "@/lib/catalog";
+import type { ShopCatalogSnapshot } from "@/lib/shop-catalog-snapshot";
 import { SIZES } from "@/lib/shop-data";
 
 const PERSONALIZABLE_PRODUCT_ID = 24;
@@ -33,14 +23,21 @@ export const VITRINE_ONLY: Record<number, { name: string; variant: string; price
   20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 35 },
 };
 
-export type CheckoutLineRejectReason =
+export type CheckoutLine = {
+  productId: number;
+  size: string;
+  qty: number;
+  personalization?: string;
+};
+
+type CheckoutLineRejectReason =
   | "removed"
   | "unknown_product"
   | "invalid_size"
   | "invalid_personalization"
   | "invalid_price";
 
-export type ResolvedCheckoutLine = {
+type ResolvedCheckoutLine = {
   label: string;
   paypalName: string;
   unitCents: number;
@@ -87,13 +84,13 @@ export function resolveCheckoutLine(
   line: CheckoutLine,
   snapshot: ShopCatalogSnapshot,
 ): { ok: true; line: ResolvedCheckoutLine } | { ok: false; reason: CheckoutLineRejectReason } {
-  if (!isCatalogLineSellable(snapshot, line.productId)) {
+  if (isShopCatalogIdHidden(line.productId, snapshot.removed)) {
     return { ok: false, reason: "removed" };
   }
 
   const rectoId = resolveRectoCatalogId(line.productId);
   const crmLive = crmLiveProduct(snapshot, line.productId, rectoId);
-  const shop = snapshotShopProduct(snapshot, line.productId, rectoId);
+  const shop = snapshot.shopById.get(line.productId) ?? snapshot.shopById.get(rectoId);
   const fallback = crmLive || shop ? undefined : vitrineFallback(line.productId, rectoId);
 
   const name = crmLive?.name ?? shop?.name ?? fallback?.name;
