@@ -1247,8 +1247,8 @@ export function ProductEditorModal({
 
           <div className="space-y-6">
             {editorTab === "product" ? (
-              <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.15fr)] xl:gap-14">
-                <div className="min-w-0 space-y-6 xl:order-2">
+              <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[minmax(220px,22rem)_minmax(0,1fr)] xl:gap-10">
+                <div className="min-w-0 space-y-6 xl:order-2 xl:max-w-none">
                   <div className={sectionClass(sectionDirty.general)}>
                     <p className="mb-4 text-sm font-semibold text-zinc-300">
                       Informations générales
@@ -1293,16 +1293,16 @@ export function ProductEditorModal({
                         </button>
                       </div>
                       {smartPasteOpen ? (
-                        <div className="dingry-admin-panel space-y-3 rounded-2xl p-4">
+                        <div className="dingry-admin-panel space-y-3 rounded-2xl p-4 sm:p-5">
                           <label htmlFor="dingry-smart-paste" className={FIELD_LABEL}>
                             Coller une fiche brute
                             <textarea
                               id="dingry-smart-paste"
                               value={smartPasteText}
                               onChange={(event) => setSmartPasteText(event.target.value)}
-                              rows={6}
+                              rows={12}
                               placeholder="Titre, description, matière, prix, tailles…"
-                              className={`${FIELD_INPUT} min-h-[7rem] resize-y py-3 leading-relaxed`}
+                              className={`${FIELD_INPUT} min-h-[18rem] resize-y py-3 text-[15px] leading-relaxed`}
                             />
                           </label>
                           <button
@@ -1582,7 +1582,7 @@ export function ProductEditorModal({
                         type="button"
                         disabled={busyProductId === current.id}
                         onClick={() => void handleDelete()}
-                        className="rounded-md border border-red-200 bg-red-50/40 px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.14em] text-red-700 transition hover:border-red-300 hover:bg-red-50 disabled:opacity-40"
+                        className="rounded-full border border-red-500/35 bg-red-950/40 px-4 py-2.5 text-[13px] font-medium text-red-200 transition hover:bg-red-950/70 disabled:opacity-40"
                       >
                         Supprimer
                       </button>
@@ -1590,7 +1590,7 @@ export function ProductEditorModal({
                   ) : null}
                 </div>
 
-                <div className="min-w-0 space-y-5 xl:order-1 xl:sticky xl:top-24 xl:self-start">
+                <div className="min-w-0 space-y-5 xl:order-1 xl:sticky xl:top-24 xl:max-w-[22rem] xl:self-start">
                   <div className={sectionClass(sectionDirty.media)}>
                     <p className="mb-3 text-sm font-semibold text-zinc-300">
                       Médias
@@ -1617,12 +1617,12 @@ export function ProductEditorModal({
                   </div>
                   <AdminProductPreview
                     model={previewModel}
-                    className="w-full max-w-none border-white/10 bg-zinc-950"
+                    className="w-full max-w-none border-white/10 bg-transparent xl:max-h-[min(52vh,28rem)] xl:overflow-hidden"
                   />
                 </div>
               </div>
             ) : (
-              <div className={`${sectionClass(sectionDirty.story)} space-y-4`}>
+              <div className={`${sectionClass(sectionDirty.story)} mx-auto w-full max-w-4xl space-y-5`}>
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
                   <button
                     type="button"
@@ -1646,20 +1646,20 @@ export function ProductEditorModal({
                 </p>
                 {(
                   [
-                    ["Description", "description", 3],
-                    ["Fabrication", "fabrication", 2],
-                    ["Édition limitée", "limitedEdition", 2],
-                    ["Matières", "materials", 2],
-                    ["Guide des tailles", "sizeGuide", 2],
+                    ["Description", "description", 14, "min-h-[16rem]"],
+                    ["Fabrication", "fabrication", 5, "min-h-[7rem]"],
+                    ["Édition limitée", "limitedEdition", 4, "min-h-[5.5rem]"],
+                    ["Matières", "materials", 4, "min-h-[5.5rem]"],
+                    ["Guide des tailles", "sizeGuide", 6, "min-h-[8rem]"],
                   ] as const
-                ).map(([label, key, rows]) => (
+                ).map(([label, key, rows, minHeightClass]) => (
                   <label key={key} className={FIELD_LABEL}>
                     {label}
                     <textarea
                       rows={rows}
                       value={form[key]}
                       onChange={(event) => patch({ [key]: event.target.value })}
-                      className="mt-1.5 min-h-[4.5rem] w-full resize-y rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-[13px] leading-relaxed text-white outline-none focus:border-white/35"
+                      className={`${FIELD_INPUT} ${minHeightClass} resize-y py-3 text-[15px] leading-relaxed`}
                     />
                   </label>
                 ))}
