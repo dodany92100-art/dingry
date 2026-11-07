@@ -3,6 +3,10 @@
 import { AnimatePresence, motion } from "motion/react";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
+import {
+  isTurnstileProductTestEnabled,
+  ProductCaptchaTest,
+} from "@/components/molecules/product-captcha-test";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { DINGRY_MANIFESTO_EN } from "@/lib/dingry-brand-voice";
 import {
@@ -13,6 +17,7 @@ import {
   storefrontProductTitle,
 } from "@/lib/dingry-product-display";
 import { isJerseyShopProduct, JERSEY_COLOR_OPTIONS } from "@/lib/jersey-shop";
+import { isShopTeeCategory, resolveShopCategory } from "@/lib/shop-catalog";
 import { IMAGES, TEE_VERSO_BY_RECTO_ID } from "@/lib/shop-data";
 import {
   findActiveFlipPair,
@@ -102,6 +107,9 @@ function ProductModalContent({
   const nextSide = modalSide === "verso" ? "recto" : "verso";
 
   const productById = (id: number) => products.find((item) => item.id === id);
+  const shopCategory = resolveShopCategory(product.id, product.category);
+  const showTurnstileProductTest =
+    isTurnstileProductTestEnabled() && isShopTeeCategory(String(shopCategory));
 
   return (
     <div className="dingry-sale fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-12">
@@ -363,6 +371,7 @@ function ProductModalContent({
               className="shrink-0 self-auto"
             />
           </div>
+          {showTurnstileProductTest ? <ProductCaptchaTest /> : null}
         </div>
       </motion.div>
     </div>
