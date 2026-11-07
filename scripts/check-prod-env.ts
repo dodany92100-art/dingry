@@ -4,6 +4,7 @@
  */
 
 import { MIN_CRON_SECRET_LENGTH } from "../lib/cron-auth";
+import { collectProductionEnvErrors, readSupabaseEnv } from "../lib/env";
 
 type Check = { name: string; ok: boolean; hint: string };
 
@@ -40,6 +41,20 @@ function stockPrefix(): Check {
   };
 }
 
+function crmImageStorage(): Check {
+  const errors = collectProductionEnvErrors();
+  if (errors.length === 0) {
+    const { url } = readSupabaseEnv();
+    const hint = url.length > 0 ? "ok (Supabase)" : "ok (Vercel Blob)";
+    return { name: "CRM stockage images", ok: true, hint };
+  }
+  return {
+    name: "CRM stockage images",
+    ok: false,
+    hint: errors.join(" — "),
+  };
+}
+
 function turnstileHostname(): Check {
   const raw = process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim() ?? "";
   const ok = raw.length > 0;
@@ -61,7 +76,7 @@ function main(): void {
     present("CRON_SECRET", MIN_CRON_SECRET_LENGTH),
     present("UPSTASH_REDIS_REST_URL"),
     present("UPSTASH_REDIS_REST_TOKEN"),
-    present("BLOB_READ_WRITE_TOKEN"),
+    crmImageStorage(),
     present("TURNSTILE_SECRET_KEY"),
     present("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
     turnstileHostname(),

@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 import { execSync } from "node:child_process";
+import { validateProductionEnv } from "./lib/env-core.mjs";
+
+validateProductionEnv();
 
 function crmVersionPatch() {
   if (process.env.CRM_VERSION_PATCH) return process.env.CRM_VERSION_PATCH;
