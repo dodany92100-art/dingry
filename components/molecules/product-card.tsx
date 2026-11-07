@@ -88,20 +88,18 @@ export function ProductCard({
           disabled={!onClick}
           className="mt-1.5 w-full px-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:mt-2 md:mt-3"
         >
-          <p className="text-[8px] uppercase leading-tight tracking-[0.16em] text-white/45 sm:text-[9px] md:text-[10px] md:tracking-[0.22em]">
-            {name}
-          </p>
+          <p className="dingry-product-ref dingry-product-ref--title">{name}</p>
           {variant ? (
             <div className="mt-0.5 flex items-start justify-between gap-1.5 sm:mt-1 sm:gap-2">
-              <p className="line-clamp-2 min-w-0 text-xs font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-sm md:tracking-widest">
+              <p className="dingry-product-ref dingry-product-ref--variant line-clamp-2 min-w-0">
                 {variant}
               </p>
-              <p className="shrink-0 text-xs font-bold tabular-nums tracking-tight text-white sm:text-sm md:text-base">
+              <p className="dingry-product-price shrink-0">
                 {priceFormat.format(price)}
               </p>
             </div>
           ) : (
-            <p className="mt-0.5 text-xs font-bold tabular-nums tracking-tight text-white sm:mt-1 sm:text-sm md:text-base">
+            <p className="dingry-product-price mt-0.5 shrink-0 sm:mt-1">
               {priceFormat.format(price)}
             </p>
           )}

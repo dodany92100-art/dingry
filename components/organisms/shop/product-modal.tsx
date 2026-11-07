@@ -251,7 +251,7 @@ function ProductModalContent({
                     +
                   </button>
                 </div>
-                <p className="text-2xl font-bold tabular-nums tracking-tight text-[#0066FF]">
+                <p className="dingry-product-price dingry-product-price--lg dingry-product-price--accent dingry-product-price--on-dark">
                   {saleProduct.price * selectedQuantity}€
                 </p>
               </div>

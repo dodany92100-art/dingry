@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 
-const DOCS: LegalDocId[] = ["mentions", "cgv", "rgpd"];
+const DOCS: LegalDocId[] = ["mentions", "cgv", "rgpd", "retours"];
 
 type PageProps = { params: Promise<{ doc: string }> };
 

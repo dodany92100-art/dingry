@@ -35,13 +35,9 @@ export function ShopNav({ cartCount, onOpenCart, onScrollToSection, embedded = f
           >
             <DingryLogo interactive shimmer animate={false} />
           </a>
-          <div className="dingry-nav-tagline hidden text-left md:block">
-            <span className="dingry-typo-manifesto-en block text-[9px] leading-snug tracking-[0.2em]">
-              {DINGRY_MANIFESTO_EN}
-            </span>
-            <span className="dingry-typo-street mt-1 block w-full text-center text-lg leading-none">
-              {DINGRY_STREET_LINE}
-            </span>
+          <div className="dingry-nav-tagline hidden md:block" aria-hidden="true">
+            <span className="dingry-typo-manifesto-en">{DINGRY_MANIFESTO_EN}</span>
+            <span className="dingry-typo-street dingry-nav-tagline__street">{DINGRY_STREET_LINE}</span>
           </div>
         </div>
         <div className="hidden items-center justify-center gap-6 md:flex">

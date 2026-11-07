@@ -9,6 +9,7 @@ const EDITORIAL_SCROLL_ITEMS: StickyScrollItem[] = [
   {
     kickerLogo: true,
     title: "Chaque silhouette raconte l'attitude.",
+    titleVariant: "street",
     description:
       "DINGRY Paris est une marque de streetwear française en plein développement, qui séduit un public toujours plus large grâce à une identité forte, un style affirmé et surtout un nom aussi original qu'universel.\n\nEntre coupes oversize, finitions soignées et drops en édition limitée, DINGRY réinvente le streetwear premium pensé pour Paris, Lyon et la scène urbaine européenne.",
   },
@@ -29,8 +30,10 @@ export function HeritageSection({ scrollContainerRef }: HeritageSectionProps) {
   return (
     <section id="heritage" className="dingry-below-hero-surface border-t border-white/[0.05] px-6 py-12 md:px-12 md:py-16">
       <p className="mb-4 text-[10px] font-semibold tracking-[0.35em] text-[#0066FF] uppercase">Heritage</p>
-      <h2 className="max-w-xl text-3xl uppercase leading-tight md:text-5xl">True luxury is attitude.</h2>
-      <p className="mt-6 max-w-xl text-sm leading-relaxed text-white/70">
+      <h2 className="dingry-sticky-editorial-title max-w-xl text-3xl uppercase leading-tight md:text-5xl">
+        True luxury is attitude.
+      </h2>
+      <p className="dingry-sticky-copy mt-6 max-w-xl text-sm leading-relaxed text-white/70">
         DINGRY est une attitude. Une vision du luxe qui ne demande pas la permission.
       </p>
       <p className="mt-6 text-[10px] uppercase tracking-[0.28em] text-white/45">DINGRY — Rock the Street</p>

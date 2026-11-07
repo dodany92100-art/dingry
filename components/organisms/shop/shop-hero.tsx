@@ -2,11 +2,13 @@
 
 import Image from "next/image";
 import { DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
+import { FlipWords } from "@/components/atoms/ui/flip-words";
 import {
   DINGRY_HERO_EDITORIAL_LINES,
   DINGRY_MANIFESTO_EN,
   DINGRY_MANIFESTO_FR,
-  DINGRY_STREET_LINE,
+  DINGRY_STREET_FLIP_WORDS,
+  DINGRY_STREET_PREFIX,
 } from "@/lib/dingry-brand-voice";
 
 const HERO_IMAGES = [DINGRY_TEASING_HERO_SRC];
@@ -35,7 +37,15 @@ export function ShopHero() {
             <p className="dingry-typo-manifesto-en mt-2">{DINGRY_MANIFESTO_EN}</p>
           </div>
           <div className="mt-5 h-px w-14 bg-white/70 md:mt-6" />
-          <p className="dingry-typo-street dingry-typo-street--sm mt-4">{DINGRY_STREET_LINE}</p>
+          <p className="dingry-typo-street dingry-typo-street--sm dingry-hero-street-flip mt-4">
+            <span>{DINGRY_STREET_PREFIX}</span>{" "}
+            <FlipWords
+              words={DINGRY_STREET_FLIP_WORDS}
+              durationMs={1650}
+              loop={false}
+              landOnFirst
+            />
+          </p>
           <p className="dingry-typo-street dingry-hero-editorial mt-10 md:mt-14">
             {DINGRY_HERO_EDITORIAL_LINES.map((line) => (
               <span key={line} className="block">

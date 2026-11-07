@@ -122,7 +122,11 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                     Choisis ta ville et personnalise ton DINGRY
                   </p>
                   <p className="text-sm text-white/45">
-                    Personnalisation possible, {PERSONALIZATION_SURCHARGE_EUR}€ par article.
+                    Personnalisation possible,{" "}
+                    <span className="dingry-product-price dingry-product-price--sm dingry-product-price--accent dingry-product-price--on-dark inline-block align-baseline">
+                      {PERSONALIZATION_SURCHARGE_EUR}€
+                    </span>{" "}
+                    par article.
                   </p>
                 </div>
                 <div>
@@ -198,10 +202,16 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                     </button>
                   </div>
                 </div>
-                <p className="text-lg font-bold">
-                  {unitPrice * qty}€{" "}
-                  <span className="text-xs font-normal text-white/40 tracking-wider">
-                    ({unitPrice}€ × {qty})
+                <p>
+                  <span className="dingry-product-price dingry-product-price--lg dingry-product-price--accent dingry-product-price--on-dark">
+                    {unitPrice * qty}€
+                  </span>{" "}
+                  <span className="text-[11px] text-white/45 tracking-wider">
+                    (
+                    <span className="dingry-product-price dingry-product-price--sm dingry-product-price--accent dingry-product-price--on-dark inline-block align-baseline">
+                      {unitPrice}€
+                    </span>{" "}
+                    × {qty})
                   </span>
                 </p>
                 <button

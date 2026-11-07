@@ -353,7 +353,7 @@ export default function CheckoutPage() {
                         ) : null}
                         <p className="mt-1 text-xs text-white/40">Taille {line.size} · {line.qty}</p>
                       </div>
-                      <p className="text-sm font-medium">
+                      <p className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark shrink-0">
                         {quoteState === "ready" ? euros(line.amountCents) : "…"}
                       </p>
                     </li>
@@ -361,15 +361,15 @@ export default function CheckoutPage() {
                 })}
               </ul>
               <div className="mt-4 space-y-2 border-t border-white/[0.06] pt-5 text-sm text-white/55">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-baseline gap-4">
                   <span>{DINGRY_SHIPPING_LABEL}</span>
-                  <span>0 €</span>
+                  <span className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark">0 €</span>
                 </div>
                 <p className="text-[10px] leading-relaxed tracking-wide text-white/35">{DINGRY_DELIVERY_ESTIMATE}</p>
               </div>
               <div className="mt-4 flex items-baseline justify-between border-t border-white/[0.06] pt-5">
                 <span className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Total TTC</span>
-                <span className="text-xl font-medium">
+                <span className="dingry-product-price dingry-product-price--lg dingry-product-price--on-dark">
                   {quoteState === "ready" && quote ? euros(quote.totalCents) : quoteState === "error" ? "—" : "Calcul…"}
                 </span>
               </div>

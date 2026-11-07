@@ -125,7 +125,7 @@ export function CartDrawer({
                         <li key={line}>{line}</li>
                       ))}
                     </ul>
-                    <p className="mt-4 text-base font-bold">{confirmation.total}€</p>
+                    <p className="dingry-product-price dingry-product-price--lg dingry-product-price--on-dark mt-4">{confirmation.total}€</p>
                     {confirmation.shippingAddress ? (
                       <div className="mt-4 border-t border-white/[0.08] pt-4 text-xs leading-relaxed text-white/55">
                         <p className="text-[10px] tracking-[0.22em] text-white/35 uppercase mb-1">Livraison</p>
@@ -220,7 +220,9 @@ export function CartDrawer({
                           </button>
                         </div>
                       </div>
-                      <p className="mt-2 text-sm font-bold">{lineUnitPrice(item) * item.qty} €</p>
+                      <p className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark mt-2">
+                        {lineUnitPrice(item) * item.qty} €
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -243,17 +245,23 @@ export function CartDrawer({
               <div className="sticky bottom-0 shrink-0 border-t border-white/[0.06] bg-[#0a0a0a] p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
                 <p className="mb-4 text-[10px] tracking-[0.22em] text-white/35 uppercase">Récapitulatif</p>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-white/55">
+                  <div className="flex justify-between items-baseline gap-4 text-white/55">
                     <span>Sous-total</span>
-                    <span>{total} €</span>
+                    <span className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark">
+                      {total} €
+                    </span>
                   </div>
-                  <div className="flex justify-between text-white/55">
+                  <div className="flex justify-between items-baseline gap-4 text-white/55">
                     <span>{DINGRY_SHIPPING_LABEL}</span>
-                    <span>0 €</span>
+                    <span className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark">
+                      0 €
+                    </span>
                   </div>
-                  <div className="flex justify-between border-t border-white/[0.06] pt-3 text-base font-bold">
+                  <div className="flex justify-between items-baseline gap-4 border-t border-white/[0.06] pt-3">
                     <span className="text-xs tracking-[0.22em] uppercase text-white/40">Total TTC</span>
-                    <span>{total} €</span>
+                    <span className="dingry-product-price dingry-product-price--lg dingry-product-price--on-dark">
+                      {total} €
+                    </span>
                   </div>
                 </div>
                 <p className="mt-3 text-[10px] leading-relaxed tracking-wide text-white/35">{DINGRY_DELIVERY_ESTIMATE}</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
+import { AdminCrmPassage } from "@/components/organisms/admin/admin-crm-passage";
 
 type AuthGateProps = {
   code: string;
@@ -24,9 +25,8 @@ export function AuthGate({ code, onCodeChange, onSubmit, enrollment, qr, error, 
         onSubmit={handleSubmit}
         className="w-full max-w-md border border-white/10 bg-[#0a0a0a] p-8"
       >
-        <p className="text-[11px] uppercase tracking-[0.4em] text-white/40">CRM</p>
-        <h1 className="mt-3 text-2xl font-bold tracking-[0.28em]">DINGRY</h1>
-        <p className="mt-2 text-sm text-white/45">Google Authenticator ou code de secours</p>
+        <AdminCrmPassage className="items-start text-left" />
+        <p className="mt-5 text-sm text-white/45">Google Authenticator ou code de secours</p>
         {enrollment ? (
           qr ? (
             <div className="mt-6 flex justify-center bg-white p-3">

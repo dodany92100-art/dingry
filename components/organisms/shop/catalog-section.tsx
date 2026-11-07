@@ -3,7 +3,6 @@
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import type { ShopProduct } from "@/lib/catalog";
-import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import type { FlipPair } from "@/lib/shop-view";
 import { CustomConfiguratorBanner } from "@/components/molecules/custom-configurator-banner";
 import { CATALOG_SECTION_SURFACE_CLASS } from "./catalog-layout";
@@ -40,8 +39,6 @@ export function CatalogSection({
         <h2 className="mb-2">
           <DingryLogo animate={false} className="dingry-catalog-logo h-9 md:h-14" />
         </h2>
-        <p className="dingry-typo-manifesto text-[10px] sm:text-[11px]">{DINGRY_MANIFESTO_FR}</p>
-        <p className="dingry-typo-street dingry-typo-street--sm mt-2 text-white/85">{DINGRY_STREET_LINE}</p>
       </div>
 
       <CatalogFilterBar value={tabValue} onChange={onTabChange} />

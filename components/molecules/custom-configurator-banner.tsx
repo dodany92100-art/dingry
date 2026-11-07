@@ -1,5 +1,6 @@
 "use client";
 
+import { HoverBorderGradient } from "@/components/atoms/ui/hover-border-gradient";
 import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
 import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 
@@ -43,7 +44,13 @@ export function CustomConfiguratorBanner({
           <span className="dingry-custom-banner-title mt-3 block uppercase">{content.title}</span>
           <span className="dingry-typo-body-alt mt-3 block">{content.subtitle}</span>
         </span>
-        <span className="dingry-custom-banner-cta relative z-10 shrink-0">{content.ctaLabel}</span>
+        <HoverBorderGradient
+          as="span"
+          containerClassName="relative z-10 shrink-0 rounded-sm"
+          className="dingry-custom-banner-cta dingry-custom-banner-cta--border-gradient"
+        >
+          {content.ctaLabel}
+        </HoverBorderGradient>
       </span>
     </button>
   );

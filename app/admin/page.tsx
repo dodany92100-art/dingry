@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "@/components/organisms/admin/admin-header";
 import { AdminGridWorkflowBanner } from "@/components/organisms/admin/admin-grid-workflow-banner";
+import { AdminCrmPassage } from "@/components/organisms/admin/admin-crm-passage";
 import { AuthGate } from "@/components/organisms/admin/auth-gate";
 import { BackupCodesBanner } from "@/components/organisms/admin/backup-codes-banner";
 import { useAdminCatalogPersoBanner } from "@/components/organisms/admin/hooks/use-admin-catalog-perso-banner";
@@ -45,10 +46,10 @@ function parseTabParam(value: string | null): TabId {
   return "commandes";
 }
 
-function LoadingScreen() {
+function LoadingScreen({ status = "CRM · chargement" }: { status?: string }) {
   return (
-    <div className="dingry-admin flex min-h-screen items-center justify-center">
-      <p className="text-[11px] uppercase tracking-[0.35em] text-white/40">DINGRY</p>
+    <div className="dingry-admin flex min-h-screen items-center justify-center px-6">
+      <AdminCrmPassage status={status} />
     </div>
   );
 }
@@ -214,7 +215,14 @@ function AdminDashboard() {
     return true;
   }
 
-  if (session.booting || (authenticated && !loaded)) return <LoadingScreen />;
+  if (session.booting || session.loginLoading || (authenticated && !loaded)) {
+    const status = session.loginLoading
+      ? "CRM · authenticator"
+      : session.booting
+        ? "CRM · session"
+        : "CRM · données";
+    return <LoadingScreen status={status} />;
+  }
 
   if (!authenticated) {
     return (

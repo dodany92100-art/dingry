@@ -763,6 +763,96 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   font-size: clamp(1.75rem, 4vw, 2.5rem);
 }
 
+/** Heritage sticky · titres éditoriaux (sans) vs punchline Anton. */
+.dingry-sticky-editorial-title {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-weight: 700;
+}
+
+.dingry-sticky-street-title {
+  font-family: Anton, "Arial Narrow", sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.04em;
+  line-height: 0.9;
+  color: rgb(255 255 255 / 0.94);
+}
+
+.dingry-sticky-copy {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: clamp(1rem, 1.05rem + 0.2vw, 1.125rem);
+  font-weight: 400;
+  line-height: 1.72;
+  letter-spacing: 0.01em;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-sticky-street-title {
+  color: rgb(14 17 24 / 0.96);
+}
+
+/** Prix catalogue / modale — Anton, fort contraste. */
+.dingry-product-price {
+  font-family: Anton, sans-serif;
+  font-weight: 400;
+  font-size: clamp(1.05rem, 2.6vw, 1.4rem);
+  letter-spacing: 0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 255 255 / 0.98);
+}
+
+.dingry-product-price--sm {
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  letter-spacing: 0.04em;
+}
+
+.dingry-product-price--lg {
+  font-size: clamp(1.5rem, 3.5vw, 2.125rem);
+  letter-spacing: 0.02em;
+}
+
+html[data-theme="light"] .dingry-shop #catalogue .dingry-product-price:not(.dingry-product-price--accent) {
+  color: #0a0a0a;
+}
+
+.dingry-product-price--on-dark,
+html[data-theme="light"] .dingry-shop .dingry-product-price--on-dark {
+  color: rgb(255 255 255 / 0.98);
+}
+
+.dingry-product-price--accent,
+html[data-theme="light"] .dingry-shop .dingry-product-price--accent {
+  color: #0066ff;
+}
+
+/** Référence / variante fiche catalogue — Anton, contraste WCAG (catalogue clair inclus). */
+.dingry-product-ref {
+  font-family: Anton, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 1.12;
+  color: rgb(255 255 255 / 0.94);
+}
+
+.dingry-product-ref--title {
+  font-size: clamp(0.72rem, 1.9vw, 0.875rem);
+  letter-spacing: 0.05em;
+}
+
+.dingry-product-ref--variant {
+  font-size: clamp(0.78rem, 2.05vw, 0.95rem);
+  letter-spacing: 0.035em;
+  color: rgb(255 255 255 / 0.9);
+}
+
+html[data-theme="light"] .dingry-shop #catalogue .dingry-product-ref {
+  color: #0a0a0a;
+}
+
+html[data-theme="light"] .dingry-shop #catalogue .dingry-product-ref--variant {
+  color: #121212;
+}
+
 .dingry-typo-body-alt {
   font-size: 0.625rem;
   line-height: 1.85;
@@ -981,6 +1071,18 @@ html[data-theme="light"] .dingry-hero [class*="text-white"] {
   font-size: clamp(1.45rem, 4.2vw, 2rem);
 }
 
+.dingry-hero-street-flip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2em 0.35em;
+  line-height: 1.05;
+}
+
+.dingry-hero-street-flip .dingry-flip-words {
+  color: rgb(255 255 255 / 0.98);
+}
+
 .dingry-hero-copy .dingry-typo-body-alt {
   font-size: 0.8125rem;
   line-height: 1.7;
@@ -1188,6 +1290,10 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
     0 12px 32px rgb(0 0 0 / 0.5),
     inset 0 1px 0 rgb(255 255 255 / 0.22),
     0 0 20px rgb(0 102 255 / 0.15);
+}
+
+.dingry-custom-banner-cta--border-gradient {
+  border-color: transparent;
 }
 
 .dingry-custom-banner--gift {
@@ -1436,8 +1542,36 @@ html[data-theme="light"] .dingry-shop nav [class*="bg-[#0066FF]"] * {
   color: #fff !important;
 }
 
-.dingry-nav-tagline .dingry-typo-manifesto-en,
-.dingry-nav-tagline .dingry-typo-street,
+.dingry-nav-tagline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-top: 0.125rem;
+  text-align: center;
+}
+
+.dingry-nav-tagline .dingry-typo-manifesto-en {
+  width: max-content;
+  max-width: min(16rem, 44vw);
+  font-size: 0.625rem;
+  line-height: 1.45;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  color: rgb(255 255 255 / 0.92);
+}
+
+.dingry-nav-tagline__street {
+  width: max-content;
+  margin-top: 0;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: #fff;
+}
+
 html[data-theme="light"] .dingry-shop .dingry-nav-tagline .dingry-typo-manifesto-en,
 html[data-theme="light"] .dingry-shop .dingry-nav-tagline .dingry-typo-street {
   color: #fff;
@@ -1496,6 +1630,121 @@ html[data-theme="light"] .dingry-catalog-bar [class*="border-white"] {
   background:
     radial-gradient(ellipse 80% 50% at 50% 0%, rgb(0 102 255 / 0.12) 0%, transparent 55%),
     transparent;
+}
+
+.dingry-footer-classic {
+  font-family: Anton, "Arial Narrow", sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
+  text-transform: uppercase;
+}
+
+.dingry-footer-classic .dingry-footer-eyebrow {
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+}
+
+.dingry-footer-classic .dingry-footer-link,
+.dingry-footer-classic .dingry-footer-legal-link,
+.dingry-footer-classic .dingry-footer-chip,
+.dingry-footer-classic ul,
+.dingry-footer-classic p {
+  font-family: inherit;
+  font-weight: 400;
+}
+
+.dingry-footer-classic .dingry-footer-link {
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+}
+
+.dingry-footer-classic .dingry-footer-legal-link {
+  font-weight: 400;
+  letter-spacing: 0.14em;
+}
+
+.dingry-footer-classic .dingry-typo-street {
+  letter-spacing: 0.03em;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-classic .dingry-footer-eyebrow {
+  color: rgb(22 22 22 / 0.55);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-classic .dingry-typo-street {
+  color: #0a0a0a;
+}
+
+/** Pied de page · rail légal sobre (index + soulignement dégradé au survol). */
+.dingry-footer-legal-rail {
+  position: relative;
+  padding-top: 1.75rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.dingry-footer-legal-rail::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 3.5rem;
+  height: 1px;
+  background: linear-gradient(90deg, rgb(0 102 255 / 0.95), transparent);
+}
+
+.dingry-footer-legal-link {
+  position: relative;
+  cursor: pointer;
+  padding: 0.2rem 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.42);
+  transition: color 0.25s ease;
+}
+
+.dingry-footer-legal-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgb(0 102 255 / 0.9), rgb(0 102 255 / 0.15) 70%, transparent);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dingry-footer-legal-link:hover,
+.dingry-footer-legal-link:focus-visible {
+  color: rgb(255 255 255 / 0.9);
+  outline: none;
+}
+
+.dingry-footer-legal-link:hover::after,
+.dingry-footer-legal-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-legal-rail {
+  border-top-color: rgb(14 17 24 / 0.1);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-legal-link {
+  color: rgb(14 17 24 / 0.45);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-legal-link:hover,
+html[data-theme="light"] .dingry-shop .dingry-footer-legal-link:focus-visible {
+  color: rgb(14 17 24 / 0.92);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-footer-legal-rail::before {
+  background: linear-gradient(90deg, rgb(0 102 255 / 0.85), transparent);
 }
 
 .dingry-footer-marquee-logo {

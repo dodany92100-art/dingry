@@ -133,7 +133,7 @@ export default function DingryShopPage() {
         />
         <LookbookCatalogStrip />
         <HeritageSection scrollContainerRef={pageScrollRef} />
-        <ShopFooter />
+        <ShopFooter onScrollToCatalogue={() => scrollToSection("catalogue")} />
       </div>
 
       <PersonalizeModal
