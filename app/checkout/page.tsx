@@ -243,11 +243,7 @@ export default function CheckoutPage() {
     }
   }
 
-  async function handleApproved(orderId: string) {
-    await registerOrder(orderId);
-  }
-
-  /** Jeton Turnstile à usage unique : nouveau widget après fin du flux PayPal (pas pendant l’ouverture). */
+  /** Jeton Turnstile à usage unique : nouveau widget après échec de création PayPal. */
   function refreshTurnstileAfterCreate() {
     setToken(null);
     setTurnstileKey((key) => key + 1);
@@ -381,7 +377,7 @@ export default function CheckoutPage() {
               <p className="dingry-checkout-pay-eyebrow">Sécurisé</p>
               <h2 className="dingry-checkout-pay-title mt-2">Paiement</h2>
               <p className="dingry-checkout-pay-lead mt-3">
-                Vous restez sur DINGRY. PayPal s’ouvre dans une fenêtre, que vous pouvez fermer pour revenir ici.
+                Après validation du contrôle, vous serez redirigé vers PayPal puis renvoyé ici pour confirmer la commande.
               </p>
               <TurnstileWidget key={turnstileKey} className="mt-6" tone="light" onToken={setToken} />
               <div className="mt-6">
@@ -411,9 +407,7 @@ export default function CheckoutPage() {
                     lines={orderLines(cart)}
                     tone="light"
                     getTurnstileToken={() => tokenRef.current}
-                    onAfterCreateSuccess={refreshTurnstileAfterCreate}
                     onAfterCreateFailure={refreshTurnstileAfterCreate}
-                    onApproved={handleApproved}
                   />
                 ) : (
                   <button
@@ -427,7 +421,7 @@ export default function CheckoutPage() {
               </div>
               <p className="dingry-checkout-pay-footnote mt-3 text-center">
                 {token
-                  ? "Vérification confirmée. PayPal ou carte, sans quitter la page."
+                  ? "Vérification confirmée. Paiement PayPal sur leur site sécurisé."
                   : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
               </p>
               {error ? (

@@ -1,7 +1,6 @@
 "use client";
 
-import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 export type PayPalCartLine = {
   productId: number;
@@ -12,11 +11,8 @@ export type PayPalCartLine = {
 
 type PayPalPaymentButtonProps = {
   lines: PayPalCartLine[];
-  /** Jeton au clic « Payer » (ref parent), pas dans le rendu des boutons. */
+  /** Jeton au clic « Payer », pas dans le rendu. */
   getTurnstileToken: () => string | null;
-  onApproved: (orderId: string) => void | Promise<void>;
-  /** Après `create` OK : nouveau jeton Turnstile pour un second paiement (capture sans Turnstile). */
-  onAfterCreateSuccess?: () => void;
   /** `create` refusé : jeton Turnstile déjà consommé côté Cloudflare → renouveler le widget. */
   onAfterCreateFailure?: () => void;
   disabled?: boolean;
@@ -24,16 +20,6 @@ type PayPalPaymentButtonProps = {
 };
 
 const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID?.trim() ?? "";
-
-const paypalOptions = {
-  clientId: paypalClientId,
-  currency: "EUR",
-  intent: "capture",
-  locale: "fr_FR",
-  components: "buttons",
-  enableFunding: "card",
-  disableFunding: "paylater,venmo,credit",
-};
 
 function Spinner({ light = false }: { light?: boolean }) {
   return (
@@ -49,31 +35,49 @@ function Spinner({ light = false }: { light?: boolean }) {
 export function PayPalPaymentButton({
   lines,
   getTurnstileToken,
-  onApproved,
-  onAfterCreateSuccess,
   onAfterCreateFailure,
   disabled = false,
   tone = "dark",
 }: PayPalPaymentButtonProps) {
   const isLight = tone === "light";
   const [error, setError] = useState<string | null>(null);
-  const [cancelled, setCancelled] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "capturing">("idle");
-  /** PayPal peut rappeler `createOrder` : réutiliser l’ID sans refaire Turnstile/API. */
-  const openPayPalOrderIdRef = useRef<string | null>(null);
-  const signature = lines
-    .map((line) => `${line.productId}:${line.size}:${line.qty}:${line.personalization ?? ""}`)
-    .join("|");
-  const buttonsDisabled = disabled && phase === "idle";
-  const busy = phase !== "idle" || buttonsDisabled;
+  const [redirecting, setRedirecting] = useState(false);
+  const busy = disabled || redirecting;
 
-  function clearOpenOrder() {
-    openPayPalOrderIdRef.current = null;
-  }
+  async function startCheckout() {
+    if (busy || lines.length === 0) return;
+    setError(null);
 
-  function endFlow() {
-    setPhase("idle");
-    clearOpenOrder();
+    const turnstileToken = getTurnstileToken();
+    if (!turnstileToken) {
+      setError("Validez le contrôle de sécurité avant de payer.");
+      return;
+    }
+
+    setRedirecting(true);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ intent: "create", token: turnstileToken, lines }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        approvalUrl?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.approvalUrl) {
+        const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
+        setError(message);
+        onAfterCreateFailure?.();
+        setRedirecting(false);
+        return;
+      }
+      window.location.href = payload.approvalUrl;
+    } catch {
+      setError("La commande PayPal n'a pas pu être ouverte.");
+      onAfterCreateFailure?.();
+      setRedirecting(false);
+    }
   }
 
   if (!paypalClientId) {
@@ -88,144 +92,32 @@ export function PayPalPaymentButton({
 
   return (
     <div>
-      <PayPalScriptProvider options={paypalOptions}>
-        <div
-          className={`relative border p-4 ${
-            isLight ? "border-[#0e1118]/10 bg-white" : "border-white/10 bg-[#0a0a0a]"
+      <div
+        className={`border p-4 ${isLight ? "border-[#0e1118]/10 bg-white" : "border-white/10 bg-[#0a0a0a]"}`}
+      >
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            void startCheckout();
+          }}
+          className={`flex w-full items-center justify-center gap-3 py-4 text-[11px] font-medium tracking-[0.28em] uppercase transition-colors disabled:cursor-not-allowed ${
+            isLight
+              ? "bg-[#ffc439] text-[#0e1118] hover:bg-[#f2ba36] disabled:bg-[#e5e7eb] disabled:text-[#9ca3af]"
+              : "bg-[#ffc439] text-[#0e1118] hover:bg-[#f2ba36] disabled:bg-white/10 disabled:text-white/40"
           }`}
         >
-          {phase === "capturing" ? (
-            <div
-              className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 px-6 text-center ${
-                isLight ? "bg-white/96" : "bg-[#0a0a0a]/95"
-              }`}
-            >
-              <Spinner light={isLight} />
-              <p
-                className={`text-[11px] font-medium tracking-[0.18em] uppercase ${
-                  isLight ? "text-[#0e1118]" : "text-white"
-                }`}
-              >
-                Validation du paiement…
-              </p>
-              <p className={`max-w-xs text-xs leading-relaxed ${isLight ? "text-[#0e1118]/60" : "text-white/60"}`}>
-                Ne fermez pas cet onglet.
-              </p>
-            </div>
-          ) : null}
-          <div className={busy ? "pointer-events-none opacity-50" : undefined}>
-            <PayPalButtons
-              style={{ layout: "vertical", shape: "rect", color: "gold", label: "paypal", height: 46, tagline: false }}
-              forceReRender={[signature]}
-              disabled={buttonsDisabled}
-              createOrder={async () => {
-                const reused = openPayPalOrderIdRef.current;
-                if (reused) {
-                  return reused;
-                }
-                const turnstileToken = getTurnstileToken();
-                if (!turnstileToken) {
-                  const message = "Validez le contrôle de sécurité avant de payer.";
-                  setError(message);
-                  endFlow();
-                  throw new Error(message);
-                }
-                const invalidateTurnstile = () => onAfterCreateFailure?.();
-                try {
-                  const response = await fetch("/api/checkout", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ intent: "create", token: turnstileToken, lines }),
-                  });
-                  const payload = (await response.json().catch(() => null)) as { orderId?: string; error?: string } | null;
-                  if (!response.ok || !payload?.orderId) {
-                    const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
-                    setError(message);
-                    invalidateTurnstile();
-                    clearOpenOrder();
-                    throw new Error(message);
-                  }
-                  openPayPalOrderIdRef.current = payload.orderId;
-                  return payload.orderId;
-                } catch (cause) {
-                  endFlow();
-                  if (cause instanceof Error && cause.message) {
-                    if (cause.message !== "Validez le contrôle de sécurité avant de payer.") {
-                      invalidateTurnstile();
-                    }
-                    throw cause;
-                  }
-                  const message = "La commande PayPal n'a pas pu être ouverte.";
-                  setError(message);
-                  invalidateTurnstile();
-                  throw new Error(message);
-                }
-              }}
-              onApprove={async (data) => {
-                if (!data.orderID) {
-                  endFlow();
-                  setError("La commande PayPal est introuvable.");
-                  return;
-                }
-                setPhase("capturing");
-                try {
-                  await onApproved(data.orderID);
-                } catch {
-                  setError("Le paiement PayPal n'a pas abouti. Vous pouvez réessayer.");
-                } finally {
-                  endFlow();
-                  onAfterCreateSuccess?.();
-                }
-              }}
-              onCancel={() => {
-                endFlow();
-                setError(null);
-                setCancelled(true);
-                onAfterCreateSuccess?.();
-              }}
-              onError={(err) => {
-                console.error(
-                  "[paypal] onError",
-                  err instanceof Error ? err.message : err,
-                );
-                const hadOpenOrder = Boolean(openPayPalOrderIdRef.current);
-                endFlow();
-                setCancelled(false);
-                setError(
-                  (current) =>
-                    current ??
-                    (hadOpenOrder
-                      ? "La fenêtre PayPal s’est fermée. Relancez le paiement — le contrôle de sécurité sera à refaire si besoin."
-                      : "Le paiement PayPal n'a pas abouti. Vous pouvez réessayer sans quitter la page."),
-                );
-                if (hadOpenOrder) {
-                  onAfterCreateSuccess?.();
-                }
-              }}
-            />
-          </div>
-        </div>
-      </PayPalScriptProvider>
+          {redirecting ? <Spinner light /> : null}
+          {redirecting ? "Redirection vers PayPal…" : "Payer avec PayPal"}
+        </button>
+      </div>
       <p
         className={`mt-3 text-center text-[10px] leading-relaxed tracking-wide ${
           isLight ? "text-[#0e1118]/45" : "text-white/40"
         }`}
       >
-        PayPal reste dans une fenêtre. DINGRY ne quitte pas votre écran.
+        Vous serez redirigé vers PayPal pour valider le paiement, puis renvoyé sur DINGRY.
       </p>
-      {cancelled ? (
-        <div
-          className={`mt-3 border px-4 py-3 text-center ${
-            isLight ? "border-[#0e1118]/12 bg-[#f0f0ee]" : "border-white/15 bg-white/[0.03]"
-          }`}
-          role="status"
-        >
-          <p className={`text-sm ${isLight ? "text-[#0e1118]" : "text-white"}`}>Paiement annulé.</p>
-          <p className={`mt-1 text-xs leading-relaxed ${isLight ? "text-[#0e1118]/58" : "text-white/55"}`}>
-            Vous êtes toujours sur DINGRY. Le panier est intact : relancez PayPal quand vous voulez.
-          </p>
-        </div>
-      ) : null}
       {error ? (
         <p
           className={`mt-3 text-center text-[11px] leading-relaxed ${

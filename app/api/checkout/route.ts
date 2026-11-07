@@ -268,7 +268,10 @@ export async function POST(request: Request) {
         console.error("Brouillon PayPal non enregistré", created.orderId);
         return jsonNoStore({ error: "Paiement indisponible." }, { status: 503 });
       }
-      return jsonNoStore({ orderId: created.orderId }, { headers: rateHeaders(gate) });
+      return jsonNoStore(
+        { orderId: created.orderId, approvalUrl: created.approvalUrl },
+        { headers: rateHeaders(gate) },
+      );
     } catch (error) {
       console.error("PayPal création", error instanceof Error ? error.name : "erreur");
       return jsonNoStore({ error: "Le paiement PayPal n'a pas abouti." }, { status: 502 });

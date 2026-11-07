@@ -2,7 +2,7 @@
 
 import type { RefObject } from "react";
 import { StickyScroll, type StickyScrollItem } from "@/components/atoms/ui/sticky-scroll-reveal";
-import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
+import { DINGRY_STREET_WORDMARK_URL } from "@/lib/dingry-brand";
 import { IMAGES } from "@/lib/shop-data";
 
 const EDITORIAL_SCROLL_ITEMS: StickyScrollItem[] = [
@@ -14,8 +14,12 @@ const EDITORIAL_SCROLL_ITEMS: StickyScrollItem[] = [
       "DINGRY Paris est une marque de streetwear française en plein développement, qui séduit un public toujours plus large grâce à une identité forte, un style affirmé et surtout un nom aussi original qu'universel.\n\nEntre coupes oversize, finitions soignées et drops en édition limitée, DINGRY réinvente le streetwear premium pensé pour Paris, Lyon et la scène urbaine européenne.",
   },
   {
-    title: DINGRY_STREET_LINE,
+    title: "ROCK THE STREET.",
     titleVariant: "street",
+    titleImage: {
+      src: DINGRY_STREET_WORDMARK_URL,
+      alt: "ROCK THE STREET.",
+    },
     description:
       "DINGRY, c'est peut-être l'un des meilleurs noms qu'une marque de streetwear puisse porter aujourd'hui. Un mot populaire, utilisé par toutes les générations et toutes les classes sociales, qui reflète parfaitement notre époque. Son écriture singulière en fait une signature immédiatement reconnaissable.",
     elasticLogoCenter: true,

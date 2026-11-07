@@ -18,6 +18,8 @@ export type StickyScrollItem = {
   kickerLogo?: boolean;
   /** Logo animé (élastique), centré sous le texte */
   elasticLogoCenter?: boolean;
+  /** Remplace le titre texte (ex. wordmark ROCK THE STREET). */
+  titleImage?: { src: string; alt: string };
 };
 
 type StickyScrollProps = {
@@ -93,6 +95,15 @@ export function StickyScroll({
                 {item.kicker}
               </p>
             ) : null}
+            {item.titleImage ? (
+              <h3 className="max-w-md">
+                <img
+                  src={item.titleImage.src}
+                  alt={item.titleImage.alt}
+                  className="h-auto w-full max-w-[22rem] object-contain object-left md:max-w-md"
+                />
+              </h3>
+            ) : (
             <h3
               className={cn(
                 item.titleVariant === "street"
@@ -105,6 +116,7 @@ export function StickyScroll({
             >
               {item.title}
             </h3>
+            )}
             <p className="dingry-sticky-copy mt-6 max-w-lg whitespace-pre-line text-base leading-relaxed text-white/60 md:text-[1.0625rem] md:leading-[1.75]">
               {item.description}
             </p>

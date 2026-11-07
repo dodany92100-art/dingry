@@ -5,6 +5,10 @@ export const DINGRY_TEASING_HERO_SRC = "/dingry-teasing.jpg";
 
 export const DINGRY_LOGO_URL = `https://res.cloudinary.com/dc9xmxpvv/image/upload/${LOGO_PATH}`;
 
+/** Wordmark ROCK THE STREET (Heritage) — à brancher ailleurs plus tard. */
+export const DINGRY_STREET_WORDMARK_URL =
+  "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1794068055/PHOTO-2026-11-07-16-33-18_xgdfzc.jpg";
+
 /** Symbole X · fond noir — favicon, Apple touch, WhatsApp (`public/dingry-favicon.jpg`, 400×400). */
 export const DINGRY_FAVICON_SRC = "/dingry-favicon.jpg";
 

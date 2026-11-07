@@ -29,7 +29,7 @@ export function ShopHero() {
 
       <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-between px-5 pt-[var(--dingry-nav-h)] pb-20 sm:px-8 md:items-center md:px-16 md:pb-16">
         <div className="mb-[12vh] flex max-w-[min(100%,22rem)] flex-col gap-5 md:mb-0 md:gap-6">
-          <div className="border border-white/10 bg-black/70 px-5 py-3 shadow-[0_16px_40px_rgb(0_0_0/0.45)] backdrop-blur-md">
+          <div className="hidden border border-white/10 bg-black/70 px-5 py-3 shadow-[0_16px_40px_rgb(0_0_0/0.45)] backdrop-blur-md md:block">
             <h1 className="dingry-typo-manifesto text-[11px] tracking-[0.25em] text-white/90 md:text-xs">
               {DINGRY_MANIFESTO_FR}
             </h1>
@@ -46,6 +46,11 @@ export function ShopHero() {
               <p className="dingry-typo-street dingry-typo-street--sm text-white">{DINGRY_STREET_LINE}</p>
               <p className="mt-1 text-[11px] font-semibold tracking-[0.28em] text-white/85">{STREET_MARK}</p>
             </div>
+          </div>
+          <div className="border border-white/10 bg-black/70 px-5 py-3 shadow-[0_16px_40px_rgb(0_0_0/0.45)] backdrop-blur-md md:hidden">
+            <h1 className="dingry-typo-manifesto text-[11px] tracking-[0.25em] text-white/90">
+              {DINGRY_MANIFESTO_FR}
+            </h1>
           </div>
           <div className="max-w-xs text-left md:hidden">
             <div className="mb-3 h-[2px] w-8 bg-white" />
