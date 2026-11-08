@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 
 import { CookieConsent } from '@/components/atoms/cookie-consent'
-import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL } from '@/lib/dingry-brand'
+import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL, DINGRY_OPEN_GRAPH_IMAGE } from '@/lib/dingry-brand'
 
 import { DINGRY_META_DESCRIPTION } from '@/lib/dingry-brand-voice'
 
@@ -21,9 +21,16 @@ export const metadata: Metadata = {
     siteName: 'DINGRY',
     locale: 'fr_FR',
     type: 'website',
+    images: [DINGRY_OPEN_GRAPH_IMAGE],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DINGRY — True Luxury Is Attitude',
+    description: DINGRY_META_DESCRIPTION,
+    images: [DINGRY_OPEN_GRAPH_IMAGE.url],
   },
   icons: {
-    icon: { url: DINGRY_FAVICON_URL, type: 'image/png' },
+    icon: { url: DINGRY_FAVICON_URL, type: 'image/jpeg' },
     apple: DINGRY_APPLE_ICON_URL,
   },
 }

@@ -1,5 +1,4 @@
 import { PANT_WAIST_PRESET_SIZES, isValidPantWaistSize, normalizePantWaistSize } from "@/lib/admin/pant-waist";
-
 /** Grille admin + Smart collage (2XL–5XL, XXS). Ordre d'affichage modale produit. */
 export const PRODUCT_SIZES = [
   "XXS",
@@ -253,16 +252,37 @@ export type AdminLookbookSlide = {
   createdAt: string;
 };
 
+/** Bannière catalogue · tee personnalisé (singleton CRM). */
+export type AdminCatalogPersoBanner = {
+  enabled: boolean;
+  imageUrl: string;
+  blobUrl: string | null;
+  blobPathname: string | null;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  updatedAt: string;
+};
+
+export type ShopCatalogPersoBanner = Pick<
+  AdminCatalogPersoBanner,
+  "enabled" | "imageUrl" | "eyebrow" | "title" | "subtitle" | "ctaLabel"
+>;
+
 export type AdminStore = {
   version: number;
   products: AdminProduct[];
   orders: AdminOrder[];
   lookbook: AdminLookbookSlide[];
+  catalogPersoBanner?: AdminCatalogPersoBanner;
   /** Fiches seed retirées du stock admin / catalogue live (ids catalogue). */
   removedCatalogIds?: string[];
+  /** Slides lookbook supprimées — ne pas réinjecter depuis le seed au rechargement. */
+  removedLookbookSlideIds?: string[];
 };
 
-export const STORE_VERSION = 12;
+export const STORE_VERSION = 13;
 
 export function isPantWaistSize(value: string): value is PantWaistSize {
   return (PANT_WAIST_PRESET_SIZES as readonly string[]).includes(value);

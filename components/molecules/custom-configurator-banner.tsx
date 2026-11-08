@@ -1,12 +1,20 @@
 "use client";
 
-import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
+import { HoverBorderGradient } from "@/components/atoms/ui/hover-border-gradient";
+import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
+import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 
 type CustomConfiguratorBannerProps = {
   onOpen: () => void;
+  content?: ShopCatalogPersoBanner;
 };
 
-export function CustomConfiguratorBanner({ onOpen }: CustomConfiguratorBannerProps) {
+export function CustomConfiguratorBanner({
+  onOpen,
+  content = DEFAULT_CATALOG_PERSO_BANNER,
+}: CustomConfiguratorBannerProps) {
+  if (!content.enabled) return null;
+
   return (
     <button
       type="button"
@@ -16,7 +24,7 @@ export function CustomConfiguratorBanner({ onOpen }: CustomConfiguratorBannerPro
     >
       <span className="absolute inset-0 overflow-hidden">
         <img
-          src={DINGRY_PRODUCT_MEDIA.customConfiguratorBanner}
+          src={content.imageUrl}
           alt=""
           aria-hidden
           className="dingry-custom-banner-photo h-full w-full object-cover"
@@ -32,15 +40,17 @@ export function CustomConfiguratorBanner({ onOpen }: CustomConfiguratorBannerPro
 
       <span className="relative z-10 flex min-h-[11.5rem] flex-col justify-end gap-6 px-5 py-7 sm:min-h-[13.5rem] sm:flex-row sm:items-end sm:justify-between md:min-h-[16rem] md:px-12 md:py-10 lg:min-h-[17.5rem]">
         <span className="max-w-[min(36rem,70%)]">
-          <span className="dingry-typo-eyebrow block">Custom · Configurateur</span>
-          <span className="dingry-custom-banner-title mt-3 block uppercase">
-            Ville, texte sous le logo
-          </span>
-          <span className="dingry-typo-body-alt mt-3 block">
-            Tee personnalisable · aperçu en direct
-          </span>
+          <span className="dingry-typo-eyebrow block">{content.eyebrow}</span>
+          <span className="dingry-custom-banner-title mt-3 block uppercase">{content.title}</span>
+          <span className="dingry-typo-body-alt mt-3 block">{content.subtitle}</span>
         </span>
-        <span className="dingry-custom-banner-cta relative z-10 shrink-0">Personnaliser</span>
+        <HoverBorderGradient
+          as="span"
+          containerClassName="relative z-10 shrink-0 rounded-sm"
+          className="dingry-custom-banner-cta dingry-custom-banner-cta--border-gradient"
+        >
+          {content.ctaLabel}
+        </HoverBorderGradient>
       </span>
     </button>
   );

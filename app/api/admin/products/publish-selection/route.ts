@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidateShopCatalog } from "@/lib/revalidate-shop-catalog";
 import { requireAdmin } from "@/lib/admin/auth";
 import {
   publishAdminProductsToLive,
@@ -45,8 +45,7 @@ export async function PATCH(request: Request) {
           : "Aucun brouillon publiable.";
       return jsonNoStore({ error: detail, skipped: result.skipped }, { status: 409 });
     }
-    revalidatePath("/api/catalog");
-    revalidatePath("/");
+    revalidateShopCatalog();
     return jsonNoStore({
       products: result.products,
       publishedIds: result.publishedIds,

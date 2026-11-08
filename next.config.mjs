@@ -33,7 +33,7 @@ const contentSecurityPolicy = [
   ].join(" "),
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: https://res.cloudinary.com https://*.public.blob.vercel-storage.com",
+  "img-src 'self' data: https://res.cloudinary.com https://*.public.blob.vercel-storage.com https://*.supabase.co",
   "connect-src 'self' https://challenges.cloudflare.com https://*.paypal.com https://*.paypalobjects.com https://*.sandbox.paypal.com https://vitals.vercel-insights.com",
   "frame-src https://challenges.cloudflare.com https://*.paypal.com https://*.paypalobjects.com https://*.sandbox.paypal.com",
   "worker-src 'self' blob:",
@@ -72,6 +72,12 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com", pathname: "/**" },
+      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
+    ],
   },
   poweredByHeader: false,
   async headers() {
@@ -79,6 +85,12 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      {
+        source: "/api/catalog",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=3600, stale-while-revalidate=86400" },
+        ],
       },
       {
         source: "/api/:path*",

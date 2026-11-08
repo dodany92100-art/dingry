@@ -19,7 +19,7 @@ import { getSharedRedis } from "@/lib/ratelimit";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
 import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
-import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
+import { RETIRED_LOOKBOOK_SEED_TITLES, seededLookbookSlides } from "@/lib/admin/lookbook-seed";
 import {
   isVersoCatalogId,
   resolveRectoCatalogId,
@@ -35,6 +35,7 @@ import {
   normalizePublishStatus,
   normalizePrintPlacement,
   STORE_VERSION,
+  type AdminCatalogPersoBanner,
   type AdminLookbookSlide,
   type AdminOrder,
   type AdminProduct,
@@ -45,12 +46,13 @@ import {
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
-import type { DropBatchItem } from "@/lib/admin/drop-batch";
+import { reconcileDropBatchWithCatalog, type DropBatchItem } from "@/lib/admin/drop-batch";
 import {
   applyDisplayOrderByIds,
   normalizeDisplayOrder,
   normalizeIsPinned,
 } from "@/lib/admin/product-display-order";
+import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 
 const STORE_PATHNAME = "dingry/admin/store.json";
 const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json");
@@ -178,6 +180,7 @@ function cloneStore(store: AdminStore): AdminStore {
     products: store.products.map((product) => ({ ...product, sizes: [...product.sizes] })),
     orders: store.orders.map((order) => ({ ...order })),
     lookbook: store.lookbook.map((slide) => ({ ...slide })),
+    ...(store.catalogPersoBanner ? { catalogPersoBanner: { ...store.catalogPersoBanner } } : {}),
   };
 }
 
@@ -568,11 +571,42 @@ function normalizeLookbookSlide(value: unknown): AdminLookbookSlide | null {
   };
 }
 
+function removedLookbookSlideIdSet(raw: AdminStore): Set<string> {
+  return new Set(
+    (Array.isArray(raw.removedLookbookSlideIds) ? raw.removedLookbookSlideIds : [])
+      .map((id) => String(id).trim())
+      .filter(Boolean),
+  );
+}
+
+function normalizeCatalogPersoBannerRecord(value: unknown): AdminCatalogPersoBanner | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const imageUrl = typeof record.imageUrl === "string" ? record.imageUrl.trim() : "";
+  if (!imageUrl) return undefined;
+  return {
+    enabled: record.enabled !== false,
+    imageUrl,
+    blobUrl: typeof record.blobUrl === "string" ? record.blobUrl : null,
+    blobPathname: typeof record.blobPathname === "string" ? record.blobPathname : null,
+    eyebrow: typeof record.eyebrow === "string" ? record.eyebrow.trim() : "",
+    title: typeof record.title === "string" ? record.title.trim() : "",
+    subtitle: typeof record.subtitle === "string" ? record.subtitle.trim() : "",
+    ctaLabel: typeof record.ctaLabel === "string" ? record.ctaLabel.trim() : "",
+    updatedAt: typeof record.updatedAt === "string" ? record.updatedAt : new Date().toISOString(),
+  };
+}
+
 function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
-  const seeded = seededLookbookSlides();
+  const tombstone = removedLookbookSlideIdSet(raw);
+  const isRetiredLookbookSlide = (item: AdminLookbookSlide) =>
+    tombstone.has(item.id) || RETIRED_LOOKBOOK_SEED_TITLES.has(item.title);
+
+  const seeded = seededLookbookSlides().filter((item) => !isRetiredLookbookSlide(item));
   const existing = (Array.isArray(raw.lookbook) ? raw.lookbook : [])
     .map(normalizeLookbookSlide)
     .filter((item): item is AdminLookbookSlide => item !== null)
+    .filter((item) => !isRetiredLookbookSlide(item))
     .sort((a, b) => a.sortOrder - b.sortOrder);
   if (existing.length === 0) return seeded;
   return existing;
@@ -624,6 +658,7 @@ function migrateStore(raw: AdminStore): AdminStore {
       .map((id) => String(id).trim())
       .filter(Boolean),
   );
+  const removedLookbookSlides = removedLookbookSlideIdSet(raw);
 
   const activeSeeds = SEEDED_PRODUCTS.filter((seed) => !removed.has(seed.id));
 
@@ -636,12 +671,15 @@ function migrateStore(raw: AdminStore): AdminStore {
       (item) => !SEEDED_PRODUCTS.some((seed) => seed.id === item.id) && !removed.has(item.id),
     );
     const products = migrateProductVersoBackUrl([...mergedSeed, ...extras]);
+    const catalogPersoBanner = normalizeCatalogPersoBannerRecord(raw.catalogPersoBanner);
     return {
       version: STORE_VERSION,
       products: finalizeProducts(products),
       orders: raw.orders,
       lookbook: mergeLookbookSlides(raw),
+      ...(catalogPersoBanner ? { catalogPersoBanner } : {}),
       removedCatalogIds: [...removed],
+      removedLookbookSlideIds: [...removedLookbookSlides],
     };
   }
 
@@ -651,12 +689,15 @@ function migrateStore(raw: AdminStore): AdminStore {
   );
   const products = migrateProductVersoBackUrl([...mergedSeed, ...extras]);
 
+  const catalogPersoBanner = normalizeCatalogPersoBannerRecord(raw.catalogPersoBanner);
   return {
     version: STORE_VERSION,
     products: finalizeProducts(products),
     orders: raw.orders,
     lookbook: mergeLookbookSlides(raw),
+    ...(catalogPersoBanner ? { catalogPersoBanner } : {}),
     removedCatalogIds: [...removed],
+    removedLookbookSlideIds: [...removedLookbookSlides],
   };
 }
 
@@ -667,6 +708,10 @@ function normalizeStore(value: AdminStore): AdminStore {
     orders: Array.isArray(value.orders) ? value.orders : [],
     lookbook: Array.isArray(value.lookbook) ? value.lookbook : [],
     removedCatalogIds: Array.isArray(value.removedCatalogIds) ? value.removedCatalogIds : [],
+    removedLookbookSlideIds: Array.isArray(value.removedLookbookSlideIds)
+      ? value.removedLookbookSlideIds
+      : [],
+    catalogPersoBanner: value.catalogPersoBanner,
   });
 }
 
@@ -1008,19 +1053,16 @@ export async function applyAdminDropBatch(
 
   if (isSupabaseStoreEnabled()) {
     const products = await listSupabaseProducts();
-    if (items.length !== products.length) return null;
-    const storeIds = new Set(products.map((product) => product.id));
-    for (const item of items) {
-      if (!storeIds.has(item.id)) return null;
-    }
-    const orderedIds = [...items]
+    const merged = reconcileDropBatchWithCatalog(products, items);
+    if (!merged) return null;
+    const orderedIds = [...merged]
       .sort((a, b) => a.displayOrder - b.displayOrder || a.id.localeCompare(b.id))
       .map((item) => item.id);
     await reorderSupabaseProducts(orderedIds);
     const publishedIds: string[] = [];
     const skipped: { id: string; reason: string }[] = [];
     const refreshed = await listSupabaseProducts();
-    for (const item of items) {
+    for (const item of merged) {
       if (item.status !== "published") continue;
       const product = refreshed.find((row) => row.id === item.id);
       if (!product || product.publishStatus === "live") continue;
@@ -1037,15 +1079,12 @@ export async function applyAdminDropBatch(
   }
 
   return withStoreOptimistic((store) => {
-    const storeIds = new Set(store.products.map((product) => product.id));
-    if (items.length !== store.products.length) {
+    const merged = reconcileDropBatchWithCatalog(store.products, items);
+    if (!merged) {
       return { store, result: null, skipWrite: true };
     }
-    for (const item of items) {
-      if (!storeIds.has(item.id)) return { store, result: null, skipWrite: true };
-    }
 
-    const orderedIds = [...items]
+    const orderedIds = [...merged]
       .sort((a, b) => a.displayOrder - b.displayOrder || a.id.localeCompare(b.id))
       .map((item) => item.id);
 
@@ -1054,7 +1093,7 @@ export async function applyAdminDropBatch(
     const publishedIds: string[] = [];
     const skipped: { id: string; reason: string }[] = [];
 
-    for (const item of items) {
+    for (const item of merged) {
       if (item.status !== "published") continue;
       const product = store.products.find((row) => row.id === item.id);
       if (!product) continue;
@@ -1561,6 +1600,8 @@ export type LookbookInput = {
   sortOrder?: number;
 };
 
+const LOOKBOOK_STORE_WRITE_OPTIONS: StoreOptimisticOptions = { adminRelaxedFinalize: true };
+
 export async function createLookbookSlide(input: LookbookInput & { file: File }): Promise<AdminLookbookSlide> {
   const snapshot = await readStoreSnapshot();
   const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
@@ -1578,10 +1619,13 @@ export async function createLookbookSlide(input: LookbookInput & { file: File })
     createdAt: new Date().toISOString(),
   };
 
-  return withStoreOptimistic((store) => {
-    store.lookbook = sortLookbook([...store.lookbook, slide]);
-    return { store, result: slide };
-  });
+  return withStoreOptimistic(
+    (store) => {
+      store.lookbook = sortLookbook([...store.lookbook, slide]);
+      return { store, result: slide };
+    },
+    LOOKBOOK_STORE_WRITE_OPTIONS,
+  );
 }
 
 export async function updateLookbookSlide(
@@ -1596,29 +1640,32 @@ export async function updateLookbookSlide(
     uploaded = await uploadLookbookImage(id, file);
   }
 
-  return withStoreOptimistic((store) => {
-    const index = store.lookbook.findIndex((item) => item.id === id);
-    if (index < 0) {
-      return { store, result: null, skipWrite: true };
-    }
-    previous = { ...store.lookbook[index] };
-    const next: AdminLookbookSlide = {
-      ...store.lookbook[index],
-      ...(input.title !== undefined ? { title: input.title } : {}),
-      ...(input.caption !== undefined ? { caption: input.caption } : {}),
-      ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
-      ...(uploaded
-        ? {
-            imageUrl: uploaded.imageUrl,
-            blobUrl: uploaded.blobUrl,
-            blobPathname: uploaded.blobPathname,
-          }
-        : {}),
-    };
-    store.lookbook[index] = next;
-    store.lookbook = sortLookbook(store.lookbook);
-    return { store, result: next };
-  }).then(async (updated) => {
+  return withStoreOptimistic(
+    (store) => {
+      const index = store.lookbook.findIndex((item) => item.id === id);
+      if (index < 0) {
+        return { store, result: null, skipWrite: true };
+      }
+      previous = { ...store.lookbook[index] };
+      const next: AdminLookbookSlide = {
+        ...store.lookbook[index],
+        ...(input.title !== undefined ? { title: input.title } : {}),
+        ...(input.caption !== undefined ? { caption: input.caption } : {}),
+        ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+        ...(uploaded
+          ? {
+              imageUrl: uploaded.imageUrl,
+              blobUrl: uploaded.blobUrl,
+              blobPathname: uploaded.blobPathname,
+            }
+          : {}),
+      };
+      store.lookbook[index] = next;
+      store.lookbook = sortLookbook(store.lookbook);
+      return { store, result: next };
+    },
+    LOOKBOOK_STORE_WRITE_OPTIONS,
+  ).then(async (updated) => {
     if (uploaded && previous && updated) {
       await deleteLookbookImage(previous);
     }
@@ -1627,15 +1674,21 @@ export async function updateLookbookSlide(
 }
 
 export async function removeLookbookSlide(id: string): Promise<boolean> {
-  const removed = await withStoreOptimistic((store) => {
-    const slide = store.lookbook.find((item) => item.id === id);
-    if (!slide) {
-      return { store, result: null, skipWrite: true };
-    }
-    const copy = { ...slide };
-    store.lookbook = store.lookbook.filter((item) => item.id !== id);
-    return { store, result: copy };
-  });
+  const removed = await withStoreOptimistic(
+    (store) => {
+      const slide = store.lookbook.find((item) => item.id === id);
+      if (!slide) {
+        return { store, result: null, skipWrite: true };
+      }
+      const copy = { ...slide };
+      store.lookbook = store.lookbook.filter((item) => item.id !== id);
+      const tombstone = new Set(store.removedLookbookSlideIds ?? []);
+      tombstone.add(id);
+      store.removedLookbookSlideIds = [...tombstone];
+      return { store, result: copy };
+    },
+    LOOKBOOK_STORE_WRITE_OPTIONS,
+  );
 
   if (!removed) return false;
   if (removed.blobUrl || removed.blobPathname || removed.imageUrl.startsWith("/admin-uploads/")) {
@@ -1645,25 +1698,98 @@ export async function removeLookbookSlide(id: string): Promise<boolean> {
 }
 
 export async function reorderLookbookSlide(id: string, direction: "up" | "down"): Promise<AdminLookbookSlide[] | null> {
-  return withStoreOptimistic((store) => {
-    const ordered = sortLookbook(store.lookbook);
-    const index = ordered.findIndex((item) => item.id === id);
-    if (index < 0) {
-      return { store, result: null, skipWrite: true };
-    }
-    const swapIndex = direction === "up" ? index - 1 : index + 1;
-    if (swapIndex < 0 || swapIndex >= ordered.length) {
-      return { store, result: ordered, skipWrite: true };
-    }
-    const current = ordered[index];
-    const swap = ordered[swapIndex];
-    store.lookbook = sortLookbook(
-      store.lookbook.map((item) => {
-        if (item.id === current.id) return { ...item, sortOrder: swap.sortOrder };
-        if (item.id === swap.id) return { ...item, sortOrder: current.sortOrder };
-        return item;
-      }),
-    );
-    return { store, result: sortLookbook(store.lookbook) };
+  return withStoreOptimistic(
+    (store) => {
+      const ordered = sortLookbook(store.lookbook);
+      const index = ordered.findIndex((item) => item.id === id);
+      if (index < 0) {
+        return { store, result: null, skipWrite: true };
+      }
+      const swapIndex = direction === "up" ? index - 1 : index + 1;
+      if (swapIndex < 0 || swapIndex >= ordered.length) {
+        return { store, result: ordered, skipWrite: true };
+      }
+      const current = ordered[index];
+      const swap = ordered[swapIndex];
+      store.lookbook = sortLookbook(
+        store.lookbook.map((item) => {
+          if (item.id === current.id) return { ...item, sortOrder: swap.sortOrder };
+          if (item.id === swap.id) return { ...item, sortOrder: current.sortOrder };
+          return item;
+        }),
+      );
+      return { store, result: sortLookbook(store.lookbook) };
+    },
+    LOOKBOOK_STORE_WRITE_OPTIONS,
+  );
+}
+
+const PERSO_BANNER_UPLOAD_ID = "perso";
+
+export async function uploadCatalogPersoBannerImage(file: File): Promise<UploadedAdminImage> {
+  return uploadAdminImageFile(file, {
+    supabaseFolder: `banner/${PERSO_BANNER_UPLOAD_ID}`,
+    blobPathPrefix: `banner/${PERSO_BANNER_UPLOAD_ID}`,
+    localFilePrefix: `banner-${PERSO_BANNER_UPLOAD_ID}`,
   });
+}
+
+async function deleteCatalogPersoBannerImage(banner: AdminCatalogPersoBanner): Promise<void> {
+  await deleteBlobOrLocal(banner.blobUrl, banner.blobPathname, banner.imageUrl);
+}
+
+export type CatalogPersoBannerInput = {
+  enabled: boolean;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+};
+
+const PERSO_BANNER_STORE_WRITE_OPTIONS: StoreOptimisticOptions = { adminRelaxedFinalize: true };
+
+export async function upsertCatalogPersoBanner(
+  input: CatalogPersoBannerInput,
+  file?: File,
+): Promise<AdminCatalogPersoBanner> {
+  let uploaded: Awaited<ReturnType<typeof uploadCatalogPersoBannerImage>> | undefined;
+  let previous: AdminCatalogPersoBanner | undefined;
+
+  if (file) {
+    uploaded = await uploadCatalogPersoBannerImage(file);
+  }
+
+  const result = await withStoreOptimistic(
+    (store) => {
+      previous = store.catalogPersoBanner ? { ...store.catalogPersoBanner } : undefined;
+      const baseImage =
+        uploaded?.imageUrl ??
+        previous?.imageUrl?.trim() ??
+        DEFAULT_CATALOG_PERSO_BANNER.imageUrl;
+      const next: AdminCatalogPersoBanner = {
+        enabled: input.enabled,
+        imageUrl: baseImage,
+        blobUrl: uploaded ? uploaded.blobUrl : (previous?.blobUrl ?? null),
+        blobPathname: uploaded ? uploaded.blobPathname : (previous?.blobPathname ?? null),
+        eyebrow: input.eyebrow,
+        title: input.title,
+        subtitle: input.subtitle,
+        ctaLabel: input.ctaLabel,
+        updatedAt: new Date().toISOString(),
+      };
+      store.catalogPersoBanner = next;
+      return { store, result: next };
+    },
+    PERSO_BANNER_STORE_WRITE_OPTIONS,
+  );
+
+  if (uploaded && previous?.blobUrl) {
+    const hadLocalOnly =
+      previous.imageUrl.startsWith("/admin-uploads/") || previous.blobUrl || previous.blobPathname;
+    if (hadLocalOnly && previous.imageUrl !== result.imageUrl) {
+      await deleteCatalogPersoBannerImage(previous);
+    }
+  }
+
+  return result;
 }

@@ -1,36 +1,24 @@
 import { createHash } from "node:crypto";
 import { isProductSize } from "@/lib/admin/types";
 import { loadStoreReadOnly } from "@/lib/admin/store";
-import type { AdminProduct } from "@/lib/admin/types";
-import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
-import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
+import {
+  resolveCheckoutLine,
+  VITRINE_ONLY,
+  type CheckoutLine,
+} from "@/lib/checkout-line-resolve";
+import { buildShopCatalogSnapshot } from "@/lib/shop-catalog-snapshot";
 import {
   assertCheckoutStock,
   StockCheckoutError,
   stockLinesFromCheckout,
 } from "@/lib/stock";
 
-const PERSONALIZABLE_PRODUCT_ID = 24;
+export { VITRINE_ONLY };
+export type { CheckoutLine };
+
 const MAX_LINES = 50;
 const MAX_QTY = 99;
 const MAX_PERSONALIZATION = 80;
-
-/** Pièces affichées sur la vitrine et absentes du catalogue admin. Le prix admin gagne dès qu'il existe. */
-export const VITRINE_ONLY: Record<number, { name: string; variant: string; price: number }> = {
-  1: { name: "Hoodie DINGRY Original KING BLUE / PINK", variant: "VERSO", price: 80 },
-  3: { name: "Hoodie DINGRY Original VERT", variant: "VERSO", price: 80 },
-  5: { name: "Hoodie zippé DINGRY Outline / BLACK", variant: "VERSO", price: 90 },
-  8: { name: "Hoodie DINGRY Original BLACK", variant: "VERSO", price: 80 },
-  18: { name: "DINGRY TEE", variant: "COLLECTION 08 — VERSO", price: 35 },
-  20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 35 },
-};
-
-export type CheckoutLine = {
-  productId: number;
-  size: string;
-  qty: number;
-  personalization?: string;
-};
 
 export type CheckoutQuote = {
   lines: CheckoutLine[];
@@ -40,13 +28,6 @@ export type CheckoutQuote = {
   paypalItems: { name: string; quantity: string; unitCents: number }[];
   digest: string;
 };
-
-function priceToCents(price: number): number | null {
-  if (!Number.isFinite(price) || price <= 0 || price >= 100_000) return null;
-  const cents = Math.round(price * 100);
-  if (Math.abs(price * 100 - cents) > 0.001) return null;
-  return cents;
-}
 
 export function formatCents(cents: number): string {
   const euros = Math.trunc(cents / 100);
@@ -101,49 +82,24 @@ export function checkoutDigest(lines: CheckoutLine[]): string {
 
 export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuote | null> {
   const store = await loadStoreReadOnly();
-  const byId = new Map<number, AdminProduct>();
-  for (const product of store.products) {
-    const id = Number(product.id);
-    if (Number.isInteger(id) && id > 0) byId.set(id, product);
-  }
+  const snapshot = buildShopCatalogSnapshot(store);
 
   let totalCents = 0;
   const items: string[] = [];
   const paypalItems: CheckoutQuote["paypalItems"] = [];
 
   for (const line of lines) {
-    const rectoId = resolveRectoCatalogId(line.productId);
-    const product = byId.get(line.productId) ?? byId.get(rectoId);
-    const fallback = product ? undefined : VITRINE_ONLY[line.productId];
-    const name = product?.name ?? fallback?.name;
-    const variant = product?.variant ?? fallback?.variant ?? "";
-    const price = product?.price ?? fallback?.price;
-    if (!name || price === undefined) return null;
+    const resolved = resolveCheckoutLine(line, snapshot);
+    if (!resolved.ok) return null;
 
-    if (product) {
-      if (!product.sizes.includes(line.size)) return null;
-    } else if (fallback) {
-      if (!isProductSize(line.size)) return null;
-    } else {
-      return null;
-    }
-
-    const baseCents = priceToCents(price);
-    if (baseCents === null) return null;
-
-    const personalized = line.personalization !== undefined;
-    if (personalized && line.productId !== PERSONALIZABLE_PRODUCT_ID) return null;
-    const unitCents = baseCents + (personalized ? PERSONALIZATION_SURCHARGE_EUR * 100 : 0);
-    const lineCents = unitCents * line.qty;
+    const { unitCents, qty, label, paypalName } = resolved.line;
+    const lineCents = unitCents * qty;
     if (!Number.isSafeInteger(lineCents) || totalCents + lineCents >= 10_000_000) return null;
     totalCents += lineCents;
-
-    const label = `${name}${variant ? ` — ${variant}` : ""}`.slice(0, 120);
-    const detail = personalized ? `${label} — ${line.personalization}` : label;
-    items.push(`${detail} — ${line.size} ×${line.qty}`.slice(0, 180));
+    items.push(label);
     paypalItems.push({
-      name: (personalized ? `${name} perso` : `${name} ${variant}`).trim().slice(0, 127),
-      quantity: String(line.qty),
+      name: paypalName,
+      quantity: String(qty),
       unitCents,
     });
   }

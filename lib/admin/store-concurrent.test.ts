@@ -34,7 +34,7 @@ function order(id: string) {
 
 function storeBody(orders: ReturnType<typeof order>[]) {
   return JSON.stringify({
-    version: 12,
+    version: 13,
     products: [],
     orders,
     lookbook: [],

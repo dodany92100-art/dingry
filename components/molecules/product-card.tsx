@@ -4,15 +4,7 @@ import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { cn } from "@/lib/utils";
 import { ProductImageFlip, type ProductFlipSide } from "@/components/molecules/product-image-flip";
 
-/** Ajoute f_auto,q_auto,w_N à une URL Cloudinary sans transformation existante. */
-export function cldOpt(url: string, width: number): string {
-  const marker = "/upload/";
-  const index = url.indexOf(marker);
-  if (!url.includes("res.cloudinary.com") || index < 0) return url;
-  const rest = url.slice(index + marker.length);
-  if (/^[a-z]{1,3}_[^/]*\//.test(rest)) return url;
-  return `${url.slice(0, index + marker.length)}f_auto,q_auto,w_${width}/${rest}`;
-}
+export { cldOpt } from "@/lib/cloudinary-url";
 
 const priceFormat = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -31,8 +23,10 @@ type ProductCardData = {
 type ProductCardProps = ProductCardData & {
   onClick?: (side: ProductFlipSide) => void;
   className?: string;
-  /** Première rangée visible : charge l’image en priorité (LCP). */
+  /** Première cellule catalogue : LCP (lazy pour le reste). */
   priority?: boolean;
+  /** Survol (desktop) : précharge les visuels modale. */
+  onPrefetch?: () => void;
   soldOut?: boolean;
   wishlistActive?: boolean;
   onWishlistToggle?: () => void;
@@ -49,9 +43,14 @@ export function ProductCard({
   soldOut = false,
   wishlistActive,
   onWishlistToggle,
+  onPrefetch,
 }: ProductCardProps) {
   return (
-    <article className={cn("group w-full min-w-0 touch-pan-y", className)}>
+    <article
+      className={cn("group w-full min-w-0 touch-pan-y", className)}
+      onMouseEnter={() => onPrefetch?.()}
+      onFocus={() => onPrefetch?.()}
+    >
       <div className="w-full min-w-0 touch-pan-y rounded-lg text-left sm:rounded-xl md:rounded-2xl">
         <div className="relative">
           <ProductImageFlip
@@ -81,20 +80,18 @@ export function ProductCard({
           disabled={!onClick}
           className="mt-1.5 w-full px-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:mt-2 md:mt-3"
         >
-          <p className="text-[8px] uppercase leading-tight tracking-[0.16em] text-white/45 sm:text-[9px] md:text-[10px] md:tracking-[0.22em]">
-            {name}
-          </p>
+          <p className="dingry-product-ref dingry-product-ref--title">{name}</p>
           {variant ? (
             <div className="mt-0.5 flex items-start justify-between gap-1.5 sm:mt-1 sm:gap-2">
-              <p className="line-clamp-2 min-w-0 text-xs font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-sm md:tracking-widest">
+              <p className="dingry-product-ref dingry-product-ref--variant line-clamp-2 min-w-0">
                 {variant}
               </p>
-              <p className="shrink-0 text-xs font-bold tabular-nums tracking-tight text-white sm:text-sm md:text-base">
+              <p className="dingry-product-price shrink-0">
                 {priceFormat.format(price)}
               </p>
             </div>
           ) : (
-            <p className="mt-0.5 text-xs font-bold tabular-nums tracking-tight text-white sm:mt-1 sm:text-sm md:text-base">
+            <p className="dingry-product-price mt-0.5 shrink-0 sm:mt-1">
               {priceFormat.format(price)}
             </p>
           )}

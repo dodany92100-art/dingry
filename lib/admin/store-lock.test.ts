@@ -45,7 +45,7 @@ describe("verrou Redis store", () => {
     redisEval.mockResolvedValue(1);
     putMock.mockResolvedValue({ url: "https://example/blob" });
     const body = JSON.stringify({
-      version: 12,
+      version: 13,
       products: [],
       orders: [order()],
       lookbook: [],

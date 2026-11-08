@@ -1,24 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShopFooter } from "@/components/organisms/shop-footer";
+import { LazyWhenVisible } from "@/components/molecules/lazy-when-visible";
 import { BackgroundGradientAnimation } from "@/components/atoms/ui/background-gradient-animation";
 import { CartDrawer } from "@/components/organisms/shop/cart-drawer";
 import { CatalogSection } from "@/components/organisms/shop/catalog-section";
-import { HeritageSection } from "@/components/organisms/shop/heritage-section";
 import { useCatalogFilter } from "@/components/organisms/shop/hooks/use-catalog-filter";
 import { usePageScroll } from "@/components/organisms/shop/hooks/use-page-scroll";
 import { useProductModal } from "@/components/organisms/shop/hooks/use-product-modal";
 import { useShopCart } from "@/components/organisms/shop/hooks/use-shop-cart";
 import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catalog";
+import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-perso-banner";
 import { useWishlist } from "@/components/organisms/shop/hooks/use-wishlist";
 import { PaymentToast } from "@/components/organisms/shop/payment-toast";
 import { PersonalizeModal, type PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
 import { ProductModal } from "@/components/organisms/shop/product-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
-import { LookbookCatalogStrip } from "@/components/organisms/shop/lookbook-catalog-strip";
 import { isShopProductInStock } from "@/lib/catalog";
 import { CATALOG_MENU_TAB_CUSTOM, parseCatalogFilter } from "@/lib/shop-catalog";
 import { PERSONALIZABLE_PRODUCT_ID, PRODUCTS } from "@/lib/shop-data";
@@ -28,11 +28,38 @@ import {
   visibleCatalogProducts,
 } from "@/lib/shop-view";
 
+const LookbookCatalogStrip = dynamic(
+  () =>
+    import("@/components/organisms/shop/lookbook-catalog-strip").then((m) => ({
+      default: m.LookbookCatalogStrip,
+    })),
+  { loading: () => <div className="min-h-[18rem] border-t border-white/[0.06]" aria-hidden /> },
+);
+
+const HeritageSection = dynamic(
+  () =>
+    import("@/components/organisms/shop/heritage-section").then((m) => ({
+      default: m.HeritageSection,
+    })),
+  { loading: () => <div className="min-h-[50vh] border-t border-white/[0.06]" aria-hidden /> },
+);
+
+const ShopFooter = dynamic(
+  () =>
+    import("@/components/organisms/shop-footer").then((m) => ({
+      default: m.ShopFooter,
+    })),
+  { loading: () => <div className="min-h-32 border-t border-white/[0.06]" aria-hidden /> },
+);
+
 /** Boutique : orchestre hooks + organisms/shop. */
 export default function DingryShopPage() {
   const router = useRouter();
-  const { pageScrollRef, scrollToSection } = usePageScroll();
+  const { pageScrollRef, scrollToSection, restoreScrollPosition } = usePageScroll();
   const { products, catalogState, retry } = useShopCatalog();
+  const { banner: persoBanner } = useShopPersoBanner({
+    enabled: catalogState === "ready",
+  });
   const cart = useShopCart();
   const modal = useProductModal({ products, catalogState });
   const wishlist = useWishlist();
@@ -71,6 +98,11 @@ export default function DingryShopPage() {
       scroller.style.overflow = "";
     };
   }, [cartScrollLocked, pageScrollRef]);
+
+  useEffect(() => {
+    if (catalogState !== "ready") return;
+    restoreScrollPosition();
+  }, [catalogState, restoreScrollPosition]);
 
   function handleTabChange(tab: string) {
     if (tab === CATALOG_MENU_TAB_CUSTOM) {
@@ -127,10 +159,25 @@ export default function DingryShopPage() {
           onOpenProduct={modal.openProductModal}
           wishlistIds={wishlist.ids}
           onToggleWishlist={wishlist.toggle}
+          persoBanner={persoBanner}
         />
-        <LookbookCatalogStrip />
-        <HeritageSection scrollContainerRef={pageScrollRef} />
-        <ShopFooter />
+        <LazyWhenVisible
+          scrollRootRef={pageScrollRef}
+          id="lookbook"
+          placeholderClassName="min-h-[18rem] border-t border-white/[0.06]"
+        >
+          <LookbookCatalogStrip />
+        </LazyWhenVisible>
+        <LazyWhenVisible
+          scrollRootRef={pageScrollRef}
+          id="heritage"
+          placeholderClassName="min-h-[50vh] border-t border-white/[0.06]"
+        >
+          <HeritageSection scrollContainerRef={pageScrollRef} />
+        </LazyWhenVisible>
+        <LazyWhenVisible scrollRootRef={pageScrollRef} placeholderClassName="min-h-32">
+          <ShopFooter onScrollToCatalogue={() => scrollToSection("catalogue")} />
+        </LazyWhenVisible>
       </div>
 
       <PersonalizeModal

@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { readPersistedShopScroll, writePersistedShopScroll } from "@/lib/shop-scroll-persist";
 
-/** Conteneur de scroll de la page + défilement vers une section par id. */
+/** Conteneur de scroll de la page + défilement vers une section + persistance sessionStorage. */
 export function usePageScroll() {
   const pageScrollRef = useRef<HTMLDivElement>(null);
+  const hasRestoredRef = useRef(false);
 
   const scrollToSection = useCallback((id: string) => {
     requestAnimationFrame(() => {
@@ -19,5 +21,70 @@ export function usePageScroll() {
     });
   }, []);
 
-  return { pageScrollRef, scrollToSection };
+  const persistScrollPosition = useCallback(() => {
+    const scroller = pageScrollRef.current;
+    if (!scroller) return;
+    writePersistedShopScroll(scroller.scrollTop);
+  }, []);
+
+  const restoreScrollPosition = useCallback(() => {
+    if (hasRestoredRef.current) return;
+    const saved = readPersistedShopScroll();
+    if (saved === null) return;
+    const scroller = pageScrollRef.current;
+    if (!scroller) return;
+    hasRestoredRef.current = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scroller.scrollTo({ top: saved, left: 0, behavior: "auto" });
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
+  useEffect(() => {
+    const scroller = pageScrollRef.current;
+    if (!scroller) return;
+
+    let rafId = 0;
+    const onScroll = () => {
+      if (rafId !== 0) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        writePersistedShopScroll(scroller.scrollTop);
+      });
+    };
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    const onLeave = () => persistScrollPosition();
+    window.addEventListener("beforeunload", onLeave);
+    window.addEventListener("pagehide", onLeave);
+
+    return () => {
+      scroller.removeEventListener("scroll", onScroll);
+      window.removeEventListener("beforeunload", onLeave);
+      window.removeEventListener("pagehide", onLeave);
+      if (rafId !== 0) window.cancelAnimationFrame(rafId);
+    };
+  }, [persistScrollPosition]);
+
+  return {
+    pageScrollRef,
+    scrollToSection,
+    restoreScrollPosition,
+    persistScrollPosition,
+  } satisfies {
+    pageScrollRef: RefObject<HTMLDivElement | null>;
+    scrollToSection: (id: string) => void;
+    restoreScrollPosition: () => void;
+    persistScrollPosition: () => void;
+  };
 }

@@ -16,7 +16,7 @@ export function useShopCatalog() {
     async function loadCatalog() {
       setCatalogState((state) => (state === "ready" ? state : "loading"));
       try {
-        const response = await fetch("/api/catalog", { cache: "no-store" });
+        const response = await fetch("/api/catalog");
         if (!response.ok) {
           if (!cancelled) {
             setProducts(PRODUCTS);

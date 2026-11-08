@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateShopCatalog } from "@/lib/revalidate-shop-catalog";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { normalizeDropBatchItems, type DropBatchItem } from "@/lib/admin/drop-batch";
 import {
@@ -35,7 +35,10 @@ export async function publishDropBatchAction(
   try {
     const result = await applyAdminDropBatch(normalized);
     if (!result) {
-      return { ok: false, error: "Mise à jour impossible." };
+      return {
+        ok: false,
+        error: "Synchronisation catalogue impossible. Rechargez l’admin puis réessayez, ou Réinitialiser.",
+      };
     }
 
     const wantsPublish = normalized.some((item) => item.status === "published");
@@ -47,8 +50,7 @@ export async function publishDropBatchAction(
       return { ok: false, error: detail, skipped: result.skipped };
     }
 
-    revalidatePath("/api/catalog");
-    revalidatePath("/");
+    revalidateShopCatalog();
 
     return {
       ok: true,

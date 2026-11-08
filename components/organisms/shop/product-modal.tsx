@@ -3,6 +3,11 @@
 import { AnimatePresence, motion } from "motion/react";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
+import {
+  isTurnstileProductTestEnabled,
+  ProductCaptchaTest,
+} from "@/components/molecules/product-captcha-test";
+import { cldOpt } from "@/lib/cloudinary-url";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { DINGRY_MANIFESTO_EN } from "@/lib/dingry-brand-voice";
 import {
@@ -13,6 +18,7 @@ import {
   storefrontProductTitle,
 } from "@/lib/dingry-product-display";
 import { isJerseyShopProduct, JERSEY_COLOR_OPTIONS } from "@/lib/jersey-shop";
+import { isShopTeeCategory, resolveShopCategory } from "@/lib/shop-catalog";
 import { IMAGES, TEE_VERSO_BY_RECTO_ID } from "@/lib/shop-data";
 import {
   findActiveFlipPair,
@@ -102,6 +108,9 @@ function ProductModalContent({
   const nextSide = modalSide === "verso" ? "recto" : "verso";
 
   const productById = (id: number) => products.find((item) => item.id === id);
+  const shopCategory = resolveShopCategory(product.id, product.category);
+  const showTurnstileProductTest =
+    isTurnstileProductTestEnabled() && isShopTeeCategory(String(shopCategory));
 
   return (
     <div className="dingry-sale fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-12">
@@ -251,7 +260,7 @@ function ProductModalContent({
                     +
                   </button>
                 </div>
-                <p className="text-2xl font-bold tabular-nums tracking-tight text-[#0066FF]">
+                <p className="dingry-product-price dingry-product-price--lg dingry-product-price--accent dingry-product-price--on-dark">
                   {saleProduct.price * selectedQuantity}€
                 </p>
               </div>
@@ -329,7 +338,13 @@ function ProductModalContent({
                     onClick={() => modal.openProductModal(item)}
                     className="w-24 shrink-0 border border-white/10 bg-[#080808] text-left transition-colors hover:border-[#0066FF]/40"
                   >
-                    <img src={item.image} alt="" className="aspect-[3/4] w-full object-cover" />
+                    <img
+                      src={cldOpt(item.image, 192)}
+                      alt=""
+                      className="aspect-[3/4] w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <span className="block p-2 text-[9px] uppercase leading-snug tracking-wide text-white/55">
                       {storefrontProductTitle(item)}
                     </span>
@@ -363,6 +378,7 @@ function ProductModalContent({
               className="shrink-0 self-auto"
             />
           </div>
+          {showTurnstileProductTest ? <ProductCaptchaTest /> : null}
         </div>
       </motion.div>
     </div>

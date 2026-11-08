@@ -420,5 +420,6 @@ export function createSeededStore(): AdminStore {
     products: SEEDED_PRODUCTS.map((item) => ({ ...item, sizes: [...item.sizes] })),
     orders: SEEDED_ORDERS.map((item) => ({ ...item, items: [...item.items] })),
     lookbook: seededLookbookSlides(),
+    removedLookbookSlideIds: [],
   };
 }

@@ -123,6 +123,21 @@ Si un ancien déploiement utilisait encore `access: "private"` alors que le blob
 
 ---
 
+## Teaser public + boutique privée (`DINGRY_TEASER_GATE`)
+
+**Comportement (défaut) :** `DINGRY_TEASER_GATE` absent ou non reconnu → gate **actif** — `/websitedx`, `/checkout`, `/api/catalog`, `/api/checkout`, `/api/lookbook`, `/api/catalog-perso-banner` exigent le cookie admin (TOTP). L’accueil `/` reste géré par `DINGRY_PUBLIC_HOME` + date d’ouverture (`lib/dingry-teaser-opening.ts`).
+
+**Lancement boutique ouverte (checkout + API vitrine publics) — pas automatique :**
+
+1. **Responsable** : propriétaire ops (toi) — **avant ou à 20h le 13/11/2026** (Europe/Paris).
+2. Vercel **Production** : `DINGRY_TEASER_GATE=off` → **Redeploy** production.
+3. **Vérification preview d’abord** : même variable `off` sur un déploiement preview → `GET /api/catalog` **sans** cookie admin doit répondre **200** (pas 401).
+4. **Rollback** : retirer la variable ou laisser vide (gate réactif) + redeploy.
+
+**Paiement sur `/websitedx` en prod :** `PAYPAL_ENV=live` — tout test est un **vrai** débit ; petit montant + remboursement PayPal.
+
+---
+
 ## Checklist preview avant bascule 6 nov.
 
 **Avant la bascule prod :** envoyer **une alerte ops de test** (ex. déclencher une alerte connue en preview ou appeler le chemin d’alerte documenté) et confirmer réception sur `OPS_ALERT_EMAIL`.

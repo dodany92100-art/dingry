@@ -2,9 +2,12 @@ import { formatCents, parsePaypalCents, type CheckoutQuote } from "@/lib/checkou
 
 type PaypalAmount = { currency_code?: string; value?: string };
 
+type PaypalLink = { href?: string; rel?: string; method?: string };
+
 type PaypalOrder = {
   id?: string;
   status?: string;
+  links?: PaypalLink[];
   payer?: {
     email_address?: string;
     name?: { given_name?: string; surname?: string };
@@ -118,8 +121,19 @@ export function paypalConfigured(): boolean {
   return paypalConfig() !== null;
 }
 
-export async function createPayPalOrder(quote: CheckoutQuote): Promise<{ orderId: string } | null> {
+function siteOrigin(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
+  if (fromEnv) return fromEnv;
+  const vercel = process.env.VERCEL_URL?.trim().replace(/\/$/, "") ?? "";
+  if (vercel) return `https://${vercel}`;
+  return "http://localhost:3000";
+}
+
+export async function createPayPalOrder(
+  quote: CheckoutQuote,
+): Promise<{ orderId: string; approvalUrl: string } | null> {
   const value = formatCents(quote.totalCents);
+  const origin = siteOrigin();
   const result = await paypalFetch("/v2/checkout/orders", {
     method: "POST",
     body: JSON.stringify({
@@ -146,11 +160,15 @@ export async function createPayPalOrder(quote: CheckoutQuote): Promise<{ orderId
         brand_name: "DINGRY",
         shipping_preference: "GET_FROM_FILE",
         user_action: "PAY_NOW",
+        return_url: `${origin}/checkout/success`,
+        cancel_url: `${origin}/checkout/cancel`,
       },
     }),
   });
   if (!result.ok || !result.order.id) return null;
-  return { orderId: result.order.id };
+  const approvalUrl = result.order.links?.find((link) => link.rel === "approve")?.href?.trim() ?? "";
+  if (!approvalUrl) return null;
+  return { orderId: result.order.id, approvalUrl };
 }
 
 export async function fetchPayPalOrder(orderId: string): Promise<PaypalCallResult> {

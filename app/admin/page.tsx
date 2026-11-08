@@ -4,13 +4,16 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "@/components/organisms/admin/admin-header";
 import { AdminGridWorkflowBanner } from "@/components/organisms/admin/admin-grid-workflow-banner";
+import { AdminCrmPassage } from "@/components/organisms/admin/admin-crm-passage";
 import { AuthGate } from "@/components/organisms/admin/auth-gate";
 import { BackupCodesBanner } from "@/components/organisms/admin/backup-codes-banner";
+import { useAdminCatalogPersoBanner } from "@/components/organisms/admin/hooks/use-admin-catalog-perso-banner";
 import { useAdminLookbook } from "@/components/organisms/admin/hooks/use-admin-lookbook";
 import { useAdminOrders } from "@/components/organisms/admin/hooks/use-admin-orders";
 import { useAdminProducts } from "@/components/organisms/admin/hooks/use-admin-products";
 import { useAdminSession } from "@/components/organisms/admin/hooks/use-admin-session";
 import { LookbookEditorModal } from "@/components/organisms/admin/lookbook-editor-modal";
+import { CatalogPersoBannerTab } from "@/components/organisms/admin/catalog-perso-banner-tab";
 import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
 import { ProductEditorModal } from "@/components/organisms/admin/product-editor-modal";
@@ -24,6 +27,7 @@ import {
   selectPaypalOrders,
   sumProductStock,
 } from "@/lib/admin/order-view";
+import { sanitizeAdminLoginNext } from "@/lib/admin/login-next";
 import type { AdminLookbookSlide, AdminProduct } from "@/lib/admin/types";
 
 /** null = fermé ; { product: null } = création ; { product } = modification. */
@@ -31,16 +35,22 @@ type EditorState = { product: AdminProduct | null } | null;
 type LookbookEditorState = { slide: AdminLookbookSlide | null } | null;
 
 function parseTabParam(value: string | null): TabId {
-  if (value === "produits" || value === "brouillons" || value === "commandes" || value === "lookbook") {
+  if (
+    value === "produits" ||
+    value === "brouillons" ||
+    value === "commandes" ||
+    value === "lookbook" ||
+    value === "banniere"
+  ) {
     return value;
   }
   return "commandes";
 }
 
-function LoadingScreen() {
+function LoadingScreen({ status = "CRM · chargement" }: { status?: string }) {
   return (
-    <div className="dingry-admin flex min-h-screen items-center justify-center">
-      <p className="text-[11px] uppercase tracking-[0.35em] text-white/40">DINGRY</p>
+    <div className="dingry-admin flex min-h-screen items-center justify-center px-6">
+      <AdminCrmPassage status={status} />
     </div>
   );
 }
@@ -61,9 +71,11 @@ function AdminDashboard() {
   const productsApi = useAdminProducts({ onUnauthorized: expire });
   const ordersApi = useAdminOrders({ onUnauthorized: expire });
   const lookbookApi = useAdminLookbook({ onUnauthorized: expire });
+  const persoBannerApi = useAdminCatalogPersoBanner({ onUnauthorized: expire });
   const { load: loadProducts, reset: resetProducts } = productsApi;
   const { load: loadOrders, reset: resetOrders } = ordersApi;
   const { load: loadLookbook, reset: resetLookbook } = lookbookApi;
+  const { load: loadPersoBanner, reset: resetPersoBanner } = persoBannerApi;
 
   const [tab, setTab] = useState<TabId>(() => parseTabParam(searchParams.get("tab")));
   const [editor, setEditor] = useState<EditorState>(null);
@@ -71,6 +83,11 @@ function AdminDashboard() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [visibleDraftIds, setVisibleDraftIds] = useState<string[]>([]);
+  const loginNext = useMemo(
+    () => sanitizeAdminLoginNext(searchParams.get("next")),
+    [searchParams],
+  );
+  const wantsShopRedirect = loginNext !== "/admin";
 
   const onVisibleDraftIdsChange = useCallback((ids: string[]) => {
     setVisibleDraftIds(ids);
@@ -87,7 +104,8 @@ function AdminDashboard() {
     : productsApi.gridValidated && visibleDraftIds.length > 0
       ? ("publish" as const)
       : null;
-  const showWorkflowBanner = workflowPhase !== null;
+  const showWorkflowBanner =
+    workflowPhase !== null && (tab === "produits" || tab === "brouillons");
 
   useEffect(() => {
     if (productsApi.gridValidated && !productsApi.orderDirty && visibleDraftIds.length === 0) {
@@ -104,6 +122,16 @@ function AdminDashboard() {
     setTab(parseTabParam(searchParams.get("tab")));
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!authenticated || session.backupCodes || !wantsShopRedirect) return;
+    router.replace(loginNext);
+  }, [authenticated, session.backupCodes, wantsShopRedirect, loginNext, router]);
+
+  function dismissBackupThenRedirect() {
+    session.dismissBackupCodes();
+    if (wantsShopRedirect) router.replace(loginNext);
+  }
+
   function selectTab(next: TabId) {
     setTab(next);
     const params = new URLSearchParams(searchParams.toString());
@@ -115,28 +143,35 @@ function AdminDashboard() {
 
   // Session valide → chargement du tableau de bord. 401 → retour au login.
   useEffect(() => {
-    if (!authenticated) {
+    if (!authenticated || wantsShopRedirect) {
       setLoaded(false);
       return;
     }
     let cancelled = false;
     void (async () => {
       setLoadError("");
-      const [productsResult, ordersResult, lookbookResult] = await Promise.all([
+      const [productsResult, ordersResult, lookbookResult, bannerResult] = await Promise.all([
         loadProducts(),
         loadOrders(),
         loadLookbook(),
+        loadPersoBanner(),
       ]);
       if (cancelled) return;
       if (
         productsResult === "unauthorized" ||
         ordersResult === "unauthorized" ||
-        lookbookResult === "unauthorized"
+        lookbookResult === "unauthorized" ||
+        bannerResult === "unauthorized"
       ) {
         expire();
         return;
       }
-      if (productsResult !== "ok" || ordersResult !== "ok" || lookbookResult !== "ok") {
+      if (
+        productsResult !== "ok" ||
+        ordersResult !== "ok" ||
+        lookbookResult !== "ok" ||
+        bannerResult !== "ok"
+      ) {
         setLoadError("Impossible de charger le CRM.");
       }
       setLoaded(true);
@@ -144,7 +179,7 @@ function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [authenticated, loadProducts, loadOrders, loadLookbook, expire]);
+  }, [authenticated, wantsShopRedirect, loadProducts, loadOrders, loadLookbook, loadPersoBanner, expire]);
 
   const paypalOrders = useMemo(() => selectPaypalOrders(ordersApi.orders), [ordersApi.orders]);
   const pendingOrders = useMemo(() => countPendingShipments(paypalOrders), [paypalOrders]);
@@ -179,6 +214,7 @@ function AdminDashboard() {
     resetProducts();
     resetOrders();
     resetLookbook();
+    resetPersoBanner();
     setEditor(null);
     setLookbookEditor(null);
   }
@@ -195,7 +231,26 @@ function AdminDashboard() {
     return true;
   }
 
-  if (session.booting || (authenticated && !loaded)) return <LoadingScreen />;
+  if (authenticated && wantsShopRedirect && session.backupCodes) {
+    return (
+      <div className="dingry-admin min-h-screen bg-black text-white">
+        <BackupCodesBanner codes={session.backupCodes} onDismiss={dismissBackupThenRedirect} />
+      </div>
+    );
+  }
+
+  if (authenticated && wantsShopRedirect && !session.backupCodes) {
+    return <LoadingScreen status="Ouverture boutique…" />;
+  }
+
+  if (session.booting || session.loginLoading || (authenticated && !loaded)) {
+    const status = session.loginLoading
+      ? "CRM · authenticator"
+      : session.booting
+        ? "CRM · session"
+        : "CRM · données";
+    return <LoadingScreen status={status} />;
+  }
 
   if (!authenticated) {
     return (
@@ -219,6 +274,8 @@ function AdminDashboard() {
         existingSkus={existingProductSkus}
         busyProductId={productsApi.busyProductId}
         onClose={() => setEditor(null)}
+        onStartNewProduct={() => setEditor({ product: null })}
+        onProductPersisted={(product) => setEditor({ product })}
         onSubmit={productsApi.save}
         onDelete={handleDelete}
       />
@@ -276,6 +333,14 @@ function AdminDashboard() {
             }}
             onReorderProducts={productsApi.reorderProductsLocal}
           />
+        ) : tab === "banniere" ? (
+          <CatalogPersoBannerTab
+            banner={persoBannerApi.banner}
+            customized={persoBannerApi.customized}
+            saving={persoBannerApi.saving}
+            error={persoBannerApi.error}
+            onSave={persoBannerApi.save}
+          />
         ) : tab === "lookbook" ? (
           <LookbookTab
             slides={lookbookApi.slides}
@@ -287,6 +352,9 @@ function AdminDashboard() {
               void lookbookApi.reorder(slide, direction).then((err) => {
                 if (err) lookbookApi.setError(err);
               });
+            }}
+            onDelete={(slide) => {
+              void handleDeleteLookbookSlide(slide);
             }}
           />
         ) : (
@@ -305,6 +373,7 @@ function AdminDashboard() {
           orderSaving={productsApi.orderSaving}
           publishSaving={productsApi.publishSaving}
           draftCount={visibleDraftIds.length}
+          orderError={productsApi.stockError}
           onReset={productsApi.discardProductOrder}
           onValidateGrid={() => void productsApi.saveProductOrder()}
           onPublishSelection={() => void productsApi.publishSelectionLive(visibleDraftIds)}

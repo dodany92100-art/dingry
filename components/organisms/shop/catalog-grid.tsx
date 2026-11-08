@@ -7,6 +7,7 @@ import { ProductCard } from "@/components/molecules/product-card";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
 import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
+import { prefetchShopProductMedia } from "@/lib/shop-prefetch";
 import { buildCatalogMenuSections } from "@/lib/shop-catalog";
 import type { CatalogState } from "./hooks/use-shop-catalog";
 import { CollectionFeed } from "./collection-feed";
@@ -43,8 +44,9 @@ function buildProductCells(
         variant={storefrontProductSubtitle(product)}
         image={product.image}
         price={product.price}
-        priority={globalIndex < 4}
+        priority={globalIndex === 0}
         soldOut={!isShopProductInStock(product)}
+        onPrefetch={() => prefetchShopProductMedia(product.image, product.imageBack)}
         onClick={() => onOpenProduct(product, "recto")}
         wishlistActive={wishlistIds.includes(rectoId)}
         onWishlistToggle={() => onToggleWishlist(rectoId)}

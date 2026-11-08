@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
 import { cn } from "@/lib/utils";
-import { cldOpt } from "@/components/molecules/product-card";
+import { CATALOG_CARD_IMAGE_WIDTH, cldOpt } from "@/lib/cloudinary-url";
 
 /** Fenêtre pour distinguer double tap (flip) vs simple tap (modale) sur tactile. */
 const DOUBLE_TAP_MS = 320;
@@ -139,11 +140,12 @@ export function ProductImageFlip({
     onDoubleTapFlip();
   };
 
-  const frontSrc = cldOpt(frontImage, 600);
-  const backSrc = backImage ? cldOpt(backImage, 600) : frontSrc;
+  const cardW = priority ? 640 : CATALOG_CARD_IMAGE_WIDTH;
+  const frontSrc = cldOpt(frontImage, cardW);
+  const backSrc = backImage ? cldOpt(backImage, cardW) : frontSrc;
 
   const photoShellClass = cn(
-    "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg [touch-action:pan-y] sm:rounded-xl md:rounded-2xl",
+    "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg [touch-action:pan-y] sm:rounded-xl md:rounded-xl lg:aspect-[4/5] lg:max-h-[22rem]",
     className,
   );
 
@@ -156,14 +158,10 @@ export function ProductImageFlip({
         role={onTap ? "button" : undefined}
         tabIndex={onTap ? 0 : undefined}
       >
-        <img
+        <DingryCloudinaryImage
           src={frontSrc}
           alt={alt}
-          loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
-          decoding="async"
-          width={600}
-          height={800}
+          priority={priority}
           className={cn(
             "h-full w-full object-cover transition-[filter] duration-300 ease-out motion-reduce:transition-none",
             imgClassName,
@@ -212,29 +210,19 @@ export function ProductImageFlip({
           side === "verso" && "dingry-flip-track--verso",
         )}
       >
-        <img
+        <DingryCloudinaryImage
           src={frontSrc}
           alt={alt}
-          loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
-          decoding="async"
-          width={600}
-          height={800}
-          draggable={false}
+          priority={priority}
           className={cn(
             "h-full w-1/2 shrink-0 object-cover",
             imgClassName,
             soldOut && "opacity-50",
           )}
         />
-        <img
+        <DingryCloudinaryImage
           src={backSrc}
           alt={`${alt} — verso`}
-          loading="lazy"
-          decoding="async"
-          width={600}
-          height={800}
-          draggable={false}
           className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
         />
       </div>

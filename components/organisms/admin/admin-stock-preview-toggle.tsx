@@ -32,14 +32,15 @@ export function AdminStockPreviewToggle({ active, onChange }: AdminStockPreviewT
       onClick={() => onChange(!active)}
       aria-pressed={active}
       title={active ? "Revenir au mode édition CRM" : "Aperçu temps réel boutique"}
-      className={`flex h-9 shrink-0 items-center gap-2 border px-3 text-[10px] uppercase tracking-[0.16em] transition ${
+      className={`flex h-9 max-w-full shrink-0 items-center gap-2 border px-2.5 text-[10px] uppercase tracking-[0.12em] transition sm:px-3 sm:tracking-[0.16em] ${
         active
           ? "border-[#0066FF]/60 bg-[#0066FF]/10 text-[#7EB3FF]"
           : "border-zinc-800 bg-zinc-950 text-white/55 hover:border-zinc-600 hover:text-white/80"
       }`}
     >
       <EyeIcon active={active} />
-      <span className="hidden sm:inline">{active ? "Mode édition" : "Aperçu temps réel"}</span>
+      <span className="hidden sm:inline lg:hidden">{active ? "Édition" : "Aperçu"}</span>
+      <span className="hidden lg:inline">{active ? "Mode édition" : "Aperçu temps réel"}</span>
     </button>
   );
 }

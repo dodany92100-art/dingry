@@ -1,4 +1,5 @@
 import { trimStoryField } from "@/lib/admin/product-story";
+import { isPantsCategory } from "@/lib/admin/product-variant-presets";
 import {
   isProductCategory,
   isProductSize,
@@ -52,7 +53,7 @@ function parseStoryFields(
   }
 }
 
-export function parseSizes(value: string): ProductSize[] | null {
+export function parseSizes(value: string, category?: ProductCategory): ProductSize[] | null {
   const sizes = value
     .split(",")
     .map((item) => item.trim())
@@ -63,7 +64,13 @@ export function parseSizes(value: string): ProductSize[] | null {
       return item.toUpperCase();
     });
   if (sizes.length === 0 || !sizes.every(isProductSize)) return null;
-  return Array.from(new Set(sizes));
+  const unique = Array.from(new Set(sizes)) as ProductSize[];
+  if (category === "Caps") {
+    const tu = unique.filter((item) => item === "TU");
+    return tu.length > 0 ? tu : null;
+  }
+  if (category && isPantsCategory(category)) return unique;
+  return unique;
 }
 
 export function parseProductFields(
@@ -140,9 +147,11 @@ export function parseProductFields(
   }
 
   if (!partial || has("sizes")) {
-    const sizes = parseSizes(getValue("sizes"));
+    const categoryForSizes =
+      fields.category ?? normalizeProductCategory(getValue("category").trim() || "T-shirts");
+    const sizes = parseSizes(getValue("sizes"), categoryForSizes);
     if (!sizes) {
-      const category = fields.category ?? normalizeProductCategory(getValue("category").trim() || "T-shirts");
+      const category = categoryForSizes;
       const message =
         category === "Pants"
           ? `Sélectionne au moins un tour de taille (${PANT_WAIST_MIN}–${PANT_WAIST_MAX}).`

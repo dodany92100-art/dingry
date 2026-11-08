@@ -233,7 +233,13 @@ export async function POST(request: Request) {
     return jsonNoStore({ error: "Dingry collection indisponible." }, { status: 503 });
   }
   if (!quote) {
-    return jsonNoStore({ error: "Un article n'est plus dans Dingry collection." }, { status: 400 });
+    return jsonNoStore(
+      {
+        error:
+          "Un article du panier ne correspond plus à Dingry collection (retiré, taille ou référence). Videz le panier, rajoutez la pièce depuis la boutique, puis réessayez.",
+      },
+      { status: 400 },
+    );
   }
 
   if (intent === "quote") {
@@ -268,7 +274,10 @@ export async function POST(request: Request) {
         console.error("Brouillon PayPal non enregistré", created.orderId);
         return jsonNoStore({ error: "Paiement indisponible." }, { status: 503 });
       }
-      return jsonNoStore({ orderId: created.orderId }, { headers: rateHeaders(gate) });
+      return jsonNoStore(
+        { orderId: created.orderId, approvalUrl: created.approvalUrl },
+        { headers: rateHeaders(gate) },
+      );
     } catch (error) {
       console.error("PayPal création", error instanceof Error ? error.name : "erreur");
       return jsonNoStore({ error: "Le paiement PayPal n'a pas abouti." }, { status: 502 });

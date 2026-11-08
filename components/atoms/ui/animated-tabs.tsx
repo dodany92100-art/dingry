@@ -139,7 +139,7 @@ export function AnimatedTabs({
               className={cn(
                 "relative shrink-0 cursor-pointer whitespace-nowrap uppercase transition-colors duration-200 active:scale-[0.97]",
                 isUnderline
-                  ? "snap-center px-3.5 py-2.5 text-[10px] font-medium tracking-[0.2em] sm:px-4 sm:text-[11px] sm:tracking-[0.22em]"
+                  ? "snap-center px-4 py-3 text-[10px] font-medium tracking-[0.26em] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]"
                   : "inline-flex min-h-9 items-center px-3 py-2 text-[10px] font-medium tracking-[0.16em] sm:min-h-10 sm:px-4 sm:text-[11px] sm:tracking-[0.2em] md:px-5",
                 isActive ? "text-white" : "text-white/35 hover:text-white/70",
                 classNameForTab?.(tab),

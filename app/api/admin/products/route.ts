@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidateShopCatalog } from "@/lib/revalidate-shop-catalog";
 import { isBlobConfigured, requireAdmin } from "@/lib/admin/auth";
 import { parseProductFields } from "@/lib/admin/parse-product";
 import {
@@ -107,8 +107,7 @@ export async function POST(request: Request) {
       file: image instanceof File && image.size > 0 ? image : null,
       fileBack: imageBack instanceof File && imageBack.size > 0 ? imageBack : null,
     });
-    revalidatePath("/api/catalog");
-    revalidatePath("/");
+    revalidateShopCatalog();
     return jsonNoStore({ product }, { status: 201 });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {

@@ -7,6 +7,7 @@ import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import type { CatalogMenuSection } from "@/lib/shop-catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
 import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
+import { prefetchShopProductMedia } from "@/lib/shop-prefetch";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
 
 type CollectionFeedProps = {
@@ -42,8 +43,9 @@ export function CollectionFeed({
               variant={storefrontProductSubtitle(product)}
               image={product.image}
               price={product.price}
-              priority={globalIndex < 4}
+              priority={globalIndex === 0}
               soldOut={!isShopProductInStock(product)}
+              onPrefetch={() => prefetchShopProductMedia(product.image, product.imageBack)}
               onClick={() => onOpenProduct(product, "recto")}
               wishlistActive={wishlistIds.includes(rectoId)}
               onWishlistToggle={() => onToggleWishlist(rectoId)}

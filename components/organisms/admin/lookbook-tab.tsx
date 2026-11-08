@@ -8,17 +8,27 @@ type LookbookTabProps = {
   error: string;
   onNew: () => void;
   onEdit: (slide: AdminLookbookSlide) => void;
+  onDelete: (slide: AdminLookbookSlide) => void;
   onReorder: (slide: AdminLookbookSlide, direction: "up" | "down") => void;
 };
 
-export function LookbookTab({ slides, busySlideId, error, onNew, onEdit, onReorder }: LookbookTabProps) {
+export function LookbookTab({
+  slides,
+  busySlideId,
+  error,
+  onNew,
+  onEdit,
+  onDelete,
+  onReorder,
+}: LookbookTabProps) {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Lookbook boutique</p>
           <p className="mt-1 max-w-md text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
-            Slides du carrousel sur la page d&apos;accueil (ordre + visuels WebP).
+            Slides du carrousel sur la page d&apos;accueil (ordre + visuels WebP). Supprimer = définitif
+            (ne revient pas au rechargement).
           </p>
         </div>
         <button
@@ -73,13 +83,23 @@ export function LookbookTab({ slides, busySlideId, error, onNew, onEdit, onReord
                   ↓
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => onEdit(slide)}
-                className="h-9 shrink-0 border border-white/15 px-3 text-[10px] uppercase tracking-[0.16em] text-white/60 hover:text-white"
-              >
-                Modifier
-              </button>
+              <div className="flex shrink-0 flex-col gap-1 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => onEdit(slide)}
+                  className="h-9 border border-white/15 px-3 text-[10px] uppercase tracking-[0.16em] text-white/60 hover:text-white"
+                >
+                  Modifier
+                </button>
+                <button
+                  type="button"
+                  disabled={busySlideId === slide.id}
+                  onClick={() => onDelete(slide)}
+                  className="h-9 border border-red-500/35 px-3 text-[10px] uppercase tracking-[0.16em] text-red-400/90 hover:text-red-300 disabled:opacity-40"
+                >
+                  Supprimer
+                </button>
+              </div>
             </div>
           ))
         )}

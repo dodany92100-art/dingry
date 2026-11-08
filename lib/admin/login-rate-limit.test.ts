@@ -72,4 +72,11 @@ describe("turnstile preview hostname", () => {
     const { turnstileHostnameAllowed } = await import("@/lib/turnstile");
     expect(turnstileHostnameAllowed("dingry-git-master-days-projects-36e5dc27.vercel.app")).toBe(true);
   });
+
+  it("accepte tout hostname *.vercel.app en preview", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const { turnstileHostnameAllowed } = await import("@/lib/turnstile");
+    expect(turnstileHostnameAllowed("dingry-ksdxpmjuf-days-projects-36e5dc27.vercel.app")).toBe(true);
+  });
 });

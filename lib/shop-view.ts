@@ -2,12 +2,12 @@ import type { ShopProduct } from "@/lib/catalog";
 import { sortCatalogProducts } from "@/lib/catalog-sort";
 import { cartUnitPrice, cartLineKey, type StoredCartItem } from "@/lib/checkout-draft";
 import { isJerseyShopProduct, resolveJerseyProduct, type JerseyColorKey } from "@/lib/jersey-shop";
+import { sellableSizes } from "@/lib/checkout-line-resolve";
 import {
   HOODIE_PAIR_DEFS,
   IMAGES,
   PERSONALIZATION_MAX_LABEL_LENGTH,
   PRODUCTS,
-  SIZES,
   TEE_VERSO_BY_RECTO_ID,
 } from "@/lib/shop-data";
 import {
@@ -168,7 +168,7 @@ export function resolveSaleProduct(
 }
 
 export function modalSizesFor(product: ShopProduct): string[] {
-  return product.sizes && product.sizes.length > 0 ? product.sizes : [...SIZES];
+  return sellableSizes(undefined, product);
 }
 
 export function sizeGridColumns(sizes: readonly string[]): 4 | 6 {

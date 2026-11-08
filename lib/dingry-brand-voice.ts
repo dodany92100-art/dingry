@@ -3,6 +3,10 @@
 export const DINGRY_MANIFESTO_FR = "LE LUXE EST DANS L'ATTITUDE";
 export const DINGRY_MANIFESTO_EN = "True Luxury Is Attitude";
 export const DINGRY_STREET_LINE = "Rock the street.";
+export const DINGRY_STREET_PREFIX = "Rock the";
+export const DINGRY_STREET_FLIP_WORDS = ["street.", "city.", "attitude.", "culture."] as const;
+
+export const DINGRY_HERO_QUOTE = "— Le style ne suit pas les tendances, il les dépassent";
 
 export const DINGRY_HERO_EDITORIAL_LINES = [
   "Chaque pièce affirme une identité.",

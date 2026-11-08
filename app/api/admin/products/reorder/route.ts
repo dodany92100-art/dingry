@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidateShopCatalog } from "@/lib/revalidate-shop-catalog";
 import { requireAdmin } from "@/lib/admin/auth";
 import {
   reorderAdminProductDisplay,
@@ -38,8 +38,7 @@ export async function PATCH(request: Request) {
     if (!products) {
       return jsonNoStore({ error: "Réordonnancement impossible." }, { status: 400 });
     }
-    revalidatePath("/api/catalog");
-    revalidatePath("/");
+    revalidateShopCatalog();
     return jsonNoStore({ products });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {

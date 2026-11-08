@@ -6,12 +6,15 @@ import { useEffect, useRef, useState } from "react";
 type TurnstileWidgetProps = {
   onToken: (token: string | null) => void;
   className?: string;
+  /** Aligné sur le panneau checkout clair ou le fond sombre. */
+  tone?: "dark" | "light";
 };
 
 const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 const localBypass = !siteKey && process.env.NODE_ENV === "development";
 
-export function TurnstileWidget({ onToken, className }: TurnstileWidgetProps) {
+export function TurnstileWidget({ onToken, className, tone = "dark" }: TurnstileWidgetProps) {
+  const isLight = tone === "light";
   const [message, setMessage] = useState<string | null>(null);
   const onTokenRef = useRef(onToken);
   onTokenRef.current = onToken;
@@ -25,8 +28,18 @@ export function TurnstileWidget({ onToken, className }: TurnstileWidgetProps) {
 
   return (
     <div className={className}>
-      <p className="mb-3 text-[10px] tracking-[0.28em] text-white/40 uppercase">Vérification</p>
-      <div className="overflow-x-auto border border-white/10 bg-[#050505] p-3">
+      <p
+        className={`mb-3 text-[10px] tracking-[0.28em] uppercase ${
+          isLight ? "text-[#0e1118]/45" : "text-white/40"
+        }`}
+      >
+        Vérification
+      </p>
+      <div
+        className={`overflow-x-auto border p-3 ${
+          isLight ? "border-[#0e1118]/12 bg-white" : "border-white/10 bg-[#050505]"
+        }`}
+      >
         {siteKey ? (
           <Turnstile
             siteKey={siteKey}
@@ -47,7 +60,7 @@ export function TurnstileWidget({ onToken, className }: TurnstileWidgetProps) {
               onToken(null);
             }}
             options={{
-              theme: "dark",
+              theme: isLight ? "light" : "dark",
               size: "flexible",
               language: "fr",
               action: "checkout",
@@ -56,8 +69,16 @@ export function TurnstileWidget({ onToken, className }: TurnstileWidgetProps) {
             }}
           />
         ) : (
-          <p className="py-4 text-center text-[11px] leading-relaxed tracking-wide text-white/50">
-            Ajoute <span className="text-white/80">NEXT_PUBLIC_TURNSTILE_SITE_KEY</span> pour activer le paiement.
+          <p
+            className={`py-4 text-center text-[11px] leading-relaxed tracking-wide ${
+              isLight ? "text-[#0e1118]/55" : "text-white/50"
+            }`}
+          >
+            Ajoute{" "}
+            <span className={isLight ? "text-[#0e1118]/85" : "text-white/80"}>
+              NEXT_PUBLIC_TURNSTILE_SITE_KEY
+            </span>{" "}
+            pour activer le paiement.
           </p>
         )}
       </div>
