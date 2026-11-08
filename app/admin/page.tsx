@@ -27,6 +27,7 @@ import {
   selectPaypalOrders,
   sumProductStock,
 } from "@/lib/admin/order-view";
+import { sanitizeAdminLoginNext } from "@/lib/admin/login-next";
 import type { AdminLookbookSlide, AdminProduct } from "@/lib/admin/types";
 
 /** null = fermé ; { product: null } = création ; { product } = modification. */
@@ -82,6 +83,11 @@ function AdminDashboard() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [visibleDraftIds, setVisibleDraftIds] = useState<string[]>([]);
+  const loginNext = useMemo(
+    () => sanitizeAdminLoginNext(searchParams.get("next")),
+    [searchParams],
+  );
+  const wantsShopRedirect = loginNext !== "/admin";
 
   const onVisibleDraftIdsChange = useCallback((ids: string[]) => {
     setVisibleDraftIds(ids);
@@ -116,6 +122,16 @@ function AdminDashboard() {
     setTab(parseTabParam(searchParams.get("tab")));
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!authenticated || session.backupCodes || !wantsShopRedirect) return;
+    router.replace(loginNext);
+  }, [authenticated, session.backupCodes, wantsShopRedirect, loginNext, router]);
+
+  function dismissBackupThenRedirect() {
+    session.dismissBackupCodes();
+    if (wantsShopRedirect) router.replace(loginNext);
+  }
+
   function selectTab(next: TabId) {
     setTab(next);
     const params = new URLSearchParams(searchParams.toString());
@@ -127,7 +143,7 @@ function AdminDashboard() {
 
   // Session valide → chargement du tableau de bord. 401 → retour au login.
   useEffect(() => {
-    if (!authenticated) {
+    if (!authenticated || wantsShopRedirect) {
       setLoaded(false);
       return;
     }
@@ -163,7 +179,7 @@ function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [authenticated, loadProducts, loadOrders, loadLookbook, loadPersoBanner, expire]);
+  }, [authenticated, wantsShopRedirect, loadProducts, loadOrders, loadLookbook, loadPersoBanner, expire]);
 
   const paypalOrders = useMemo(() => selectPaypalOrders(ordersApi.orders), [ordersApi.orders]);
   const pendingOrders = useMemo(() => countPendingShipments(paypalOrders), [paypalOrders]);
@@ -213,6 +229,18 @@ function AdminDashboard() {
       return false;
     }
     return true;
+  }
+
+  if (authenticated && wantsShopRedirect && session.backupCodes) {
+    return (
+      <div className="dingry-admin min-h-screen bg-black text-white">
+        <BackupCodesBanner codes={session.backupCodes} onDismiss={dismissBackupThenRedirect} />
+      </div>
+    );
+  }
+
+  if (authenticated && wantsShopRedirect && !session.backupCodes) {
+    return <LoadingScreen status="Ouverture boutique…" />;
   }
 
   if (session.booting || session.loginLoading || (authenticated && !loaded)) {
