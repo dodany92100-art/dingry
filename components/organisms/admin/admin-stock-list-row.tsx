@@ -3,6 +3,7 @@
 import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
+import { cldOpt } from "@/lib/cloudinary-url";
 import { AdminStockControls } from "@/components/organisms/admin/admin-stock-controls";
 import { AdminStockStatusBadge } from "@/components/organisms/admin/admin-stock-status-badge";
 import { AdminProductOrderControls } from "@/components/organisms/admin/admin-product-order-controls";
@@ -58,11 +59,13 @@ export function AdminStockListRow({
           type="button"
           onClick={() => onEdit(product)}
           aria-label={`Modifier ${product.name}`}
-          className="relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-sm border border-zinc-800 bg-zinc-950 transition hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40"
+          className="relative h-12 w-12 shrink-0 cursor-pointer overflow-hidden rounded-sm border border-zinc-800 bg-zinc-950 transition hover:border-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/40 sm:h-14 sm:w-14"
         >
           <img
-            src={product.imageUrl}
+            src={cldOpt(product.imageUrl, 112)}
             alt=""
+            width={112}
+            height={112}
             className="h-full w-full object-cover"
             loading="lazy"
             decoding="async"

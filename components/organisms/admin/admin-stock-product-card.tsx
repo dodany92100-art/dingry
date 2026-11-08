@@ -3,7 +3,7 @@
 import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
-import { cldOpt } from "@/components/molecules/product-card";
+import { CATALOG_THUMB_IMAGE_WIDTH, cldOpt } from "@/lib/cloudinary-url";
 import { AdminStockControls } from "@/components/organisms/admin/admin-stock-controls";
 import { AdminStockStatusBadge } from "@/components/organisms/admin/admin-stock-status-badge";
 import { AdminProductOrderControls } from "@/components/organisms/admin/admin-product-order-controls";
@@ -84,12 +84,12 @@ export function AdminStockProductCard({
             className="absolute inset-0 z-0"
           >
             <img
-              src={cldOpt(product.imageUrl, 480)}
+              src={cldOpt(product.imageUrl, CATALOG_THUMB_IMAGE_WIDTH)}
               alt=""
               loading="lazy"
               decoding="async"
-              width={480}
-              height={640}
+              width={CATALOG_THUMB_IMAGE_WIDTH}
+              height={Math.round((CATALOG_THUMB_IMAGE_WIDTH * 4) / 3)}
               className={`h-full w-full object-cover transition-[filter] duration-300 ${soldOut ? "opacity-50" : ""}`}
             />
           </button>
@@ -113,7 +113,7 @@ export function AdminStockProductCard({
             />
           </div>
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[6] flex justify-center bg-gradient-to-t from-black/65 via-black/20 to-transparent px-2 pb-2 pt-8 md:px-3 md:pb-2.5"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[6] flex justify-center bg-gradient-to-t from-black/65 via-black/20 to-transparent px-1.5 pb-1.5 pt-6"
             data-admin-no-reorder
           >
             <button

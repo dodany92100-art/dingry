@@ -3,7 +3,7 @@
 import type { AdminProduct } from "@/lib/admin/types";
 import type { AdminStockMenuSection } from "@/lib/admin/stock-menu-sections";
 import { AdminStockProductCard } from "@/components/organisms/admin/admin-stock-product-card";
-import { CATALOG_PRODUCT_GRID_CLASS } from "@/components/organisms/shop/catalog-layout";
+import { ADMIN_STOCK_PRODUCT_GRID_CLASS } from "@/components/organisms/shop/catalog-layout";
 
 type AdminStockSectionsGridProps = {
   sections: AdminStockMenuSection[];
@@ -32,13 +32,13 @@ export function AdminStockSectionsGrid({
   onDrop,
 }: AdminStockSectionsGridProps) {
   return (
-    <div className="space-y-10 md:space-y-12">
+    <div className="space-y-8 md:space-y-9">
       {sections.map((section) => (
         <section key={section.category} className="space-y-4">
           <h3 className="border-b border-white/[0.08] pb-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white md:text-xs">
             {section.label}
           </h3>
-          <div className={CATALOG_PRODUCT_GRID_CLASS}>
+          <div className={ADMIN_STOCK_PRODUCT_GRID_CLASS}>
             {section.products.map((product) => {
               const dragIndex = indexByProductId.get(product.id);
               if (dragIndex === undefined) return null;

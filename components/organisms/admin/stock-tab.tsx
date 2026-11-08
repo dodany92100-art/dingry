@@ -19,7 +19,7 @@ import {
 import { AdminStockSectionsGrid } from "@/components/organisms/admin/admin-stock-sections-grid";
 import { AdminStockPreviewToggle } from "@/components/organisms/admin/admin-stock-preview-toggle";
 import { AdminStockStorefrontPreview } from "@/components/organisms/admin/admin-stock-storefront-preview";
-import { CATALOG_PRODUCT_GRID_CLASS } from "@/components/organisms/shop/catalog-layout";
+import { ADMIN_STOCK_PRODUCT_GRID_CLASS } from "@/components/organisms/shop/catalog-layout";
 import type { AdminProductCategoryFilter } from "@/lib/shop-data";
 
 type StockTabProps = {
@@ -261,7 +261,7 @@ export function StockTab({
             onDrop={moveProduct}
           />
         ) : (
-          <div className={CATALOG_PRODUCT_GRID_CLASS}>
+          <div className={ADMIN_STOCK_PRODUCT_GRID_CLASS}>
             {visibleProducts.map((product, index) => (
               <AdminStockProductCard
                 key={product.id}

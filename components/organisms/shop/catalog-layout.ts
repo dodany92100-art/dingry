@@ -3,6 +3,10 @@ export const CATALOG_GRID_DESKTOP = "md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:g
 
 export const CATALOG_PRODUCT_GRID_CLASS = `mx-auto grid w-full max-w-[1360px] grid-cols-2 gap-3 px-0 sm:gap-4 ${CATALOG_GRID_DESKTOP}`;
 
+/** CRM stock : grille dense (aperçu, pas résolution vitrine). */
+export const ADMIN_STOCK_PRODUCT_GRID_CLASS =
+  "mx-auto grid w-full max-w-[1680px] grid-cols-3 gap-2 px-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 lg:gap-2.5 xl:grid-cols-7 2xl:grid-cols-8";
+
 /** Surface catalogue boutique (`CatalogSection`). */
 export const CATALOG_SECTION_SURFACE_CLASS =
   "dingry-catalog-surface px-4 pb-20 md:px-12 md:pb-24";
