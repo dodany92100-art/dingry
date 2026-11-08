@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import type { ShopProduct } from "@/lib/catalog";
 import { productSlugForCatalogId, rectoIdFromProductSlug } from "@/lib/dingry-product-copy";
@@ -11,6 +11,7 @@ import {
   type JerseyColorKey,
 } from "@/lib/jersey-shop";
 import { assertShopProductModalReady } from "@/lib/shop-product-integrity";
+import { shopBasePathFromPathname } from "@/lib/shop-base-path";
 import type { CatalogState } from "./use-shop-catalog";
 
 type Options = { products: ShopProduct[]; catalogState: CatalogState };
@@ -18,6 +19,8 @@ type Options = { products: ShopProduct[]; catalogState: CatalogState };
 /** Fiche produit : sélection, taille, quantité, face, couleur jersey, lien profond ?produit=slug. */
 export function useProductModal({ products, catalogState }: Options) {
   const router = useRouter();
+  const pathname = usePathname();
+  const shopBasePath = shopBasePathFromPathname(pathname ?? "/");
   const searchParams = useSearchParams();
   const [selectedProduct, setSelectedProduct] = useState<ShopProduct | null>(null);
   const [selectedSize, setSelectedSize] = useState("");
@@ -79,9 +82,10 @@ export function useProductModal({ products, catalogState }: Options) {
       }
       pendingProductSlugRef.current = pendingSlug;
       const query = params.toString();
-      router.replace(query ? `/?${query}` : "/", { scroll: false });
+      const href = query ? `${shopBasePath}?${query}` : shopBasePath;
+      router.replace(href, { scroll: false });
     },
-    [router, searchParams],
+    [router, searchParams, shopBasePath],
   );
 
   function applyProductSelection(product: ShopProduct, side: ProductFlipSide) {
