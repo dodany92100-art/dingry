@@ -72,7 +72,7 @@ describe("POST /api/admin/login", () => {
       }),
     );
     expect(response.status).toBe(503);
-    expect(((await response.json()) as { error?: string }).error).toBe("Connexion indisponible.");
+    expect(((await response.json()) as { error?: string }).error).toContain("réseau");
   });
 
   it("503 avec getTotpSecret réel (prod simulée, secret absent)", async () => {

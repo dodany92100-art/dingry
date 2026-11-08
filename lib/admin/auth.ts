@@ -35,7 +35,13 @@ export function adminCookieOptions(maxAge = sessionTtlSeconds()) {
 export async function createAdminSessionResponse(body: unknown, status = 200) {
   const secret = sessionSecretFromEnv();
   if (!secret) {
-    return jsonNoStore({ error: "Connexion indisponible." }, { status: 503 });
+    return jsonNoStore(
+      {
+        error:
+          "Admin non configuré : définis ADMIN_TOTP_SECRET (et idéalement ADMIN_SESSION_SECRET ≥ 32 car.) sur Vercel Production, puis redéploie.",
+      },
+      { status: 503 },
+    );
   }
   const session = await signAdminSession(secret);
   const response = jsonNoStore(body, { status });

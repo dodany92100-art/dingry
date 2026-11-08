@@ -36,11 +36,12 @@ function memoryMode(): boolean {
   return false;
 }
 
-/** Refuse le login si l’IP n’est pas identifiable (prod Vercel uniquement). */
+/** Refuse le login si l’IP n’est pas identifiable (hors dev / preview / runtime Vercel). */
 export function loginClientAddressBlocked(address: string): boolean {
   if (address !== "unknown") return false;
   if (process.env.NODE_ENV === "development") return false;
   if (process.env.VERCEL_ENV === "preview") return false;
+  if (process.env.VERCEL === "1") return false;
   return true;
 }
 

@@ -10,6 +10,7 @@ import {
   recordLoginFailure,
   retryAfterLabel,
 } from "@/lib/admin/login-rate-limit";
+import { sessionSecretFromEnv } from "@/lib/admin/session-token";
 import { verifyAdminTotp, TotpMisconfiguredError, getTotpSecret } from "@/lib/admin/totp";
 
 export const runtime = "nodejs";
@@ -38,7 +39,10 @@ async function tooManyAttempts(address: string): Promise<NextResponse | null> {
 export async function POST(request: Request) {
   const address = clientAddress(request);
   if (loginClientAddressBlocked(address)) {
-    return jsonNoStore({ error: "Connexion indisponible." }, { status: 503 });
+    return jsonNoStore(
+      { error: "Connexion indisponible (adresse réseau non identifiée). Réessaie depuis dingry.com ou le lien Vercel du projet." },
+      { status: 503 },
+    );
   }
   const limited = await tooManyAttempts(address);
   if (limited) return limited;
@@ -54,6 +58,16 @@ export async function POST(request: Request) {
       );
     }
     throw error;
+  }
+
+  if (!sessionSecretFromEnv()) {
+    return jsonNoStore(
+      {
+        error:
+          "Admin non configuré : définis ADMIN_TOTP_SECRET sur Vercel Production (même secret que Google Authenticator), puis redéploie.",
+      },
+      { status: 503 },
+    );
   }
 
   let code = "";

@@ -44,11 +44,20 @@ describe("loginClientAddressBlocked", () => {
     vi.resetModules();
   });
 
-  it("bloque unknown hors development", async () => {
+  it("bloque unknown hors development et sans runtime Vercel", async () => {
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL", "");
     const { loginClientAddressBlocked } = await import("@/lib/admin/login-rate-limit");
     expect(loginClientAddressBlocked("unknown")).toBe(true);
     expect(loginClientAddressBlocked("203.0.113.1")).toBe(false);
+  });
+
+  it("ne bloque pas unknown sur Vercel", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("VERCEL", "1");
+    const { loginClientAddressBlocked } = await import("@/lib/admin/login-rate-limit");
+    expect(loginClientAddressBlocked("unknown")).toBe(false);
   });
 });
 

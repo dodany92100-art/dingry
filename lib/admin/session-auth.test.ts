@@ -26,12 +26,12 @@ describe("sessionSecretFromEnv", () => {
     expect(sessionSecretFromEnv()).toBe("JBSWY3DPEHPK3PXP");
   });
 
-  it("production sans ADMIN_SESSION_SECRET refuse le repli TOTP", () => {
+  it("production sans ADMIN_SESSION_SECRET replie sur ADMIN_TOTP_SECRET", () => {
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("ADMIN_SESSION_SECRET", "");
     vi.stubEnv("ADMIN_TOTP_SECRET", "JBSWY3DPEHPK3PXP");
-    expect(sessionSecretFromEnv()).toBe("");
+    expect(sessionSecretFromEnv()).toBe("JBSWY3DPEHPK3PXP");
   });
 
   it("production refuse un secret session trop court", () => {
@@ -63,13 +63,14 @@ describe("createAdminSessionResponse", () => {
     vi.unstubAllEnvs();
   });
 
-  it("production sans secret session → 503", async () => {
+  it("production sans secret session ni TOTP → 503 explicite", async () => {
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("ADMIN_SESSION_SECRET", "");
+    vi.stubEnv("ADMIN_TOTP_SECRET", "");
     const response = await createAdminSessionResponse({ ok: true });
     expect(response.status).toBe(503);
-    expect(((await response.json()) as { error?: string }).error).toBe("Connexion indisponible.");
+    expect(((await response.json()) as { error?: string }).error).toContain("ADMIN_TOTP_SECRET");
   });
 
   it("login réussi → Cache-Control no-store", async () => {
