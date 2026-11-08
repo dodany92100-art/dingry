@@ -46,7 +46,7 @@ export function AdminHeader({
           ) : null}
           {lowStockCount > 0 ? <span className="text-[#7EB3FF]">{lowStockCount} stock bas</span> : null}
           <a
-            href="/"
+            href="/websitedx"
             target="_blank"
             rel="noreferrer"
             className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[13px] text-white/85 backdrop-blur-md transition hover:bg-white/10 hover:text-white"
