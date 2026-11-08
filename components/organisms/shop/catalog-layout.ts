@@ -3,9 +3,9 @@ export const CATALOG_GRID_DESKTOP = "md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:g
 
 export const CATALOG_PRODUCT_GRID_CLASS = `mx-auto grid w-full max-w-[1360px] grid-cols-2 gap-3 px-0 sm:gap-4 ${CATALOG_GRID_DESKTOP}`;
 
-/** CRM stock : grille dense (aperçu, pas résolution vitrine). */
+/** CRM stock : 2 col. mobile · densité progressive desktop. */
 export const ADMIN_STOCK_PRODUCT_GRID_CLASS =
-  "mx-auto grid w-full max-w-[1680px] grid-cols-3 items-stretch gap-2 px-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 lg:gap-2.5 xl:grid-cols-7 2xl:grid-cols-8";
+  "mx-auto grid w-full min-w-0 max-w-[1680px] grid-cols-2 items-stretch gap-2 px-0 sm:grid-cols-3 sm:gap-2.5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7";
 
 /** Surface catalogue boutique (`CatalogSection`). */
 export const CATALOG_SECTION_SURFACE_CLASS =

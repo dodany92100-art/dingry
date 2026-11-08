@@ -72,37 +72,39 @@ export function AdminStockControls({
 
   return (
     <div
-      className="flex w-full items-center justify-center gap-0.5 border-t border-white/[0.06] pt-1.5"
+      className="flex w-full min-w-0 flex-col gap-1 border-t border-white/[0.06] pt-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-0.5"
       data-admin-no-reorder
     >
-      <button
-        type="button"
-        disabled={disabled || product.stock === 0}
-        onClick={() => onChangeStock(product, -1)}
-        className={BTN_COMPACT}
-        aria-label={`Retirer un ${product.name}`}
-      >
-        −
-      </button>
-      <AdminStockInput
-        product={product}
-        disabled={disabled}
-        onSetStock={onSetStock}
-        className="h-7 w-14 rounded-full border-white/10 bg-white/[0.04] text-center text-xs tabular-nums"
-      />
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChangeStock(product, 1)}
-        className={BTN_COMPACT}
-        aria-label={`Ajouter un ${product.name}`}
-      >
-        +
-      </button>
+      <div className="flex min-w-0 items-center justify-center gap-0.5">
+        <button
+          type="button"
+          disabled={disabled || product.stock === 0}
+          onClick={() => onChangeStock(product, -1)}
+          className={BTN_COMPACT}
+          aria-label={`Retirer un ${product.name}`}
+        >
+          −
+        </button>
+        <AdminStockInput
+          product={product}
+          disabled={disabled}
+          onSetStock={onSetStock}
+          className="h-7 w-12 min-w-0 max-w-[3.25rem] flex-1 rounded-full border-white/10 bg-white/[0.04] text-center text-xs tabular-nums sm:w-14 sm:max-w-none sm:flex-none"
+        />
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onChangeStock(product, 1)}
+          className={BTN_COMPACT}
+          aria-label={`Ajouter un ${product.name}`}
+        >
+          +
+        </button>
+      </div>
       <button
         type="button"
         onClick={() => onEdit(product)}
-        className={BTN_EDIT_CARD}
+        className={`${BTN_EDIT_CARD} w-full sm:ml-0.5 sm:w-auto`}
       >
         Modifier
       </button>

@@ -70,9 +70,9 @@ export function AdminStockProductCard({
       busy={busy}
       disabled={disableReorder}
       onDrop={onDrop}
-      className={`dingry-admin-stock group flex h-full min-h-0 flex-col rounded-lg md:rounded-xl ${adminStockCardRing(product)}`}
+      className={`dingry-admin-stock group flex h-full min-h-0 min-w-0 flex-col rounded-lg md:rounded-xl ${adminStockCardRing(product)}`}
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg md:rounded-xl">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg md:rounded-xl">
         <div className="dingry-product-photo relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg bg-zinc-950 md:rounded-xl">
           <button
             type="button"
@@ -91,7 +91,7 @@ export function AdminStockProductCard({
             />
           </button>
           <div className="pointer-events-none absolute left-1.5 top-1.5 z-10 md:left-2 md:top-2">
-            <AdminStockStatusBadge product={product} />
+            <AdminStockStatusBadge product={product} className="max-w-[calc(100%-2.5rem)] truncate max-sm:px-1.5 max-sm:text-[8px] max-sm:tracking-[0.1em]" />
           </div>
           <div
             className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-full bg-black/50 p-0.5 backdrop-blur-[2px] md:right-1.5 md:top-1.5"
