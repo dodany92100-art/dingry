@@ -1,10 +1,21 @@
-import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { BlobPreconditionFailedError, del, get, put, type PutBlobResult } from "@vercel/blob";
-import { allowCatalogSeedFallback, isBlobConfigured } from "@/lib/admin/blob-config";
+import {
+  allowCatalogSeedFallback,
+  hasProductionCatalogBackend,
+  isSupabaseCatalogEnvComplete,
+} from "@/lib/admin/blob-config";
+import {
+  isStoreWriteConflict,
+  StoreConflictError,
+  StoreUnavailableError,
+} from "@/lib/admin/store-errors";
+import { readFileStoreSnapshot, writeFileStoreSnapshot } from "@/lib/admin/store-snapshot-file";
 import { isSupabaseStoreEnabled } from "@/lib/supabase/server";
-import { isVercelBlobUrl, removePublicImage, storageObjectPath, uploadPublicImage } from "@/lib/supabase/storage";
+import { deleteR2PublicImage, isR2ImageStorageEnabled, r2ObjectKey, uploadR2PublicImage } from "@/lib/r2/storage";
+import { isR2PublicUrl } from "@/lib/r2/config";
+import { isVercelBlobUrl, removePublicImage } from "@/lib/supabase/storage";
 import {
   addRemovedCatalogIds,
   deleteSupabaseProduct,
@@ -54,8 +65,6 @@ import {
 } from "@/lib/admin/product-display-order";
 import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 
-const STORE_PATHNAME = "dingry/admin/store.json";
-const LOCAL_STORE_PATH = path.join(process.cwd(), "data", "admin", "store.json");
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
@@ -110,36 +119,11 @@ async function releaseStoreLock(token: string | null): Promise<void> {
   }
 }
 
-let hydratingLocalStore: Promise<void> | null = null;
-
-/** Évite deux lectures Blob qui écrivent `data/admin/store.json` en parallèle au premier démarrage local. */
-async function hydrateLocalStoreFromBlobOnce(): Promise<void> {
-  if (hydratingLocalStore) {
-    await hydratingLocalStore;
-    return;
-  }
-  hydratingLocalStore = enqueueStoreWrite(async () => {
-    const remote = await readBlobSnapshot();
-    if (remote !== "missing") await writeLocalSnapshot(remote.store);
-  }).finally(() => {
-    hydratingLocalStore = null;
-  });
-  await hydratingLocalStore;
-}
-
-export class StoreConflictError extends Error {
-  constructor() {
-    super("store-conflict");
-    this.name = "StoreConflictError";
-  }
-}
-
-export class StoreUnavailableError extends Error {
-  constructor(message = "Magasin indisponible.") {
-    super(message);
-    this.name = "StoreUnavailableError";
-  }
-}
+export {
+  isStoreWriteConflict,
+  StoreConflictError,
+  StoreUnavailableError,
+} from "@/lib/admin/store-errors";
 
 export { PublishValidationError } from "@/lib/admin/assert-publishable";
 
@@ -160,18 +144,9 @@ type StoreSnapshot = {
   migratedFromVersion?: number;
 };
 
-/** Seules les erreurs de concurrence optimiste déclenchent un retry. */
-export function isStoreWriteConflict(error: unknown): boolean {
-  return error instanceof BlobPreconditionFailedError || error instanceof StoreConflictError;
-}
-
 function storeWriteBackoff(attempt: number): Promise<void> {
   const ms = 80 + Math.random() * 120 + attempt * 40;
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function revisionFromDiskText(text: string): string {
-  return createHash("sha256").update(text).digest("hex");
 }
 
 function cloneStore(store: AdminStore): AdminStore {
@@ -185,8 +160,10 @@ function cloneStore(store: AdminStore): AdminStore {
 }
 
 function assertStoreBackend(): void {
-  if (process.env.NODE_ENV === "production" && !isBlobConfigured() && !allowCatalogSeedFallback()) {
-    throw new StoreUnavailableError("BLOB_READ_WRITE_TOKEN requis en production.");
+  if (!hasProductionCatalogBackend()) {
+    throw new StoreUnavailableError(
+      "Stockage CRM manquant en production : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (et R2 pour les uploads images).",
+    );
   }
 }
 
@@ -195,105 +172,19 @@ function useLocalStoreFiles(): boolean {
   return process.env.NODE_ENV !== "production";
 }
 
-async function readBlobSnapshot(): Promise<StoreSnapshot | "missing"> {
-  let result: Awaited<ReturnType<typeof get>>;
+async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
+  assertStoreBackend();
+  let file: Awaited<ReturnType<typeof readFileStoreSnapshot>>;
   try {
-    result = await get(STORE_PATHNAME, { access: "public", useCache: false });
+    file = await readFileStoreSnapshot();
   } catch (error) {
-    console.error("[store] lecture Blob", error instanceof Error ? error.name : "erreur");
-    throw new StoreUnavailableError();
-  }
-
-  if (!result) {
-    return "missing";
-  }
-  const statusCode = (result as { statusCode?: number }).statusCode;
-  if (statusCode === 404) {
-    return "missing";
-  }
-  if (result.statusCode !== 200 || !result.stream) {
-    console.error("[store] Blob HTTP", result.statusCode ?? "sans réponse");
-    throw new StoreUnavailableError();
-  }
-
-  let text: string;
-  try {
-    text = await new Response(result.stream).text();
-  } catch (error) {
-    console.error("[store] stream Blob", error instanceof Error ? error.name : "erreur");
-    throw new StoreUnavailableError();
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    console.error("[store] JSON blob invalide");
-    throw new StoreUnavailableError();
-  }
-  if (!isAdminStore(parsed)) {
-    console.error("[store] schéma blob invalide");
-    throw new StoreUnavailableError();
-  }
-  const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
-  const normalized = normalizeStore(parsed);
-  return {
-    store: normalized,
-    etag: normalizeBlobEtag(result.blob.etag),
-    ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
-  };
-}
-
-function normalizeBlobEtag(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-async function readLocalSnapshot(): Promise<StoreSnapshot | "missing"> {
-  try {
-    const text = await readFile(LOCAL_STORE_PATH, "utf8");
-    const parsed: unknown = JSON.parse(text);
-    if (!isAdminStore(parsed)) {
-      throw new StoreUnavailableError();
-    }
-    const rawVersion = typeof (parsed as AdminStore).version === "number" ? (parsed as AdminStore).version : 0;
-    const normalized = normalizeStore(parsed);
-    return {
-      store: normalized,
-      etag: revisionFromDiskText(text),
-      ...(rawVersion < STORE_VERSION ? { migratedFromVersion: rawVersion } : {}),
-    };
-  } catch (error) {
-    const code = (error as { code?: string }).code;
-    if (code === "ENOENT") return "missing";
     if (error instanceof StoreUnavailableError) throw error;
     throw new StoreUnavailableError();
   }
-}
-
-async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
-  assertStoreBackend();
-
-  if (useLocalStoreFiles()) {
-    const local = await readLocalSnapshot();
-    if (local !== "missing") return local;
-    if (isBlobConfigured()) {
-      await hydrateLocalStoreFromBlobOnce();
-      const afterHydrate = await readLocalSnapshot();
-      if (afterHydrate !== "missing") return afterHydrate;
-    }
-    return "missing";
-  }
-
-  if (isBlobConfigured()) return readBlobSnapshot();
+  if (file !== "missing") return file;
   if (allowCatalogSeedFallback()) return "missing";
+  if (isSupabaseCatalogEnvComplete()) return "missing";
   throw new StoreUnavailableError();
-}
-
-async function writeLocalSnapshot(store: AdminStore): Promise<void> {
-  const next: AdminStore = { ...store, version: STORE_VERSION };
-  await mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
-  await writeFile(LOCAL_STORE_PATH, JSON.stringify(next, null, 2), "utf8");
 }
 
 async function writeStoreSnapshot(
@@ -303,50 +194,11 @@ async function writeStoreSnapshot(
 ): Promise<void> {
   assertStoreBackend();
   const next: AdminStore = { ...store, version: STORE_VERSION };
-  const body = JSON.stringify(next);
-
-  if (useLocalStoreFiles()) {
-    /** Dev local : pas de concurrence etag (une seule machine, file `enqueueStoreWrite`). */
-    await writeLocalSnapshot(next);
+  if (useLocalStoreFiles() && !etag && !createIfAbsent) {
+    await writeFileStoreSnapshot(next, null);
     return;
   }
-
-  if (!isBlobConfigured()) {
-    throw new StoreUnavailableError();
-  }
-
-  const ifMatch = normalizeBlobEtag(etag);
-  if (ifMatch) {
-    await put(STORE_PATHNAME, body, {
-      access: "public",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: "application/json",
-      cacheControlMaxAge: 0,
-      ifMatch,
-    });
-    return;
-  }
-
-  if (createIfAbsent) {
-    await put(STORE_PATHNAME, body, {
-      access: "public",
-      addRandomSuffix: false,
-      allowOverwrite: false,
-      contentType: "application/json",
-      cacheControlMaxAge: 0,
-    });
-    return;
-  }
-
-  /** Magasin existant mais etag absent côté API : pas de ifMatch (mono-éditeur). */
-  await put(STORE_PATHNAME, body, {
-    access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: "application/json",
-    cacheControlMaxAge: 0,
-  });
+  await writeFileStoreSnapshot(next, etag, { createIfAbsent });
 }
 
 /** Magasin Blob absent (404) : premier enregistrement uniquement (pas d’écrasement). */
@@ -364,21 +216,7 @@ type StoreOptimisticOptions = {
 
 async function writeStoreSnapshotRelaxed(store: AdminStore): Promise<void> {
   assertStoreBackend();
-  if (useLocalStoreFiles()) {
-    await writeLocalSnapshot({ ...store, version: STORE_VERSION });
-    return;
-  }
-  if (!isBlobConfigured()) {
-    throw new StoreUnavailableError();
-  }
-  const body = JSON.stringify({ ...store, version: STORE_VERSION });
-  await put(STORE_PATHNAME, body, {
-    access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: "application/json",
-    cacheControlMaxAge: 0,
-  });
+  await writeFileStoreSnapshot({ ...store, version: STORE_VERSION }, null);
 }
 
 async function withStoreOptimistic<T>(
@@ -392,10 +230,7 @@ async function withStoreOptimistic<T>(
       let snapshot = await readStoreSnapshot();
       let createIfAbsent = false;
       if (snapshot === "missing") {
-        if (isBlobConfigured() && !useLocalStoreFiles()) {
-          snapshot = snapshotForMissingWrite();
-          createIfAbsent = true;
-        } else if (useLocalStoreFiles() || allowCatalogSeedFallback()) {
+        if (useLocalStoreFiles() || allowCatalogSeedFallback() || isSupabaseCatalogEnvComplete()) {
           snapshot = snapshotForMissingWrite();
           createIfAbsent = true;
         } else {
@@ -822,7 +657,7 @@ type ProductImageFace = "recto" | "verso";
 type UploadedAdminImage = { imageUrl: string; blobUrl: string | null; blobPathname: string | null };
 
 const IMAGE_STORAGE_UNAVAILABLE =
-  "Stockage image indisponible : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (bucket dgry-images, voir supabase/schema.sql) ou BLOB_READ_WRITE_TOKEN — cocher Preview sur Vercel.";
+  "Stockage image indisponible : configurer R2 (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_BASE_URL) ou utiliser npm run dev (fichiers locaux).";
 
 async function uploadAdminImageFile(
   file: File,
@@ -830,31 +665,17 @@ async function uploadAdminImageFile(
 ): Promise<UploadedAdminImage> {
   const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
 
-  if (isSupabaseStoreEnabled()) {
+  if (isR2ImageStorageEnabled()) {
     try {
-      return await uploadPublicImage(storageObjectPath(options.supabaseFolder, filename), file);
+      const key = r2ObjectKey(`dingry/${options.supabaseFolder}`, filename);
+      return await uploadR2PublicImage(key, file);
     } catch (error) {
-      console.error("[store] upload Supabase image", error instanceof Error ? error.message : "erreur");
+      console.error("[store] upload R2", error instanceof Error ? error.message : "erreur");
       throw new StoreUnavailableError(
         error instanceof Error && error.message.length > 0
-          ? `Upload image impossible (Supabase) : ${error.message}`
-          : "Upload image impossible (Supabase Storage).",
+          ? `Upload image impossible (R2) : ${error.message}`
+          : "Upload image impossible (Cloudflare R2).",
       );
-    }
-  }
-
-  if (isBlobConfigured()) {
-    try {
-      const pathname = `dingry/${options.blobPathPrefix}/${filename}`;
-      const blob: PutBlobResult = await put(pathname, file, {
-        access: "public",
-        addRandomSuffix: true,
-        contentType: "image/webp",
-      });
-      return { imageUrl: blob.url, blobUrl: blob.url, blobPathname: blob.pathname };
-    } catch (error) {
-      console.error("[store] upload Blob image", error instanceof Error ? error.name : "erreur");
-      throw new StoreUnavailableError("Upload image impossible (Vercel Blob).");
     }
   }
 
@@ -901,17 +722,20 @@ async function deleteBlobOrLocal(
   blobPathname: string | null,
   imageUrl: string,
 ): Promise<void> {
+  if (isR2PublicUrl(imageUrl) || isR2PublicUrl(blobUrl)) {
+    await deleteR2PublicImage(imageUrl, blobPathname);
+    return;
+  }
+  if (blobPathname && isR2ImageStorageEnabled() && !isVercelBlobUrl(blobUrl)) {
+    await deleteR2PublicImage(imageUrl, blobPathname);
+    return;
+  }
   if (blobPathname && !blobPathname.startsWith("dingry/")) {
     await removePublicImage(blobPathname);
     return;
   }
   if (isVercelBlobUrl(blobUrl) || isVercelBlobUrl(imageUrl) || blobPathname?.startsWith("dingry/")) {
-    try {
-      if (blobUrl) await del(blobUrl);
-      else if (blobPathname) await del(blobPathname);
-    } catch (error) {
-      console.error("[store] delete Blob héritage", error instanceof Error ? error.name : "erreur");
-    }
+    console.warn("[store] média Vercel Blob héritage non supprimé (Blob retiré).");
     return;
   }
   await deleteLocalUpload(imageUrl);
@@ -968,6 +792,8 @@ export type ProductInput = {
 type ProductUpdateMedia = {
   rectoFile?: File;
   versoFile?: File;
+  preuploadedRecto?: UploadedAdminImage;
+  preuploadedVerso?: UploadedAdminImage;
   clearImage?: boolean;
   clearImageBack?: boolean;
 };
@@ -1147,7 +973,12 @@ export async function reorderAdminProductDisplay(
 }
 
 export async function createProduct(
-  input: ProductInput & { file?: File | null; fileBack?: File | null },
+  input: ProductInput & {
+    file?: File | null;
+    fileBack?: File | null;
+    preuploadedRecto?: UploadedAdminImage | null;
+    preuploadedVerso?: UploadedAdminImage | null;
+  },
 ): Promise<AdminProduct> {
   let existingProducts: AdminProduct[];
   if (isSupabaseStoreEnabled()) {
@@ -1163,6 +994,8 @@ export async function createProduct(
   let uploaded: Awaited<ReturnType<typeof uploadProductImage>>;
   if (input.file && input.file.size > 0) {
     uploaded = await uploadProductImage(id, input.file, "recto");
+  } else if (input.preuploadedRecto?.imageUrl) {
+    uploaded = input.preuploadedRecto;
   } else if (input.publishStatus === "draft") {
     uploaded = {
       imageUrl: DRAFT_PRODUCT_PLACEHOLDER_IMAGE,
@@ -1175,6 +1008,8 @@ export async function createProduct(
   let uploadedBack: Awaited<ReturnType<typeof uploadProductImage>> | undefined;
   if (input.fileBack && input.fileBack.size > 0) {
     uploadedBack = await uploadProductImage(id, input.fileBack, "verso");
+  } else if (input.preuploadedVerso?.imageUrl) {
+    uploadedBack = input.preuploadedVerso;
   }
   const product: AdminProduct = {
     id,
@@ -1378,12 +1213,22 @@ export async function updateProduct(
     previousRecto = await findProductRecord(id);
     if (!previousRecto) return null;
     uploadedRecto = await uploadProductImage(id, rectoFile, "recto");
+  } else if (fields.preuploadedRecto?.imageUrl) {
+    previousRecto = await findProductRecord(id);
+    if (!previousRecto) return null;
+    uploadedRecto = fields.preuploadedRecto;
+    delete fields.preuploadedRecto;
   }
 
   if (versoFile && versoFile.size > 0) {
     previousVerso = await findProductRecord(id);
     if (!previousVerso) return null;
     uploadedVerso = await uploadProductImage(id, versoFile, "verso");
+  } else if (fields.preuploadedVerso?.imageUrl) {
+    previousVerso = await findProductRecord(id);
+    if (!previousVerso) return null;
+    uploadedVerso = fields.preuploadedVerso;
+    delete fields.preuploadedVerso;
   }
 
   if (clearImageBack) {
@@ -1602,11 +1447,20 @@ export type LookbookInput = {
 
 const LOOKBOOK_STORE_WRITE_OPTIONS: StoreOptimisticOptions = { adminRelaxedFinalize: true };
 
-export async function createLookbookSlide(input: LookbookInput & { file: File }): Promise<AdminLookbookSlide> {
+export async function createLookbookSlide(
+  input: LookbookInput & { file?: File; preuploadedImage?: UploadedAdminImage | null },
+): Promise<AdminLookbookSlide> {
   const snapshot = await readStoreSnapshot();
   const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
   const id = nextLookbookId(base.lookbook);
-  const uploaded = await uploadLookbookImage(id, input.file);
+  let uploaded: UploadedAdminImage;
+  if (input.file && input.file.size > 0) {
+    uploaded = await uploadLookbookImage(id, input.file);
+  } else if (input.preuploadedImage?.imageUrl) {
+    uploaded = input.preuploadedImage;
+  } else {
+    throw new StoreUnavailableError("Une image est requise.");
+  }
   const sortOrder = input.sortOrder ?? base.lookbook.length;
   const slide: AdminLookbookSlide = {
     id,
@@ -1630,15 +1484,19 @@ export async function createLookbookSlide(input: LookbookInput & { file: File })
 
 export async function updateLookbookSlide(
   id: string,
-  input: Partial<LookbookInput>,
+  input: Partial<LookbookInput> & { preuploadedImage?: UploadedAdminImage | null },
   file?: File,
 ): Promise<AdminLookbookSlide | null> {
   let uploaded: Awaited<ReturnType<typeof uploadLookbookImage>> | undefined;
   let previous: AdminLookbookSlide | undefined;
 
-  if (file) {
+  if (file && file.size > 0) {
     uploaded = await uploadLookbookImage(id, file);
+  } else if (input.preuploadedImage?.imageUrl) {
+    uploaded = input.preuploadedImage;
   }
+  const { preuploadedImage: _preuploaded, ...lookbookFields } = input;
+  void _preuploaded;
 
   return withStoreOptimistic(
     (store) => {
@@ -1649,9 +1507,9 @@ export async function updateLookbookSlide(
       previous = { ...store.lookbook[index] };
       const next: AdminLookbookSlide = {
         ...store.lookbook[index],
-        ...(input.title !== undefined ? { title: input.title } : {}),
-        ...(input.caption !== undefined ? { caption: input.caption } : {}),
-        ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+        ...(lookbookFields.title !== undefined ? { title: lookbookFields.title } : {}),
+        ...(lookbookFields.caption !== undefined ? { caption: lookbookFields.caption } : {}),
+        ...(lookbookFields.sortOrder !== undefined ? { sortOrder: lookbookFields.sortOrder } : {}),
         ...(uploaded
           ? {
               imageUrl: uploaded.imageUrl,
@@ -1751,12 +1609,15 @@ const PERSO_BANNER_STORE_WRITE_OPTIONS: StoreOptimisticOptions = { adminRelaxedF
 export async function upsertCatalogPersoBanner(
   input: CatalogPersoBannerInput,
   file?: File,
+  preuploadedImage?: UploadedAdminImage | null,
 ): Promise<AdminCatalogPersoBanner> {
   let uploaded: Awaited<ReturnType<typeof uploadCatalogPersoBannerImage>> | undefined;
   let previous: AdminCatalogPersoBanner | undefined;
 
-  if (file) {
+  if (file && file.size > 0) {
     uploaded = await uploadCatalogPersoBannerImage(file);
+  } else if (preuploadedImage?.imageUrl) {
+    uploaded = preuploadedImage;
   }
 
   const result = await withStoreOptimistic(

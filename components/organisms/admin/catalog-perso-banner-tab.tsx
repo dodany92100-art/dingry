@@ -2,7 +2,12 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import type { AdminCatalogPersoBanner } from "@/lib/admin/types";
-import { prepareProductImage } from "@/lib/client/prepare-product-image";
+import {
+  appendPreuploadedImageFields,
+  R2_PERSO_BANNER_FOLDER,
+  type AdminImageUploadResponse,
+} from "@/lib/client/admin-upload-image";
+import { prepareAndUploadAdminImage } from "@/lib/client/admin-media-upload";
 import type { SavePersoBannerResult } from "./hooks/use-admin-catalog-perso-banner";
 
 type CatalogPersoBannerTabProps = {
@@ -26,6 +31,7 @@ export function CatalogPersoBannerTab({
   const [subtitle, setSubtitle] = useState(banner.subtitle);
   const [ctaLabel, setCtaLabel] = useState(banner.ctaLabel);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [preuploaded, setPreuploaded] = useState<AdminImageUploadResponse | null>(null);
   const [imagePreview, setImagePreview] = useState(banner.imageUrl);
   const [convertingImage, setConvertingImage] = useState(false);
   const [formError, setFormError] = useState("");
@@ -49,20 +55,28 @@ export function CatalogPersoBannerTab({
   async function handleImageChange(file: File | null) {
     if (!file) {
       setImageFile(null);
+      setPreuploaded(null);
       setImagePreview(banner.imageUrl);
       return;
     }
     setConvertingImage(true);
     setFormError("");
-    try {
-      const prepared = await prepareProductImage(file);
-      setImageFile(prepared);
-    } catch {
-      setFormError("Image invalide ou conversion impossible.");
+    const result = await prepareAndUploadAdminImage(file, { folder: R2_PERSO_BANNER_FOLDER });
+    setConvertingImage(false);
+    if (!result.ok) {
+      setFormError(result.error);
       setImageFile(null);
-    } finally {
-      setConvertingImage(false);
+      setPreuploaded(null);
+      return;
     }
+    if (result.uploaded) {
+      setPreuploaded(result.uploaded);
+      setImageFile(null);
+      setImagePreview(result.uploaded.url);
+      return;
+    }
+    setPreuploaded(null);
+    setImageFile(result.file);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -75,12 +89,14 @@ export function CatalogPersoBannerTab({
     formData.set("subtitle", subtitle.trim());
     formData.set("ctaLabel", ctaLabel.trim());
     if (imageFile) formData.set("image", imageFile);
+    else appendPreuploadedImageFields(formData, preuploaded);
     const result = await onSave(formData);
     if ("error" in result) {
       setFormError(result.error);
       return;
     }
     setImageFile(null);
+    setPreuploaded(null);
   }
 
   const busy = saving || convertingImage;

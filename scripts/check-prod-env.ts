@@ -4,6 +4,7 @@
  */
 
 import { MIN_CRON_SECRET_LENGTH } from "../lib/cron-auth";
+import { isR2ImageStorageEnabled, r2BucketName } from "../lib/r2/config";
 import { collectProductionEnvErrors, readSupabaseEnv } from "../lib/env";
 
 type Check = { name: string; ok: boolean; hint: string };
@@ -55,6 +56,29 @@ function crmImageStorage(): Check {
   };
 }
 
+function dingryImgHosts(): Check {
+  const raw = process.env.DINGRY_IMG_HOSTS?.trim() ?? process.env.NEXT_PUBLIC_MEDIA_CDN_HOST?.trim() ?? "";
+  const ok = raw.length > 0;
+  return {
+    name: "DINGRY_IMG_HOSTS",
+    ok,
+    hint: ok
+      ? "ok"
+      : 'recommandé (ex. pub-xxx.r2.dev sans https) — *.r2.dev déjà en CSP, mais explicite pour remotePatterns',
+  };
+}
+
+function r2ImageUpload(): Check {
+  const ok = isR2ImageStorageEnabled();
+  return {
+    name: "R2 upload CRM",
+    ok,
+    hint: ok
+      ? `ok (bucket ${r2BucketName()})`
+      : `R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_BASE_URL (R2_BUCKET_NAME défaut ${r2BucketName()})`,
+  };
+}
+
 function turnstileHostname(): Check {
   const raw = process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim() ?? "";
   const ok = raw.length > 0;
@@ -77,6 +101,8 @@ function main(): void {
     present("UPSTASH_REDIS_REST_URL"),
     present("UPSTASH_REDIS_REST_TOKEN"),
     crmImageStorage(),
+    dingryImgHosts(),
+    r2ImageUpload(),
     present("TURNSTILE_SECRET_KEY"),
     present("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
     turnstileHostname(),

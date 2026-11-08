@@ -20,6 +20,7 @@ import { AdminStockSectionsGrid } from "@/components/organisms/admin/admin-stock
 import { AdminStockPreviewToggle } from "@/components/organisms/admin/admin-stock-preview-toggle";
 import { AdminStockStorefrontPreview } from "@/components/organisms/admin/admin-stock-storefront-preview";
 import { ADMIN_STOCK_PRODUCT_GRID_CLASS } from "@/components/organisms/shop/catalog-layout";
+import type { StockAutosaveStatusMap } from "@/lib/admin/stock-autosave-types";
 import type { AdminProductCategoryFilter } from "@/lib/shop-data";
 
 type StockTabProps = {
@@ -39,6 +40,7 @@ type StockTabProps = {
   onReorderProducts: (orderedIds: string[]) => void;
   /** Modale fiche ouverte : pas de ± stock (évite conflit Blob avec la sauvegarde). */
   productEditorOpen?: boolean;
+  stockAutosaveStatus?: StockAutosaveStatusMap;
 };
 
 function filterByAdminCategory(
@@ -90,8 +92,9 @@ export function StockTab({
   onDelete,
   onReorderProducts,
   productEditorOpen = false,
+  stockAutosaveStatus = {},
 }: StockTabProps) {
-  const stockControlsBusy = productEditorOpen ? true : false;
+  const stockControlsBusy = productEditorOpen;
   const [categoryFilter, setCategoryFilter] = useState<AdminProductCategoryFilter>("Collection");
   const [viewMode, setViewMode] = useState<AdminStockViewMode>("grid");
   const [storefrontPreview, setStorefrontPreview] = useState(false);
@@ -259,6 +262,7 @@ export function StockTab({
             onTogglePin={onTogglePin}
             onDelete={setPendingDelete}
             onDrop={moveProduct}
+            stockAutosaveStatus={stockAutosaveStatus}
           />
         ) : (
           <div className={ADMIN_STOCK_PRODUCT_GRID_CLASS}>
@@ -275,6 +279,7 @@ export function StockTab({
                 onDelete={setPendingDelete}
                 onDrop={moveProduct}
                 disableReorder={reorderBlocked}
+                autosavePhase={stockAutosaveStatus[product.id]}
               />
             ))}
           </div>
@@ -302,6 +307,7 @@ export function StockTab({
                         onTogglePin={onTogglePin}
                         onDrop={moveProduct}
                         disableReorder={reorderBlocked}
+                        autosavePhase={stockAutosaveStatus[product.id]}
                       />
                     );
                   })}
@@ -319,6 +325,7 @@ export function StockTab({
                   onTogglePin={onTogglePin}
                   onDrop={moveProduct}
                   disableReorder={reorderBlocked}
+                  autosavePhase={stockAutosaveStatus[product.id]}
                 />
               ))}
         </div>

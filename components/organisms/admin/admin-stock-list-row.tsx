@@ -2,6 +2,7 @@
 
 import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
+import type { StockAutosavePhase } from "@/lib/admin/stock-autosave-types";
 import type { AdminProduct } from "@/lib/admin/types";
 import { cldOpt } from "@/lib/cloudinary-url";
 import { AdminStockControls } from "@/components/organisms/admin/admin-stock-controls";
@@ -19,6 +20,7 @@ type AdminStockListRowProps = {
   onTogglePin: (product: AdminProduct) => void;
   onDrop: (fromIndex: number, toIndex: number) => void;
   disableReorder?: boolean;
+  autosavePhase?: StockAutosavePhase;
 };
 
 function rowCriticalClass(stock: number, publishStatus: AdminProduct["publishStatus"]): string {
@@ -38,6 +40,7 @@ export function AdminStockListRow({
   onTogglePin,
   onDrop,
   disableReorder = false,
+  autosavePhase,
 }: AdminStockListRowProps) {
   return (
     <AdminReorderSurface
@@ -96,6 +99,7 @@ export function AdminStockListRow({
         onSetStock={onSetStock}
         onEdit={onEdit}
         layout="row"
+        autosavePhase={autosavePhase}
       />
     </AdminReorderSurface>
   );

@@ -9,7 +9,7 @@
  *   npm run seed-stock
  *   (ne pas committer .env.preview)
  *
- * Requis : UPSTASH_REDIS_REST_*, BLOB_READ_WRITE_TOKEN, pas de STOCK_KEY_PREFIX=test:
+ * Requis : UPSTASH_REDIS_REST_*, catalogue Supabase ou data/admin/store.json, pas de STOCK_KEY_PREFIX=test:
  */
 import { stdin as input, stdout as output } from "node:process";
 import * as readline from "node:readline/promises";

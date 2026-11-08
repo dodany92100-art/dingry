@@ -1,22 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const getMock = vi.hoisted(() => vi.fn());
-const putMock = vi.hoisted(() => vi.fn());
+const readMock = vi.hoisted(() => vi.fn());
+const writeMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/ratelimit", () => ({
   getSharedRedis: () => null,
 }));
 
-vi.mock("@vercel/blob", () => ({
-  get: (...args: unknown[]) => getMock(...args),
-  put: (...args: unknown[]) => putMock(...args),
-  del: vi.fn(),
-  BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {
-    constructor() {
-      super("precondition");
-      this.name = "BlobPreconditionFailedError";
-    }
-  },
+vi.mock("@/lib/admin/store-snapshot-file", () => ({
+  readFileStoreSnapshot: (...args: unknown[]) => readMock(...args),
+  writeFileStoreSnapshot: (...args: unknown[]) => writeMock(...args),
+  adminStoreSnapshotPath: () => "/tmp/dingry-test-store.json",
+  revisionFromDiskText: (text: string) => text,
 }));
 
 function order(id: string) {
@@ -32,47 +27,38 @@ function order(id: string) {
   };
 }
 
-function storeBody(orders: ReturnType<typeof order>[]) {
-  return JSON.stringify({
-    version: 13,
-    products: [],
-    orders,
-    lookbook: [],
-    removedCatalogIds: [],
-  });
-}
-
-function blobGet(body: string, etag: string) {
+function storeSnapshot(orders: ReturnType<typeof order>[], etag: string) {
   return {
-    statusCode: 200,
-    stream: new ReadableStream({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode(body));
-        controller.close();
-      },
-    }),
-    blob: { etag },
+    store: {
+      version: 13,
+      products: [],
+      orders,
+      lookbook: [],
+      removedCatalogIds: [],
+    },
+    etag,
   };
 }
 
-describe("withStoreOptimistic concurrence Blob (prod)", () => {
+describe("withStoreOptimistic concurrence fichier (prod)", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "test-blob-token");
-    putMock.mockResolvedValue({ url: "https://example/blob" });
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://xxx.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role");
+    writeMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.resetModules();
-    getMock.mockReset();
-    putMock.mockReset();
+    readMock.mockReset();
+    writeMock.mockReset();
     vi.useRealTimers();
   });
 
-  it("deux patchOrder en parallèle : file sérialisée, deux put réussis", async () => {
-    const body = storeBody([order("ORD-1"), order("ORD-2")]);
-    getMock.mockImplementation(async () => blobGet(body, "etag-shared"));
+  it("deux patchOrder en parallèle : file sérialisée, deux écritures", async () => {
+    readMock.mockImplementation(async () => storeSnapshot([order("ORD-1"), order("ORD-2")], "etag-shared"));
 
     const { patchOrder } = await import("@/lib/admin/store");
     await Promise.all([
@@ -80,62 +66,32 @@ describe("withStoreOptimistic concurrence Blob (prod)", () => {
       patchOrder("ORD-2", () => ({ status: "Expédié" })),
     ]);
 
-    expect(putMock).toHaveBeenCalledTimes(2);
+    expect(writeMock).toHaveBeenCalledTimes(2);
   });
 
-  it("412 puis nouveau etag : succès au retry (pas StoreConflictError)", async () => {
-    const { BlobPreconditionFailedError } = await import("@vercel/blob");
-    const body = storeBody([order("ORD-1")]);
-    let getCalls = 0;
-    getMock.mockImplementation(async () => {
-      getCalls += 1;
-      const etag = getCalls === 1 ? "etag-v1" : "etag-v2";
-      return blobGet(body, etag);
+  it("conflit etag puis relecture : succès au retry", async () => {
+    const { patchOrder, StoreConflictError } = await import("@/lib/admin/store");
+    const body = storeSnapshot([order("ORD-1")], "etag-v1");
+    let reads = 0;
+    readMock.mockImplementation(async () => {
+      reads += 1;
+      if (reads === 1) return body;
+      return storeSnapshot([order("ORD-1")], "etag-v2");
     });
-    putMock
-      .mockRejectedValueOnce(new BlobPreconditionFailedError())
-      .mockResolvedValueOnce({ url: "https://example/blob" });
+    writeMock.mockRejectedValueOnce(new StoreConflictError()).mockResolvedValueOnce(undefined);
 
-    const { patchOrder } = await import("@/lib/admin/store");
     await expect(patchOrder("ORD-1", () => ({ status: "Expédié" }))).resolves.toEqual(
       expect.objectContaining({ changed: true }),
     );
-    expect(putMock).toHaveBeenCalledTimes(2);
-    expect(putMock.mock.calls[1]?.[2]).toMatchObject({ ifMatch: "etag-v2" });
+    expect(writeMock).toHaveBeenCalledTimes(2);
   });
 
-  it("412 sur tous les put → StoreConflictError", async () => {
-    const { BlobPreconditionFailedError } = await import("@vercel/blob");
-    const body = storeBody([order("ORD-1")]);
-    getMock.mockImplementation(async () => blobGet(body, "etag-stuck"));
-    putMock.mockRejectedValue(new BlobPreconditionFailedError());
-
+  it("conflits répétés → StoreConflictError", async () => {
     const { patchOrder, StoreConflictError } = await import("@/lib/admin/store");
-    await expect(patchOrder("ORD-1", () => ({ status: "Expédié" }))).rejects.toBeInstanceOf(
-      StoreConflictError,
-    );
-    expect(putMock.mock.calls.length).toBeGreaterThanOrEqual(8);
+    readMock.mockImplementation(async () => storeSnapshot([order("ORD-1")], "etag-stuck"));
+    writeMock.mockRejectedValue(new StoreConflictError());
+
+    await expect(patchOrder("ORD-1", () => ({ status: "Expédié" }))).rejects.toBeInstanceOf(StoreConflictError);
+    expect(writeMock.mock.calls.length).toBeGreaterThanOrEqual(8);
   }, 20_000);
-
-  it("etag absent sur Blob existant : put allowOverwrite sans ifMatch", async () => {
-    const body = storeBody([order("ORD-1")]);
-    getMock.mockResolvedValue({
-      statusCode: 200,
-      stream: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(body));
-          controller.close();
-        },
-      }),
-      blob: {},
-    });
-
-    const { patchOrder } = await import("@/lib/admin/store");
-    const result = await patchOrder("ORD-1", () => ({ status: "Expédié" }));
-    expect(result.changed).toBe(true);
-    expect(putMock).toHaveBeenCalledTimes(1);
-    const opts = putMock.mock.calls[0]?.[2] as Record<string, unknown> | undefined;
-    expect(opts?.allowOverwrite).toBe(true);
-    expect(opts && "ifMatch" in opts).toBe(false);
-  });
 });

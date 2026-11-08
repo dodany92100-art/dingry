@@ -34,6 +34,10 @@ import {
   type ProductSize,
 } from "@/lib/admin/types";
 import { EMPTY_PRODUCT_STORY, type ProductStoryFormFields } from "@/lib/admin/product-story";
+import {
+  uploadAdminImageToR2,
+  type AdminImageUploadResponse,
+} from "@/lib/client/admin-upload-image";
 import { prepareProductImage } from "@/lib/client/prepare-product-image";
 import { buildSmartCrmHints, buildSmartDescriptionDraft } from "@/lib/admin/smart-crm";
 import {
@@ -346,6 +350,21 @@ function appendStoryFields(formData: FormData, form: FormState): void {
   formData.set("printPlacement", form.printPlacement);
 }
 
+function appendPreuploadedImages(
+  formData: FormData,
+  preuploadedRecto: AdminImageUploadResponse | null,
+  preuploadedVerso: AdminImageUploadResponse | null,
+): void {
+  if (preuploadedRecto?.url) {
+    formData.set("imageUrl", preuploadedRecto.url);
+    if (preuploadedRecto.pathname) formData.set("imageBlobPathname", preuploadedRecto.pathname);
+  }
+  if (preuploadedVerso?.url) {
+    formData.set("imageBackUrl", preuploadedVerso.url);
+    if (preuploadedVerso.pathname) formData.set("imageBackBlobPathname", preuploadedVerso.pathname);
+  }
+}
+
 function buildFormDataForScope(
   form: FormState,
   scope: EditorTab,
@@ -353,6 +372,8 @@ function buildFormDataForScope(
   imageVerso: File | null,
   publishStatus: ProductPublishStatus,
   pantsVariantOverride?: string,
+  preuploadedRecto?: AdminImageUploadResponse | null,
+  preuploadedVerso?: AdminImageUploadResponse | null,
 ): FormData {
   const formData = new FormData();
   if (scope === "product") {
@@ -367,7 +388,9 @@ function buildFormDataForScope(
     formData.set("publishStatus", publishStatus);
     formData.set("printPlacement", form.printPlacement);
     if (imageRecto) formData.set("image", imageRecto);
+    else appendPreuploadedImages(formData, preuploadedRecto ?? null, null);
     if (imageVerso) formData.set("imageBack", imageVerso);
+    else if (preuploadedVerso) appendPreuploadedImages(formData, null, preuploadedVerso);
     return formData;
   }
   formData.set("publishStatus", publishStatus);
@@ -388,8 +411,19 @@ function buildFormDataComplete(
   imageVerso: File | null,
   publishStatus: ProductPublishStatus,
   pantsVariantOverride?: string,
+  preuploadedRecto?: AdminImageUploadResponse | null,
+  preuploadedVerso?: AdminImageUploadResponse | null,
 ): FormData {
-  const formData = buildFormDataForScope(form, "product", imageRecto, imageVerso, publishStatus, pantsVariantOverride);
+  const formData = buildFormDataForScope(
+    form,
+    "product",
+    imageRecto,
+    imageVerso,
+    publishStatus,
+    pantsVariantOverride,
+    preuploadedRecto,
+    preuploadedVerso,
+  );
   appendStoryFields(formData, form);
   return formData;
 }
@@ -440,9 +474,13 @@ export function ProductEditorModal({
   const [imageVersoCleared, setImageVersoCleared] = useState(() => hydratedUi.imageVersoCleared);
   const [imageRectoPreview, setImageRectoPreview] = useState("");
   const [imageVersoPreview, setImageVersoPreview] = useState("");
+  const [preuploadedRecto, setPreuploadedRecto] = useState<AdminImageUploadResponse | null>(null);
+  const [preuploadedVerso, setPreuploadedVerso] = useState<AdminImageUploadResponse | null>(null);
+  const [uploadingRecto, setUploadingRecto] = useState(false);
+  const [uploadingVerso, setUploadingVerso] = useState(false);
   const [convertingRecto, setConvertingRecto] = useState(false);
   const [convertingVerso, setConvertingVerso] = useState(false);
-  const convertingImage = convertingRecto || convertingVerso;
+  const convertingImage = convertingRecto || convertingVerso || uploadingRecto || uploadingVerso;
   const [saving, setSaving] = useState(false);
   const saveInFlightRef = useRef(false);
   const [formError, setFormError] = useState("");
@@ -511,6 +549,8 @@ export function ProductEditorModal({
     setEditorTab(ui.editorTab);
     setImageRectoFile(null);
     setImageVersoFile(null);
+    setPreuploadedRecto(null);
+    setPreuploadedVerso(null);
     setImageRectoCleared(ui.imageRectoCleared);
     setImageVersoCleared(ui.imageVersoCleared);
     setFormError("");
@@ -845,15 +885,33 @@ export function ProductEditorModal({
     setFormSuccess(null);
     if (!selected) {
       setImageRectoFile(null);
+      setPreuploadedRecto(null);
       setImageRectoCleared(true);
       return;
     }
     setImageRectoCleared(false);
     setConvertingRecto(true);
     try {
-      setImageRectoFile(await prepareProductImage(selected));
+      const prepared = await prepareProductImage(selected);
+      setUploadingRecto(true);
+      try {
+        const uploaded = await uploadAdminImageToR2(prepared, {
+          productId: editingId,
+          face: "recto",
+        });
+        setPreuploadedRecto(uploaded);
+        setImageRectoFile(null);
+        setImageRectoPreview(uploaded.url);
+      } catch (uploadError) {
+        setPreuploadedRecto(null);
+        setImageRectoFile(prepared);
+        setFormError(uploadError instanceof Error ? uploadError.message : "Upload R2 impossible.");
+      } finally {
+        setUploadingRecto(false);
+      }
     } catch (error) {
       setImageRectoFile(null);
+      setPreuploadedRecto(null);
       setFormError(error instanceof Error ? error.message : "Conversion impossible.");
     } finally {
       setConvertingRecto(false);
@@ -865,15 +923,33 @@ export function ProductEditorModal({
     setFormSuccess(null);
     if (!selected) {
       setImageVersoFile(null);
+      setPreuploadedVerso(null);
       setImageVersoCleared(true);
       return;
     }
     setImageVersoCleared(false);
     setConvertingVerso(true);
     try {
-      setImageVersoFile(await prepareProductImage(selected));
+      const prepared = await prepareProductImage(selected);
+      setUploadingVerso(true);
+      try {
+        const uploaded = await uploadAdminImageToR2(prepared, {
+          productId: editingId,
+          face: "verso",
+        });
+        setPreuploadedVerso(uploaded);
+        setImageVersoFile(null);
+        setImageVersoPreview(uploaded.url);
+      } catch (uploadError) {
+        setPreuploadedVerso(null);
+        setImageVersoFile(prepared);
+        setFormError(uploadError instanceof Error ? uploadError.message : "Upload R2 impossible.");
+      } finally {
+        setUploadingVerso(false);
+      }
     } catch (error) {
       setImageVersoFile(null);
+      setPreuploadedVerso(null);
       setFormError(error instanceof Error ? error.message : "Conversion impossible.");
     } finally {
       setConvertingVerso(false);
@@ -884,11 +960,11 @@ export function ProductEditorModal({
     if (convertingImage) return "Conversion de l'image en cours.";
     if (form.name.trim().length < 2) return "Nom du produit requis (2 caractères min.).";
     if (publishStatus === "live") {
-      if (!editingId && !imageRectoFile) {
+      if (!editingId && !imageRectoFile && !preuploadedRecto?.url) {
         return "Ajoute une image pour mettre en ligne.";
       }
       const preview = imageRectoCleared ? "" : imageRectoPreview || current?.imageUrl || "";
-      if (!imageRectoFile && (!preview || isDraftPlaceholderImage(preview))) {
+      if (!imageRectoFile && !preuploadedRecto?.url && (!preview || isDraftPlaceholderImage(preview))) {
         return "Ajoute une image pour mettre en ligne.";
       }
     }
@@ -946,9 +1022,11 @@ export function ProductEditorModal({
         imageVersoFile,
         publishStatus,
         pantsVariant,
+        preuploadedRecto,
+        preuploadedVerso,
       );
-      if (imageRectoCleared && !imageRectoFile) payload.set("clearImage", "1");
-      if (imageVersoCleared && !imageVersoFile) payload.set("clearImageBack", "1");
+      if (imageRectoCleared && !imageRectoFile && !preuploadedRecto?.url) payload.set("clearImage", "1");
+      if (imageVersoCleared && !imageVersoFile && !preuploadedVerso?.url) payload.set("clearImageBack", "1");
       const result = await onSubmit(editingId, payload);
       if ("error" in result) {
         setFormError(result.error);
@@ -965,6 +1043,8 @@ export function ProductEditorModal({
       setWaistListDraft(waistDeclinationsLabel(nextForm.sizes, nextForm.variant));
       setImageRectoFile(null);
       setImageVersoFile(null);
+      setPreuploadedRecto(null);
+      setPreuploadedVerso(null);
       setImageRectoCleared(false);
       setImageVersoCleared(false);
       clearProductEditorDraft(editorSessionKey);
@@ -997,7 +1077,15 @@ export function ProductEditorModal({
         const formToSave = formWithSkuForSave(form, existingSkusRef.current, null);
         const result = await onSubmit(
           null,
-          buildFormDataComplete(formToSave, imageRectoFile, imageVersoFile, publishStatus, pantsVariant),
+          buildFormDataComplete(
+            formToSave,
+            imageRectoFile,
+            imageVersoFile,
+            publishStatus,
+            pantsVariant,
+            preuploadedRecto,
+            preuploadedVerso,
+          ),
         );
         if ("error" in result) {
           setFormError(result.error);
@@ -1011,6 +1099,8 @@ export function ProductEditorModal({
         setWaistListDraft(waistDeclinationsLabel(created.sizes, created.variant));
         setImageRectoFile(null);
         setImageVersoFile(null);
+        setPreuploadedRecto(null);
+        setPreuploadedVerso(null);
         clearProductEditorDraft(editorSessionKey);
         showFormSuccess(
           publishStatus === "live"
@@ -1242,7 +1332,12 @@ export function ProductEditorModal({
   const isPublished = publishStatus === "live";
 
   const mediaDirty = Boolean(
-    imageRectoFile || imageVersoFile || imageRectoCleared || imageVersoCleared,
+    imageRectoFile ||
+      imageVersoFile ||
+      preuploadedRecto?.url ||
+      preuploadedVerso?.url ||
+      imageRectoCleared ||
+      imageVersoCleared,
   );
 
   const sectionDirty = useMemo(

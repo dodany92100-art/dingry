@@ -10,6 +10,7 @@ import {
   updateLookbookSlide,
   validateImageFile,
 } from "@/lib/admin/store";
+import { preuploadedRectoFromForm } from "@/lib/admin/preuploaded-image";
 import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -66,6 +67,7 @@ export async function PATCH(
       }
 
       const image = formData.get("image");
+      const preuploadedImage = preuploadedRectoFromForm(formData);
       let file: File | undefined;
       if (image instanceof File && image.size > 0) {
         const imageError = validateImageFile(image);
@@ -81,6 +83,7 @@ export async function PATCH(
           title: parsed.fields.title,
           caption: parsed.fields.caption,
           sortOrder: parsed.fields.sortOrder,
+          preuploadedImage: preuploadedImage ?? undefined,
         },
         file,
       );

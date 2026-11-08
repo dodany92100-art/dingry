@@ -65,4 +65,4 @@ export async function requireAdmin() {
   return null;
 }
 
-export { isBlobConfigured } from "@/lib/admin/blob-config";
+export { isR2ImageStorageEnabled } from "@/lib/admin/blob-config";

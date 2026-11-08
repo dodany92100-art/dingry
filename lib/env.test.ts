@@ -8,7 +8,6 @@ const PROD_KEYS = [
   "SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "BLOB_READ_WRITE_TOKEN",
 ] as const;
 
 const snapshot = Object.fromEntries(PROD_KEYS.map((k) => [k, process.env[k]]));
@@ -32,7 +31,6 @@ function prodEnv(overrides: Record<string, string | undefined>) {
   delete process.env.SUPABASE_URL;
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
-  delete process.env.BLOB_READ_WRITE_TOKEN;
   for (const [key, value] of Object.entries(overrides)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -46,7 +44,7 @@ describe("validateProductionEnv", () => {
     expect(() => validateProductionEnv()).not.toThrow();
   });
 
-  it("exige la paire Supabase complète ou Blob", () => {
+  it("exige la paire Supabase complète", () => {
     prodEnv({});
     const errors = collectProductionEnvErrors();
     expect(errors.some((e) => e.includes("Stockage CRM"))).toBe(true);
@@ -56,7 +54,6 @@ describe("validateProductionEnv", () => {
   it("rejette Supabase partiel (URL sans service role)", () => {
     prodEnv({
       NEXT_PUBLIC_SUPABASE_URL: "https://xxx.supabase.co",
-      BLOB_READ_WRITE_TOKEN: "token",
     });
     const errors = collectProductionEnvErrors();
     expect(errors.some((e) => e.includes("SUPABASE_SERVICE_ROLE_KEY"))).toBe(true);
@@ -71,9 +68,4 @@ describe("validateProductionEnv", () => {
     expect(() => validateProductionEnv()).not.toThrow();
   });
 
-  it("accepte Blob seul", () => {
-    prodEnv({ BLOB_READ_WRITE_TOKEN: "vercel-blob-token" });
-    expect(collectProductionEnvErrors()).toEqual([]);
-    expect(() => validateProductionEnv()).not.toThrow();
-  });
 });

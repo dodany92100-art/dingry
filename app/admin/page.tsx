@@ -18,6 +18,7 @@ import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
 import { ProductEditorModal } from "@/components/organisms/admin/product-editor-modal";
 import { ReleaseBanner } from "@/components/organisms/admin/release-banner";
+import { AdminActionToast } from "@/components/organisms/admin/admin-action-toast";
 import { StockTab } from "@/components/organisms/admin/stock-tab";
 import { TabNav, type TabId } from "@/components/organisms/admin/tab-nav";
 import {
@@ -313,16 +314,19 @@ function AdminDashboard() {
         ) : null}
 
         {tab === "produits" || tab === "brouillons" ? (
+          <>
+            <AdminActionToast toast={productsApi.stockToast} onDismiss={productsApi.dismissStockToast} />
           <StockTab
             products={productsApi.products}
             busyProductId={productsApi.busyProductId}
             error={productsApi.stockError}
             publishFilter={tab === "brouillons" ? "draft" : "live"}
             gridLocked={gridLocked}
-            productEditorOpen={false}
+            productEditorOpen={Boolean(editor)}
+            stockAutosaveStatus={productsApi.stockAutosaveStatus}
             onVisibleDraftIdsChange={onVisibleDraftIdsChange}
-            onChangeStock={(product, delta) => void productsApi.changeStock(product, delta)}
-            onSetStock={(product, next) => void productsApi.setStock(product, next)}
+            onChangeStock={(product, delta) => productsApi.changeStock(product, delta)}
+            onSetStock={(product, next) => productsApi.setStock(product, next)}
             onEdit={openEdit}
             onNew={openNew}
             onTogglePin={(product) => void productsApi.togglePin(product)}
@@ -333,6 +337,7 @@ function AdminDashboard() {
             }}
             onReorderProducts={productsApi.reorderProductsLocal}
           />
+          </>
         ) : tab === "banniere" ? (
           <CatalogPersoBannerTab
             banner={persoBannerApi.banner}

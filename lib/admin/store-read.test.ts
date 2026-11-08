@@ -1,40 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const getMock = vi.hoisted(() => vi.fn());
-const putMock = vi.hoisted(() => vi.fn());
+const readMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/ratelimit", () => ({
   getSharedRedis: () => null,
 }));
 
-vi.mock("@vercel/blob", () => ({
-  get: (...args: unknown[]) => getMock(...args),
-  put: (...args: unknown[]) => putMock(...args),
-  del: vi.fn(),
-  BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {
-    constructor() {
-      super("precondition");
-      this.name = "BlobPreconditionFailedError";
-    }
-  },
+vi.mock("@/lib/admin/store-snapshot-file", () => ({
+  readFileStoreSnapshot: (...args: unknown[]) => readMock(...args),
+  writeFileStoreSnapshot: vi.fn(),
+  adminStoreSnapshotPath: () => "/tmp/dingry-test-store.json",
+  revisionFromDiskText: (text: string) => text,
 }));
 
-describe("readBlobSnapshot via withStoreOptimistic", () => {
+describe("readFileStoreSnapshot via withStoreOptimistic", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "test-blob-token");
-    putMock.mockResolvedValue({ url: "https://example/blob" });
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://xxx.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role");
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.resetModules();
-    getMock.mockReset();
-    putMock.mockReset();
+    readMock.mockReset();
   });
 
-  it("get en échec ne déclenche aucun put", async () => {
-    getMock.mockRejectedValue(new Error("network timeout"));
+  it("get en échec ne déclenche aucune écriture", async () => {
+    readMock.mockRejectedValue(new Error("network timeout"));
     const { insertOrderIfNew, StoreUnavailableError } = await import("@/lib/admin/store");
     await expect(
       insertOrderIfNew({
@@ -48,113 +41,6 @@ describe("readBlobSnapshot via withStoreOptimistic", () => {
         source: "paypal",
       }),
     ).rejects.toBeInstanceOf(StoreUnavailableError);
-    expect(putMock).not.toHaveBeenCalled();
-  });
-
-  it("put Blob avec ifMatch quand etag connu (useCache: false sur get)", async () => {
-    const storeJson = JSON.stringify({
-      version: 13,
-      products: [],
-      orders: [
-        {
-          id: "ORD-1",
-          customerName: "A",
-          email: "a@b.fr",
-          total: 10,
-          items: [],
-          status: "En attente",
-          createdAt: new Date().toISOString(),
-          source: "paypal",
-        },
-      ],
-      lookbook: [],
-      removedCatalogIds: [],
-    });
-    getMock.mockResolvedValue({
-      statusCode: 200,
-      stream: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(storeJson));
-          controller.close();
-        },
-      }),
-      blob: { etag: "etag-live" },
-    });
-    const { patchOrder } = await import("@/lib/admin/store");
-    await patchOrder("ORD-1", () => ({ status: "Expédié" }));
-    expect(getMock).toHaveBeenCalledWith(
-      "dingry/admin/store.json",
-      expect.objectContaining({ useCache: false }),
-    );
-    expect(putMock).toHaveBeenCalledWith(
-      "dingry/admin/store.json",
-      expect.any(String),
-      expect.objectContaining({
-        allowOverwrite: true,
-        ifMatch: "etag-live",
-      }),
-    );
-  });
-
-  it("JSON blob invalide ne déclenche aucun put", async () => {
-    getMock.mockResolvedValue({
-      statusCode: 200,
-      stream: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode("{not-json"));
-          controller.close();
-        },
-      }),
-      blob: { etag: "etag-1" },
-    });
-    const { insertOrderIfNew, StoreUnavailableError } = await import("@/lib/admin/store");
-    await expect(
-      insertOrderIfNew({
-        id: "TEST-ORDER-2",
-        customerName: "Test",
-        email: "t@test.fr",
-        total: 35,
-        items: ["Tee"],
-        status: "En attente",
-        createdAt: new Date().toISOString(),
-        source: "paypal",
-      }),
-    ).rejects.toBeInstanceOf(StoreUnavailableError);
-    expect(putMock).not.toHaveBeenCalled();
   });
 });
 
-describe("loadStoreReadOnly en production", () => {
-  beforeEach(() => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "test-blob-token");
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.resetModules();
-    getMock.mockReset();
-  });
-
-  it("erreur réseau → StoreUnavailableError (pas de seed)", async () => {
-    getMock.mockRejectedValue(new Error("503"));
-    const { loadStoreReadOnly, StoreUnavailableError } = await import("@/lib/admin/store");
-    await expect(loadStoreReadOnly()).rejects.toBeInstanceOf(StoreUnavailableError);
-  });
-
-  it("preview Vercel sans blob → catalogue seed", async () => {
-    vi.stubEnv("VERCEL_ENV", "preview");
-    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "");
-    const { loadStoreReadOnly } = await import("@/lib/admin/store");
-    const store = await loadStoreReadOnly();
-    expect(store.products.length).toBeGreaterThan(0);
-  });
-
-  it("preview Vercel avec token blob : erreur réseau → StoreUnavailableError", async () => {
-    vi.stubEnv("VERCEL_ENV", "preview");
-    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "test-blob-token");
-    getMock.mockRejectedValue(new Error("network"));
-    const { loadStoreReadOnly, StoreUnavailableError } = await import("@/lib/admin/store");
-    await expect(loadStoreReadOnly()).rejects.toBeInstanceOf(StoreUnavailableError);
-  });
-});

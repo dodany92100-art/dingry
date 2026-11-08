@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { isBlobConfigured, requireAdmin } from "@/lib/admin/auth";
+import { isR2ImageStorageEnabled, requireAdmin } from "@/lib/admin/auth";
 import { parseCatalogPersoBannerFields } from "@/lib/admin/parse-catalog-perso-banner";
 import {
   loadStoreReadOnly,
@@ -9,6 +9,7 @@ import {
   validateImageFile,
 } from "@/lib/admin/store";
 import { resolveAdminCatalogPersoBanner } from "@/lib/catalog-perso-banner";
+import { preuploadedRectoFromForm } from "@/lib/admin/preuploaded-image";
 import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -28,7 +29,7 @@ export async function GET() {
     return jsonNoStore({
       banner,
       customized: Boolean(store.catalogPersoBanner),
-      blobEnabled: isBlobConfigured(),
+      r2ImageStorage: isR2ImageStorageEnabled(),
     });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
@@ -66,6 +67,7 @@ export async function PATCH(request: Request) {
   }
 
   const image = formData.get("image");
+  const preuploadedImage = preuploadedRectoFromForm(formData);
   const file = image instanceof File && image.size > 0 ? image : undefined;
   if (file) {
     const imageError = validateImageFile(file);
@@ -78,6 +80,7 @@ export async function PATCH(request: Request) {
     const banner = await upsertCatalogPersoBanner(
       { enabled, eyebrow, title, subtitle, ctaLabel },
       file,
+      preuploadedImage,
     );
     revalidateCatalogPersoBanner();
     return jsonNoStore({ banner });

@@ -1,6 +1,8 @@
 "use client";
 
+import { AdminStockAutosaveHint } from "@/components/organisms/admin/admin-stock-autosave-hint";
 import { AdminStockInput } from "@/components/organisms/admin/admin-stock-input";
+import type { StockAutosavePhase } from "@/lib/admin/stock-autosave-types";
 import type { AdminProduct } from "@/lib/admin/types";
 
 type AdminStockControlsProps = {
@@ -10,6 +12,7 @@ type AdminStockControlsProps = {
   onSetStock: (product: AdminProduct, nextStock: number) => void;
   onEdit: (product: AdminProduct) => void;
   layout?: "card" | "row";
+  autosavePhase?: StockAutosavePhase;
 };
 
 const BTN =
@@ -29,12 +32,14 @@ export function AdminStockControls({
   onSetStock,
   onEdit,
   layout = "card",
+  autosavePhase,
 }: AdminStockControlsProps) {
   const disabled = busy;
 
   if (layout === "row") {
     return (
-      <div className="flex shrink-0 items-center gap-1.5 md:gap-2" data-admin-no-reorder>
+      <div className="flex shrink-0 flex-col items-end gap-0.5" data-admin-no-reorder>
+      <div className="flex items-center gap-1.5 md:gap-2">
         <button
           type="button"
           disabled={disabled || product.stock === 0}
@@ -66,6 +71,8 @@ export function AdminStockControls({
         >
           Modifier
         </button>
+      </div>
+      <AdminStockAutosaveHint phase={autosavePhase} />
       </div>
     );
   }
@@ -108,6 +115,9 @@ export function AdminStockControls({
       >
         Modifier
       </button>
+      <div className="w-full sm:w-auto sm:basis-full">
+        <AdminStockAutosaveHint phase={autosavePhase} />
+      </div>
     </div>
   );
 }

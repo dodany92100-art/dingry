@@ -38,6 +38,7 @@ export function storageObjectPath(folder: string, fileName: string): string {
   return `${folder.replace(/^\/+|\/+$/g, "")}/${stamp}-${fileName}`;
 }
 
+/** @deprecated Images produits : utiliser `lib/r2/storage.ts` (Cloudflare R2). Conservé pour suppression d’anciennes URLs Supabase Storage. */
 export async function uploadPublicImage(
   objectPath: string,
   file: File,

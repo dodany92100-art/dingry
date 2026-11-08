@@ -1,15 +1,15 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { BlobPreconditionFailedError, get, put } from "@vercel/blob";
 import { getSharedRedis } from "@/lib/ratelimit";
 import { getTotpSecret } from "@/lib/admin/totp";
+import { StoreConflictError } from "@/lib/admin/store-errors";
 
 const CODE_COUNT = 8;
 const CODE_LENGTH = 10;
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const LOCAL_PATH = path.join(process.cwd(), "data", "admin", "backup-codes.json");
-const BLOB_PATH = "dingry/admin/backup-codes.json";
+const REDIS_KEY = "dingry:admin:backup-codes:v1";
 const INIT_KEY = "dingry:admin-backup:init";
 const WRITE_ATTEMPTS = 5;
 
@@ -22,12 +22,12 @@ type CodesSnapshot = {
 
 export type BackupCodesStoreState = "missing" | "error" | "exhausted" | "initialized";
 
-function blobConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-}
-
 function revisionFromDiskText(text: string): string {
   return createHash("sha256").update(text).digest("hex");
+}
+
+function backupCodesPath(): string {
+  return (process.env.ADMIN_BACKUP_CODES_PATH ?? "").trim() || LOCAL_PATH;
 }
 
 function randomCode(): string {
@@ -75,25 +75,49 @@ function isBackupFile(value: unknown): value is BackupFile {
   return Array.isArray(hashes) && hashes.every((item) => typeof item === "string" && /^[a-f0-9]{64}$/.test(item));
 }
 
-async function readCodesSnapshot(): Promise<CodesSnapshot | "missing" | "error"> {
-  if (blobConfigured()) {
-    try {
-      const result = await get(BLOB_PATH, { access: "public", useCache: false });
-      if (!result || result.statusCode !== 200 || !result.stream) return "missing";
-      const text = await new Response(result.stream).text();
-      const parsed: unknown = JSON.parse(text);
-      if (!isBackupFile(parsed)) return "error";
-      return { file: parsed, etag: result.blob.etag ?? null };
-    } catch (error) {
-      const missing = error instanceof Error && /not found|404/i.test(error.message);
-      if (missing) return "missing";
-      console.error("Codes de secours illisibles", error instanceof Error ? error.name : "erreur");
-      return "error";
+async function readCodesFromRedis(): Promise<CodesSnapshot | "missing" | "error" | null> {
+  const client = getSharedRedis();
+  if (!client) return null;
+  try {
+    const raw = await client.get(REDIS_KEY);
+    if (raw == null || raw === "") return "missing";
+    const text = typeof raw === "string" ? raw : String(raw);
+    const parsed: unknown = JSON.parse(text);
+    if (!isBackupFile(parsed)) return "error";
+    return { file: parsed, etag: revisionFromDiskText(text) };
+  } catch (error) {
+    console.error("Codes de secours Redis illisibles", error instanceof Error ? error.name : "erreur");
+    return "error";
+  }
+}
+
+async function writeCodesToRedis(file: BackupFile, etag: string | null): Promise<boolean> {
+  const client = getSharedRedis();
+  if (!client) return false;
+  const body = JSON.stringify(file);
+  if (etag) {
+    const currentRaw = await client.get(REDIS_KEY);
+    const current =
+      currentRaw == null || currentRaw === ""
+        ? ""
+        : typeof currentRaw === "string"
+          ? currentRaw
+          : String(currentRaw);
+    if (current && revisionFromDiskText(current) !== etag) {
+      throw new BackupCodesConflictError();
     }
   }
+  await client.set(REDIS_KEY, body);
+  return true;
+}
 
+async function readCodesSnapshot(): Promise<CodesSnapshot | "missing" | "error"> {
+  const fromRedis = await readCodesFromRedis();
+  if (fromRedis !== null) return fromRedis;
+
+  const filePath = backupCodesPath();
   try {
-    const text = await readFile(LOCAL_PATH, "utf8");
+    const text = await readFile(filePath, "utf8");
     const parsed: unknown = JSON.parse(text);
     if (!isBackupFile(parsed)) return "error";
     return { file: parsed, etag: revisionFromDiskText(text) };
@@ -107,21 +131,13 @@ async function readCodesSnapshot(): Promise<CodesSnapshot | "missing" | "error">
 
 async function writeCodesSnapshot(file: BackupFile, etag: string | null): Promise<void> {
   const body = JSON.stringify(file);
-  if (blobConfigured()) {
-    await put(BLOB_PATH, body, {
-      access: "public",
-      addRandomSuffix: false,
-      allowOverwrite: etag !== null,
-      contentType: "application/json",
-      cacheControlMaxAge: 0,
-      ...(etag ? { ifMatch: etag } : {}),
-    });
-    return;
-  }
-  await mkdir(path.dirname(LOCAL_PATH), { recursive: true });
+  const wroteRedis = await writeCodesToRedis(file, etag);
+  if (wroteRedis) return;
+
+  const filePath = backupCodesPath();
   if (etag) {
     try {
-      const current = await readFile(LOCAL_PATH, "utf8");
+      const current = await readFile(filePath, "utf8");
       if (revisionFromDiskText(current) !== etag) {
         throw new BackupCodesConflictError();
       }
@@ -131,7 +147,8 @@ async function writeCodesSnapshot(file: BackupFile, etag: string | null): Promis
       if (error instanceof BackupCodesConflictError) throw error;
     }
   }
-  await writeFile(LOCAL_PATH, body, "utf8");
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, body, "utf8");
 }
 
 export class BackupCodesConflictError extends Error {
@@ -143,7 +160,7 @@ export class BackupCodesConflictError extends Error {
 
 /** Seules les erreurs de concurrence optimiste déclenchent un retry. */
 export function isBackupCodesWriteConflict(error: unknown): boolean {
-  return error instanceof BlobPreconditionFailedError || error instanceof BackupCodesConflictError;
+  return error instanceof BackupCodesConflictError || error instanceof StoreConflictError;
 }
 
 async function claimGeneration(): Promise<"claimed" | "duplicate" | "skip"> {

@@ -2,7 +2,13 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import type { AdminLookbookSlide } from "@/lib/admin/types";
-import { prepareProductImage } from "@/lib/client/prepare-product-image";
+import {
+  appendPreuploadedImageFields,
+  R2_LOOKBOOK_FOLDER,
+  R2_LOOKBOOK_STAGING_FOLDER,
+  type AdminImageUploadResponse,
+} from "@/lib/client/admin-upload-image";
+import { prepareAndUploadAdminImage } from "@/lib/client/admin-media-upload";
 import type { SaveLookbookResult } from "./hooks/use-admin-lookbook";
 
 type LookbookEditorModalProps = {
@@ -23,6 +29,7 @@ export function LookbookEditorModal({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [caption, setCaption] = useState(initial?.caption ?? "");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [preuploaded, setPreuploaded] = useState<AdminImageUploadResponse | null>(null);
   const [imagePreview, setImagePreview] = useState(initial?.imageUrl ?? "");
   const [convertingImage, setConvertingImage] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -41,20 +48,29 @@ export function LookbookEditorModal({
   async function handleImageChange(file: File | null) {
     if (!file) {
       setImageFile(null);
+      setPreuploaded(null);
       if (initial) setImagePreview(initial.imageUrl);
       return;
     }
     setConvertingImage(true);
     setFormError("");
-    try {
-      const prepared = await prepareProductImage(file);
-      setImageFile(prepared);
-    } catch {
-      setFormError("Image invalide ou conversion impossible.");
+    const folder = editingId ? R2_LOOKBOOK_FOLDER(editingId) : R2_LOOKBOOK_STAGING_FOLDER;
+    const result = await prepareAndUploadAdminImage(file, { folder });
+    setConvertingImage(false);
+    if (!result.ok) {
+      setFormError(result.error);
       setImageFile(null);
-    } finally {
-      setConvertingImage(false);
+      setPreuploaded(null);
+      return;
     }
+    if (result.uploaded) {
+      setPreuploaded(result.uploaded);
+      setImageFile(null);
+      setImagePreview(result.uploaded.url);
+      return;
+    }
+    setPreuploaded(null);
+    setImageFile(result.file);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -63,7 +79,7 @@ export function LookbookEditorModal({
       setFormError("Le titre est requis.");
       return;
     }
-    if (!editingId && !imageFile) {
+    if (!editingId && !imageFile && !preuploaded?.url) {
       setFormError("Une image est requise.");
       return;
     }
@@ -73,6 +89,7 @@ export function LookbookEditorModal({
     formData.set("title", title.trim());
     formData.set("caption", caption.trim());
     if (imageFile) formData.set("image", imageFile);
+    else appendPreuploadedImageFields(formData, preuploaded);
     const result = await onSubmit(editingId, formData);
     setSaving(false);
     if ("error" in result) {

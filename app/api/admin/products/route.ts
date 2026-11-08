@@ -1,5 +1,5 @@
 import { revalidateShopCatalog } from "@/lib/revalidate-shop-catalog";
-import { isBlobConfigured, requireAdmin } from "@/lib/admin/auth";
+import { isR2ImageStorageEnabled, requireAdmin } from "@/lib/admin/auth";
 import { parseProductFields } from "@/lib/admin/parse-product";
 import {
   createProduct,
@@ -13,6 +13,7 @@ import {
 import { readStockQuantity } from "@/lib/stock";
 import { normalizePublishStatus } from "@/lib/admin/types";
 import type { ParsedProductFields } from "@/lib/admin/parse-product";
+import { preuploadedRectoFromForm, preuploadedVersoFromForm } from "@/lib/admin/preuploaded-image";
 import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -34,7 +35,7 @@ export async function GET() {
     );
     return jsonNoStore({
       products,
-      blobEnabled: isBlobConfigured(),
+      r2ImageStorage: isR2ImageStorageEnabled(),
     });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
@@ -67,9 +68,12 @@ export async function POST(request: Request) {
 
   const image = formData.get("image");
   const imageBack = formData.get("imageBack");
+  const preuploadedRecto = preuploadedRectoFromForm(formData);
+  const preuploadedVerso = preuploadedVersoFromForm(formData);
   const publishStatus = normalizePublishStatus(String(formData.get("publishStatus") ?? "live"));
   const imageRequired = publishStatus === "live";
-  if (imageRequired && (!(image instanceof File) || image.size === 0)) {
+  const hasRectoFile = image instanceof File && image.size > 0;
+  if (imageRequired && !hasRectoFile && !preuploadedRecto) {
     return jsonNoStore({ error: "Une image est requise pour mettre en ligne." }, { status: 400 });
   }
 
@@ -104,8 +108,10 @@ export async function POST(request: Request) {
       sizes: fields.sizes,
       stock: fields.stock,
       publishStatus: fields.publishStatus ?? publishStatus,
-      file: image instanceof File && image.size > 0 ? image : null,
+      file: hasRectoFile ? image : null,
       fileBack: imageBack instanceof File && imageBack.size > 0 ? imageBack : null,
+      preuploadedRecto,
+      preuploadedVerso,
     });
     revalidateShopCatalog();
     return jsonNoStore({ product }, { status: 201 });

@@ -1,20 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const getMock = vi.hoisted(() => vi.fn());
-const putMock = vi.hoisted(() => vi.fn());
+const readMock = vi.hoisted(() => vi.fn());
+const writeMock = vi.hoisted(() => vi.fn());
 const redisSet = vi.hoisted(() => vi.fn());
 const redisEval = vi.hoisted(() => vi.fn());
 
-vi.mock("@vercel/blob", () => ({
-  get: (...args: unknown[]) => getMock(...args),
-  put: (...args: unknown[]) => putMock(...args),
-  del: vi.fn(),
-  BlobPreconditionFailedError: class BlobPreconditionFailedError extends Error {
-    constructor() {
-      super("precondition");
-      this.name = "BlobPreconditionFailedError";
-    }
-  },
+vi.mock("@/lib/admin/store-snapshot-file", () => ({
+  readFileStoreSnapshot: (...args: unknown[]) => readMock(...args),
+  writeFileStoreSnapshot: (...args: unknown[]) => writeMock(...args),
+  adminStoreSnapshotPath: () => "/tmp/dingry-test-store.json",
+  revisionFromDiskText: (text: string) => text,
 }));
 
 vi.mock("@/lib/ratelimit", () => ({
@@ -40,39 +35,33 @@ function order() {
 describe("verrou Redis store", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "test-blob-token");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://xxx.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role");
     redisSet.mockResolvedValue("OK");
     redisEval.mockResolvedValue(1);
-    putMock.mockResolvedValue({ url: "https://example/blob" });
-    const body = JSON.stringify({
-      version: 13,
-      products: [],
-      orders: [order()],
-      lookbook: [],
-      removedCatalogIds: [],
-    });
-    getMock.mockResolvedValue({
-      statusCode: 200,
-      stream: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(body));
-          controller.close();
-        },
-      }),
-      blob: { etag: "etag-1" },
+    writeMock.mockResolvedValue(undefined);
+    readMock.mockResolvedValue({
+      store: {
+        version: 13,
+        products: [],
+        orders: [order()],
+        lookbook: [],
+        removedCatalogIds: [],
+      },
+      etag: "etag-1",
     });
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.resetModules();
-    getMock.mockReset();
-    putMock.mockReset();
+    readMock.mockReset();
+    writeMock.mockReset();
     redisSet.mockReset();
     redisEval.mockReset();
   });
 
-  it("prend et libère dingry:store-lock autour du put", async () => {
+  it("prend et libère dingry:store-lock autour de l’écriture", async () => {
     const { patchOrder } = await import("@/lib/admin/store");
     await patchOrder("ORD-1", () => ({ status: "Expédié" }));
     expect(redisSet).toHaveBeenCalledWith(
@@ -80,7 +69,7 @@ describe("verrou Redis store", () => {
       expect.any(String),
       expect.objectContaining({ nx: true, ex: 20 }),
     );
-    expect(putMock).toHaveBeenCalledTimes(1);
+    expect(writeMock).toHaveBeenCalledTimes(1);
     expect(redisEval).toHaveBeenCalled();
   });
 
@@ -92,7 +81,7 @@ describe("verrou Redis store", () => {
       await expect(patchOrder("ORD-1", () => ({ status: "Expédié" }))).rejects.toBeInstanceOf(
         StoreConflictError,
       );
-      expect(putMock).not.toHaveBeenCalled();
+      expect(writeMock).not.toHaveBeenCalled();
     },
     20_000,
   );

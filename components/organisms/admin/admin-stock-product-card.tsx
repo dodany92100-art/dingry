@@ -2,6 +2,7 @@
 
 import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
+import type { StockAutosavePhase } from "@/lib/admin/stock-autosave-types";
 import type { AdminProduct } from "@/lib/admin/types";
 import { CATALOG_THUMB_IMAGE_WIDTH, cldOpt } from "@/lib/cloudinary-url";
 import { AdminStockControls } from "@/components/organisms/admin/admin-stock-controls";
@@ -20,6 +21,7 @@ type AdminStockProductCardProps = {
   onDelete: (product: AdminProduct) => void;
   onDrop: (fromIndex: number, toIndex: number) => void;
   disableReorder?: boolean;
+  autosavePhase?: StockAutosavePhase;
 };
 
 const priceFormat = new Intl.NumberFormat("fr-FR", {
@@ -60,6 +62,7 @@ export function AdminStockProductCard({
   onDelete,
   onDrop,
   disableReorder = false,
+  autosavePhase,
 }: AdminStockProductCardProps) {
   const soldOut = product.stock <= 0;
   const variantLine = stockIndicativeVariants(product) || product.category;
@@ -138,6 +141,7 @@ export function AdminStockProductCard({
               onSetStock={onSetStock}
               onEdit={onEdit}
               layout="card"
+              autosavePhase={autosavePhase}
             />
           </div>
         </div>

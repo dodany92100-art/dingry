@@ -1,5 +1,6 @@
 "use client";
 
+import type { StockAutosaveStatusMap } from "@/lib/admin/stock-autosave-types";
 import type { AdminProduct } from "@/lib/admin/types";
 import type { AdminStockMenuSection } from "@/lib/admin/stock-menu-sections";
 import { AdminStockProductCard } from "@/components/organisms/admin/admin-stock-product-card";
@@ -16,6 +17,7 @@ type AdminStockSectionsGridProps = {
   onTogglePin: (product: AdminProduct) => void;
   onDelete: (product: AdminProduct) => void;
   onDrop: (fromIndex: number, toIndex: number) => void;
+  stockAutosaveStatus?: StockAutosaveStatusMap;
 };
 
 /** Grille Stock par familles (titres alignés menu boutique). */
@@ -30,6 +32,7 @@ export function AdminStockSectionsGrid({
   onTogglePin,
   onDelete,
   onDrop,
+  stockAutosaveStatus = {},
 }: AdminStockSectionsGridProps) {
   return (
     <div className="space-y-8 md:space-y-9">
@@ -55,6 +58,7 @@ export function AdminStockSectionsGrid({
                   onDelete={onDelete}
                   onDrop={onDrop}
                   disableReorder={reorderBlocked}
+                  autosavePhase={stockAutosaveStatus[product.id]}
                 />
               );
             })}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdminAuthenticated, isBlobConfigured } from "@/lib/admin/auth";
+import { isAdminAuthenticated, isR2ImageStorageEnabled } from "@/lib/admin/auth";
 
 export const runtime = "nodejs";
 
@@ -11,6 +11,6 @@ export async function GET() {
 
   return NextResponse.json({
     authenticated: true,
-    blobEnabled: isBlobConfigured(),
+    r2ImageStorage: isR2ImageStorageEnabled(),
   });
 }

@@ -12,6 +12,7 @@ import {
   PublishValidationError,
 } from "@/lib/admin/store";
 import { isDraftPlaceholderImage } from "@/lib/admin/types";
+import { preuploadedRectoFromForm, preuploadedVersoFromForm } from "@/lib/admin/preuploaded-image";
 import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -46,6 +47,8 @@ export async function PATCH(
 
       const image = formData.get("image");
       const imageBack = formData.get("imageBack");
+      const preuploadedRecto = preuploadedRectoFromForm(formData);
+      const preuploadedVerso = preuploadedVersoFromForm(formData);
       let file: File | undefined;
       if (image instanceof File && image.size > 0) {
         const imageError = validateImageFile(image);
@@ -68,6 +71,7 @@ export async function PATCH(
       if (
         nextPublish === "live" &&
         !file &&
+        !preuploadedRecto &&
         isDraftPlaceholderImage(current.imageUrl)
       ) {
         return jsonNoStore(
@@ -85,6 +89,8 @@ export async function PATCH(
           ...(clearImage ? { clearImage: true } : {}),
           ...(clearImageBack ? { clearImageBack: true } : {}),
           ...(fileBack ? { versoFile: fileBack } : {}),
+          ...(preuploadedRecto ? { preuploadedRecto } : {}),
+          ...(preuploadedVerso ? { preuploadedVerso } : {}),
         },
         file,
       );
