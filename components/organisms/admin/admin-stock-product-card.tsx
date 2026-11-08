@@ -49,10 +49,6 @@ function adminStockCardRing(product: AdminProduct): string {
   return "";
 }
 
-/** Aligné sur le bouton « Modifier » de `AdminStockControls` (layout row). */
-const EDIT_GRID_OVERLAY_BTN =
-  "h-8 shrink-0 rounded-full px-3 text-[10px] uppercase tracking-[0.12em] text-white/80 transition hover:bg-white/15 hover:text-white";
-
 export function AdminStockProductCard({
   product,
   dragIndex,
@@ -66,6 +62,7 @@ export function AdminStockProductCard({
   disableReorder = false,
 }: AdminStockProductCardProps) {
   const soldOut = product.stock <= 0;
+  const variantLine = stockIndicativeVariants(product) || product.category;
 
   return (
     <AdminReorderSurface
@@ -73,10 +70,10 @@ export function AdminStockProductCard({
       busy={busy}
       disabled={disableReorder}
       onDrop={onDrop}
-      className={`dingry-admin-stock group ${adminStockCardRing(product)}`}
+      className={`dingry-admin-stock group flex h-full min-h-0 flex-col rounded-lg md:rounded-xl ${adminStockCardRing(product)}`}
     >
-      <div className="w-full rounded-lg md:rounded-xl">
-        <div className="dingry-product-photo relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-zinc-950 md:rounded-xl">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg md:rounded-xl">
+        <div className="dingry-product-photo relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg bg-zinc-950 md:rounded-xl">
           <button
             type="button"
             onClick={() => onEdit(product)}
@@ -112,49 +109,39 @@ export function AdminStockProductCard({
               compact
             />
           </div>
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[6] flex justify-center bg-gradient-to-t from-black/65 via-black/20 to-transparent px-1.5 pb-1.5 pt-6"
-            data-admin-no-reorder
-          >
-            <button
-              type="button"
-              disabled={busy}
-              aria-label={`Modifier ${product.name}`}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onEdit(product);
-              }}
-              className={`pointer-events-auto border border-white/15 bg-black/45 backdrop-blur-[2px] ${EDIT_GRID_OVERLAY_BTN}`}
-            >
-              Modifier
-            </button>
-          </div>
         </div>
 
-        <div className="mt-1.5 w-full px-0.5 text-left md:mt-2">
-          <p className="text-[9px] uppercase tracking-[0.18em] text-white/45 md:text-[10px] md:tracking-[0.22em]">
-            {product.name}
-          </p>
-          <div className="mt-0.5 flex items-start justify-between gap-1.5 md:mt-1">
-            <p className="line-clamp-2 min-w-0 text-[10px] font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-[11px] md:tracking-widest">
-              {stockIndicativeVariants(product) || product.category}
+        <div className="flex min-h-0 flex-1 flex-col gap-1.5 px-1 py-1.5 md:px-1.5 md:py-2">
+          <div className="min-h-0 space-y-0.5 text-left">
+            <p
+              className="truncate text-[9px] uppercase tracking-[0.16em] text-white/50 md:text-[10px] md:tracking-[0.2em]"
+              title={product.name}
+            >
+              {product.name}
             </p>
-            <p className="shrink-0 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-sm">
+            <p
+              className="line-clamp-2 break-words text-[9px] font-medium uppercase leading-snug tracking-wide text-neutral-100 md:text-[10px]"
+              title={variantLine}
+            >
+              {variantLine}
+            </p>
+            <p className="pt-0.5 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs">
               {priceFormat.format(product.price)}
             </p>
           </div>
+
+          <div className="mt-auto shrink-0 pt-1">
+            <AdminStockControls
+              product={product}
+              busy={busy}
+              onChangeStock={onChangeStock}
+              onSetStock={onSetStock}
+              onEdit={onEdit}
+              layout="card"
+            />
+          </div>
         </div>
       </div>
-
-      <AdminStockControls
-        product={product}
-        busy={busy}
-        onChangeStock={onChangeStock}
-        onSetStock={onSetStock}
-        onEdit={onEdit}
-        layout="card"
-      />
     </AdminReorderSurface>
   );
 }

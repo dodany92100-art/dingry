@@ -5,7 +5,7 @@ export const CATALOG_PRODUCT_GRID_CLASS = `mx-auto grid w-full max-w-[1360px] gr
 
 /** CRM stock : grille dense (aperçu, pas résolution vitrine). */
 export const ADMIN_STOCK_PRODUCT_GRID_CLASS =
-  "mx-auto grid w-full max-w-[1680px] grid-cols-3 gap-2 px-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 lg:gap-2.5 xl:grid-cols-7 2xl:grid-cols-8";
+  "mx-auto grid w-full max-w-[1680px] grid-cols-3 items-stretch gap-2 px-0 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 lg:gap-2.5 xl:grid-cols-7 2xl:grid-cols-8";
 
 /** Surface catalogue boutique (`CatalogSection`). */
 export const CATALOG_SECTION_SURFACE_CLASS =

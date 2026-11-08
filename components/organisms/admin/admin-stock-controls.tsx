@@ -72,7 +72,7 @@ export function AdminStockControls({
 
   return (
     <div
-      className="mt-1 flex items-center justify-center gap-1 border-t border-white/[0.06] pt-1.5"
+      className="flex w-full items-center justify-center gap-0.5 border-t border-white/[0.06] pt-1.5"
       data-admin-no-reorder
     >
       <button
