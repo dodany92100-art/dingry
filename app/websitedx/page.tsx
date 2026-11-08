@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import DingryShopPage from "@/components/pages/dingry-shop-page";
 import { DINGRY_META_DESCRIPTION } from "@/lib/dingry-brand-voice";
 import { DINGRY_OPEN_GRAPH_IMAGE } from "@/lib/dingry-brand";
@@ -14,6 +15,21 @@ export const metadata: Metadata = {
   },
 };
 
+function ShopLoadingFallback() {
+  return (
+    <div
+      className="flex min-h-dvh items-center justify-center bg-black text-[10px] tracking-[0.35em] text-white/45 uppercase"
+      aria-live="polite"
+    >
+      Chargement…
+    </div>
+  );
+}
+
 export default function WebsiteDxPage() {
-  return <DingryShopPage />;
+  return (
+    <Suspense fallback={<ShopLoadingFallback />}>
+      <DingryShopPage />
+    </Suspense>
+  );
 }
