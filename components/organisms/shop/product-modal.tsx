@@ -7,6 +7,7 @@ import {
   isTurnstileProductTestEnabled,
   ProductCaptchaTest,
 } from "@/components/molecules/product-captcha-test";
+import { cldOpt } from "@/lib/cloudinary-url";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { DINGRY_MANIFESTO_EN } from "@/lib/dingry-brand-voice";
 import {
@@ -337,7 +338,13 @@ function ProductModalContent({
                     onClick={() => modal.openProductModal(item)}
                     className="w-24 shrink-0 border border-white/10 bg-[#080808] text-left transition-colors hover:border-[#0066FF]/40"
                   >
-                    <img src={item.image} alt="" className="aspect-[3/4] w-full object-cover" />
+                    <img
+                      src={cldOpt(item.image, 192)}
+                      alt=""
+                      className="aspect-[3/4] w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <span className="block p-2 text-[9px] uppercase leading-snug tracking-wide text-white/55">
                       {storefrontProductTitle(item)}
                     </span>

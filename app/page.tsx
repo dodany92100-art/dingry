@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ShopLoadingFallback } from "@/components/atoms/shop-loading-fallback";
 import DingryShopPage from "@/components/pages/dingry-shop-page";
 import DingryConstructionHome, {
   constructionHomeMetadata,
@@ -49,7 +50,7 @@ export default function HomePage() {
     return <DingryTeaserHome />;
   }
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<ShopLoadingFallback />}>
       <DingryShopPage />
     </Suspense>
   );

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
 import { cn } from "@/lib/utils";
-import { cldOpt } from "@/components/molecules/product-card";
+import { CATALOG_CARD_IMAGE_WIDTH, cldOpt } from "@/lib/cloudinary-url";
 
 /** Fenêtre pour distinguer double tap (flip) vs simple tap (modale) sur tactile. */
 const DOUBLE_TAP_MS = 320;
@@ -140,8 +140,9 @@ export function ProductImageFlip({
     onDoubleTapFlip();
   };
 
-  const frontSrc = cldOpt(frontImage, 600);
-  const backSrc = backImage ? cldOpt(backImage, 600) : frontSrc;
+  const cardW = priority ? 640 : CATALOG_CARD_IMAGE_WIDTH;
+  const frontSrc = cldOpt(frontImage, cardW);
+  const backSrc = backImage ? cldOpt(backImage, cardW) : frontSrc;
 
   const photoShellClass = cn(
     "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg [touch-action:pan-y] sm:rounded-xl md:rounded-xl lg:aspect-[4/5] lg:max-h-[22rem]",

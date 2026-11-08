@@ -4,15 +4,7 @@ import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { cn } from "@/lib/utils";
 import { ProductImageFlip, type ProductFlipSide } from "@/components/molecules/product-image-flip";
 
-/** Ajoute f_auto,q_auto,w_N à une URL Cloudinary sans transformation existante. */
-export function cldOpt(url: string, width: number): string {
-  const marker = "/upload/";
-  const index = url.indexOf(marker);
-  if (!url.includes("res.cloudinary.com") || index < 0) return url;
-  const rest = url.slice(index + marker.length);
-  if (/^[a-z]{1,3}_[^/]*\//.test(rest)) return url;
-  return `${url.slice(0, index + marker.length)}f_auto,q_auto,w_${width}/${rest}`;
-}
+export { cldOpt } from "@/lib/cloudinary-url";
 
 const priceFormat = new Intl.NumberFormat("fr-FR", {
   style: "currency",
