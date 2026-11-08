@@ -7,14 +7,17 @@ import DingryConstructionHome, {
 import DingryTeaserHome, { teaserHomeMetadata } from "@/components/pages/dingry-teaser-home";
 import { DINGRY_OPEN_GRAPH_IMAGE } from "@/lib/dingry-brand";
 import { DINGRY_META_DESCRIPTION } from "@/lib/dingry-brand-voice";
+import { DINGRY_TEASER_OPENING_AT } from "@/lib/dingry-teaser-opening";
 
-/** Lit l’env à la requête (pas au build) pour que la prod reste en teasing jusqu’au 6 nov. */
+/** Lit l’env à la requête (pas au build) — avant ouverture : teaser par défaut. */
 export const dynamic = "force-dynamic";
 
 function publicHomeMode(): "shop" | "teaser" | "construction" {
   const mode = process.env.DINGRY_PUBLIC_HOME?.trim().toLowerCase() ?? "";
+  if (mode === "shop") return "shop";
   if (mode === "teaser") return "teaser";
   if (mode === "construction") return "construction";
+  if (Date.now() < DINGRY_TEASER_OPENING_AT) return "teaser";
   return "shop";
 }
 
