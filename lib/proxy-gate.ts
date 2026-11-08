@@ -5,6 +5,7 @@ import { ADMIN_COOKIE_NAME, sessionSecretFromEnv, verifyAdminSession } from "@/l
 
 const ADMIN_PUBLIC_API = new Set(["/api/admin/login", "/api/admin/logout", "/api/admin/totp"]);
 
+/** Doit rester aligné sur le tableau littéral `config.matcher` de `proxy.ts` (analyse statique Turbopack). */
 export const PROXY_MATCHER = [
   "/admin",
   "/admin/:path*",
@@ -13,6 +14,7 @@ export const PROXY_MATCHER = [
   "/checkout",
   "/checkout/:path*",
   "/api/catalog",
+  "/api/catalog/:path*",
   "/api/checkout",
   "/api/lookbook",
   "/api/catalog-perso-banner",
