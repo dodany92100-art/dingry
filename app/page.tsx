@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import DingryShopPage from "@/components/pages/dingry-shop-page";
+import DingryConstructionHome, {
+  constructionHomeMetadata,
+} from "@/components/pages/dingry-construction-home";
 import DingryTeaserHome, { teaserHomeMetadata } from "@/components/pages/dingry-teaser-home";
 import { DINGRY_OPEN_GRAPH_IMAGE } from "@/lib/dingry-brand";
 import { DINGRY_META_DESCRIPTION } from "@/lib/dingry-brand-voice";
@@ -8,12 +11,17 @@ import { DINGRY_META_DESCRIPTION } from "@/lib/dingry-brand-voice";
 /** Lit l’env à la requête (pas au build) pour que la prod reste en teasing jusqu’au 6 nov. */
 export const dynamic = "force-dynamic";
 
-function isTeaserHome(): boolean {
-  return process.env.DINGRY_PUBLIC_HOME?.trim().toLowerCase() === "teaser";
+function publicHomeMode(): "shop" | "teaser" | "construction" {
+  const mode = process.env.DINGRY_PUBLIC_HOME?.trim().toLowerCase() ?? "";
+  if (mode === "teaser") return "teaser";
+  if (mode === "construction") return "construction";
+  return "shop";
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  if (isTeaserHome()) return teaserHomeMetadata;
+  const mode = publicHomeMode();
+  if (mode === "teaser") return teaserHomeMetadata;
+  if (mode === "construction") return constructionHomeMetadata;
   return {
     title: "DINGRY — True Luxury Is Attitude",
     description: DINGRY_META_DESCRIPTION,
@@ -30,7 +38,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function HomePage() {
-  if (isTeaserHome()) {
+  const mode = publicHomeMode();
+  if (mode === "construction") {
+    return <DingryConstructionHome />;
+  }
+  if (mode === "teaser") {
     return <DingryTeaserHome />;
   }
   return (

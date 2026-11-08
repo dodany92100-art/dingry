@@ -6,9 +6,15 @@ import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 
 export type PersoBannerState = "loading" | "ready" | "error";
 
-export function useShopPersoBanner() {
+type UseShopPersoBannerOptions = {
+  /** Quand false, pas de requête CRM (défaut true). */
+  enabled?: boolean;
+};
+
+export function useShopPersoBanner(options?: UseShopPersoBannerOptions) {
+  const enabled = options?.enabled ?? true;
   const [banner, setBanner] = useState<ShopCatalogPersoBanner>(DEFAULT_CATALOG_PERSO_BANNER);
-  const [state, setState] = useState<PersoBannerState>("loading");
+  const [state, setState] = useState<PersoBannerState>(enabled ? "loading" : "ready");
 
   const load = useCallback(async () => {
     setState("loading");
@@ -34,8 +40,9 @@ export function useShopPersoBanner() {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     void load();
-  }, [load]);
+  }, [enabled, load]);
 
   return { banner, state, retry: load };
 }

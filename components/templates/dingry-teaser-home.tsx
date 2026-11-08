@@ -6,13 +6,11 @@ import { DINGRY_OPEN_GRAPH_IMAGE, DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-b
 const anton = Anton({ weight: "400", subsets: ["latin"], display: "swap" });
 
 export const teaserHomeMetadata: Metadata = {
-  title: "DINGRY Paris — 7 novembre",
-  description:
-    "Ouverture du site officiel DINGRY Paris le 7 novembre 2026 à 20h (Europe/Paris). Travaux en cours.",
+  title: "DINGRY Paris — jeudi 20h",
+  description: "Site en construction. Ouverture jeudi 13 novembre 2026 à 20h (Europe/Paris).",
   openGraph: {
-    title: "DINGRY Paris — 7 novembre",
-    description:
-      "Ouverture du site officiel DINGRY Paris le 7 novembre 2026 à 20h (Europe/Paris). Travaux en cours.",
+    title: "DINGRY Paris — Site en construction",
+    description: "Site en construction. Ouverture jeudi 13 novembre 2026 à 20h (Europe/Paris).",
     images: [DINGRY_OPEN_GRAPH_IMAGE],
   },
   twitter: {
@@ -26,7 +24,7 @@ export default function DingryTeaserHome() {
   return (
     <main className="relative min-h-dvh overflow-x-hidden bg-black text-white">
       <h1 className="sr-only">
-        DINGRY Paris. Ouverture du site officiel le 7 novembre 2026 à 20h. Travaux en cours.
+        DINGRY Paris. Site en construction. Jeudi 13 novembre 2026 à 20h.
       </h1>
       <img
         src={DINGRY_TEASING_HERO_SRC}

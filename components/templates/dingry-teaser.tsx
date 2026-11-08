@@ -3,18 +3,29 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
-import { DINGRY_TEASER_OPENING_AT, DINGRY_TEASER_OPENING_LABEL } from "@/lib/dingry-teaser-opening";
+import {
+  COUNTDOWN_UNITS,
+  DINGRY_COUNTDOWN_LABEL,
+  DINGRY_COUNTDOWN_TARGET_AT,
+  DINGRY_SITE_CONSTRUCTION_LABEL,
+  countdownParts,
+  type CountdownParts,
+} from "@/lib/dingry-countdown";
 
 const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
-const OPENING_AT = DINGRY_TEASER_OPENING_AT;
-
-const UNITS = [
-  { key: "days", label: "Jours", seconds: 86_400 },
-  { key: "hours", label: "Heures", seconds: 3_600 },
-  { key: "minutes", label: "Minutes", seconds: 60 },
-  { key: "seconds", label: "Secondes", seconds: 1 },
-] as const;
+const OPENING_AT = DINGRY_COUNTDOWN_TARGET_AT;
+const UNITS = COUNTDOWN_UNITS.map((u) => ({
+  ...u,
+  label:
+    u.key === "days"
+      ? "Jours"
+      : u.key === "hours"
+        ? "Heures"
+        : u.key === "minutes"
+          ? "Minutes"
+          : "Secondes",
+}));
 
 type TeaserProps = {
   displayClassName: string;
@@ -28,17 +39,6 @@ function InstagramIcon() {
       <circle cx="17.2" cy="6.8" r="0.9" fill="currentColor" />
     </svg>
   );
-}
-
-function countdown(now: number): Record<(typeof UNITS)[number]["key"], string> {
-  let remaining = Math.max(0, Math.floor((OPENING_AT - now) / 1000));
-  const values = {} as Record<(typeof UNITS)[number]["key"], string>;
-  for (const unit of UNITS) {
-    const amount = unit.key === "seconds" ? remaining : Math.floor(remaining / unit.seconds);
-    if (unit.key !== "seconds") remaining -= amount * unit.seconds;
-    values[unit.key] = String(amount).padStart(2, "0");
-  }
-  return values;
 }
 
 export function DingryTeaser({ displayClassName }: TeaserProps) {
@@ -55,7 +55,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
     return () => window.clearInterval(timer);
   }, []);
 
-  const parts = now === null ? null : countdown(now);
+  const parts: CountdownParts | null = now === null ? null : countdownParts(OPENING_AT, now);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -114,7 +114,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           </p>
           <div className="mt-4 flex items-center gap-3 md:justify-end">
             <span className="h-px w-8 bg-white/75 md:w-10" />
-            <p className="text-[11px] tracking-[0.28em] text-white sm:text-xs">{DINGRY_TEASER_OPENING_LABEL}</p>
+            <p className="text-[11px] tracking-[0.28em] text-white sm:text-xs">{DINGRY_COUNTDOWN_LABEL}</p>
             <span className="h-px w-8 bg-white/75 md:w-10" />
           </div>
           <div className="mt-6 flex items-start justify-start gap-0 md:justify-end" aria-live="polite">
@@ -131,7 +131,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
             ))}
           </div>
           <p className="mt-4 max-w-md text-[10px] leading-relaxed tracking-[0.14em] text-white/65 sm:text-[11px] md:ml-auto md:text-right">
-            Travaux en cours — la boutique arrive.
+            {DINGRY_SITE_CONSTRUCTION_LABEL}
           </p>
         </div>
       </div>

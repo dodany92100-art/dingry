@@ -32,7 +32,7 @@ type HeritageSectionProps = {
 
 export function HeritageSection({ scrollContainerRef }: HeritageSectionProps) {
   return (
-    <section id="heritage" className="dingry-below-hero-surface border-t border-white/[0.05] px-6 py-12 md:px-12 md:py-16">
+    <section className="dingry-below-hero-surface border-t border-white/[0.05] px-6 py-12 md:px-12 md:py-16">
       <p className="mb-4 text-[10px] font-semibold tracking-[0.35em] text-[#0066FF] uppercase">Heritage</p>
       <h2 className="dingry-sticky-editorial-title max-w-xl text-3xl uppercase leading-tight md:text-5xl">
         True luxury is attitude.
