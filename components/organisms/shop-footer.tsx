@@ -10,6 +10,7 @@ import {
   DINGRY_REASSURANCE_LINE,
 } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
+import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
 const MODAL_OVERLAY_EASE = [0.16, 1, 0.3, 1] as const;
 const MODAL_PANEL_SPRING = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.85 };
@@ -41,9 +42,10 @@ function InstagramIcon() {
 
 type ShopFooterProps = {
   onScrollToCatalogue?: () => void;
+  shopBasePath?: ShopBasePath;
 };
 
-export function ShopFooter({ onScrollToCatalogue }: ShopFooterProps) {
+export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFooterProps) {
   const [legalDoc, setLegalDoc] = useState<LegalDocId | null>(null);
   const activeLegal = legalDoc ? LEGAL_DOCUMENTS[legalDoc] : null;
 
@@ -79,7 +81,10 @@ export function ShopFooter({ onScrollToCatalogue }: ShopFooterProps) {
                   </button>
                 </li>
                 <li>
-                  <a href="/checkout" className="dingry-footer-link text-[11px] tracking-[0.12em]">
+                  <a
+                    href={shopHref(shopBasePath, "/checkout")}
+                    className="dingry-footer-link text-[11px] tracking-[0.12em]"
+                  >
                     Paiement
                   </a>
                 </li>

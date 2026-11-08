@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LazyWhenVisible } from "@/components/molecules/lazy-when-visible";
 import { BackgroundGradientAnimation } from "@/components/atoms/ui/background-gradient-animation";
 import { CartDrawer } from "@/components/organisms/shop/cart-drawer";
@@ -22,6 +22,7 @@ import { ShopNav } from "@/components/organisms/shop/shop-nav";
 import { isShopProductInStock } from "@/lib/catalog";
 import { CATALOG_MENU_TAB_CUSTOM, parseCatalogFilter } from "@/lib/shop-catalog";
 import { PERSONALIZABLE_PRODUCT_ID, PRODUCTS } from "@/lib/shop-data";
+import { shopBasePathFromPathname } from "@/lib/shop-base-path";
 import {
   buildFlipPairs,
   resolveSaleProduct,
@@ -55,6 +56,8 @@ const ShopFooter = dynamic(
 /** Boutique : orchestre hooks + organisms/shop. */
 export default function DingryShopPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const shopBasePath = shopBasePathFromPathname(pathname ?? "/");
   const { pageScrollRef, scrollToSection, restoreScrollPosition } = usePageScroll();
   const { products, catalogState, retry } = useShopCatalog();
   const { banner: persoBanner } = useShopPersoBanner({
@@ -140,7 +143,12 @@ export default function DingryShopPage() {
   return (
     <div className="dingry-shop relative h-dvh overflow-x-hidden overflow-hidden text-white">
       <BackgroundGradientAnimation interactive={false} />
-      <ShopNav cartCount={cart.count} onOpenCart={() => cart.setOpen(true)} onScrollToSection={scrollToSection} />
+      <ShopNav
+        shopBasePath={shopBasePath}
+        cartCount={cart.count}
+        onOpenCart={() => cart.setOpen(true)}
+        onScrollToSection={scrollToSection}
+      />
       <div
         ref={pageScrollRef}
         className="dingry-page relative z-10 h-full overflow-x-hidden overflow-y-auto overscroll-y-contain bg-transparent [overflow-anchor:none]"
@@ -176,7 +184,10 @@ export default function DingryShopPage() {
           <HeritageSection scrollContainerRef={pageScrollRef} />
         </LazyWhenVisible>
         <LazyWhenVisible scrollRootRef={pageScrollRef} placeholderClassName="min-h-32">
-          <ShopFooter onScrollToCatalogue={() => scrollToSection("catalogue")} />
+          <ShopFooter
+            shopBasePath={shopBasePath}
+            onScrollToCatalogue={() => scrollToSection("catalogue")}
+          />
         </LazyWhenVisible>
       </div>
 

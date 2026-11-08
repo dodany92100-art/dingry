@@ -2,6 +2,7 @@
 
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_MANIFESTO_EN, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
+import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
 const SECTIONS = [
   ["catalogue", "Catalogue"],
@@ -15,9 +16,17 @@ type ShopNavProps = {
   onScrollToSection: (id: string) => void;
   /** Aperçu CRM : même chrome, sans `position: fixed` sur la page admin. */
   embedded?: boolean;
+  /** `/` ou `/websitedx` — logo renvoie au sommet de la boutique courante. */
+  shopBasePath?: ShopBasePath;
 };
 
-export function ShopNav({ cartCount, onOpenCart, onScrollToSection, embedded = false }: ShopNavProps) {
+export function ShopNav({
+  cartCount,
+  onOpenCart,
+  onScrollToSection,
+  embedded = false,
+  shopBasePath = "/",
+}: ShopNavProps) {
   return (
     <nav
       className={
@@ -29,7 +38,7 @@ export function ShopNav({ cartCount, onOpenCart, onScrollToSection, embedded = f
       <div className="relative flex items-center justify-between px-4 py-2.5 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:px-12 md:py-5">
         <div className="flex min-w-0 items-center gap-4 md:gap-6">
           <a
-            href="/"
+            href={shopHref(shopBasePath, "/")}
             className="dingry-nav-logo flex shrink-0 items-center [perspective:900px]"
             aria-label="DINGRY Paris"
           >

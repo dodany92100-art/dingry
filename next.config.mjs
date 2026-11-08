@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 import { execSync } from "node:child_process";
 import { validateProductionEnv } from "./lib/env-core.mjs";
+import { buildImageRemotePatterns, buildImgSrcCspList } from "./lib/media-cdn-hosts.mjs";
 
 validateProductionEnv();
 
@@ -33,7 +34,7 @@ const contentSecurityPolicy = [
   ].join(" "),
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: https://res.cloudinary.com https://*.public.blob.vercel-storage.com https://*.supabase.co",
+  `img-src 'self' data: ${buildImgSrcCspList().join(" ")}`,
   "connect-src 'self' https://challenges.cloudflare.com https://*.paypal.com https://*.paypalobjects.com https://*.sandbox.paypal.com https://vitals.vercel-insights.com",
   "frame-src https://challenges.cloudflare.com https://*.paypal.com https://*.paypalobjects.com https://*.sandbox.paypal.com",
   "worker-src 'self' blob:",
@@ -73,11 +74,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [
-      { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
-      { protocol: "https", hostname: "*.public.blob.vercel-storage.com", pathname: "/**" },
-      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
-    ],
+    remotePatterns: buildImageRemotePatterns(),
   },
   poweredByHeader: false,
   async headers() {
