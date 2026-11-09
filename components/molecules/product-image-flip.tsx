@@ -35,6 +35,8 @@ type ProductImageFlipProps = {
   soldOut?: boolean;
   /** Grille catalogue : même ratio sur toutes les cartes (prix alignés sur la ligne). */
   catalogGrid?: boolean;
+  /** Modale fiche produit : une face, contain, sans track flip. */
+  presentation?: "card" | "modal";
   className?: string;
   imgClassName?: string;
   /**
@@ -56,6 +58,7 @@ export function ProductImageFlip({
   priority = false,
   soldOut = false,
   catalogGrid = false,
+  presentation = "card",
   className,
   imgClassName,
   onTap,
@@ -152,6 +155,24 @@ export function ProductImageFlip({
       : "aspect-[3/4] lg:aspect-[4/5] lg:max-h-[22rem]",
     className,
   );
+
+  if (presentation === "modal") {
+    const src = side === "verso" && backImage?.trim() ? backImage : frontImage;
+    return (
+      <div className={cn("dingry-product-photo relative flex w-full justify-center", className)}>
+        <DingryCloudinaryImage
+          src={src}
+          alt={side === "verso" ? `${alt} — verso` : alt}
+          width={600}
+          height={800}
+          deliveryWidth={720}
+          fitContent
+          className={imgClassName}
+          sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
+        />
+      </div>
+    );
+  }
 
   if (!flippable) {
     return (

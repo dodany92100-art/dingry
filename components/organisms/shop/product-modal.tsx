@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
 import { DingryVariantProductImage } from "@/components/molecules/dingry-variant-product-image";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
+import { ProductImageFlip } from "@/components/molecules/product-image-flip";
 import {
   isTurnstileProductTestEnabled,
   ProductCaptchaTest,
@@ -129,6 +130,8 @@ function ProductModalContent({
 
   const sizes = modalSizesFor(product);
   const sizeCols = sizeGridColumns(sizes);
+  const rectoColumn = Math.max(1, sizes.indexOf("S") + 1);
+  const nextSide = modalSide === "verso" ? "recto" : "verso";
   const productById = (id: number) => products.find((item) => item.id === id);
   const shopCategory = resolveShopCategory(product.id, product.category);
   const showTurnstileProductTest =
@@ -139,6 +142,7 @@ function ProductModalContent({
 
   const sizeGridVars = {
     "--size-cols": String(sizeCols),
+    "--recto-col": String(rectoColumn),
   } as CSSProperties;
 
   return (
@@ -160,31 +164,30 @@ function ProductModalContent({
         exit={{ opacity: 0, scale: 0.98 }}
         transition={MODAL_PANEL_SPRING}
       >
-        <div ref={modal.productImageRef} className={`${styles.photo} dingry-product-photo`}>
-          <div className={styles.photoFallback}>
-            {effectiveFlipImages ? (
-              <DingryCloudinaryImage
-                src={modalSide === "verso" ? effectiveFlipImages.back : effectiveFlipImages.front}
-                alt={storefrontProductTitle(product, products)}
-                width={600}
-                height={800}
-                deliveryWidth={720}
-                className={styles.photoCover}
-                sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
-                fitContent
-              />
-            ) : useParentOptions ? (
-              <DingryVariantProductImage
-                productName={product.name}
-                parentImage={product.image}
-                parentAlt={activeView.name}
-                options={parentOptions}
-                selectedOptionKey={selectedOptionKey}
-                presentation="modal"
-                className={styles.photoVariant}
-                imgClassName={styles.photoCover}
-              />
-            ) : (
+        <div ref={modal.productImageRef} className={styles.photo}>
+          {effectiveFlipImages ? (
+            <ProductImageFlip
+              frontImage={effectiveFlipImages.front}
+              backImage={effectiveFlipImages.back}
+              side={modalSide}
+              presentation="modal"
+              alt={storefrontProductTitle(product, products)}
+              className={styles.photoFallback}
+              imgClassName={styles.photoCover}
+            />
+          ) : useParentOptions ? (
+            <DingryVariantProductImage
+              productName={product.name}
+              parentImage={product.image}
+              parentAlt={activeView.name}
+              options={parentOptions}
+              selectedOptionKey={selectedOptionKey}
+              presentation="modal"
+              className={styles.photoFallback}
+              imgClassName={styles.photoCover}
+            />
+          ) : (
+            <div className={styles.photoFallback}>
               <DingryCloudinaryImage
                 src={activeView.image}
                 alt={activeView.name}
@@ -195,23 +198,23 @@ function ProductModalContent({
                 sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
                 fitContent
               />
-            )}
-            {effectiveShowSideToggle ? (
-              <button
-                type="button"
-                onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
-                className={`${styles.sideToggle} ${styles.photoSideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
-                aria-pressed={modalSide === "verso"}
-              >
-                {modalSide === "verso" ? "recto" : "verso"}
-              </button>
-            ) : null}
-          </div>
+            </div>
+          )}
         </div>
         <div className={styles.body}>
           <div>
             <div className={styles.toolbar}>
               <div className={styles.toolbarCluster}>
+                {effectiveShowSideToggle ? (
+                  <button
+                    type="button"
+                    onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
+                    className={`${styles.sideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
+                    aria-pressed={modalSide === "verso"}
+                  >
+                    {modalSide === "verso" ? "recto" : "verso"}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={shell.onClose}
@@ -338,7 +341,10 @@ function ProductModalContent({
               </div>
             ) : null}
             <p className={styles.sizeLabel}>Sélectionnez une taille</p>
-            <div className={styles.sizeGrid} style={sizeGridVars}>
+            <div
+              className={`${styles.sizeGrid} ${effectiveShowSideToggle ? styles.sizeGridTight : ""}`}
+              style={sizeGridVars}
+            >
               {sizes.map((s) => (
                 <button
                   key={s}
@@ -350,6 +356,18 @@ function ProductModalContent({
                 </button>
               ))}
             </div>
+            {effectiveShowSideToggle ? (
+              <div className={styles.sideGrid} style={sizeGridVars}>
+                <button
+                  type="button"
+                  onClick={() => modal.showProductSide(nextSide)}
+                  aria-pressed={modalSide === "verso"}
+                  className={`${styles.sideGridBtn} ${modalSide === "verso" ? styles.sideGridBtnOn : ""}`}
+                >
+                  {nextSide}
+                </button>
+              </div>
+            ) : null}
           </div>
           {completeLook.length > 0 ? (
             <div className={styles.lookSection}>
