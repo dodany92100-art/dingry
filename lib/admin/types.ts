@@ -63,6 +63,10 @@ const CATALOG_SLUG_TO_OFFICIAL: Record<CatalogCategory, ProductCategory> = {
   caps: "Caps",
 };
 
+export function productCategoryFromCatalogSlug(slug: CatalogCategory): ProductCategory {
+  return CATALOG_SLUG_TO_OFFICIAL[slug];
+}
+
 /** Normalise anciennes fiches CRM + valeurs boutique. */
 export function normalizeProductCategory(value: string): ProductCategory {
   if ((PRODUCT_CATEGORIES as readonly string[]).includes(value)) return value as ProductCategory;
@@ -274,19 +278,25 @@ export type ShopCatalogPersoBanner = Pick<
   "enabled" | "imageUrl" | "eyebrow" | "title" | "subtitle" | "ctaLabel"
 >;
 
+export type { PriceFamily } from "@/lib/validations/price-family";
+
 export type AdminStore = {
   version: number;
   products: AdminProduct[];
   orders: AdminOrder[];
   lookbook: AdminLookbookSlide[];
   catalogPersoBanner?: AdminCatalogPersoBanner;
+  /** @deprecated — remplacé par `makerTemplates`. */
+  priceFamilies?: import("@/lib/validations/price-family").PriceFamily[];
+  /** Bibliothèque modèles maker (HOODIE, TEE-SHIRT…). */
+  makerTemplates?: import("@/lib/validations/catalog-maker-template").CatalogMakerTemplate[];
   /** Fiches seed retirées du stock admin / catalogue live (ids catalogue). */
   removedCatalogIds?: string[];
   /** Slides lookbook supprimées — ne pas réinjecter depuis le seed au rechargement. */
   removedLookbookSlideIds?: string[];
 };
 
-export const STORE_VERSION = 13;
+export const STORE_VERSION = 16;
 
 export function isPantWaistSize(value: string): value is PantWaistSize {
   return (PANT_WAIST_PRESET_SIZES as readonly string[]).includes(value);
@@ -314,7 +324,7 @@ export function nextOrderStatus(status: OrderStatus): OrderStatus {
   }
   const index = FULFILLMENT_STATUSES.indexOf(status);
   if (index < 0) return "En attente";
-  return FULFILLMENT_STATUSES[(index + 1) % FULFILLMENT_STATUSES.length];
+  return FULFILLMENT_STATUSES[(index + 1) % FULFILLMENT_STATUSES.length] ?? "En attente";
 }
 
 export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {

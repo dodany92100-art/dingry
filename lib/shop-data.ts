@@ -209,7 +209,7 @@ export const PRODUCTS: ShopProduct[] = [
     const collection = index + 1;
     const inCatalog = collection in TEE_RECTO_IMAGE_BY_COLLECTION;
     const defaultKey = `tee${index + 1}` as keyof typeof IMAGES;
-    const imageKey = inCatalog ? TEE_RECTO_IMAGE_BY_COLLECTION[collection] : defaultKey;
+    const imageKey = TEE_RECTO_IMAGE_BY_COLLECTION[collection] ?? defaultKey;
     const rectoVariant =
       TEE_RECTO_VARIANT_BY_COLLECTION[collection] ??
       `COLLECTION ${String(collection).padStart(2, "0")} — RECTO`;
@@ -223,7 +223,7 @@ export const PRODUCTS: ShopProduct[] = [
             : "DINGRY TEE",
       variant: inCatalog ? rectoVariant : `COLLECTION ${String(collection).padStart(2, "0")} — VERSO`,
       price: collection === 1 || collection === 11 ? 35 : 119,
-      image: IMAGES[imageKey],
+      image: IMAGES[imageKey] ?? IMAGES.tee1,
       description: "",
       category: "T-shirts",
     };

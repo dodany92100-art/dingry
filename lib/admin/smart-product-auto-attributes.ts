@@ -22,6 +22,7 @@ import {
   type ProductSize,
 } from "@/lib/admin/types";
 import { DEFAULT_SHOP_PRODUCT_STOCK } from "@/lib/shop-data";
+import { normalizeCrmProductNameField } from "@/lib/validations/price-family";
 
 export type CategoryDefaultProfile = {
   defaultSizes: readonly string[];
@@ -439,7 +440,11 @@ export function patchFormFromSmartParse(
       next = { ...next, sku: skuIncoming };
     }
   }
-  assign("name", parsed.name, "name");
+  assign(
+    "name",
+    parsed.name?.trim() ? normalizeCrmProductNameField(parsed.name) : undefined,
+    "name",
+  );
   assign("description", parsed.description, "description");
   assign("materials", parsed.materials, "materials");
   if (parsed.weight?.trim()) {

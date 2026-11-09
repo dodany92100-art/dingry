@@ -68,7 +68,7 @@ function parseTabParam(value: string | null): TabId {
   ) {
     return value;
   }
-  return "commandes";
+  return "produits";
 }
 
 function LoadingScreen({ status = "CRM · chargement" }: { status?: string }) {
@@ -154,7 +154,7 @@ function AdminDashboard() {
     (patch: { tab?: TabId; cat?: AdminProductCategoryFilter; product?: string | null }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (patch.tab !== undefined) {
-        if (patch.tab === "commandes") params.delete("tab");
+        if (patch.tab === "produits") params.delete("tab");
         else params.set("tab", patch.tab);
       }
       if (patch.cat !== undefined) {
@@ -392,7 +392,8 @@ function AdminDashboard() {
       <ProductEditorModal
         key={editor.product?.id ?? "new"}
         initial={editor.product}
-        catalogProducts={productsApi.products}
+        makerTemplates={productsApi.makerTemplates}
+        onMakerTemplatesChange={() => void productsApi.refreshMakerTemplates()}
         existingSkus={existingProductSkus}
         busyProductId={productsApi.busyProductId}
         onClose={closeProductEditor}

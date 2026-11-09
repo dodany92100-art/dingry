@@ -14,6 +14,7 @@ import {
   type StockPendingChanges,
 } from "@/lib/admin/stock-autosave-types";
 import type { AdminProduct } from "@/lib/admin/types";
+import type { CatalogMakerTemplate } from "@/lib/validations/catalog-maker-template";
 import {
   applyDisplayOrderByIds,
   sortAdminProductsForDisplay,
@@ -46,6 +47,7 @@ type Options = { onUnauthorized: () => void };
 
 export function useAdminProducts({ onUnauthorized }: Options) {
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [makerTemplates, setMakerTemplates] = useState<CatalogMakerTemplate[]>([]);
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
   const [stockError, setStockError] = useState("");
   const [orderDirty, setOrderDirty] = useState(false);
@@ -77,8 +79,12 @@ export function useAdminProducts({ onUnauthorized }: Options) {
       const response = await fetch("/api/admin/products", { cache: "no-store" });
       if (response.status === 401) return "unauthorized";
       if (!response.ok) return "error";
-      const data = (await response.json()) as { products: AdminProduct[] };
+      const data = (await response.json()) as {
+        products: AdminProduct[];
+        makerTemplates?: CatalogMakerTemplate[];
+      };
       setProducts(data.products);
+      setMakerTemplates(Array.isArray(data.makerTemplates) ? data.makerTemplates : []);
       syncOrderBaseline(data.products);
       setStockBaseline(stockBaselineFromProducts(data.products));
       return "ok";
@@ -89,6 +95,7 @@ export function useAdminProducts({ onUnauthorized }: Options) {
 
   const reset = useCallback(() => {
     setProducts([]);
+    setMakerTemplates([]);
     setStockError("");
     orderBaselineRef.current = [];
     setOrderDirty(false);
@@ -534,6 +541,13 @@ export function useAdminProducts({ onUnauthorized }: Options) {
 
   return {
     products,
+    makerTemplates,
+    refreshMakerTemplates: async () => {
+      const response = await fetch("/api/admin/catalog-maker-templates", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = (await response.json()) as { makerTemplates?: CatalogMakerTemplate[] };
+      if (Array.isArray(data.makerTemplates)) setMakerTemplates(data.makerTemplates);
+    },
     busyProductId,
     stockError,
     orderDirty,

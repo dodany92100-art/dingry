@@ -43,6 +43,8 @@ export const SMART_COLLAGE_ROUTING_DICTIONARY: readonly SmartCollageRouteEntry[]
     triggers: [
       "argu:",
       "argu :",
+      "ardu:",
+      "ardu :",
       "argi:",
       "argi :",
       "zrgi:",
@@ -55,7 +57,7 @@ export const SMART_COLLAGE_ROUTING_DICTIONARY: readonly SmartCollageRouteEntry[]
       "description:",
     ],
     lineStart: new RegExp(
-      `^(?:argu\\w*|argi|zrgi|ar|story|desc(?:ription)?|argui|descr[i1l][p]*tions?|dsric?r?i?ptions?)${ROUTING_SEPARATOR}`,
+      `^(?:ardu|argu\\w*|argi|zrgi|ar|story|desc(?:ription)?|argui|descr[i1l][p]*tions?|dsric?r?i?ptions?)${ROUTING_SEPARATOR}`,
       "iu",
     ),
   },
@@ -124,7 +126,7 @@ export function stripCollageRoutingPrefix(value: string): string {
   v = v.replace(/^c\s*(?:[:：\-.–—])\s*/iu, "").trim();
   v = v.replace(/^p\s*(?:[:\-.–—])\s*(?=\d)/iu, "").trim();
   v = v
-    .replace(/^(?:argu\w*|argi|zrgi|ar|story|desc(?:ription)?|argui)\s*(?:[:\-.–—])\s*/iu, "")
+    .replace(/^(?:ardu|argu\w*|argi|zrgi|ar|story|desc(?:ription)?|argui)\s*(?:[:\-.–—])\s*/iu, "")
     .replace(/^(?:réf|référence|ref(?:\.|erence)?)\s*(?:[:\-.–—])\s*/iu, "")
     .replace(/^(?:tailles?|size|tzill)\s*(?:[:：\-.–—])\s*/iu, "")
     .replace(/^(?:mat|mati[eè]res?)\s*(?:[:：\-.–—])\s*/iu, "")

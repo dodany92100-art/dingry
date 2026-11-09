@@ -16,9 +16,6 @@
     "@tailwindcss/postcss",
     "postcss",
     "postcss-load-config",
-    "@base-ui/react",
-    "class-variance-authority",
-    "lucide-react",
     "tailwindcss"
   ],
   "ignoreBinaries": ["vercel"]

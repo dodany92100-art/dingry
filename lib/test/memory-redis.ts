@@ -12,15 +12,21 @@ function parseQty(value: string | undefined): number | null {
 
 const runApplyLua: EvalFn = (store, keys, args) => {
   const appliedKey = keys[0];
+  if (!appliedKey) return -1;
   if (store.has(appliedKey)) return 2;
   for (let i = 1; i < keys.length; i += 1) {
-    const n = parseQty(store.get(keys[i]));
+    const key = keys[i];
+    if (!key) return -1;
+    const n = parseQty(store.get(key));
     if (n === null) return -1;
     if (n < Number(args[i - 1])) return 0;
   }
   for (let i = 1; i < keys.length; i += 1) {
-    const n = parseQty(store.get(keys[i])!)!;
-    store.set(keys[i], String(n - Number(args[i - 1])));
+    const key = keys[i];
+    if (!key) return -1;
+    const n = parseQty(store.get(key));
+    if (n === null) return -1;
+    store.set(key, String(n - Number(args[i - 1])));
   }
   store.set(appliedKey, "1");
   return 1;
@@ -29,14 +35,18 @@ const runApplyLua: EvalFn = (store, keys, args) => {
 const runRestoreLua: EvalFn = (store, keys, args) => {
   const appliedKey = keys[0];
   const restoredKey = keys[1];
+  if (!appliedKey || !restoredKey) return -1;
   if (!store.has(appliedKey)) return 0;
   if (store.has(restoredKey)) return 2;
   for (let i = 2; i < keys.length; i += 1) {
-    if (!store.has(keys[i])) return -1;
+    const key = keys[i];
+    if (!key || !store.has(key)) return -1;
   }
   for (let i = 2; i < keys.length; i += 1) {
-    const n = parseQty(store.get(keys[i])!) ?? 0;
-    store.set(keys[i], String(n + Number(args[i - 2])));
+    const key = keys[i];
+    if (!key) return -1;
+    const n = parseQty(store.get(key)) ?? 0;
+    store.set(key, String(n + Number(args[i - 2])));
   }
   store.set(restoredKey, "1");
   return 1;

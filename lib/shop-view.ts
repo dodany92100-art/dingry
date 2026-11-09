@@ -100,7 +100,9 @@ export function updateCartLineSize(cart: readonly CartLine[], index: number, new
   const duplicateIndex = next.findIndex((entry, i) => i !== index && cartLineKey(entry) === targetKey);
 
   if (duplicateIndex >= 0) {
-    next[duplicateIndex] = { ...next[duplicateIndex], qty: next[duplicateIndex].qty + line.qty };
+    const duplicate = next[duplicateIndex];
+    if (!duplicate) return [...cart];
+    next[duplicateIndex] = { ...duplicate, qty: duplicate.qty + line.qty };
     next.splice(index, 1);
     return next;
   }

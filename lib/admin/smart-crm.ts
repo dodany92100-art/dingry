@@ -27,7 +27,7 @@ export function swatchHexForVariant(label: string): string | null {
   for (const [name, hex] of Object.entries(VARIANT_SWATCH_HEX)) {
     if (name.toUpperCase() === key) return hex;
   }
-  if (normalized in VARIANT_SWATCH_HEX) return VARIANT_SWATCH_HEX[normalized];
+  if (normalized in VARIANT_SWATCH_HEX) return VARIANT_SWATCH_HEX[normalized] ?? null;
   return null;
 }
 

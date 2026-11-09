@@ -8,9 +8,22 @@ import {
 } from "@/lib/admin/blob-config";
 import {
   isStoreWriteConflict,
+  CatalogMakerDuplicateError,
+  PriceFamilyDuplicateError,
   StoreConflictError,
   StoreUnavailableError,
 } from "@/lib/admin/store-errors";
+import {
+  materializeCatalogMakerTemplate,
+  validateCatalogMakerTemplate,
+  type CatalogMakerTemplate,
+} from "@/lib/validations/catalog-maker-template";
+import {
+  materializePriceFamily,
+  priceFamilyDraftFromProductFields,
+  validatePriceFamilyDraft,
+  type PriceFamily,
+} from "@/lib/validations/price-family";
 import { readFileStoreSnapshot, writeFileStoreSnapshot } from "@/lib/admin/store-snapshot-file";
 import { isSupabaseStoreEnabled } from "@/lib/supabase/server";
 import { deleteR2PublicImage, isR2ImageStorageEnabled, r2ObjectKey, uploadR2PublicImage } from "@/lib/r2/storage";
@@ -452,6 +465,113 @@ function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
 }
 
 /** v12 : une fiche recto peut porter recto + verso ; les anciennes fiches « — VERSO » alimentent `imageBackUrl`. */
+function normalizePriceFamily(value: unknown): PriceFamily | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const category = normalizeProductCategory(String(record.category ?? ""));
+  if (!isProductCategory(category)) return null;
+  const sizesRaw = Array.isArray(record.sizes) ? record.sizes : [];
+  const sizes = sizesRaw
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => isProductSize(item));
+  if (sizes.length === 0) return null;
+  const priceTtc = Number(record.priceTtc);
+  if (!Number.isFinite(priceTtc) || priceTtc <= 0) return null;
+  const canonicalId = String(record.canonicalId ?? record.id ?? "").trim();
+  if (!canonicalId) return null;
+  const modelName = String(record.modelName ?? "").trim();
+  const displayName = String(record.displayName ?? modelName).trim();
+  if (!modelName || !displayName) return null;
+  const draft = priceFamilyDraftFromProductFields({
+    name: modelName,
+    category,
+    variant: String(record.color ?? "").trim(),
+    price: priceTtc,
+    sizes,
+    sourceProductId:
+      typeof record.sourceProductId === "string" ? record.sourceProductId : undefined,
+  });
+  draft.displayName = displayName;
+  const createdAt =
+    typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString();
+  const updatedAt =
+    typeof record.updatedAt === "string" ? record.updatedAt : createdAt;
+  const materialized = materializePriceFamily(draft, canonicalId, createdAt);
+  return { ...materialized, updatedAt };
+}
+
+function normalizePriceFamilies(raw: unknown): PriceFamily[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PriceFamily[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    const family = normalizePriceFamily(item);
+    if (!family || seen.has(family.canonicalId)) continue;
+    seen.add(family.canonicalId);
+    out.push(family);
+  }
+  out.sort((a, b) => a.displayName.localeCompare(b.displayName, "fr"));
+  return out;
+}
+
+function resolveStorePriceFamilies(raw: AdminStore): PriceFamily[] {
+  return raw.version >= STORE_VERSION ? normalizePriceFamilies(raw.priceFamilies) : [];
+}
+
+function normalizeMakerTemplate(value: unknown): CatalogMakerTemplate | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const category = normalizeProductCategory(String(record.category ?? ""));
+  if (!isProductCategory(category)) return null;
+  const id = String(record.id ?? "").trim();
+  const label = String(record.label ?? "").trim();
+  if (!id || !label) return null;
+  const priceTtc = Number(record.priceTtc);
+  if (!Number.isFinite(priceTtc) || priceTtc <= 0) return null;
+  const sizesRaw = Array.isArray(record.sizes) ? record.sizes : [];
+  const sizes = sizesRaw
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => isProductSize(item));
+  if (sizes.length === 0) return null;
+  const createdAt =
+    typeof record.createdAt === "string" ? record.createdAt : new Date().toISOString();
+  const updatedAt =
+    typeof record.updatedAt === "string" ? record.updatedAt : createdAt;
+  const sizeGuide = typeof record.sizeGuide === "string" ? record.sizeGuide.trim() : "";
+  const draft = validateCatalogMakerTemplate(
+    { label, category, priceTtc, sizes, sizeGuide },
+    [],
+  );
+  if (!draft.ok) return null;
+  const materialized = materializeCatalogMakerTemplate(draft.data, id, createdAt);
+  return { ...materialized, updatedAt };
+}
+
+function normalizeMakerTemplates(raw: unknown): CatalogMakerTemplate[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CatalogMakerTemplate[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    const template = normalizeMakerTemplate(item);
+    if (!template || seen.has(template.id)) continue;
+    seen.add(template.id);
+    out.push(template);
+  }
+  out.sort((a, b) => a.label.localeCompare(b.label, "fr"));
+  return out;
+}
+
+function resolveStoreMakerTemplates(raw: AdminStore): CatalogMakerTemplate[] {
+  return raw.version >= STORE_VERSION ? normalizeMakerTemplates(raw.makerTemplates) : [];
+}
+
+function coalesceStoreMakerTemplates(store: AdminStore): AdminStore {
+  if (store.version < STORE_VERSION) return store;
+  return { ...store, makerTemplates: normalizeMakerTemplates(store.makerTemplates) };
+}
+
 function migrateProductVersoBackUrl(products: AdminProduct[]): AdminProduct[] {
   const byId = new Map(products.map((p) => [p.id, p]));
   const versoImageByRectoId = new Map<string, string>();
@@ -504,6 +624,9 @@ function migrateStore(raw: AdminStore): AdminStore {
   const finalizeProducts = (items: AdminProduct[]) =>
     items.map(ensureProductDisplayFields);
 
+  const priceFamilies = resolveStorePriceFamilies(raw);
+  const makerTemplates = resolveStoreMakerTemplates(raw);
+
   if (raw.version === STORE_VERSION && existing.length > 0) {
     const mergedSeed = activeSeeds.map((seed) => mergeSeedProduct(seed, byId.get(seed.id)));
     const extras = existing.filter(
@@ -516,6 +639,8 @@ function migrateStore(raw: AdminStore): AdminStore {
       products: finalizeProducts(products),
       orders: raw.orders,
       lookbook: mergeLookbookSlides(raw),
+      priceFamilies,
+      makerTemplates,
       ...(catalogPersoBanner ? { catalogPersoBanner } : {}),
       removedCatalogIds: [...removed],
       removedLookbookSlideIds: [...removedLookbookSlides],
@@ -534,6 +659,8 @@ function migrateStore(raw: AdminStore): AdminStore {
     products: finalizeProducts(products),
     orders: raw.orders,
     lookbook: mergeLookbookSlides(raw),
+    priceFamilies,
+    makerTemplates,
     ...(catalogPersoBanner ? { catalogPersoBanner } : {}),
     removedCatalogIds: [...removed],
     removedLookbookSlideIds: [...removedLookbookSlides],
@@ -593,7 +720,7 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
       console.warn("[store] snapshot absent, catalogue seed (preview/dev)");
       return overlaySupabaseProducts(normalizeStore(createSeededStore()));
     }
-    return overlaySupabaseProducts(snapshot.store);
+    return overlaySupabaseProducts(coalesceStoreMakerTemplates(snapshot.store));
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
       if (!allowCatalogSeedFallback()) {
@@ -1373,7 +1500,10 @@ function stockLinesEqual(
   const b = right ?? [];
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i += 1) {
-    if (a[i].productId !== b[i].productId || a[i].qty !== b[i].qty) return false;
+    const leftLine = a[i];
+    const rightLine = b[i];
+    if (!leftLine || !rightLine) return false;
+    if (leftLine.productId !== rightLine.productId || leftLine.qty !== rightLine.qty) return false;
   }
   return true;
 }
@@ -1405,6 +1535,9 @@ export async function patchOrder(
       return { store, result: { order: null, changed: false }, skipWrite: true };
     }
     const current = store.orders[index];
+    if (!current) {
+      return { store, result: { order: null, changed: false }, skipWrite: true };
+    }
     const patch = mutate(current);
     if (Object.keys(patch).length === 0) {
       return { store, result: { order: current, changed: false }, skipWrite: true };
@@ -1412,8 +1545,9 @@ export async function patchOrder(
     if (!orderPatchHasChanges(current, patch)) {
       return { store, result: { order: current, changed: false }, skipWrite: true };
     }
-    store.orders[index] = { ...current, ...patch };
-    return { store, result: { order: store.orders[index], changed: true } };
+    const nextOrder = { ...current, ...patch };
+    store.orders[index] = nextOrder;
+    return { store, result: { order: nextOrder, changed: true } };
   });
 }
 
@@ -1508,9 +1642,13 @@ export async function updateLookbookSlide(
       if (index < 0) {
         return { store, result: null, skipWrite: true };
       }
-      previous = { ...store.lookbook[index] };
+      const slide = store.lookbook[index];
+      if (!slide) {
+        return { store, result: null, skipWrite: true };
+      }
+      previous = { ...slide };
       const next: AdminLookbookSlide = {
-        ...store.lookbook[index],
+        ...slide,
         ...(lookbookFields.title !== undefined ? { title: lookbookFields.title } : {}),
         ...(lookbookFields.caption !== undefined ? { caption: lookbookFields.caption } : {}),
         ...(lookbookFields.sortOrder !== undefined ? { sortOrder: lookbookFields.sortOrder } : {}),
@@ -1573,6 +1711,9 @@ export async function reorderLookbookSlide(id: string, direction: "up" | "down")
       }
       const current = ordered[index];
       const swap = ordered[swapIndex];
+      if (!current || !swap) {
+        return { store, result: ordered, skipWrite: true };
+      }
       store.lookbook = sortLookbook(
         store.lookbook.map((item) => {
           if (item.id === current.id) return { ...item, sortOrder: swap.sortOrder };
@@ -1657,4 +1798,69 @@ export async function upsertCatalogPersoBanner(
   }
 
   return result;
+}
+
+export async function listPriceFamilies(): Promise<PriceFamily[]> {
+  const store = await loadStoreReadOnly();
+  return store.priceFamilies ?? [];
+}
+
+export function assertPriceFamilyAvailable(
+  families: readonly PriceFamily[],
+  draft: unknown,
+): void {
+  const validated = validatePriceFamilyDraft(draft, families);
+  if (!validated.ok) {
+    throw new PriceFamilyDuplicateError(validated.error);
+  }
+}
+
+export async function registerPriceFamilyFromProduct(
+  product: AdminProduct,
+): Promise<PriceFamily> {
+  const draft = priceFamilyDraftFromProductFields({
+    name: product.name,
+    category: product.category,
+    variant: product.variant,
+    price: product.price,
+    sizes: product.sizes,
+    sourceProductId: product.id,
+  });
+  return registerPriceFamily(draft);
+}
+
+export async function registerPriceFamily(draft: unknown): Promise<PriceFamily> {
+  return withStoreOptimistic((store) => {
+    const existing = store.priceFamilies ?? [];
+    const validated = validatePriceFamilyDraft(draft, existing);
+    if (!validated.ok) {
+      throw new PriceFamilyDuplicateError(validated.error);
+    }
+    const now = new Date().toISOString();
+    const family = materializePriceFamily(validated.data, validated.canonicalId, now);
+    store.priceFamilies = [family, ...existing.filter((item) => item.canonicalId !== family.canonicalId)];
+    return { store, result: family };
+  });
+}
+
+export async function listMakerTemplates(): Promise<CatalogMakerTemplate[]> {
+  const store = await loadStoreReadOnly();
+  return normalizeMakerTemplates(store.makerTemplates);
+}
+
+export async function registerMakerTemplate(draft: unknown): Promise<CatalogMakerTemplate> {
+  return withStoreOptimistic((store) => {
+    const existing = normalizeMakerTemplates(store.makerTemplates);
+    const validated = validateCatalogMakerTemplate(draft, existing);
+    if (!validated.ok) {
+      throw new CatalogMakerDuplicateError(validated.error);
+    }
+    const now = new Date().toISOString();
+    const template = materializeCatalogMakerTemplate(validated.data, validated.id, now);
+    store.makerTemplates = [
+      template,
+      ...existing.filter((item) => item.id !== template.id),
+    ];
+    return { store, result: template };
+  });
 }

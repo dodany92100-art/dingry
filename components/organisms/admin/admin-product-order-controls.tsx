@@ -1,7 +1,34 @@
 "use client";
 
-import { Pin, Trash2 } from "lucide-react";
 import type { AdminProduct } from "@/lib/admin/types";
+
+function IconPin({ active }: { active: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} aria-hidden>
+      <path
+        d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3 6h18M8 6V4h8v2m-1 0v14H9V6"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 type AdminProductOrderControlsProps = {
   product: AdminProduct;
@@ -63,7 +90,7 @@ export function AdminProductOrderControls({
           aria-label={pinActive ? `Retirer l'épinglage de ${product.name}` : `Épingler ${product.name}`}
           className={pinClass}
         >
-          <Pin className="h-3 w-3" strokeWidth={1.75} fill={pinActive ? "currentColor" : "none"} />
+          <IconPin active={pinActive} />
         </button>
         {onDelete ? (
           <button
@@ -73,7 +100,7 @@ export function AdminProductOrderControls({
             aria-label={`Supprimer ${product.name}`}
             className="flex h-7 w-7 items-center justify-center border border-red-500/40 text-red-400 transition hover:border-red-400 hover:text-red-300 disabled:opacity-40"
           >
-            <Trash2 className="h-3 w-3" strokeWidth={1.75} />
+            <IconTrash />
           </button>
         ) : null}
       </>
@@ -116,7 +143,7 @@ export function AdminProductOrderControls({
             : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-white"
         }`}
       >
-        <Pin className="h-3.5 w-3.5" strokeWidth={1.75} fill={pinActive ? "currentColor" : "none"} />
+        <IconPin active={pinActive} />
       </button>
     </div>
   );

@@ -149,8 +149,8 @@ describe("alignement CRM / vitrine fallback", () => {
     for (const id of Object.keys(VITRINE_ONLY).map(Number)) {
       const quote = await quoteCheckout([{ productId: id, size: "M", qty: 1 }]);
       const shop = PRODUCTS.find((product) => product.id === id);
-      const expectedEur = shop?.price ?? VITRINE_ONLY[id].price;
-      expect(quote?.totalCents).toBe(Math.round(expectedEur * 100));
+      const expectedEur = shop?.price ?? VITRINE_ONLY[id]?.price;
+      expect(quote?.totalCents).toBe(Math.round((expectedEur ?? 0) * 100));
     }
   });
 });
