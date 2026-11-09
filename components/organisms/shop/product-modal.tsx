@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
 import { DingryVariantProductImage } from "@/components/molecules/dingry-variant-product-image";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
-import { ProductImageFlip } from "@/components/molecules/product-image-flip";
 import {
   isTurnstileProductTestEnabled,
   ProductCaptchaTest,
@@ -130,9 +129,6 @@ function ProductModalContent({
 
   const sizes = modalSizesFor(product);
   const sizeCols = sizeGridColumns(sizes);
-  const rectoColumn = Math.max(1, sizes.indexOf("S") + 1);
-  const nextSide = modalSide === "verso" ? "recto" : "verso";
-
   const productById = (id: number) => products.find((item) => item.id === id);
   const shopCategory = resolveShopCategory(product.id, product.category);
   const showTurnstileProductTest =
@@ -143,7 +139,6 @@ function ProductModalContent({
 
   const sizeGridVars = {
     "--size-cols": String(sizeCols),
-    "--recto-col": String(rectoColumn),
   } as CSSProperties;
 
   return (
@@ -167,14 +162,17 @@ function ProductModalContent({
       >
         <div ref={modal.productImageRef} className={`${styles.photo} dingry-product-photo`}>
           {effectiveFlipImages ? (
-            <ProductImageFlip
-              frontImage={effectiveFlipImages.front}
-              backImage={effectiveFlipImages.back}
-              side={modalSide}
-              alt={storefrontProductTitle(product, products)}
-              className={`${styles.photoFallback} w-full`}
-              imgClassName={styles.photoCover}
-            />
+            <div className={styles.photoFallback}>
+              <DingryCloudinaryImage
+                src={modalSide === "verso" ? effectiveFlipImages.back : effectiveFlipImages.front}
+                alt={storefrontProductTitle(product, products)}
+                width={600}
+                height={800}
+                deliveryWidth={720}
+                className={styles.photoCover}
+                sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
+              />
+            </div>
           ) : useParentOptions ? (
             <DingryVariantProductImage
               productName={product.name}
@@ -340,10 +338,7 @@ function ProductModalContent({
               </div>
             ) : null}
             <p className={styles.sizeLabel}>Sélectionnez une taille</p>
-            <div
-              className={`${styles.sizeGrid} ${effectiveShowSideToggle ? styles.sizeGridTight : ""}`}
-              style={sizeGridVars}
-            >
+            <div className={styles.sizeGrid} style={sizeGridVars}>
               {sizes.map((s) => (
                 <button
                   key={s}
@@ -355,18 +350,6 @@ function ProductModalContent({
                 </button>
               ))}
             </div>
-            {effectiveShowSideToggle ? (
-              <div className={styles.sideGrid} style={sizeGridVars}>
-                <button
-                  type="button"
-                  onClick={() => modal.showProductSide(nextSide)}
-                  aria-pressed={modalSide === "verso"}
-                  className={`${styles.sideGridBtn} ${modalSide === "verso" ? styles.sideGridBtnOn : ""}`}
-                >
-                  {nextSide}
-                </button>
-              </div>
-            ) : null}
           </div>
           {completeLook.length > 0 ? (
             <div className={styles.lookSection}>

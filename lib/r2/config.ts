@@ -1,26 +1,44 @@
+import { browserSafeImageUrl } from "@/lib/media/browser-safe-image-url";
+
 /** Nom du bucket R2 Cloudflare (sans le préfixe chemin objet `dingry/…`). */
 export const R2_DEFAULT_BUCKET_NAME = "dingrybuckets";
 
 /** URL publique navigateur (custom domain ou `pub-xxx.r2.dev`). */
 export const R2_DEFAULT_PUBLIC_BASE = "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev";
 
+/** Ancien pub R2 (401) — fichiers sur le bucket `dingrybuckets` via `R2_DEFAULT_PUBLIC_BASE`. */
+export const DEPRECATED_R2_PUBLIC_ORIGIN = "https://pub-8ef850fa01fb9fda829a4ffa6455c86b.r2.dev";
+
 function trimmed(name: string): string {
   return (process.env[name] ?? "").trim();
+}
+
+/** Pub R2 obsolète (401) : ignorer en env pour que upload + lecture ciblent le bucket actif. */
+function activeR2PublicBase(base: string): string {
+  const normalized = base.replace(/\/$/, "");
+  try {
+    if (new URL(normalized).origin === DEPRECATED_R2_PUBLIC_ORIGIN) {
+      return R2_DEFAULT_PUBLIC_BASE;
+    }
+  } catch {
+    return R2_DEFAULT_PUBLIC_BASE;
+  }
+  return normalized;
 }
 
 export function r2PublicBaseUrl(): string {
   const fromEnv = trimmed("R2_PUBLIC_BASE_URL");
   if (fromEnv) {
     if (fromEnv.startsWith("http://") || fromEnv.startsWith("https://")) {
-      return fromEnv.replace(/\/$/, "");
+      return activeR2PublicBase(fromEnv);
     }
-    return `https://${fromEnv.replace(/\/$/, "")}`;
+    return activeR2PublicBase(`https://${fromEnv.replace(/\/$/, "")}`);
   }
   const host = (trimmed("DINGRY_IMG_HOSTS").split(",")[0] ?? "").trim();
-  if (host && !host.includes("://")) return `https://${host.replace(/\/$/, "")}`;
+  if (host && !host.includes("://")) return activeR2PublicBase(`https://${host.replace(/\/$/, "")}`);
   if (host.startsWith("http")) {
     try {
-      return new URL(host).origin;
+      return activeR2PublicBase(new URL(host).origin);
     } catch {
       return R2_DEFAULT_PUBLIC_BASE;
     }
@@ -146,17 +164,23 @@ export function isR2PublicUrl(url: string | null | undefined): boolean {
   }
 }
 
-/** Réécrit un hôte `pub-….r2.dev` obsolète vers `R2_PUBLIC_BASE_URL` (même clé objet). */
+/** Réécrit un hôte `pub-….r2.dev` obsolète vers le bucket public actif (même clé objet). */
 export function canonicalizeR2PublicImageUrl(url: string): string {
   const trimmed = url.trim();
-  if (!trimmed || !trimmed.includes(".r2.dev")) return trimmed;
+  if (!trimmed || !trimmed.includes(".r2.dev")) return browserSafeImageUrl(trimmed);
   const key = objectKeyFromR2PublicUrl(trimmed);
-  if (!key) return trimmed;
-  const canonical = r2PublicUrlForKey(key);
+  if (!key) return browserSafeImageUrl(trimmed);
+  let canonical: string;
   try {
-    if (new URL(trimmed).origin === new URL(canonical).origin) return trimmed;
+    const origin = new URL(trimmed).origin;
+    if (origin === DEPRECATED_R2_PUBLIC_ORIGIN) {
+      canonical = `${R2_DEFAULT_PUBLIC_BASE}/${key}`;
+    } else {
+      const fromEnv = r2PublicUrlForKey(key);
+      canonical = origin === new URL(fromEnv).origin ? trimmed : fromEnv;
+    }
   } catch {
-    return trimmed;
+    canonical = r2PublicUrlForKey(key);
   }
-  return canonical;
+  return browserSafeImageUrl(canonical);
 }

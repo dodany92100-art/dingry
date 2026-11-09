@@ -135,7 +135,9 @@
 }
 
 .sideToggle {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgb(0 0 0 / 0.18);
   padding: 0.5rem 0.75rem;
   font-size: 10px;
@@ -143,12 +145,6 @@
   text-transform: uppercase;
   color: rgb(22 22 22 / 0.55);
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
-}
-
-@media (max-width: 767px) {
-  .sideToggle {
-    display: inline-flex;
-  }
 }
 
 .sideToggleOn {

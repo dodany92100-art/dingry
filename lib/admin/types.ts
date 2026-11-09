@@ -1,5 +1,7 @@
 import type { ProductOption } from "@/lib/catalog/product-options";
 import { PANT_WAIST_PRESET_SIZES, isValidPantWaistSize, normalizePantWaistSize } from "@/lib/admin/pant-waist";
+import { canonicalizeR2PublicImageUrl } from "@/lib/r2/config";
+import { browserSafeImageUrl } from "@/lib/media/browser-safe-image-url";
 /** Grille admin + Smart collage (2XL–5XL, XXS). Ordre d'affichage modale produit. */
 export const PRODUCT_SIZES = [
   "XXS",
@@ -327,6 +329,12 @@ export function nextOrderStatus(status: OrderStatus): OrderStatus {
   return FULFILLMENT_STATUSES[(index + 1) % FULFILLMENT_STATUSES.length] ?? "En attente";
 }
 
+function catalogImageUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  return browserSafeImageUrl(canonicalizeR2PublicImageUrl(trimmed));
+}
+
 export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {
   const id = Number(product.id);
   if (!Number.isInteger(id) || id <= 0) return null;
@@ -344,8 +352,8 @@ export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {
     ...(product.printPlacement ? { printPlacement: product.printPlacement } : {}),
     category: product.category,
     price: product.price,
-    image: product.imageUrl,
-    ...(product.imageBackUrl.trim() ? { imageBack: product.imageBackUrl.trim() } : {}),
+    image: catalogImageUrl(product.imageUrl),
+    ...(product.imageBackUrl.trim() ? { imageBack: catalogImageUrl(product.imageBackUrl) } : {}),
     sizes: product.sizes,
     stock: product.stock,
     ...(product.colorDeclinations.length > 0

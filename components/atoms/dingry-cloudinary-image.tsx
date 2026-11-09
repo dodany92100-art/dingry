@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { buildCloudinaryPictureSet } from "@/lib/cloudinary-url";
+import { browserSafeImageUrl } from "@/lib/media/browser-safe-image-url";
+import { canonicalizeR2PublicImageUrl } from "@/lib/r2/config";
 import { cn } from "@/lib/utils";
 
 type DingryCloudinaryImageProps = {
@@ -32,8 +34,9 @@ export function DingryCloudinaryImage({
 }: DingryCloudinaryImageProps) {
   if (!src.trim()) return null;
 
+  const safeSrc = browserSafeImageUrl(canonicalizeR2PublicImageUrl(src));
   const targetWidth = deliveryWidth ?? width;
-  const picture = buildCloudinaryPictureSet(src, targetWidth);
+  const picture = buildCloudinaryPictureSet(safeSrc, targetWidth);
 
   if (picture) {
     return (
@@ -58,7 +61,7 @@ export function DingryCloudinaryImage({
 
   return (
     <Image
-      src={src}
+      src={safeSrc}
       alt={alt}
       width={width}
       height={height}

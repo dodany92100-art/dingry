@@ -53,6 +53,13 @@ describe("r2 URLs", () => {
     );
   });
 
+  it("ignore R2_PUBLIC_BASE_URL obsolète (401) pour les nouveaux uploads", () => {
+    vi.stubEnv("R2_PUBLIC_BASE_URL", "https://pub-8ef850fa01fb9fda829a4ffa6455c86b.r2.dev");
+    expect(r2PublicUrlForKey("dingry/products/57/recto/x.webp")).toBe(
+      "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/products/57/recto/x.webp",
+    );
+  });
+
   it("retrouve la clé objet depuis l’URL publique", () => {
     vi.stubEnv("R2_PUBLIC_BASE_URL", "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev");
     const url =
@@ -61,11 +68,20 @@ describe("r2 URLs", () => {
   });
 
   it("réécrit un ancien domaine pub R2 vers la base configurée", () => {
-    vi.stubEnv("R2_PUBLIC_BASE_URL", "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev");
+    vi.stubEnv("R2_PUBLIC_BASE_URL", "https://pub-8ef850fa01fb9fda829a4ffa6455c86b.r2.dev");
     const stale =
       "https://pub-8ef850fa01fb9fda829a4ffa6455c86b.r2.dev/dingry/products/56/recto/x.webp";
     expect(canonicalizeR2PublicImageUrl(stale)).toBe(
       "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/products/56/recto/x.webp",
+    );
+  });
+
+  it("encode les espaces dans le chemin R2", () => {
+    vi.stubEnv("R2_PUBLIC_BASE_URL", "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev");
+    const raw =
+      "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/a/recto/foo bar.webp";
+    expect(canonicalizeR2PublicImageUrl(raw)).toBe(
+      "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/a/recto/foo%20bar.webp",
     );
   });
 });

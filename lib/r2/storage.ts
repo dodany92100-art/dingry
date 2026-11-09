@@ -38,10 +38,17 @@ function r2Client(): S3Client {
   return cachedClient;
 }
 
+export function r2SafeFileName(fileName: string): string {
+  const base = fileName.replace(/\.[^.]+$/, "").trim() || "produit";
+  const ext = fileName.includes(".") ? fileName.slice(fileName.lastIndexOf(".")) : "";
+  const stem = base.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9._-]/g, "");
+  return `${stem || "produit"}${ext.toLowerCase()}`;
+}
+
 export function r2ObjectKey(folder: string, fileName: string): string {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const safeFolder = folder.replace(/^\/+|\/+$/g, "");
-  return `${safeFolder}/${stamp}-${fileName}`;
+  return `${safeFolder}/${stamp}-${r2SafeFileName(fileName)}`;
 }
 
 export async function uploadR2PublicImage(objectKey: string, file: File): Promise<R2StoredImage> {
