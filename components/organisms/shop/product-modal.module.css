@@ -59,13 +59,28 @@
   }
 }
 
-.photoFallback {
+.photoStage {
   position: relative;
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.photoFallback {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  line-height: 0;
   background: #fff;
+}
+
+.photoStage :global(img) {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100%;
+  max-height: min(70vh, 720px);
+  object-fit: contain;
+  object-position: center;
 }
 
 .photoFallback :global(picture) {
@@ -141,8 +156,17 @@
   }
 }
 
+.photoSideToggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 4;
+  background: rgb(255 255 255 / 0.92);
+  backdrop-filter: blur(6px);
+}
+
 .sideToggle {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgb(0 0 0 / 0.18);
@@ -152,12 +176,6 @@
   text-transform: uppercase;
   color: rgb(22 22 22 / 0.55);
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
-}
-
-@media (max-width: 767px) {
-  .sideToggle {
-    display: inline-flex;
-  }
 }
 
 .sideToggleOn {

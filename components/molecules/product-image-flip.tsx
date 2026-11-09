@@ -159,7 +159,7 @@ export function ProductImageFlip({
   if (presentation === "modal") {
     const src = side === "verso" && backImage?.trim() ? backImage : frontImage;
     return (
-      <div className={cn("dingry-product-photo relative flex w-full justify-center", className)}>
+      <div className={cn("relative", className)}>
         <DingryCloudinaryImage
           src={src}
           alt={side === "verso" ? `${alt} — verso` : alt}

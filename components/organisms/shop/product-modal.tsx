@@ -130,8 +130,6 @@ function ProductModalContent({
 
   const sizes = modalSizesFor(product);
   const sizeCols = sizeGridColumns(sizes);
-  const rectoColumn = Math.max(1, sizes.indexOf("S") + 1);
-  const nextSide = modalSide === "verso" ? "recto" : "verso";
   const productById = (id: number) => products.find((item) => item.id === id);
   const shopCategory = resolveShopCategory(product.id, product.category);
   const showTurnstileProductTest =
@@ -142,7 +140,6 @@ function ProductModalContent({
 
   const sizeGridVars = {
     "--size-cols": String(sizeCols),
-    "--recto-col": String(rectoColumn),
   } as CSSProperties;
 
   return (
@@ -165,56 +162,58 @@ function ProductModalContent({
         transition={MODAL_PANEL_SPRING}
       >
         <div ref={modal.productImageRef} className={styles.photo}>
-          {effectiveFlipImages ? (
-            <ProductImageFlip
-              frontImage={effectiveFlipImages.front}
-              backImage={effectiveFlipImages.back}
-              side={modalSide}
-              presentation="modal"
-              alt={storefrontProductTitle(product, products)}
-              className={styles.photoFallback}
-              imgClassName={styles.photoCover}
-            />
-          ) : useParentOptions ? (
-            <DingryVariantProductImage
-              productName={product.name}
-              parentImage={product.image}
-              parentAlt={activeView.name}
-              options={parentOptions}
-              selectedOptionKey={selectedOptionKey}
-              presentation="modal"
-              className={styles.photoFallback}
-              imgClassName={styles.photoCover}
-            />
-          ) : (
-            <div className={styles.photoFallback}>
-              <DingryCloudinaryImage
-                src={activeView.image}
-                alt={activeView.name}
-                width={600}
-                height={800}
-                deliveryWidth={720}
-                className={styles.photoCover}
-                sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
-                fitContent
+          <div className={styles.photoStage}>
+            {effectiveFlipImages ? (
+              <ProductImageFlip
+                frontImage={effectiveFlipImages.front}
+                backImage={effectiveFlipImages.back}
+                side={modalSide}
+                presentation="modal"
+                alt={storefrontProductTitle(product, products)}
+                className={styles.photoFallback}
+                imgClassName={styles.photoCover}
               />
-            </div>
-          )}
+            ) : useParentOptions ? (
+              <DingryVariantProductImage
+                productName={product.name}
+                parentImage={product.image}
+                parentAlt={activeView.name}
+                options={parentOptions}
+                selectedOptionKey={selectedOptionKey}
+                presentation="modal"
+                className={styles.photoFallback}
+                imgClassName={styles.photoCover}
+              />
+            ) : (
+              <div className={styles.photoFallback}>
+                <DingryCloudinaryImage
+                  src={activeView.image}
+                  alt={activeView.name}
+                  width={600}
+                  height={800}
+                  deliveryWidth={720}
+                  className={styles.photoCover}
+                  sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
+                  fitContent
+                />
+              </div>
+            )}
+            {effectiveShowSideToggle ? (
+              <button
+                type="button"
+                onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
+                className={`${styles.sideToggle} ${styles.photoSideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
+                aria-pressed={modalSide === "verso"}
+              >
+                {modalSide === "verso" ? "recto" : "verso"}
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className={styles.body}>
           <div>
             <div className={styles.toolbar}>
               <div className={styles.toolbarCluster}>
-                {effectiveShowSideToggle ? (
-                  <button
-                    type="button"
-                    onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
-                    className={`${styles.sideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
-                    aria-pressed={modalSide === "verso"}
-                  >
-                    {modalSide === "verso" ? "recto" : "verso"}
-                  </button>
-                ) : null}
                 <button
                   type="button"
                   onClick={shell.onClose}
@@ -341,10 +340,7 @@ function ProductModalContent({
               </div>
             ) : null}
             <p className={styles.sizeLabel}>Sélectionnez une taille</p>
-            <div
-              className={`${styles.sizeGrid} ${effectiveShowSideToggle ? styles.sizeGridTight : ""}`}
-              style={sizeGridVars}
-            >
+            <div className={styles.sizeGrid} style={sizeGridVars}>
               {sizes.map((s) => (
                 <button
                   key={s}
@@ -356,18 +352,6 @@ function ProductModalContent({
                 </button>
               ))}
             </div>
-            {effectiveShowSideToggle ? (
-              <div className={styles.sideGrid} style={sizeGridVars}>
-                <button
-                  type="button"
-                  onClick={() => modal.showProductSide(nextSide)}
-                  aria-pressed={modalSide === "verso"}
-                  className={`${styles.sideGridBtn} ${modalSide === "verso" ? styles.sideGridBtnOn : ""}`}
-                >
-                  {nextSide}
-                </button>
-              </div>
-            ) : null}
           </div>
           {completeLook.length > 0 ? (
             <div className={styles.lookSection}>
