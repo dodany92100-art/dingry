@@ -129,7 +129,7 @@ Si un ancien déploiement utilisait encore `access: "private"` alors que le blob
 
 **Lancement boutique ouverte (checkout + API vitrine publics) — pas automatique :**
 
-1. **Responsable** : propriétaire ops (toi) — **avant ou à 20h le 13/11/2026** (Europe/Paris).
+1. **Responsable** : propriétaire ops (toi) — **avant ou à 20h le 12/11/2026** (Europe/Paris).
 2. Vercel **Production** : `DINGRY_TEASER_GATE=off` → **Redeploy** production.
 3. **Vérification preview d’abord** : même variable `off` sur un déploiement preview → `GET /api/catalog` **sans** cookie admin doit répondre **200** (pas 401).
 4. **Rollback** : retirer la variable ou laisser vide (gate réactif) + redeploy.
