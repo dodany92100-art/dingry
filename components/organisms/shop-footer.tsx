@@ -94,12 +94,12 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
 
   return (
     <>
-      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface relative border-t border-white/[0.08] py-14 md:py-16">
+      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface relative border-t border-black/10 py-14 md:py-16">
         <div className="mx-auto max-w-6xl px-6 md:px-10">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-12">
             <div className="lg:col-span-4">
               <DingryLogo animate={false} className="h-8 md:h-10" />
-              <p className="mt-4 text-xs leading-relaxed tracking-[0.06em] text-white/80">{DINGRY_REASSURANCE_LINE}</p>
+              <p className="mt-4 text-xs leading-relaxed tracking-[0.06em] text-[#161616]/75">{DINGRY_REASSURANCE_LINE}</p>
             </div>
 
             <div className="lg:col-span-2">
@@ -127,7 +127,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
 
             <div className="lg:col-span-3">
               <p className="dingry-footer-eyebrow">Services</p>
-              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-white/80 sm:text-[0.8125rem]">
+              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-[#161616]/75 sm:text-[0.8125rem]">
                 {SERVICE_LINES.map((line) => (
                   <li key={line} className="flex items-start gap-2">
                     <span className="dingry-footer-dot mt-1.5 shrink-0" aria-hidden />
@@ -139,9 +139,9 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
 
             <div className="lg:col-span-3" id="mentions-legales">
               <p className="dingry-footer-eyebrow">Contact</p>
-              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-white/80 sm:text-[0.8125rem]">
+              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-[#161616]/75 sm:text-[0.8125rem]">
                 <li>
-                  <a href={`mailto:${DINGRY_CONTACT_EMAIL}`} className="dingry-footer-link text-white">
+                  <a href={`mailto:${DINGRY_CONTACT_EMAIL}`} className="dingry-footer-link text-[#161616]">
                     {DINGRY_CONTACT_EMAIL}
                   </a>
                 </li>
@@ -150,7 +150,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
                     href={DINGRY_INSTAGRAM_URL}
                     target="_blank"
                     rel="noreferrer"
-                    className="dingry-footer-link inline-flex items-center gap-2 text-white"
+                    className="dingry-footer-link inline-flex items-center gap-2 text-[#161616]"
                   >
                     <InstagramIcon />
                     @dingry_officiel
@@ -160,14 +160,14 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
             </div>
           </div>
 
-          <nav className="dingry-footer-legal-rail mt-12" aria-label="Documents légaux">
+          <nav className="dingry-footer-legal-rail mt-12 border-black/10" aria-label="Documents légaux">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <p className="dingry-footer-eyebrow m-0">Légal</p>
               <ul className="flex flex-wrap items-center gap-y-2">
                 {LEGAL_LINKS.map((link, index) => (
                   <li key={link.id} className="flex items-center">
                     {index > 0 ? (
-                      <span className="mx-3 hidden h-3 w-px shrink-0 bg-white/10 sm:inline-block" aria-hidden />
+                      <span className="mx-3 hidden h-3 w-px shrink-0 bg-black/15 sm:inline-block" aria-hidden />
                     ) : null}
                     <button
                       type="button"
@@ -185,12 +185,12 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
             </div>
           </nav>
 
-          <div className="mt-8 flex flex-col items-center justify-between gap-6 border-t border-white/[0.06] pt-8 md:flex-row md:items-end">
+          <div className="mt-8 flex flex-col items-center justify-between gap-6 border-t border-black/10 pt-8 md:flex-row md:items-end">
             <div className="text-center md:text-left">
-              <p className="dingry-footer-eyebrow text-white/70">Moyens de paiement</p>
+              <p className="dingry-footer-eyebrow text-[#161616]/60">Moyens de paiement</p>
               <PaymentMarks />
             </div>
-            <p className="text-center text-xs tracking-[0.08em] text-white/70 md:text-right">
+            <p className="text-center text-xs tracking-[0.08em] text-[#161616]/55 md:text-right">
               © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY · Tous droits réservés
             </p>
           </div>

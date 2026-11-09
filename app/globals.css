@@ -1716,8 +1716,28 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
 }
 
 .dingry-footer-stage {
-  background: #07080c;
-  color: #f4f4f5;
+  background: #fff;
+  color: #161616;
+}
+
+.dingry-footer-stage .dingry-footer-link,
+.dingry-footer-stage .dingry-footer-legal-link {
+  color: rgb(22 22 22 / 0.82);
+}
+
+.dingry-footer-stage .dingry-footer-link:hover,
+.dingry-footer-stage .dingry-footer-legal-link:hover {
+  color: #161616;
+  text-shadow: none;
+}
+
+.dingry-footer-stage .dingry-footer-eyebrow,
+.dingry-footer-stage .dingry-footer-index {
+  color: rgb(22 22 22 / 0.55);
+}
+
+.dingry-footer-stage img {
+  filter: brightness(0);
 }
 
 /** Checkout — panneau paiement clair (catalogue) + Anton. */
@@ -1831,11 +1851,11 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-classic .dingry-footer-eyebrow {
-  color: rgb(244 244 245 / 0.72);
+  color: rgb(22 22 22 / 0.55);
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-classic .dingry-typo-street {
-  color: #f4f4f5;
+  color: #0a0a0a;
 }
 
 /** Pied de page · rail légal sobre (index + soulignement dégradé au survol). */
@@ -1892,16 +1912,16 @@ html[data-theme="light"] .dingry-shop .dingry-footer-classic .dingry-typo-street
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-legal-rail {
-  border-top-color: rgb(255 255 255 / 0.14);
+  border-top-color: rgb(14 17 24 / 0.1);
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-legal-link {
-  color: rgb(244 244 245 / 0.82);
+  color: rgb(14 17 24 / 0.72);
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-legal-link:hover,
 html[data-theme="light"] .dingry-shop .dingry-footer-legal-link:focus-visible {
-  color: #fff;
+  color: #161616;
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-legal-rail::before {
@@ -1956,8 +1976,8 @@ html[data-theme="light"] .dingry-shop .dingry-infinite-cards .dingry-footer-bloc
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-stage {
-  background: #07080c;
-  color: #f4f4f5;
+  background: #fff;
+  color: #161616;
 }
 
 .dingry-infinite-cards {
@@ -2132,6 +2152,7 @@ html[data-theme="light"] .dingry-shop .dingry-footer-stage {
   height: 2rem;
   padding: 0 0.55rem;
   background: #fff;
+  border: 1px solid rgb(0 0 0 / 0.12);
   text-transform: none;
 }
 
@@ -2166,11 +2187,11 @@ html[data-theme="light"] .dingry-shop .dingry-footer-block {
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-eyebrow {
-  color: rgb(244 244 245 / 0.78);
+  color: rgb(22 22 22 / 0.55);
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-link {
-  color: rgb(244 244 245 / 0.92);
+  color: rgb(22 22 22 / 0.82);
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-chip {
