@@ -57,17 +57,17 @@ export function createVercelApi({ projectId, teamId, token }) {
         else console.log(`skip ${key} (${target}, vide)`);
         continue;
       }
-      const payload = { value, type, target: [target] };
+      const createPayload = { value, type, target: [target] };
       if (existing?.id) {
         await api(`/v9/projects/${projectId}/env/${existing.id}`, {
           method: "PATCH",
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ value, target: [target] }),
         });
         console.log(`updated ${key} (${target})`);
       } else {
         await api(`/v10/projects/${projectId}/env`, {
           method: "POST",
-          body: JSON.stringify({ key, ...payload }),
+          body: JSON.stringify({ key, ...createPayload }),
         });
         console.log(`added ${key} (${target})`);
       }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  adminBulkSelectSizesForCategory,
   defaultSelectedSizesForCategory,
   filterStandardLetterSizes,
   normalizeToStandardLetterSize,
@@ -21,12 +22,32 @@ describe("filterStandardLetterSizes", () => {
   });
 });
 
+const HOODIE_GRID_WITHOUT_TU = [
+  "XXS",
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "3XL",
+  "4XL",
+  "5XL",
+] as const;
+
+describe("adminBulkSelectSizesForCategory", () => {
+  it("hoodie : grille complète sans TU", () => {
+    expect(adminBulkSelectSizesForCategory("Hoodies")).toEqual([...HOODIE_GRID_WITHOUT_TU]);
+    expect(adminBulkSelectSizesForCategory("Hoodies")).not.toContain("TU");
+  });
+});
+
 describe("defaultSelectedSizesForCategory", () => {
-  it("pré-coche S–2XL sur hoodie", () => {
-    expect(defaultSelectedSizesForCategory("Hoodies")).toEqual(["S", "M", "L", "XL", "2XL"]);
+  it("pré-coche toute la grille hoodie sauf TU", () => {
+    expect(defaultSelectedSizesForCategory("Hoodies")).toEqual([...HOODIE_GRID_WITHOUT_TU]);
   });
 
-  it("pré-coche S–2XL sur crop top", () => {
+  it("crop top : toute la grille (pas de TU)", () => {
     expect(defaultSelectedSizesForCategory("Crop tops")).toEqual(["S", "M", "L", "XL", "2XL"]);
   });
 

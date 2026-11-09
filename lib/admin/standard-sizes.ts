@@ -1,6 +1,7 @@
 import type { OfficialProductCategory as ProductCategory } from "@/lib/dingry-product-taxonomy";
+import { ADMIN_CATEGORY_SIZES, type ProductSize } from "@/lib/admin/types";
 
-/** Sélection par défaut (nouvelle fiche) : S → XXL (`2XL`). */
+/** Plage « standard » Smart parse / filtres (S → 2XL). */
 export const STANDARD_LETTER_SIZES = ["S", "M", "L", "XL", "2XL"] as const;
 
 export type StandardLetterSize = (typeof STANDARD_LETTER_SIZES)[number];
@@ -24,12 +25,22 @@ export function isStandardLetterSize(raw: string): boolean {
   return normalizeToStandardLetterSize(raw) !== null;
 }
 
-/** Tailles cochées par défaut à la création — la grille admin garde toutes les lettres. */
-/** Nouvelle fiche CRM : tours pantalon vides ; vêtements lettres → S–2XL (XXL) ; casquette TU. */
+function categoryLetterSizesExceptTu(category: ProductCategory): ProductSize[] {
+  return ADMIN_CATEGORY_SIZES[category].filter((size) => String(size) !== "TU") as ProductSize[];
+}
+
+/** Nouvelle fiche : toute la grille catégorie cochée sauf **TU** ; pantalon vide ; casquette TU. */
 export function defaultSelectedSizesForCategory(category: ProductCategory): string[] {
   if (category === "Caps") return ["TU"];
   if (category === "Pants") return [];
-  return [...STANDARD_LETTER_SIZES];
+  return categoryLetterSizesExceptTu(category).map(String);
+}
+
+/** « Tout sélectionner » : même logique que le défaut (grille complète sauf TU). */
+export function adminBulkSelectSizesForCategory(category: ProductCategory): ProductSize[] {
+  if (category === "Caps") return ["TU"];
+  if (category === "Pants") return [...ADMIN_CATEGORY_SIZES.Pants];
+  return categoryLetterSizesExceptTu(category);
 }
 
 /** Conserve uniquement S–XXL, ordre canonique, sans doublon. */
