@@ -44,7 +44,8 @@ export function DingryCloudinaryImage({
     width: "auto",
     height: "auto",
     maxWidth: "100%",
-    maxHeight: "min(70vh, 720px)",
+    maxHeight: "min(78vh, 860px)",
+    aspectRatio: "auto",
     objectFit: "contain" as const,
   };
 
@@ -53,9 +54,6 @@ export function DingryCloudinaryImage({
       <img
         src={safeSrc}
         alt={alt}
-        width={width}
-        height={height}
-        sizes={sizes}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
         decoding="async"
@@ -74,9 +72,7 @@ export function DingryCloudinaryImage({
         <img
           src={picture.fallback}
           alt={alt}
-          width={width}
-          height={height}
-          sizes={sizes}
+          {...(fitContent ? {} : { width, height, sizes })}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"

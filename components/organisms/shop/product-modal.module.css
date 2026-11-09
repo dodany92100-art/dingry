@@ -61,25 +61,28 @@
 
 .photoStage {
   position: relative;
-  width: fit-content;
+  display: inline-block;
+  width: max-content;
   max-width: 100%;
-  margin-inline: auto;
+  line-height: 0;
 }
 
 .photoFallback {
   display: block;
-  width: fit-content;
+  width: max-content;
   max-width: 100%;
   line-height: 0;
   background: #fff;
 }
 
 .photoStage :global(img) {
+  display: block !important;
   width: auto !important;
   height: auto !important;
-  max-width: 100%;
-  max-height: min(70vh, 720px);
-  object-fit: contain;
+  max-width: 100% !important;
+  max-height: min(78vh, 860px) !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
   object-position: center;
 }
 
@@ -158,11 +161,12 @@
 
 .photoSideToggle {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 0.75rem;
+  right: 0.75rem;
   z-index: 4;
-  background: rgb(255 255 255 / 0.92);
-  backdrop-filter: blur(6px);
+  line-height: normal;
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.12);
 }
 
 .sideToggle {
