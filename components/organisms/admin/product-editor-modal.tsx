@@ -72,6 +72,7 @@ import {
   syncStoryFieldsFromSavedProduct,
 } from "@/lib/admin/smart-product-auto-attributes";
 import { applyMakerTemplateToFormState } from "@/lib/admin/catalog-maker-prefill";
+import { adminBulkSelectSizesForCategory } from "@/lib/admin/standard-sizes";
 import {
   catalogMakerTemplateOptionLabel,
   makerLabelHintForCategory,
@@ -847,7 +848,7 @@ export function ProductEditorModal({
 
   function selectAllSizesForCategory() {
     setForm((previous) => {
-      const all = [...ADMIN_CATEGORY_SIZES[previous.category]];
+      const all = adminBulkSelectSizesForCategory(previous.category);
       if (isPantsCategory(previous.category)) {
         const variant = pickPantActiveVariant(all, previous.variant);
         setWaistListDraft(waistDeclinationsLabel(all, variant));
@@ -2132,7 +2133,7 @@ export function ProductEditorModal({
                         <input
                           type="number"
                           min="1"
-                          step="0.01"
+                          step="10"
                           value={form.price}
                           onChange={(event) => patch({ price: event.target.value })}
                           placeholder="Grille famille ou saisie libre"

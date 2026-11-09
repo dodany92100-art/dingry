@@ -20,10 +20,12 @@
     "import:product-options": "tsx scripts/import-product-options.ts",
     "verify:smart-album": "vitest run lib/admin/smart-collage-album.test.ts lib/admin/product-options-import-album.test.ts",
     "migrate:r2-images": "tsx scripts/migrate-product-images-to-r2.ts",
+    "purge:r2": "tsx scripts/purge-r2-bucket.ts --confirm",
     "smoke:quote": "tsx scripts/smoke-quote.ts",
     "test:e2e": "playwright test",
     "vercel:env-preview": "node scripts/push-vercel-preview-env.mjs",
     "vercel:env-sync": "node scripts/sync-vercel-env-parity.mjs",
+    "vercel:env-prune": "node scripts/prune-vercel-obsolete-env.mjs",
     "verify:vercel-env": "node scripts/verify-vercel-env-parity.mjs",
     "preview:setup": "node scripts/setup-preview-paypal-webhook.mjs",
     "preview:deploy": "node scripts/deploy-preview.mjs"
