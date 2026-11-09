@@ -40,6 +40,31 @@ export function DingryCloudinaryImage({
   const safeSrc = browserSafeImageUrl(canonicalizeR2PublicImageUrl(src));
   const targetWidth = deliveryWidth ?? width;
   const picture = buildCloudinaryPictureSet(safeSrc, targetWidth);
+  const naturalFit = {
+    width: "auto",
+    height: "auto",
+    maxWidth: "100%",
+    maxHeight: "min(70vh, 720px)",
+    objectFit: "contain" as const,
+  };
+
+  if (fitContent && !picture) {
+    return (
+      <img
+        src={safeSrc}
+        alt={alt}
+        width={width}
+        height={height}
+        sizes={sizes}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+        decoding="async"
+        draggable={false}
+        className={cn(className)}
+        style={naturalFit}
+      />
+    );
+  }
 
   if (picture) {
     return (
@@ -57,6 +82,7 @@ export function DingryCloudinaryImage({
           decoding="async"
           draggable={false}
           className={cn(className)}
+          style={fitContent ? naturalFit : undefined}
         />
       </picture>
     );
