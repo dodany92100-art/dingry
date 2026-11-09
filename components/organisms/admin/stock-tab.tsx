@@ -200,10 +200,6 @@ export function StockTab({
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">
             {publishFilter === "draft" ? "Brouillons" : "Stock"}
           </p>
-          <p className="mt-1 max-w-md text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
-            Une quantité par fiche produit, partagée entre toutes les tailles. Glissez une carte (ou
-            maintenez appuyé sur mobile) · validez la grille · publiez la sélection depuis la barre en bas.
-          </p>
           {categoryFilter !== "Collection" ? (
             <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/45">
               Catégorie · {categoryFilter}
