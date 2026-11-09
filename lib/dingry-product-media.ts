@@ -50,7 +50,7 @@ export const DINGRY_PRODUCT_MEDIA = {
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/HOODIE_DINGRY_BLACK_ZIPPE%CC%81_OUTLINE_VERSO_ljjxwj.png",
 } as const;
 
-/** Images catalogue figées (priorité sur l’admin pour ces ids). */
+/** Images catalogue de repli (si la fiche CRM n’a pas encore de photo valide). */
 export const CATALOG_CANONICAL_IMAGE_BY_ID: Readonly<Record<number, string>> = {
   4: DINGRY_PRODUCT_MEDIA.hoodieZipOutlineRecto,
   5: DINGRY_PRODUCT_MEDIA.hoodieZipOutlineVerso,

@@ -3,6 +3,7 @@ import {
   type CatalogProduct,
   type ProductPrintPlacement,
 } from "@/lib/admin/types";
+import { shopOptionsFromProductOptions, shopOptionsFromColorDeclinations } from "@/lib/catalog/product-options";
 import { isDraftPlaceholderImage, isProductSize } from "@/lib/admin/types";
 import {
   isVersoCatalogId,
@@ -29,6 +30,8 @@ export type ShopProduct = {
   sku?: string;
   sizes?: string[];
   colorDeclinations?: string[];
+  /** Options parent (couleur…) — visuels optionnels, SKU combiné au checkout. */
+  options?: import("@/lib/catalog/product-options").ShopProductOption[];
   /** 0 = rupture (API `inStock: false`), absent = fallback statique en stock. */
   stock?: number;
   isPinned?: boolean;
@@ -55,7 +58,21 @@ function storyFieldsFromCatalog(product: CatalogProduct): Pick<
   };
 }
 
+function shopOptionsForCatalog(product: CatalogProduct) {
+  if (product.options && product.options.length > 0) {
+    return shopOptionsFromProductOptions(product.options);
+  }
+  if (product.colorDeclinations && product.colorDeclinations.length > 0) {
+    return shopOptionsFromColorDeclinations(product.colorDeclinations, product.variant, {
+      parentSku: product.sku,
+      productName: product.name,
+    });
+  }
+  return undefined;
+}
+
 export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
+  const options = shopOptionsForCatalog(product);
   return {
     id: product.id,
     name: product.name,
@@ -70,6 +87,7 @@ export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
     sizes: product.sizes,
     stock: product.stock,
     ...(product.colorDeclinations?.length ? { colorDeclinations: [...product.colorDeclinations] } : {}),
+    ...(options?.length ? { options } : {}),
     ...(product.isPinned ? { isPinned: true } : {}),
     ...(product.displayOrder !== undefined && product.displayOrder > 0
       ? { displayOrder: product.displayOrder }
@@ -123,6 +141,10 @@ function applyCatalogOverlay(
       ? versoSkuFromRecto(overlay.sku)
       : overlay.sku;
   const overlayBack = overlay.imageBack?.trim();
+  const crmImage =
+    liveImage && !isDraftPlaceholderImage(liveImage)
+      ? liveImage
+      : (CATALOG_CANONICAL_IMAGE_BY_ID[product.id] ?? product.image);
   return {
     ...product,
     name: overlay.name,
@@ -130,11 +152,7 @@ function applyCatalogOverlay(
       ? product.variant || overlay.variant
       : overlay.variant || product.variant,
     price: overlay.price,
-    image: inheritedFromRecto
-      ? product.image
-      : liveImage && !isDraftPlaceholderImage(liveImage)
-        ? liveImage
-        : (CATALOG_CANONICAL_IMAGE_BY_ID[product.id] ?? product.image),
+    image: inheritedFromRecto ? product.image : crmImage,
     ...(inheritedFromRecto
       ? {}
       : overlayBack && !isDraftPlaceholderImage(overlayBack)
@@ -195,7 +213,9 @@ export function overlayShopCatalog(
     const resolved = resolveLiveOverlay(product.id, liveById);
     const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[product.id];
     if (!resolved) {
-      const image = canonicalImage ?? product.image;
+      const image = product.image.trim() && !isDraftPlaceholderImage(product.image)
+        ? product.image
+        : (canonicalImage ?? product.image);
       const category = resolveShopCategory(product.id, product.category);
       const next =
         image !== product.image || category !== product.category

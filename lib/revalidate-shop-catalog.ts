@@ -5,5 +5,6 @@ import { SHOP_CATALOG_CACHE_TAG } from "@/lib/server/shop-catalog-cache";
 export function revalidateShopCatalog(): void {
   revalidateTag(SHOP_CATALOG_CACHE_TAG, "max");
   revalidatePath("/");
+  revalidatePath("/websitedx");
   revalidatePath("/api/catalog");
 }

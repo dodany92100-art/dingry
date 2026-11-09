@@ -19,7 +19,7 @@ export async function GET() {
       { products, removedCatalogIds },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+          "Cache-Control": "private, no-store, max-age=0, must-revalidate",
         },
       },
     );

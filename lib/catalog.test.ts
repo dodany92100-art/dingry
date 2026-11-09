@@ -71,6 +71,33 @@ describe("overlayShopCatalog", () => {
     expect(merged.find((p) => p.id === 40)?.sku).toBe("DINGRY-S03-V");
   });
 
+  it("prend la photo CRM plutôt que l’image canonique figée", () => {
+    const crmPhoto = "https://cdn.example.com/fiche-admin.webp";
+    const merged = overlayShopCatalog(
+      [fallbackProduct(11, 80)],
+      [liveProduct({ id: 11, sku: "DINGRY-T01", price: 80, image: crmPhoto })],
+    );
+    expect(merged[0]?.image).toBe(crmPhoto);
+  });
+
+  it("prend le nom et le prix CRM sur la fiche vitrine", () => {
+    const merged = overlayShopCatalog(
+      [fallbackProduct(11, 80)],
+      [
+        liveProduct({
+          id: 11,
+          sku: "DINGRY-T01",
+          price: 95,
+          name: "TEE DINGRY NOUVEAU",
+          variant: "WHITE — DROP 2",
+        }),
+      ],
+    );
+    expect(merged[0]?.name).toBe("TEE DINGRY NOUVEAU");
+    expect(merged[0]?.variant).toBe("WHITE — DROP 2");
+    expect(merged[0]?.price).toBe(95);
+  });
+
   it("ajoute les produits CRM absents du fallback statique", () => {
     const merged = overlayShopCatalog([], [liveProduct({ id: 99, sku: "DINGRY-X99", price: 50 })]);
     expect(merged).toHaveLength(1);

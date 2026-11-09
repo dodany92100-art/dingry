@@ -23,3 +23,13 @@ describe("shopHref", () => {
     expect(shopHref("/", "/checkout")).toBe("/checkout");
   });
 });
+
+describe("filtre catalogue (preview)", () => {
+  it("ne doit jamais pointer la home teaser depuis /websitedx", () => {
+    const base = shopBasePathFromPathname("/websitedx");
+    const query = "category=jersey";
+    const href = query ? `${base}?${query}` : base;
+    expect(href).toBe("/websitedx?category=jersey");
+    expect(href.startsWith("/?")).toBe(false);
+  });
+});

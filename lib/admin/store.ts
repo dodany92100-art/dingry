@@ -345,6 +345,12 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
   const genericCategory =
     normalizeProductCategory(current.category) === "T-shirts" &&
     normalizeProductCategory(seed.category) !== "T-shirts";
+  const liveImage = current.imageUrl.trim();
+  const crmImage =
+    liveImage && !isDraftPlaceholderImage(liveImage)
+      ? liveImage
+      : (canonicalImage ?? seed.imageUrl);
+
   if (catalogLocked) {
     const resolvedCategory = current
       ? normalizeProductCategory(current.category)
@@ -358,9 +364,7 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
     return {
       ...seed,
       ...current,
-      imageUrl:
-        canonicalImage ??
-        (DINGRY_JERSEY_PRODUCT_IDS.has(seedIdNum) && current.imageUrl ? current.imageUrl : seed.imageUrl),
+      imageUrl: crmImage,
       category: resolvedCategory,
       name: current.name.includes(" — ") ? seed.name : current.name,
       variant: current.variant.trim() || seed.variant,
@@ -375,7 +379,7 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
   return {
     ...seed,
     ...current,
-    imageUrl: canonicalImage ?? current.imageUrl,
+    imageUrl: crmImage,
     sku: genericSku ? seed.sku : current.sku,
     variant: current.variant || seed.variant,
     description: current.description || seed.description,
