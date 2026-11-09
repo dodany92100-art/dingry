@@ -145,3 +145,18 @@ export function isR2PublicUrl(url: string | null | undefined): boolean {
     return false;
   }
 }
+
+/** Réécrit un hôte `pub-….r2.dev` obsolète vers `R2_PUBLIC_BASE_URL` (même clé objet). */
+export function canonicalizeR2PublicImageUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed || !trimmed.includes(".r2.dev")) return trimmed;
+  const key = objectKeyFromR2PublicUrl(trimmed);
+  if (!key) return trimmed;
+  const canonical = r2PublicUrlForKey(key);
+  try {
+    if (new URL(trimmed).origin === new URL(canonical).origin) return trimmed;
+  } catch {
+    return trimmed;
+  }
+  return canonical;
+}

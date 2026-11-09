@@ -466,6 +466,7 @@ function AdminDashboard() {
             onReorderProducts={productsApi.reorderProductsLocal}
             categoryFilter={categoryFilter}
             onCategoryFilterChange={selectCategory}
+            onUnauthorized={expire}
           />
           </>
         ) : tab === "banniere" ? (

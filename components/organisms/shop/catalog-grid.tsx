@@ -71,6 +71,7 @@ export function CatalogGrid({
     ) : (
       <CollectionFeed
         sections={sections}
+        products={products}
         onOpenProduct={onOpenProduct}
         wishlistIds={wishlistIds}
         onToggleWishlist={onToggleWishlist}
@@ -85,6 +86,7 @@ export function CatalogGrid({
           <CatalogProductCell
             key={product.id}
             product={product}
+            catalog={products}
             globalIndex={index}
             wishlistActive={wishlistIds.includes(catalogRectoId(product.id))}
             onOpenProduct={onOpenProduct}

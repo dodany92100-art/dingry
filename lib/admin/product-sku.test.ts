@@ -12,8 +12,8 @@ describe("newProductSku", () => {
 });
 
 describe("resolveProductSkuForSave", () => {
-  it("conserve un SKU manuel", () => {
-    expect(resolveProductSkuForSave("T-shirts", "ma-ref-perso", [])).toBe("MA-REF-PERSO");
+  it("conserve un SKU manuel (casse saisie)", () => {
+    expect(resolveProductSkuForSave("T-shirts", "ma-ref-perso", [])).toBe("ma-ref-perso");
   });
 
   it("génère si vide", () => {

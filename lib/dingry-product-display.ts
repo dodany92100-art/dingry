@@ -226,11 +226,42 @@ export function storefrontProductTitle(
   return product.name;
 }
 
-/** Sous-titre carte : vide si le titre porte déjà le coloris. */
-export function storefrontProductSubtitle(product: ShopProduct): string {
-  const line = productLineForCatalogId(product.id);
+function isRectoVersoOnlyLabel(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed.length === 0 || /^(RECTO|VERSO)$/i.test(trimmed);
+}
+
+/** Sous-titre carte : vide si le titre porte déjà le coloris (évite « RECTO » sous les imports lot 2). */
+export function storefrontProductSubtitle(
+  product: ShopProduct,
+  catalog?: readonly ShopProduct[],
+): string {
+  const line = catalog
+    ? productLineForShop(product.id, catalog)
+    : staticProductLineForCatalogId(product.id);
   if (line) return "";
-  return product.variant.replace(/\s*—\s*(RECTO|VERSO)\s*/gi, " ").trim();
+
+  const title = storefrontProductTitle(product, catalog);
+  const raw = product.variant
+    .replace(/\s*—\s*(RECTO|VERSO)\s*/gi, " ")
+    .replace(/\s*-\s*(RECTO|VERSO)\s*/gi, " ")
+    .trim();
+
+  if (raw && !isRectoVersoOnlyLabel(raw)) {
+    if (title.toUpperCase().includes(raw.toUpperCase())) return "";
+    return raw;
+  }
+
+  const color = colorLabelFromShopProduct(product);
+  if (
+    color &&
+    color !== "STANDARD" &&
+    !isRectoVersoOnlyLabel(color) &&
+    !title.toUpperCase().includes(color.toUpperCase())
+  ) {
+    return color;
+  }
+  return "";
 }
 
 export function productDetailCopy(

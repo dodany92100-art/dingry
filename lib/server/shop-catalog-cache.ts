@@ -20,6 +20,6 @@ async function loadCatalogProductRows(): Promise<CachedCatalogRows> {
 /** Produits CRM / Supabase — invalidé par `revalidateShopCatalog()` (mutation admin). */
 export const getCachedCatalogProductRows = unstable_cache(
   loadCatalogProductRows,
-  ["dingry-public-catalog-rows-v1"],
+  ["dingry-public-catalog-rows-v2"],
   { tags: [SHOP_CATALOG_CACHE_TAG] },
 );

@@ -33,6 +33,8 @@ type ProductImageFlipProps = {
   showPeekAnimation?: boolean;
   priority?: boolean;
   soldOut?: boolean;
+  /** Grille catalogue : même ratio sur toutes les cartes (prix alignés sur la ligne). */
+  catalogGrid?: boolean;
   className?: string;
   imgClassName?: string;
   /**
@@ -53,6 +55,7 @@ export function ProductImageFlip({
   showPeekAnimation = false,
   priority = false,
   soldOut = false,
+  catalogGrid = false,
   className,
   imgClassName,
   onTap,
@@ -143,7 +146,10 @@ export function ProductImageFlip({
   const cardW = priority ? 640 : CATALOG_CARD_IMAGE_WIDTH;
 
   const photoShellClass = cn(
-    "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden [touch-action:pan-y] lg:aspect-[4/5] lg:max-h-[22rem]",
+    "dingry-product-photo relative touch-pan-y overflow-hidden [touch-action:pan-y]",
+    catalogGrid
+      ? "h-full w-full max-h-none"
+      : "aspect-[3/4] lg:aspect-[4/5] lg:max-h-[22rem]",
     className,
   );
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AdminOrder } from "@/lib/admin/types";
-import { orderPatchHasChanges } from "@/lib/admin/store";
+import { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
 import { stockPatchAfterShort } from "@/lib/order-stock-finalize";
 
 const sampleOrder = (overrides: Partial<AdminOrder> = {}): AdminOrder => ({

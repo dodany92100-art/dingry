@@ -96,7 +96,7 @@ export function HoverBorderGradient({
           transition: `background ${duration}s linear`,
         }}
       />
-      <div className="absolute inset-[1px] z-[1] flex-none rounded-[inherit] bg-[#12151c]" />
+      <div className="dingry-hover-border-fill absolute inset-[1px] z-[1] flex-none rounded-[inherit] bg-[#12151c]" />
     </Tag>
   );
 }

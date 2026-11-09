@@ -9,12 +9,14 @@ import { prefetchShopProductMedia } from "@/lib/shop-prefetch";
 
 export const CatalogProductCell = memo(function CatalogProductCell({
   product,
+  catalog,
   globalIndex,
   wishlistActive,
   onOpenProduct,
   onToggleWishlist,
 }: {
   product: ShopProduct;
+  catalog: readonly ShopProduct[];
   globalIndex: number;
   wishlistActive: boolean;
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
@@ -29,8 +31,9 @@ export const CatalogProductCell = memo(function CatalogProductCell({
   const onWishlist = useCallback(() => onToggleWishlist(rectoId), [onToggleWishlist, rectoId]);
   return (
     <ProductCard
-      name={storefrontProductTitle(product)}
-      variant={storefrontProductSubtitle(product)}
+      className="h-full"
+      name={storefrontProductTitle(product, catalog)}
+      variant={storefrontProductSubtitle(product, catalog)}
       image={product.image}
       price={product.price}
       priority={globalIndex === 0}

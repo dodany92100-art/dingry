@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  canonicalizeR2PublicImageUrl,
   objectKeyFromR2PublicUrl,
   R2_DEFAULT_BUCKET_NAME,
   R2_S3_ACCESS_KEY_ID_LENGTH,
@@ -57,5 +58,14 @@ describe("r2 URLs", () => {
     const url =
       "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/products/7/recto/a.webp";
     expect(objectKeyFromR2PublicUrl(url)).toBe("dingry/products/7/recto/a.webp");
+  });
+
+  it("réécrit un ancien domaine pub R2 vers la base configurée", () => {
+    vi.stubEnv("R2_PUBLIC_BASE_URL", "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev");
+    const stale =
+      "https://pub-8ef850fa01fb9fda829a4ffa6455c86b.r2.dev/dingry/products/56/recto/x.webp";
+    expect(canonicalizeR2PublicImageUrl(stale)).toBe(
+      "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/products/56/recto/x.webp",
+    );
   });
 });

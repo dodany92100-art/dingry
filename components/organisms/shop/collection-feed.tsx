@@ -10,6 +10,7 @@ import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
 
 type CollectionFeedProps = {
   sections: CatalogMenuSection[];
+  products: readonly ShopProduct[];
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
@@ -17,6 +18,7 @@ type CollectionFeedProps = {
 
 export function CollectionFeed({
   sections,
+  products,
   onOpenProduct,
   wishlistIds,
   onToggleWishlist,
@@ -38,6 +40,7 @@ export function CollectionFeed({
             <CatalogProductCell
               key={product.id}
               product={product}
+              catalog={products}
               globalIndex={globalIndex}
               wishlistActive={wishlistIds.includes(rectoId)}
               onOpenProduct={onOpenProduct}

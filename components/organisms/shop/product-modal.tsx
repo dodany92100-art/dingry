@@ -159,20 +159,21 @@ function ProductModalContent({
       <motion.div
         ref={modal.productModalRef}
         data-product-modal=""
-        className={styles.panel}
+        className={`${styles.panel} dingry-sale-ui`}
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
         transition={MODAL_PANEL_SPRING}
       >
-        <div ref={modal.productImageRef} className={styles.photo}>
+        <div ref={modal.productImageRef} className={`${styles.photo} dingry-product-photo`}>
           {effectiveFlipImages ? (
             <ProductImageFlip
               frontImage={effectiveFlipImages.front}
               backImage={effectiveFlipImages.back}
               side={modalSide}
               alt={storefrontProductTitle(product, products)}
-              imgClassName="brightness-[0.85] contrast-[1.05] grayscale-[0.2]"
+              className={`${styles.photoFallback} w-full`}
+              imgClassName={styles.photoCover}
             />
           ) : useParentOptions ? (
             <DingryVariantProductImage
@@ -181,6 +182,9 @@ function ProductModalContent({
               parentAlt={activeView.name}
               options={parentOptions}
               selectedOptionKey={selectedOptionKey}
+              presentation="modal"
+              className={styles.photoFallback}
+              imgClassName={styles.photoCover}
             />
           ) : (
             <div className={styles.photoFallback}>
@@ -312,7 +316,7 @@ function ProductModalContent({
                     +
                   </button>
                 </div>
-                <p className="dingry-product-price dingry-product-price--lg dingry-product-price--accent dingry-product-price--on-dark">
+                <p className="dingry-product-price dingry-product-price--lg dingry-product-price--accent dingry-product-price--on-light">
                   {saleProduct.price * selectedQuantity}€
                 </p>
               </div>

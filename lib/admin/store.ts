@@ -41,7 +41,9 @@ import {
 } from "@/lib/supabase/admin-products";
 import { getSharedRedis } from "@/lib/ratelimit";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
+import { buildStorefrontOnlineProducts } from "@/lib/admin/storefront-online-catalog";
 import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
+import { PRODUCTS } from "@/lib/shop-data";
 import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
 import { RETIRED_LOOKBOOK_SEED_TITLES, seededLookbookSlides } from "@/lib/admin/lookbook-seed";
 import {
@@ -77,6 +79,9 @@ import {
   normalizeIsPinned,
 } from "@/lib/admin/product-display-order";
 import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
+import { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
+
+export { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
 
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -1419,13 +1424,60 @@ function tombstoneCatalogPair(tombstone: Set<string>, id: string): void {
   }
 }
 
+function isStaticCatalogId(id: string): boolean {
+  return (
+    SEEDED_PRODUCTS.some((seed) => seed.id === id) ||
+    PRODUCTS.some((product) => String(product.id) === id)
+  );
+}
+
+/** Masque un fantôme boutique (fallback) sans fiche CRM — tombstone uniquement. */
+export async function maskStorefrontGhostProduct(id: string): Promise<{ ok: true } | { error: string }> {
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    return { error: "Identifiant produit invalide." };
+  }
+
+  const store = await loadStoreReadOnly();
+  const online = buildStorefrontOnlineProducts(store);
+  const row = online.find((product) => product.id === numericId);
+  if (!row) {
+    return { error: "Produit absent du catalogue en ligne." };
+  }
+  if (!row.ghost) {
+    return { error: "Fiche CRM présente : supprimez ou passez en brouillon depuis le stock." };
+  }
+  if (!isStaticCatalogId(id)) {
+    return { error: "Masquage réservé aux produits du catalogue statique." };
+  }
+
+  const tombstone = new Set<string>();
+  tombstoneCatalogPair(tombstone, id);
+
+  if (isSupabaseStoreEnabled()) {
+    await addRemovedCatalogIds([...tombstone]);
+    return { ok: true };
+  }
+
+  const wrote = await withStoreOptimistic(
+    (state) => {
+      const next = new Set(state.removedCatalogIds ?? []);
+      for (const entry of tombstone) next.add(entry);
+      return { store: { ...state, removedCatalogIds: [...next] }, result: true, skipWrite: false };
+    },
+    { adminRelaxedFinalize: true },
+  );
+  if (!wrote) return { error: "Écriture magasin impossible." };
+  return { ok: true };
+}
+
 export async function removeProduct(id: string): Promise<boolean> {
   if (isSupabaseStoreEnabled()) {
     const existing = await getSupabaseProduct(id);
     if (!existing) return false;
     const ok = await deleteSupabaseProduct(id);
     if (!ok) return false;
-    if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
+    if (isStaticCatalogId(id)) {
       const tombstone = new Set<string>();
       tombstoneCatalogPair(tombstone, id);
       await addRemovedCatalogIds([...tombstone]);
@@ -1445,7 +1497,7 @@ export async function removeProduct(id: string): Promise<boolean> {
       }
       const copy = { ...product, sizes: [...product.sizes] };
       store.products = store.products.filter((item) => item.id !== id);
-      if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
+      if (isStaticCatalogId(id)) {
         const tombstone = new Set(store.removedCatalogIds ?? []);
         tombstoneCatalogPair(tombstone, id);
         store.removedCatalogIds = [...tombstone];
@@ -1478,51 +1530,6 @@ export async function insertOrderIfNew(order: AdminOrder): Promise<boolean> {
 }
 
 export type PatchOrderResult = { order: AdminOrder | null; changed: boolean };
-
-function reviewReasonsEqual(
-  left: AdminOrder["reviewReasons"],
-  right: AdminOrder["reviewReasons"],
-): boolean {
-  const a = left ?? [];
-  const b = right ?? [];
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-function stockLinesEqual(
-  left: AdminOrder["stockLines"],
-  right: AdminOrder["stockLines"],
-): boolean {
-  const a = left ?? [];
-  const b = right ?? [];
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    const leftLine = a[i];
-    const rightLine = b[i];
-    if (!leftLine || !rightLine) return false;
-    if (leftLine.productId !== rightLine.productId || leftLine.qty !== rightLine.qty) return false;
-  }
-  return true;
-}
-
-/** Comparaison champ par champ sur le patch (valeurs primitives / références explicites). */
-export function orderPatchHasChanges(current: AdminOrder, patch: Partial<AdminOrder>): boolean {
-  for (const key of Object.keys(patch) as (keyof AdminOrder)[]) {
-    if (key === "reviewReasons") {
-      if (!reviewReasonsEqual(current.reviewReasons, patch.reviewReasons)) return true;
-      continue;
-    }
-    if (key === "stockLines") {
-      if (!stockLinesEqual(current.stockLines, patch.stockLines)) return true;
-      continue;
-    }
-    if (patch[key] !== current[key]) return true;
-  }
-  return false;
-}
 
 /** Met à jour une commande existante sans écraser les champs non mentionnés (version relue). */
 export async function patchOrder(

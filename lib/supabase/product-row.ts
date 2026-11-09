@@ -1,5 +1,6 @@
 import type { AdminProduct, ProductPrintPlacement, ProductPublishStatus } from "@/lib/admin/types";
 import { normalizePrintPlacement, normalizeProductCategory, normalizePublishStatus } from "@/lib/admin/types";
+import { canonicalizeR2PublicImageUrl } from "@/lib/r2/config";
 
 export type ProductRow = {
   id: string;
@@ -77,11 +78,13 @@ export function rowToAdminProduct(row: ProductRow): AdminProduct {
     stock: Math.max(0, Math.floor(Number(row.stock) || 0)),
     publishStatus: normalizePublishStatus(row.publish_status) as ProductPublishStatus,
     colorDeclinations: Array.isArray(row.color_declinations) ? row.color_declinations.map(String) : [],
-    imageUrl: String(row.image_url ?? ""),
-    blobUrl: row.blob_url ?? null,
+    imageUrl: canonicalizeR2PublicImageUrl(String(row.image_url ?? "")),
+    blobUrl: row.blob_url ? canonicalizeR2PublicImageUrl(row.blob_url) : null,
     blobPathname: row.blob_pathname ?? null,
-    imageBackUrl: String(row.image_back_url ?? ""),
-    imageBackBlobUrl: row.image_back_blob_url ?? null,
+    imageBackUrl: canonicalizeR2PublicImageUrl(String(row.image_back_url ?? "")),
+    imageBackBlobUrl: row.image_back_blob_url
+      ? canonicalizeR2PublicImageUrl(row.image_back_blob_url)
+      : null,
     imageBackBlobPathname: row.image_back_blob_pathname ?? null,
     createdAt: row.created_at,
     isPinned: Boolean(row.is_pinned),

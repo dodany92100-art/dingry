@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>DINGRY — Bilan des travaux</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: #111;
+      line-height: 1.5;
+      font-size: 10.5pt;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20px 24px 36px;
+    }
+    h1 {
+      font-size: 21pt;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin: 0 0 4px;
+    }
+    .meta {
+      color: #444;
+      font-size: 9.5pt;
+      margin-bottom: 22px;
+      border-bottom: 2px solid #000;
+      padding-bottom: 12px;
+    }
+    h2 {
+      font-size: 12pt;
+      margin: 22px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    p { margin: 0 0 8px; }
+    .lead {
+      background: #f4f4f4;
+      border-left: 4px solid #000;
+      padding: 12px 14px;
+      margin: 0 0 16px;
+      font-size: 10pt;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 14px;
+      font-size: 9.5pt;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 7px 9px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: #111; color: #fff; font-weight: 600; }
+    tr:nth-child(even) td { background: #fafafa; }
+    ul { margin: 6px 0 10px; padding-left: 18px; }
+    li { margin-bottom: 5px; }
+    .client-quote {
+      font-style: italic;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 10pt;
+    }
+    .annexe { font-size: 9pt; color: #333; }
+    .footer {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
+      font-size: 8.5pt;
+      color: #666;
+    }
+    @media print {
+      body { padding: 0; }
+      h2 { page-break-after: avoid; }
+      table, tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>DINGRY</h1>
+  <p class="meta">
+    <strong>Bilan des travaux — document client</strong><br />
+    Mis à jour le 9 novembre 2026 · Boutique en ligne + espace de gestion<br />
+    Site : <strong>dingry.com</strong>
+  </p>
+
+  <div class="lead">
+    Nous avons rapproché la <strong>boutique</strong> et l'<strong>espace de gestion</strong>, fiabilisé la mise en ligne des
+    produits, amélioré l'expérience d'achat et déployé plusieurs versions en production. Deux lots d'articles ont été intégrés
+    en gestion avec stocks prêts. Il reste <strong>12 articles</strong> visibles sur le site sans fiche complète — à traiter avec vous.
+    La page d'attente affiche toujours l'ouverture au <strong>jeudi 12 novembre 2026 à 20 h</strong> (Paris), selon votre planning.
+  </div>
+
+  <h2>1. Boutique (vos clients)</h2>
+  <table>
+    <tr><th>Réalisation</th><th>Ce que ça change</th></tr>
+    <tr><td>Grille produits</td><td>Photos alignées, titres lisibles, prix sous chaque article (plus de décalage entre les lignes).</td></tr>
+    <tr><td>Clic sur un article</td><td>Un seul geste ouvre la fiche (image ou texte).</td></tr>
+    <tr><td>Fiche d'achat</td><td>Fond clair, photo bien cadrée (pantalons, sweats, etc.).</td></tr>
+    <tr><td>Favoris (cœur)</td><td>Sur la photo, comme avant.</td></tr>
+    <tr><td>Textes catalogue</td><td>Suppression des sous-titres inutiles après import des collections.</td></tr>
+    <tr><td>Mise en ligne</td><td>Dernière version publiée sur dingry.com (novembre 2026).</td></tr>
+    <tr><td>Mobile</td><td>Parcours plus fluide ; chargement progressif des sections lourdes.</td></tr>
+    <tr><td>Page d'attente</td><td>Teaser + compte à rebours avant ouverture publique.</td></tr>
+  </table>
+
+  <h2>2. Espace de gestion (organisation)</h2>
+  <table>
+    <tr><th>Réalisation</th><th>Ce que ça change</th></tr>
+    <tr><td>Vue stock</td><td>Grille lisible sur téléphone et ordinateur.</td></tr>
+    <tr><td>Aperçu « comme sur le site »</td><td>Vous voyez ce que voient les clients : en ligne, hors fiche, ou à masquer.</td></tr>
+    <tr><td>Masquer un article</td><td>Retrait de la vitrine sans casser le reste du site.</td></tr>
+    <tr><td>Brouillon / en ligne</td><td>Distinction claire entre fiche préparée et fiche visible à la vente.</td></tr>
+    <tr><td>Import lot 1</td><td>4 pièces créées en gestion + stocks initialisés.</td></tr>
+    <tr><td>Import lot 2</td><td>6 pièces (#25, #27, #35, #31, #33, #39) — hoodies, crewnecks — idem.</td></tr>
+    <tr><td>Saisie rapide</td><td>Modèles par type, couleurs, tailles ; collage texte pour gagner du temps.</td></tr>
+    <tr><td>Photos</td><td>Envoi des visuels (recto et dos quand prévu).</td></tr>
+    <tr><td>Commandes</td><td>Suivi achats PayPal et statuts livraison.</td></tr>
+    <tr><td>Lookbook &amp; bannière</td><td>Contenu éditorial et message personnalisation.</td></tr>
+  </table>
+  <p><strong>Chiffres au 9/11 :</strong> 12 fiches actives en gestion · 12 articles encore en vitrine sans fiche (annexe).</p>
+
+  <h2>3. Données et stocks</h2>
+  <table>
+    <tr><th>Sujet</th><th>En pratique</th></tr>
+    <tr><td>Fiches sauvegardées</td><td>Nom, prix, images, statut conservés durablement (pas seulement dans le code du site).</td></tr>
+    <tr><td>Compteurs de stock</td><td>Ajustement rapide quand on vend ou qu'on modifie une quantité en gestion.</td></tr>
+    <tr><td>Site ↔ gestion</td><td>Supprimer ou masquer en gestion ne doit plus faire réapparaître un article seul sur la boutique.</td></tr>
+    <tr><td>Imports</td><td>Lots traités article par article, avec vérification avant validation.</td></tr>
+  </table>
+
+  <h2>4. Hébergement et mises en ligne</h2>
+  <table>
+    <tr><th>Sujet</th><th>En pratique</th></tr>
+    <tr><td>Site en ligne 24 h/24</td><td>Boutique accessible ; mises à jour après contrôle qualité.</td></tr>
+    <tr><td>Déploiements réussis</td><td>Vitrine, fiche produit, grille catalogue — production dingry.com.</td></tr>
+    <tr><td>Images produits</td><td>Hébergement optimisé pour chargement rapide (dont Cloudinary / stockage dédié).</td></tr>
+    <tr><td>PayPal</td><td>Paiement en page dédiée ; total aligné sur les prix en vente.</td></tr>
+  </table>
+
+  <h2>5. Sécurité et accès</h2>
+  <ul>
+    <li>Espace gestion : accès réservé (connexion + code à 6 chiffres sur téléphone).</li>
+    <li>Paiements : via PayPal (pas de stockage de carte chez vous).</li>
+    <li>Données sensibles : hors du code public.</li>
+    <li>Vitrine : protection possible avant ouverture complète.</li>
+  </ul>
+
+  <h2>6. Parcours de travail (au quotidien)</h2>
+  <ol style="margin: 0; padding-left: 20px;">
+    <li>Créer ou corriger une fiche en gestion.</li>
+    <li>Passer « en ligne » quand c'est prêt.</li>
+    <li>Contrôler l'aperçu vitrine dans l'admin.</li>
+    <li>Mise en ligne du site quand un lot de changements est validé.</li>
+    <li>Contrôle sur dingry.com (mobile + ordinateur).</li>
+    <li>Anciens articles vitrine seule : import ou masquage, un par un.</li>
+  </ol>
+
+  <h2>7. Qualité (équipe technique)</h2>
+  <ul>
+    <li>Plus de 350 tests automatiques (catalogue, panier, gestion).</li>
+    <li>Contrôles avant envoi du code pour limiter les régressions.</li>
+    <li>Organisation des écrans produit et cartes boutique pour évolutions futures.</li>
+  </ul>
+
+  <h2>8. Livré en production (session récente)</h2>
+  <ul>
+    <li>Alignement vitrine ↔ gestion (masquage, articles « fantômes », actualisation catalogue).</li>
+    <li>Imports lots 1 et 2 + stocks.</li>
+    <li>Fiche d'achat (fond clair, image).</li>
+    <li>Cartes catalogue (structure, titres, prix).</li>
+    <li>Déploiement production novembre 2026.</li>
+  </ul>
+
+  <h2>9. Prochaines étapes avec vous</h2>
+  <table>
+    <tr><th>Priorité</th><th>Action</th></tr>
+    <tr><td>1</td><td>Contrôler le lot 2 : photos dos, prix, stocks (#25, #27, #31, #33, #35, #39).</td></tr>
+    <tr><td>2</td><td>12 articles sans fiche : créer la fiche ou retirer de la vitrine (annexe).</td></tr>
+    <tr><td>3</td><td>Achat test PayPal avant grande communication.</td></tr>
+    <tr><td>4</td><td>Textes définitifs · passage teaser → boutique ouverte (12/11 20 h).</td></tr>
+  </table>
+
+  <h2>Annexe — articles vitrine sans fiche (9/11)</h2>
+  <p class="annexe">
+    #2 · #4 · #6 · #7 · #11 · #17 · #19 · #21 · #22 · #23 · #24 · #29
+    (hoodies, t-shirts — détail sur demande).
+  </p>
+
+  <h2>Message pour la cliente</h2>
+  <p class="client-quote">
+    Nous avons structuré la boutique et l'espace de gestion pour qu'ils avancent ensemble : les lots 1 et 2 ont intégré
+    10 références en gestion avec stocks, l'expérience d'achat a été clarifiée, et le site tient en production. Il reste un
+    passage sur 12 articles encore visibles sans fiche, puis un contrôle visuels et stocks sur le lot 2. Merci pour la
+    confiance — la suite repose surtout sur vos validations (stocks, textes, ouverture).
+  </p>
+
+  <p class="footer">
+    DINGRY · Bilan client · Novembre 2026 · Fichier : public/DINGRY-rapport-avancees.pdf
+  </p>
+</body>
+</html>

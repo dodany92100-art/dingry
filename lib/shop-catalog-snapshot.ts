@@ -10,11 +10,16 @@ export type ShopCatalogSnapshot = {
 };
 
 export function removedCatalogIdSet(store: AdminStore): ReadonlySet<number> {
-  return new Set(
-    (store.removedCatalogIds ?? [])
-      .map((id) => Number(id))
-      .filter((catalogId) => Number.isInteger(catalogId) && catalogId > 0),
-  );
+  const ids = new Set<number>();
+  const add = (raw: string | number) => {
+    const id = Number(raw);
+    if (Number.isInteger(id) && id > 0) ids.add(id);
+  };
+  for (const raw of store.removedCatalogIds ?? []) add(raw);
+  for (const product of store.products) {
+    if (product.publishStatus === "draft") add(product.id);
+  }
+  return ids;
 }
 
 export function publicLiveCatalogRows(

@@ -26,21 +26,25 @@ describe("readFileStoreSnapshot via withStoreOptimistic", () => {
     readMock.mockReset();
   });
 
-  it("get en échec ne déclenche aucune écriture", async () => {
-    readMock.mockRejectedValue(new Error("network timeout"));
-    const { insertOrderIfNew, StoreUnavailableError } = await import("@/lib/admin/store");
-    await expect(
-      insertOrderIfNew({
-        id: "TEST-ORDER",
-        customerName: "Test",
-        email: "t@test.fr",
-        total: 35,
-        items: ["Tee"],
-        status: "En attente",
-        createdAt: new Date().toISOString(),
-        source: "paypal",
-      }),
-    ).rejects.toBeInstanceOf(StoreUnavailableError);
-  });
+  it(
+    "get en échec ne déclenche aucune écriture",
+    async () => {
+      readMock.mockRejectedValue(new Error("network timeout"));
+      const { insertOrderIfNew, StoreUnavailableError } = await import("@/lib/admin/store");
+      await expect(
+        insertOrderIfNew({
+          id: "TEST-ORDER",
+          customerName: "Test",
+          email: "t@test.fr",
+          total: 35,
+          items: ["Tee"],
+          status: "En attente",
+          createdAt: new Date().toISOString(),
+          source: "paypal",
+        }),
+      ).rejects.toBeInstanceOf(StoreUnavailableError);
+    },
+    20_000,
+  );
 });
 

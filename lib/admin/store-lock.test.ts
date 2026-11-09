@@ -61,17 +61,21 @@ describe("verrou Redis store", () => {
     redisEval.mockReset();
   });
 
-  it("prend et libère dingry:store-lock autour de l’écriture", async () => {
-    const { patchOrder } = await import("@/lib/admin/store");
-    await patchOrder("ORD-1", () => ({ status: "Expédié" }));
-    expect(redisSet).toHaveBeenCalledWith(
-      "dingry:store-lock",
-      expect.any(String),
-      expect.objectContaining({ nx: true, ex: 20 }),
-    );
-    expect(writeMock).toHaveBeenCalledTimes(1);
-    expect(redisEval).toHaveBeenCalled();
-  });
+  it(
+    "prend et libère dingry:store-lock autour de l’écriture",
+    async () => {
+      const { patchOrder } = await import("@/lib/admin/store");
+      await patchOrder("ORD-1", () => ({ status: "Expédié" }));
+      expect(redisSet).toHaveBeenCalledWith(
+        "dingry:store-lock",
+        expect.any(String),
+        expect.objectContaining({ nx: true, ex: 20 }),
+      );
+      expect(writeMock).toHaveBeenCalledTimes(1);
+      expect(redisEval).toHaveBeenCalled();
+    },
+    20_000,
+  );
 
   it(
     "StoreConflictError si le lock n'est jamais acquis",

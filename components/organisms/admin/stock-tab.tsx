@@ -43,6 +43,7 @@ type StockTabProps = {
   stockAutosaveStatus?: StockAutosaveStatusMap;
   categoryFilter: AdminProductCategoryFilter;
   onCategoryFilterChange: (filter: AdminProductCategoryFilter) => void;
+  onUnauthorized?: () => void;
 };
 
 function filterByAdminCategory(
@@ -97,6 +98,7 @@ export function StockTab({
   stockAutosaveStatus = {},
   categoryFilter,
   onCategoryFilterChange,
+  onUnauthorized,
 }: StockTabProps) {
   const stockControlsBusy = productEditorOpen;
   const [viewMode, setViewMode] = useState<AdminStockViewMode>("grid");
@@ -243,7 +245,7 @@ export function StockTab({
       {error ? <p className="mb-3 text-sm text-red-400">{error}</p> : null}
 
       {storefrontPreview ? (
-        <AdminStockStorefrontPreview products={catalogCardProducts} categoryFilter={categoryFilter} />
+        <AdminStockStorefrontPreview categoryFilter={categoryFilter} onUnauthorized={onUnauthorized} />
       ) : visibleProducts.length === 0 ? (
         <p className="rounded-sm border border-zinc-800 bg-zinc-900/50 px-4 py-10 text-center text-sm text-white/40">
           {products.length === 0

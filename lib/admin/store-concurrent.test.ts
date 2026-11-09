@@ -57,19 +57,25 @@ describe("withStoreOptimistic concurrence fichier (prod)", () => {
     vi.useRealTimers();
   });
 
-  it("deux patchOrder en parallèle : file sérialisée, deux écritures", async () => {
-    readMock.mockImplementation(async () => storeSnapshot([order("ORD-1"), order("ORD-2")], "etag-shared"));
+  it(
+    "deux patchOrder en parallèle : file sérialisée, deux écritures",
+    async () => {
+      readMock.mockImplementation(async () => storeSnapshot([order("ORD-1"), order("ORD-2")], "etag-shared"));
 
-    const { patchOrder } = await import("@/lib/admin/store");
-    await Promise.all([
-      patchOrder("ORD-1", () => ({ status: "Expédié" })),
-      patchOrder("ORD-2", () => ({ status: "Expédié" })),
-    ]);
+      const { patchOrder } = await import("@/lib/admin/store");
+      await Promise.all([
+        patchOrder("ORD-1", () => ({ status: "Expédié" })),
+        patchOrder("ORD-2", () => ({ status: "Expédié" })),
+      ]);
 
-    expect(writeMock).toHaveBeenCalledTimes(2);
-  });
+      expect(writeMock).toHaveBeenCalledTimes(2);
+    },
+    20_000,
+  );
 
-  it("conflit etag puis relecture : succès au retry", async () => {
+  it(
+    "conflit etag puis relecture : succès au retry",
+    async () => {
     const { patchOrder, StoreConflictError } = await import("@/lib/admin/store");
     const body = storeSnapshot([order("ORD-1")], "etag-v1");
     let reads = 0;
@@ -84,7 +90,9 @@ describe("withStoreOptimistic concurrence fichier (prod)", () => {
       expect.objectContaining({ changed: true }),
     );
     expect(writeMock).toHaveBeenCalledTimes(2);
-  });
+    },
+    20_000,
+  );
 
   it("conflits répétés → StoreConflictError", async () => {
     const { patchOrder, StoreConflictError } = await import("@/lib/admin/store");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { AdminMediaDropzone } from "@/components/organisms/admin/admin-media-dropzone";
 import { AdminProductEditorLivePreview } from "@/components/organisms/admin/admin-product-editor-live-preview";
@@ -38,7 +38,7 @@ import {
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
-import { EMPTY_PRODUCT_STORY, type ProductStoryFormFields } from "@/lib/admin/product-story";
+import { EMPTY_PRODUCT_STORY } from "@/lib/admin/product-story";
 import {
   uploadAdminImageToR2,
   type AdminImageUploadResponse,
@@ -57,7 +57,6 @@ import {
   newProductSku,
   normalizeSkuInput,
   sanitizeSkuFieldInput,
-  resolveProductSkuForSave,
 } from "@/lib/admin/product-sku";
 import {
   buildFamilyDetectionSample,
@@ -67,7 +66,6 @@ import {
   applyCategoryDefaults,
   applyParsedProductDefaults,
   categoryStandardGrammage,
-  createNewProductFormState,
   displaySemanticBlocksForCrm,
   syncStoryFieldsFromSavedProduct,
 } from "@/lib/admin/smart-product-auto-attributes";
@@ -82,43 +80,41 @@ import {
 } from "@/lib/validations/catalog-maker-template";
 import {
   clearProductEditorDraft,
-  readProductEditorDraft,
   writeProductEditorDraft,
   type ProductEditorDraft,
 } from "@/lib/admin/product-editor-draft";
+import {
+  AdminEditorAccordion,
+  ADMIN_BTN,
+  ADMIN_BTN_ACTIVE,
+  ADMIN_BTN_SMART_OFF,
+  ADMIN_BTN_SMART_ON,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_SELECT,
+  SmartCollageSkeletonGuide,
+} from "@/components/organisms/admin/product-editor-modal-chrome";
+import {
+  buildFormDataComplete,
+  buildFormDataForScope,
+  buildFormDataStoryOnly,
+  colorDeclinationsLabel,
+  formStateMatchesBaseline,
+  formWithSkuForSave,
+  hydrateProductEditorModalUi,
+  parseColorDeclinationsInput,
+  parseWaistDeclinationsInput,
+  pickPantActiveVariant,
+  productEditorFormFrom,
+  resolvedColorDeclinations,
+  sectionDirtyFlags,
+  waistDeclinationsLabel,
+  type ProductEditorFormState,
+  type ProductEditorTab,
+} from "@/lib/admin/product-editor-form";
 import type { SaveProductResult } from "./hooks/use-admin-products";
 
-function colorDeclinationsLabel(colors: readonly string[]): string {
-  return colors.map((item) => item.trim()).filter(Boolean).join(", ");
-}
-
-function waistDeclinationsLabel(sizes: readonly string[], variant: string): string {
-  if (sizes.length > 0) return sizes.join(", ");
-  return variant.trim();
-}
-
-/** Tour actif boutique : variante valide dans la grille, sinon le plus petit tour sélectionné. */
-function pickPantActiveVariant(sizes: readonly string[], variant: string): string {
-  const current = normalizePantWaistSize(variant.trim());
-  if (current && sizes.includes(current)) return current;
-  const ordered = sizes
-    .map((size) => normalizePantWaistSize(size))
-    .filter((size): size is string => size !== null)
-    .sort((a, b) => Number(a) - Number(b));
-  return ordered[0] ?? "";
-}
-
-function parseWaistDeclinationsInput(raw: string): string[] {
-  const seen = new Set<string>();
-  const next: string[] = [];
-  for (const part of raw.split(",")) {
-    const waist = normalizePantWaistSize(part);
-    if (!waist || seen.has(waist)) continue;
-    seen.add(waist);
-    next.push(waist);
-  }
-  return next;
-}
+type FormState = ProductEditorFormState;
 
 type FormSuccessState =
   | { kind: "plain"; message: string; tone: "draft" | "live" | "neutral" }
@@ -131,394 +127,7 @@ type FormSuccessState =
       filledSummary: string;
     };
 
-function parseColorDeclinationsInput(raw: string): string[] {
-  const seen = new Set<string>();
-  const next: string[] = [];
-  for (const part of raw.split(",")) {
-    const color = canonicalColorDeclinationValue(part);
-    if (!color) continue;
-    const key = color.toUpperCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    next.push(color);
-  }
-  return next;
-}
-
-function resolvedColorDeclinations(form: FormState): string[] {
-  if (isPantsCategory(form.category)) return [];
-  const fromForm = form.colorDeclinations.map((item) => item.trim()).filter(Boolean);
-  if (fromForm.length > 0) return fromForm;
-  const variant = form.variant.trim();
-  return variant ? [variant] : [];
-}
-
-type FormState = {
-  sku: string;
-  name: string;
-  variant: string;
-  colorDeclinations: string[];
-  category: ProductCategory;
-  price: string;
-  stock: string;
-  sizes: ProductSize[];
-} & ProductStoryFormFields;
-
-function formWithSkuForSave(
-  form: FormState,
-  existingSkus: readonly string[],
-  editingId: string | null,
-): FormState {
-  return {
-    ...form,
-    sku: resolveProductSkuForSave(form.category, form.sku, existingSkus, {
-      excludeNormalizedSku: editingId ? form.sku : undefined,
-    }),
-  };
-}
-
-function formFrom(
-  product: AdminProduct | null,
-  opts?: { existingSkus?: readonly string[] },
-): FormState {
-  if (!product) {
-    return createNewProductFormState("T-shirts", opts?.existingSkus ?? []);
-  }
-  return {
-    sku: sanitizeSkuFieldInput(product.sku),
-    name: product.name,
-    variant: product.variant,
-    colorDeclinations: [...product.colorDeclinations],
-    description: product.description,
-    fabrication: product.fabrication,
-    limitedEdition: product.limitedEdition,
-    materials: product.materials,
-    sizeGuide: product.sizeGuide,
-    printPlacement: product.printPlacement,
-    category: normalizeProductCategory(product.category),
-    price: String(product.price),
-    stock: String(product.stock),
-    sizes: [...product.sizes],
-  };
-}
-
-function sizesEqual(a: readonly ProductSize[], b: readonly ProductSize[]): boolean {
-  if (a.length !== b.length) return false;
-  return a.every((item, i) => item === b[i]);
-}
-
-function colorDeclinationsEqual(a: readonly string[], b: readonly string[]): boolean {
-  const aa = a.map((c) => c.trim()).filter(Boolean);
-  const bb = b.map((c) => c.trim()).filter(Boolean);
-  if (aa.length !== bb.length) return false;
-  return aa.every((c, i) => c.toUpperCase() === bb[i]?.toUpperCase());
-}
-
-function formStoryMatchesBaseline(form: FormState, ref: FormState): boolean {
-  return (
-    form.description.trim() === ref.description.trim() &&
-    form.limitedEdition.trim() === ref.limitedEdition.trim() &&
-    form.materials.trim() === ref.materials.trim() &&
-    form.fabrication.trim() === ref.fabrication.trim() &&
-    form.sizeGuide.trim() === ref.sizeGuide.trim()
-  );
-}
-
-/** Comparaison formulaire ↔ baseline serveur (null = fiche vide création). Hors image. */
-function formStateMatchesBaseline(form: FormState, baselineProduct: AdminProduct | null): boolean {
-  const ref = formFrom(baselineProduct);
-  return (
-    form.sku.trim() === ref.sku.trim() &&
-    form.name.trim() === ref.name.trim() &&
-    form.variant.trim() === ref.variant.trim() &&
-    form.category === ref.category &&
-    Number(form.price) === Number(ref.price) &&
-    Number(form.stock) === Number(ref.stock) &&
-    sizesEqual(form.sizes, ref.sizes) &&
-    colorDeclinationsEqual(form.colorDeclinations, ref.colorDeclinations) &&
-    formStoryMatchesBaseline(form, ref) &&
-    form.printPlacement === ref.printPlacement
-  );
-}
-
-type SectionDirtyFlags = {
-  general: boolean;
-  sizes: boolean;
-  price: boolean;
-  media: boolean;
-  story: boolean;
-};
-
-function sectionDirtyFlags(
-  form: FormState,
-  baseline: FormState,
-  mediaPending: boolean,
-): SectionDirtyFlags {
-  const pants = isPantsCategory(form.category);
-  const general =
-    form.category !== baseline.category ||
-    form.sku.trim() !== baseline.sku.trim() ||
-    form.name.trim() !== baseline.name.trim() ||
-    form.printPlacement !== baseline.printPlacement ||
-    (!pants &&
-      (form.variant.trim() !== baseline.variant.trim() ||
-        !colorDeclinationsEqual(form.colorDeclinations, baseline.colorDeclinations)));
-  const sizes =
-    !sizesEqual(form.sizes, baseline.sizes) ||
-    (pants && form.variant.trim() !== baseline.variant.trim());
-  const price =
-    Number(form.price) !== Number(baseline.price) || Number(form.stock) !== Number(baseline.stock);
-  const story = !formStoryMatchesBaseline(form, baseline);
-  return { general, sizes, price, media: mediaPending, story };
-}
-
-const SECTION_CARD =
-  "dingry-admin-glass relative rounded-3xl px-5 py-6 sm:px-7 sm:py-7";
-const SECTION_DIRTY =
-  "border-l border-l-white/50 pl-[1.125rem] sm:pl-[1.25rem] before:pointer-events-none before:absolute before:left-2 before:top-5 before:h-1.5 before:w-1.5 before:rounded-full before:bg-white before:content-['']";
-
-type AdminEditorAccordionProps = {
-  sectionId?: string;
-  title: string;
-  subtitle?: string;
-  dirty?: boolean;
-  defaultOpen?: boolean;
-  className?: string;
-  children: ReactNode;
-};
-
-function AdminEditorAccordion({
-  sectionId,
-  title,
-  subtitle,
-  dirty = false,
-  defaultOpen = true,
-  className = "",
-  children,
-}: AdminEditorAccordionProps) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <section
-      id={sectionId}
-      className={`${SECTION_CARD} ${dirty ? SECTION_DIRTY : ""} ${className}`.trim()}
-    >
-      <button
-        type="button"
-        className="flex w-full items-start justify-between gap-3 text-left"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-zinc-300">{title}</span>
-          {subtitle ? (
-            <span className="mt-0.5 block text-[12px] font-normal leading-relaxed text-white/45">
-              {subtitle}
-            </span>
-          ) : null}
-        </span>
-        <span
-          className="mt-0.5 shrink-0 text-[15px] font-medium leading-none text-white/45"
-          aria-hidden
-        >
-          {open ? "▾" : "▸"}
-        </span>
-      </button>
-      {open ? <div className="mt-4 min-w-0 space-y-5">{children}</div> : null}
-    </section>
-  );
-}
-
-const FIELD_LABEL = "block text-[13px] font-medium tracking-tight text-white/55";
-const FIELD_INPUT =
-  "mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-white/5 px-3.5 text-[15px] text-white outline-none transition placeholder:text-white/30 backdrop-blur-md focus:border-white/25 focus:bg-white/[0.08] focus:ring-2 focus:ring-white/10";
-const FIELD_SELECT = `${FIELD_INPUT} appearance-none cursor-pointer`;
-const ADMIN_BTN =
-  "rounded-full border border-white/12 bg-[#0e1628] px-3.5 py-2 text-[13px] font-medium text-white/65 transition hover:border-white/22 hover:bg-[#121c30] hover:text-white";
-const ADMIN_BTN_ACTIVE =
-  "rounded-full border border-white/25 bg-[#121c30] px-3.5 py-2 text-[13px] font-medium text-white ring-1 ring-white/12";
-const ADMIN_BTN_SMART_ON =
-  "dingry-admin-smart-toggle rounded-full border border-violet-400/50 bg-gradient-to-r from-violet-950/90 via-[#121c30] to-cyan-950/40 px-3.5 py-2 text-[13px] font-medium text-white ring-1 ring-violet-400/35";
-const ADMIN_BTN_SMART_OFF = `${ADMIN_BTN} hover:border-violet-400/30 hover:text-violet-100`;
-
-const SMART_COLLAGE_SKELETON_LINES = [
-  "ref :",
-  "argu :",
-  "",
-  "fin d' argu @",
-  "mat :",
-  "fin de matiere #",
-  "couleur :",
-  "T :",
-  "prix :",
-  "qte :",
-] as const;
-
-const SMART_COLLAGE_SKELETON_STOP = new Set<string>(["fin d' argu @", "fin de matiere #"]);
-
-function SmartCollageSkeletonMarkers({ text }: { text: string }) {
-  const chunks = text.split(/([:@#])/g);
-  return (
-    <>
-      {chunks.map((chunk, index) =>
-        chunk === ":" || chunk === "@" || chunk === "#" ? (
-          <span key={`mk-${index}`} className="font-bold text-white">
-            {chunk}
-          </span>
-        ) : (
-          <span key={`txt-${index}`}>{chunk}</span>
-        ),
-      )}
-    </>
-  );
-}
-
-function SmartCollageSkeletonGuide() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-x-0 top-0 z-0 px-3.5 py-3 font-mono text-[13px] leading-relaxed select-none"
-      aria-hidden
-    >
-      <div>
-        {SMART_COLLAGE_SKELETON_LINES.map((line, index) =>
-          line === "" ? (
-            <div key={`gap-${index}`} className="h-[1.625rem]" aria-hidden />
-          ) : (
-            <div
-              key={`${line}-${index}`}
-              className={
-                SMART_COLLAGE_SKELETON_STOP.has(line)
-                  ? "font-medium text-violet-100/72"
-                  : "text-violet-200/36"
-              }
-            >
-              <SmartCollageSkeletonMarkers text={line} />
-            </div>
-          ),
-        )}
-      </div>
-    </div>
-  );
-}
-
-type EditorTab = "product" | "story" | "preview";
-
-function hydrateModalUiState(
-  initial: AdminProduct | null,
-  existingSkus: readonly string[],
-  sessionKey: string,
-): Pick<
-  ProductEditorDraft,
-  | "form"
-  | "colorListDraft"
-  | "waistListDraft"
-  | "editorTab"
-  | "smartPasteOpen"
-  | "smartPasteText"
-  | "imageRectoCleared"
-  | "imageVersoCleared"
-> {
-  const draft = readProductEditorDraft(sessionKey);
-  const form = draft?.form ?? formFrom(initial, { existingSkus });
-  return {
-    form,
-    colorListDraft:
-      draft?.colorListDraft ?? colorDeclinationsLabel(form.colorDeclinations),
-    waistListDraft:
-      draft?.waistListDraft ?? waistDeclinationsLabel(form.sizes, form.variant),
-    editorTab: draft?.editorTab ?? "product",
-    smartPasteOpen: draft?.smartPasteOpen ?? true,
-    smartPasteText: draft?.smartPasteText ?? "",
-    imageRectoCleared: draft?.imageRectoCleared ?? false,
-    imageVersoCleared: draft?.imageVersoCleared ?? false,
-  };
-}
-
-function appendStoryFields(formData: FormData, form: FormState): void {
-  formData.set("description", form.description.trim());
-  formData.set("fabrication", form.fabrication.trim());
-  formData.set("limitedEdition", form.limitedEdition.trim());
-  formData.set("materials", form.materials.trim());
-  formData.set("sizeGuide", form.sizeGuide.trim());
-  formData.set("printPlacement", form.printPlacement);
-}
-
-function appendPreuploadedImages(
-  formData: FormData,
-  preuploadedRecto: AdminImageUploadResponse | null,
-  preuploadedVerso: AdminImageUploadResponse | null,
-): void {
-  if (preuploadedRecto?.url) {
-    formData.set("imageUrl", preuploadedRecto.url);
-    if (preuploadedRecto.pathname) formData.set("imageBlobPathname", preuploadedRecto.pathname);
-  }
-  if (preuploadedVerso?.url) {
-    formData.set("imageBackUrl", preuploadedVerso.url);
-    if (preuploadedVerso.pathname) formData.set("imageBackBlobPathname", preuploadedVerso.pathname);
-  }
-}
-
-function buildFormDataForScope(
-  form: FormState,
-  scope: EditorTab,
-  imageRecto: File | null,
-  imageVerso: File | null,
-  publishStatus: ProductPublishStatus,
-  pantsVariantOverride?: string,
-  preuploadedRecto?: AdminImageUploadResponse | null,
-  preuploadedVerso?: AdminImageUploadResponse | null,
-): FormData {
-  const formData = new FormData();
-  if (scope === "product") {
-    formData.set("sku", form.sku.trim());
-    formData.set("name", form.name.trim());
-    formData.set("variant", (pantsVariantOverride ?? form.variant).trim());
-    formData.set("category", form.category);
-    formData.set("price", form.price);
-    formData.set("stock", form.stock.trim());
-    formData.set("sizes", form.sizes.join(","));
-    formData.set("colorDeclinations", resolvedColorDeclinations(form).join(","));
-    formData.set("publishStatus", publishStatus);
-    formData.set("printPlacement", form.printPlacement);
-    if (imageRecto) formData.set("image", imageRecto);
-    else appendPreuploadedImages(formData, preuploadedRecto ?? null, null);
-    if (imageVerso) formData.set("imageBack", imageVerso);
-    else if (preuploadedVerso) appendPreuploadedImages(formData, null, preuploadedVerso);
-    return formData;
-  }
-  formData.set("publishStatus", publishStatus);
-  appendStoryFields(formData, form);
-  return formData;
-}
-
-function buildFormDataStoryOnly(form: FormState, publishStatus?: ProductPublishStatus): FormData {
-  const formData = new FormData();
-  appendStoryFields(formData, form);
-  if (publishStatus) formData.set("publishStatus", publishStatus);
-  return formData;
-}
-
-function buildFormDataComplete(
-  form: FormState,
-  imageRecto: File | null,
-  imageVerso: File | null,
-  publishStatus: ProductPublishStatus,
-  pantsVariantOverride?: string,
-  preuploadedRecto?: AdminImageUploadResponse | null,
-  preuploadedVerso?: AdminImageUploadResponse | null,
-): FormData {
-  const formData = buildFormDataForScope(
-    form,
-    "product",
-    imageRecto,
-    imageVerso,
-    publishStatus,
-    pantsVariantOverride,
-    preuploadedRecto,
-    preuploadedVerso,
-  );
-  appendStoryFields(formData, form);
-  return formData;
-}
+type EditorTab = ProductEditorTab;
 
 type ProductEditorModalProps = {
   /** null = création. */
@@ -552,7 +161,7 @@ export function ProductEditorModal({
   onProductPersisted,
 }: ProductEditorModalProps) {
   const editorSessionKey = initial?.id ?? "new";
-  const hydratedUi = hydrateModalUiState(initial, existingSkus, editorSessionKey);
+  const hydratedUi = hydrateProductEditorModalUi(initial, existingSkus, editorSessionKey);
 
   const [current, setCurrent] = useState<AdminProduct | null>(initial);
   const [form, setForm] = useState<FormState>(() => hydratedUi.form);
@@ -613,7 +222,7 @@ export function ProductEditorModal({
   }, [existingSkus, existingSkusFingerprint, editingId, current?.sku]);
 
   const baselineForm = useMemo(
-    () => formFrom(current, { existingSkus: existingSkusRef.current }),
+    () => productEditorFormFrom(current, { existingSkus: existingSkusRef.current }),
     [current, existingSkusFingerprint],
   );
 
@@ -645,7 +254,7 @@ export function ProductEditorModal({
     bootstrapSessionRef.current = editorSessionKey;
 
     const product = initialProductRef.current;
-    const ui = hydrateModalUiState(product, existingSkusRef.current, editorSessionKey);
+    const ui = hydrateProductEditorModalUi(product, existingSkusRef.current, editorSessionKey);
     setCurrent(product);
     setForm(ui.form);
     setColorListDraft(ui.colorListDraft);
@@ -1245,7 +854,7 @@ export function ProductEditorModal({
       }
       setCurrent(result.product);
       onProductPersisted?.(result.product);
-      const nextForm = formFrom(result.product, { existingSkus });
+      const nextForm = productEditorFormFrom(result.product, { existingSkus });
       setForm(nextForm);
       setColorListDraft(colorDeclinationsLabel(nextForm.colorDeclinations));
       setWaistListDraft(waistDeclinationsLabel(nextForm.sizes, nextForm.variant));
@@ -1305,7 +914,7 @@ export function ProductEditorModal({
         }
         setCurrent(result.product);
         onProductPersisted?.(result.product);
-        const created = formFrom(result.product, { existingSkus });
+        const created = productEditorFormFrom(result.product, { existingSkus });
         setForm(created);
         setColorListDraft(colorDeclinationsLabel(created.colorDeclinations));
         setWaistListDraft(waistDeclinationsLabel(created.sizes, created.variant));

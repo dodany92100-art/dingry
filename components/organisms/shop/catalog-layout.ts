@@ -1,7 +1,7 @@
 /** Grille catalogue : 2 col. mobile · 3 col. tablette · 4 col. desktop (vitine e-commerce classique). */
 export const CATALOG_GRID_DESKTOP = "md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:gap-6";
 
-export const CATALOG_PRODUCT_GRID_CLASS = `mx-auto grid w-full max-w-[1360px] grid-cols-2 gap-3 px-0 sm:gap-4 ${CATALOG_GRID_DESKTOP}`;
+export const CATALOG_PRODUCT_GRID_CLASS = `mx-auto grid w-full max-w-[1360px] grid-cols-2 items-stretch gap-3 px-0 sm:gap-4 ${CATALOG_GRID_DESKTOP}`;
 
 /** CRM stock : 2 col. mobile · densité progressive desktop. */
 export const ADMIN_STOCK_PRODUCT_GRID_CLASS =

@@ -29,8 +29,10 @@
   max-width: 56rem;
   flex-direction: column;
   overflow-y: auto;
-  border: 1px solid rgb(255 255 255 / 0.06);
-  background: #0a0a0a;
+  border: 1px solid rgb(0 0 0 / 0.1);
+  background: #fff;
+  color: #161616;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.28);
 }
 
 @media (min-width: 768px) {
@@ -43,7 +45,10 @@
   width: 100%;
   flex-shrink: 0;
   overflow: hidden;
-  background: #080808;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
 }
 
 @media (min-width: 768px) {
@@ -56,15 +61,22 @@
 
 .photoFallback {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   aspect-ratio: 3 / 4;
   width: 100%;
+  max-height: min(70vh, 720px);
   overflow: hidden;
+  background: #fff;
 }
 
 .photoCover {
   height: 100%;
   width: 100%;
-  object-fit: cover;
+  max-height: min(70vh, 720px);
+  object-fit: contain;
+  object-position: center;
 }
 
 .body {
@@ -73,7 +85,7 @@
   flex: 1;
   flex-direction: column;
   justify-content: space-between;
-  background: #0a0a0a;
+  background: #fff;
   padding: 1.5rem;
 }
 
@@ -104,12 +116,12 @@
   width: 2.75rem;
   align-items: center;
   justify-content: center;
-  color: rgb(255 255 255 / 0.4);
+  color: rgb(22 22 22 / 0.45);
   transition: color 150ms ease;
 }
 
 .close:hover {
-  color: #fff;
+  color: #161616;
 }
 
 .closeDesktopOnly {
@@ -124,12 +136,12 @@
 
 .sideToggle {
   display: none;
-  border: 1px solid rgb(255 255 255 / 0.2);
+  border: 1px solid rgb(0 0 0 / 0.18);
   padding: 0.5rem 0.75rem;
   font-size: 10px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.5);
+  color: rgb(22 22 22 / 0.55);
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 
@@ -140,18 +152,19 @@
 }
 
 .sideToggleOn {
-  border-color: #fff;
-  background: #fff;
-  color: #000;
+  border-color: #161616;
+  background: #161616;
+  color: #fff;
 }
 
 .sideToggleOff:hover {
-  border-color: rgb(255 255 255 / 0.6);
-  color: #fff;
+  border-color: rgb(0 0 0 / 0.45);
+  color: #161616;
 }
 
 .manifesto {
   margin-bottom: 0.75rem;
+  color: rgb(22 22 22 / 0.42) !important;
 }
 
 .title {
@@ -167,7 +180,7 @@
   margin-bottom: 1rem;
   font-size: 0.875rem;
   line-height: 1.625;
-  color: rgb(255 255 255 / 0.55);
+  color: rgb(22 22 22 / 0.62);
 }
 
 .metaBlock {
@@ -179,13 +192,13 @@
   font-size: 10px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.35);
+  color: rgb(22 22 22 / 0.4);
 }
 
 .metaText {
   font-size: 0.75rem;
   line-height: 1.625;
-  color: rgb(255 255 255 / 0.5);
+  color: rgb(22 22 22 / 0.58);
 }
 
 .section {
@@ -197,7 +210,7 @@
   font-size: 10px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.4);
+  color: rgb(22 22 22 / 0.45);
 }
 
 .chipRow {
@@ -207,18 +220,21 @@
 }
 
 .chip {
-  border: 1px solid rgb(255 255 255 / 0.15);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  border: 1px solid rgb(0 0 0 / 0.14);
   padding: 0.5rem 0.75rem;
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.55);
+  color: rgb(22 22 22 / 0.58);
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 
 .chip:hover:not(:disabled) {
-  border-color: rgb(255 255 255 / 0.4);
-  color: #fff;
+  border-color: rgb(0 0 0 / 0.35);
+  color: #161616;
 }
 
 .chipActive {
@@ -229,29 +245,29 @@
 
 .chipDisabled {
   cursor: not-allowed;
-  border-color: rgb(255 255 255 / 0.1);
-  color: rgb(255 255 255 / 0.25);
+  border-color: rgb(0 0 0 / 0.08);
+  color: rgb(22 22 22 / 0.28);
 }
 
 .jerseyChip {
-  border: 1px solid rgb(255 255 255 / 0.15);
+  border: 1px solid rgb(0 0 0 / 0.14);
   padding: 0.625rem 1rem;
   font-size: 10px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.5);
+  color: rgb(22 22 22 / 0.55);
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 
 .jerseyChip:hover {
-  border-color: rgb(255 255 255 / 0.4);
-  color: #fff;
+  border-color: rgb(0 0 0 / 0.35);
+  color: #161616;
 }
 
 .jerseyOn {
-  border-color: #fff;
-  background: #fff;
-  color: #000;
+  border-color: #161616;
+  background: #161616;
+  color: #fff;
 }
 
 .qtyRow {
@@ -266,7 +282,7 @@
   font-size: 10px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.4);
+  color: rgb(22 22 22 / 0.45);
 }
 
 .qtyCluster {
@@ -279,19 +295,19 @@
 .qtyControl {
   display: flex;
   align-items: center;
-  border: 1px solid rgb(255 255 255 / 0.15);
+  border: 1px solid rgb(0 0 0 / 0.14);
 }
 
 .qtyBtn {
   height: 2.25rem;
   width: 2.25rem;
-  color: rgb(255 255 255 / 0.6);
+  color: rgb(22 22 22 / 0.65);
   transition: color 150ms ease, background-color 150ms ease;
 }
 
 .qtyBtn:hover {
-  background: #fff;
-  color: #000;
+  background: #161616;
+  color: #fff;
 }
 
 .qtyValue {
@@ -306,7 +322,7 @@
   font-size: 10px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.4);
+  color: rgb(22 22 22 / 0.45);
 }
 
 .sizeGrid {
@@ -321,18 +337,18 @@
 }
 
 .sizeBtn {
-  border: 1px solid rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(0 0 0 / 0.12);
   padding: 0.625rem 0;
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.1em;
-  color: rgb(255 255 255 / 0.5);
+  color: rgb(22 22 22 / 0.55);
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 
 .sizeBtn:hover {
-  border-color: rgb(255 255 255 / 0.3);
-  color: #fff;
+  border-color: rgb(0 0 0 / 0.28);
+  color: #161616;
 }
 
 .sizeOn {
@@ -356,19 +372,19 @@
 
 .sideGridBtn {
   grid-column: var(--recto-col, 1);
-  border: 1px solid rgb(255 255 255 / 0.2);
+  border: 1px solid rgb(0 0 0 / 0.16);
   padding: 0.625rem 0;
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.5);
+  color: rgb(22 22 22 / 0.55);
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 
 .sideGridBtn:hover {
-  border-color: rgb(255 255 255 / 0.6);
-  color: #fff;
+  border-color: rgb(0 0 0 / 0.4);
+  color: #161616;
 }
 
 .sideGridBtnOn {
@@ -379,7 +395,7 @@
 
 .lookSection {
   margin-bottom: 1.5rem;
-  border-top: 1px solid rgb(255 255 255 / 0.06);
+  border-top: 1px solid rgb(0 0 0 / 0.08);
   padding-top: 1.25rem;
 }
 
@@ -401,8 +417,8 @@
 .lookCard {
   width: 6rem;
   flex-shrink: 0;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background: #080808;
+  border: 1px solid rgb(0 0 0 / 0.1);
+  background: #fff;
   text-align: left;
   transition: border-color 150ms ease;
 }
@@ -424,7 +440,7 @@
   line-height: 1.375;
   letter-spacing: 0.025em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.55);
+  color: rgb(22 22 22 / 0.58);
 }
 
 .ctaRow {
@@ -456,8 +472,8 @@
 
 .addBtnOff {
   cursor: not-allowed;
-  background: rgb(255 255 255 / 0.1);
-  color: rgb(255 255 255 / 0.2);
+  background: rgb(0 0 0 / 0.06);
+  color: rgb(22 22 22 / 0.28);
 }
 
 .wishlist {

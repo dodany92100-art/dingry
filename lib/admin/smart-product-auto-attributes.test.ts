@@ -15,6 +15,7 @@ import type { AdminProduct } from "@/lib/admin/types";
 import { DEFAULT_SHOP_PRODUCT_STOCK } from "@/lib/shop-data";
 import { EMPTY_PRODUCT_STORY } from "@/lib/admin/product-story";
 import type { ProductCategory } from "@/lib/admin/types";
+import { defaultSelectedSizesForCategory } from "@/lib/admin/standard-sizes";
 
 function emptyForm(category: ProductCategory = "T-shirts"): SmartProductAutoTagFormState {
   return {
@@ -31,12 +32,12 @@ function emptyForm(category: ProductCategory = "T-shirts"): SmartProductAutoTagF
 }
 
 describe("smart-product-auto-attributes", () => {
-  it("nouveau Hoodie : tailles S–2XL, SKU DGRY-HD, sans matières/grammage auto", () => {
+  it("nouveau Hoodie : grille catégorie (sans TU), SKU DGRY-HD, sans matières auto", () => {
     const next = applyCategoryDefaults(emptyForm(), "Hoodies", {
       editingId: null,
       existingSkus: ["DGRY-HD-01"],
     });
-    expect(next.sizes).toEqual(["S", "M", "L", "XL", "2XL"]);
+    expect(next.sizes).toEqual(defaultSelectedSizesForCategory("Hoodies"));
     expect(next.sku).toBe("DGRY-HD-02");
     expect(next.materials).toBe("");
     expect(next.sizeGuide).toBe("400 g/m²");

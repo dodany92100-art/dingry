@@ -17,6 +17,7 @@
     "check:build-size:build": "bash check-build-size.sh --build --save",
     "seed-stock": "tsx scripts/seed-stock.ts",
     "import:supabase": "tsx scripts/import-store-to-supabase.ts",
+    "import:ghosts": "tsx scripts/import-ghosts.ts",
     "import:product-options": "tsx scripts/import-product-options.ts",
     "verify:smart-album": "vitest run lib/admin/smart-collage-album.test.ts lib/admin/product-options-import-album.test.ts",
     "migrate:r2-images": "tsx scripts/migrate-product-images-to-r2.ts",

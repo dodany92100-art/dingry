@@ -32,7 +32,7 @@ describe("quoteCheckout — prix CRM", () => {
     expect(quote?.totalCents).toBe(5000);
   });
 
-  it("ignore une fiche CRM brouillon et suit la vitrine PRODUCTS", async () => {
+  it("masque une fiche CRM brouillon : pas de repli PRODUCTS au checkout", async () => {
     vi.mocked(loadStoreReadOnly).mockResolvedValue({
       version: 4,
       products: SEEDED_PRODUCTS.map((p) =>
@@ -44,7 +44,7 @@ describe("quoteCheckout — prix CRM", () => {
       lookbook: [],
     });
     const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
-    expect(quote?.totalCents).toBe(5000);
+    expect(quote).toBeNull();
   });
 
   it("accepte un prix CRM à 1 € (pas de plancher au-delà de > 0)", async () => {

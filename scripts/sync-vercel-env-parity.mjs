@@ -16,7 +16,7 @@ loadDotenv({ path: path.join(root, ".env.local"), override: true });
 
 /** Fallback local uniquement pour l’hôte CDN (dev sans .env.local). Jamais PAYPAL_ENV ici. */
 const LOCAL_DEFAULTS = {
-  DINGRY_IMG_HOSTS: "pub-8ef850fa01fb9fda829a4ffa6455c86b.r2.dev",
+  DINGRY_IMG_HOSTS: "pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev",
 };
 
 function localValue(key) {
