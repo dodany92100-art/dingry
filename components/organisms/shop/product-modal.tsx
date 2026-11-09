@@ -161,8 +161,8 @@ function ProductModalContent({
         transition={MODAL_PANEL_SPRING}
       >
         <div ref={modal.productImageRef} className={`${styles.photo} dingry-product-photo`}>
-          {effectiveFlipImages ? (
-            <div className={styles.photoFallback}>
+          <div className={styles.photoFallback}>
+            {effectiveFlipImages ? (
               <DingryCloudinaryImage
                 src={modalSide === "verso" ? effectiveFlipImages.back : effectiveFlipImages.front}
                 alt={storefrontProductTitle(product, products)}
@@ -171,21 +171,20 @@ function ProductModalContent({
                 deliveryWidth={720}
                 className={styles.photoCover}
                 sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
+                fitContent
               />
-            </div>
-          ) : useParentOptions ? (
-            <DingryVariantProductImage
-              productName={product.name}
-              parentImage={product.image}
-              parentAlt={activeView.name}
-              options={parentOptions}
-              selectedOptionKey={selectedOptionKey}
-              presentation="modal"
-              className={styles.photoFallback}
-              imgClassName={styles.photoCover}
-            />
-          ) : (
-            <div className={styles.photoFallback}>
+            ) : useParentOptions ? (
+              <DingryVariantProductImage
+                productName={product.name}
+                parentImage={product.image}
+                parentAlt={activeView.name}
+                options={parentOptions}
+                selectedOptionKey={selectedOptionKey}
+                presentation="modal"
+                className={styles.photoVariant}
+                imgClassName={styles.photoCover}
+              />
+            ) : (
               <DingryCloudinaryImage
                 src={activeView.image}
                 alt={activeView.name}
@@ -194,19 +193,20 @@ function ProductModalContent({
                 deliveryWidth={720}
                 className={styles.photoCover}
                 sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
+                fitContent
               />
-            </div>
-          )}
-          {effectiveShowSideToggle ? (
-            <button
-              type="button"
-              onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
-              className={`${styles.sideToggle} ${styles.photoSideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
-              aria-pressed={modalSide === "verso"}
-            >
-              {modalSide === "verso" ? "recto" : "verso"}
-            </button>
-          ) : null}
+            )}
+            {effectiveShowSideToggle ? (
+              <button
+                type="button"
+                onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
+                className={`${styles.sideToggle} ${styles.photoSideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
+                aria-pressed={modalSide === "verso"}
+              >
+                {modalSide === "verso" ? "recto" : "verso"}
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className={styles.body}>
           <div>

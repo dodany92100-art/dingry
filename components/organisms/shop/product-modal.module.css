@@ -64,8 +64,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   background: #fff;
+}
+
+.photoVariant {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.photoFallback :global(picture) {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(70vh, 720px);
 }
 
 .photoCover {

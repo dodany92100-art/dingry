@@ -53,6 +53,7 @@ export function DingryVariantProductImage({
         priority={priority}
         className={imgClassName}
         sizes={isModal ? "(max-width: 768px) 100vw, min(50vw, 600px)" : "(max-width: 768px) 100vw, 50vw"}
+        fitContent={isModal}
       />
     </div>
   );

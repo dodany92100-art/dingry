@@ -16,6 +16,8 @@ type DingryCloudinaryImageProps = {
   priority?: boolean;
   className?: string;
   sizes?: string;
+  /** Modale / contain : pas de `h-full w-full` sur `<picture>`. */
+  fitContent?: boolean;
 };
 
 const DEFAULT_SIZES =
@@ -31,6 +33,7 @@ export function DingryCloudinaryImage({
   priority = false,
   className,
   sizes = DEFAULT_SIZES,
+  fitContent = false,
 }: DingryCloudinaryImageProps) {
   if (!src.trim()) return null;
 
@@ -40,7 +43,7 @@ export function DingryCloudinaryImage({
 
   if (picture) {
     return (
-      <picture className="block h-full w-full">
+      <picture className={cn("block", fitContent ? "h-auto w-auto max-w-full" : "h-full w-full")}>
         <source srcSet={picture.avif} type="image/avif" />
         <source srcSet={picture.webp} type="image/webp" />
         <img
