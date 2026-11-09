@@ -42,9 +42,9 @@
 }
 
 .photo {
+  position: relative;
   width: 100%;
   flex-shrink: 0;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,19 +64,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 3 / 4;
   width: 100%;
-  max-height: min(70vh, 720px);
-  overflow: hidden;
   background: #fff;
 }
 
 .photoCover {
-  height: 100%;
-  width: 100%;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
   max-height: min(70vh, 720px);
   object-fit: contain;
   object-position: center;
+}
+
+.photoSideToggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
 }
 
 .body {

@@ -197,21 +197,21 @@ function ProductModalContent({
               />
             </div>
           )}
+          {effectiveShowSideToggle ? (
+            <button
+              type="button"
+              onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
+              className={`${styles.sideToggle} ${styles.photoSideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
+              aria-pressed={modalSide === "verso"}
+            >
+              {modalSide === "verso" ? "recto" : "verso"}
+            </button>
+          ) : null}
         </div>
         <div className={styles.body}>
           <div>
             <div className={styles.toolbar}>
               <div className={styles.toolbarCluster}>
-                {effectiveShowSideToggle ? (
-                  <button
-                    type="button"
-                    onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
-                    className={`${styles.sideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
-                    aria-pressed={modalSide === "verso"}
-                  >
-                    {modalSide === "verso" ? "recto" : "verso"}
-                  </button>
-                ) : null}
                 <button
                   type="button"
                   onClick={shell.onClose}
