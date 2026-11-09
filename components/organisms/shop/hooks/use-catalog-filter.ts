@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { startTransition, useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { parseCatalogFilter, type CatalogFilter } from "@/lib/shop-catalog";
 import { shopBasePathFromPathname } from "@/lib/shop-base-path";
@@ -15,12 +15,16 @@ export function useCatalogFilter(scrollToSection: (id: string) => void) {
 
   const selectFilter = useCallback(
     (next: CatalogFilter) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const live =
+        typeof window !== "undefined" ? window.location.search.slice(1) : searchParams.toString();
+      const params = new URLSearchParams(live);
       if (next === "all") params.delete("category");
       else params.set("category", next);
       const query = params.toString();
       const href = query ? `${shopBasePath}?${query}` : shopBasePath;
-      router.replace(href, { scroll: false });
+      startTransition(() => {
+        router.replace(href, { scroll: false });
+      });
     },
     [router, searchParams, shopBasePath],
   );

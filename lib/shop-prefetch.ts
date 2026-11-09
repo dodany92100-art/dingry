@@ -9,8 +9,15 @@ export function prefetchShopProductMedia(image: string, imageBack?: string): voi
     const url = cldOpt(raw, 1200);
     if (prefetched.has(url)) continue;
     prefetched.add(url);
-    const img = new Image();
-    img.decoding = "async";
-    img.src = url;
+    const load = () => {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(load, { timeout: 400 });
+    } else {
+      window.setTimeout(load, 0);
+    }
   }
 }

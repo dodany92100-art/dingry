@@ -1,13 +1,11 @@
 "use client";
 
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
-import { ProductCard } from "@/components/molecules/product-card";
-import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
+import type { ShopProduct } from "@/lib/catalog";
 import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import type { CatalogMenuSection } from "@/lib/shop-catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
-import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
-import { prefetchShopProductMedia } from "@/lib/shop-prefetch";
+import { CatalogProductCell } from "./catalog-product-cell";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
 
 type CollectionFeedProps = {
@@ -37,18 +35,13 @@ export function CollectionFeed({
           const globalIndex = indexOffset + localIndex;
           const rectoId = catalogRectoId(product.id);
           return (
-            <ProductCard
+            <CatalogProductCell
               key={product.id}
-              name={storefrontProductTitle(product)}
-              variant={storefrontProductSubtitle(product)}
-              image={product.image}
-              price={product.price}
-              priority={globalIndex === 0}
-              soldOut={!isShopProductInStock(product)}
-              onPrefetch={() => prefetchShopProductMedia(product.image, product.imageBack)}
-              onClick={() => onOpenProduct(product, "recto")}
+              product={product}
+              globalIndex={globalIndex}
               wishlistActive={wishlistIds.includes(rectoId)}
-              onWishlistToggle={() => onToggleWishlist(rectoId)}
+              onOpenProduct={onOpenProduct}
+              onToggleWishlist={onToggleWishlist}
             />
           );
         });

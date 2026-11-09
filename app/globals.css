@@ -581,6 +581,11 @@ html[data-theme="light"] .dingry-shop .dingry-editorial-frame__inner {
   will-change: transform;
 }
 
+.dingry-bga--paused .dingry-bga-orb {
+  animation-play-state: paused !important;
+  will-change: auto;
+}
+
 .dingry-bga-first {
   animation: dingry-bga-vertical 30s ease infinite;
 }
@@ -849,6 +854,10 @@ html[data-theme="light"] .dingry-shop .dingry-product-price--accent {
   color: rgb(255 255 255 / 0.9);
 }
 
+.dingry-product-photo {
+  contain: layout paint;
+}
+
 html[data-theme="light"] .dingry-shop #catalogue .dingry-product-ref {
   color: #0a0a0a;
 }
@@ -996,6 +1005,38 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #0a101c;
   color: rgba(255, 255, 255, 0.65);
+}
+
+/* Bouton Smart collage actif — signal « IA / collage » */
+@keyframes dingry-smart-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(167, 139, 250, 0.35),
+      0 0 14px rgba(139, 92, 246, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(167, 139, 250, 0.55),
+      0 0 22px rgba(139, 92, 246, 0.38);
+  }
+}
+
+.dingry-admin-smart-toggle {
+  animation: dingry-smart-glow 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dingry-admin-smart-toggle {
+    animation: none;
+  }
+}
+
+.dingry-admin-panel-smart {
+  border-color: rgba(167, 139, 250, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(167, 139, 250, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.35);
 }
 
 .dingry-admin button,
@@ -1641,9 +1682,25 @@ html[data-theme="light"] .dingry-catalog-bar [class*="border-white"] {
   color: #4b5563;
   background-color: #ffffff;
   border-color: rgb(75 85 99 / 0.16);
+  border-radius: 0;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 1),
     0 12px 40px rgb(75 85 99 / 0.12);
+}
+
+/** Panier + checkout + paiement — angles droits, pas d’arrondi vitrine. */
+.dingry-sale-ui .dingry-checkout-pay-surface,
+.dingry-sale-ui .dingry-checkout-pay-surface img,
+.dingry-sale-ui.dingry-cart-drawer-panel [data-cart-line],
+.dingry-sale-ui.dingry-cart-drawer-panel [data-cart-confirm],
+.dingry-sale-ui.dingry-cart-drawer-panel button,
+.dingry-sale-ui .dingry-checkout-pay-surface button,
+.dingry-sale-ui .dingry-checkout-pay-surface a {
+  border-radius: 0;
+}
+
+.dingry-sale-ui .dingry-product-photo {
+  border-radius: 0;
 }
 
 .dingry-checkout-pay-surface .dingry-checkout-pay-eyebrow {

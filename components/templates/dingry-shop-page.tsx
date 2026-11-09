@@ -1,8 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { storefrontProductTitle } from "@/lib/dingry-product-display";
+import { shopProductCanonicalPath, shopProductDocumentTitle } from "@/lib/seo/shop-product-seo";
 import { LazyWhenVisible } from "@/components/molecules/lazy-when-visible";
 import { BackgroundGradientAnimation } from "@/components/atoms/ui/background-gradient-animation";
 import { CartDrawer } from "@/components/organisms/shop/cart-drawer";
@@ -57,6 +59,7 @@ const ShopFooter = dynamic(
 export default function DingryShopPage() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const shopBasePath = shopBasePathFromPathname(pathname ?? "/");
   const { pageScrollRef, scrollToSection, restoreScrollPosition } = usePageScroll();
   const { products, catalogState, retry } = useShopCatalog();
@@ -107,17 +110,42 @@ export default function DingryShopPage() {
     restoreScrollPosition();
   }, [catalogState, restoreScrollPosition]);
 
-  function handleTabChange(tab: string) {
-    if (tab === CATALOG_MENU_TAB_CUSTOM) {
-      setPersonalizeOpen(true);
-      return;
+  useEffect(() => {
+    const selected = modal.selectedProduct;
+    if (!selected) return;
+    const titleBase = storefrontProductTitle(selected, products);
+    document.title = shopProductDocumentTitle(titleBase);
+    const canonicalPath = shopProductCanonicalPath(
+      shopBasePath,
+      { id: selected.id, name: selected.name, category: String(selected.category) },
+      { produit: searchParams.get("produit") },
+    );
+    const href = new URL(canonicalPath, window.location.origin).toString();
+    let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "canonical";
+      document.head.appendChild(link);
     }
-    setPersonalizeOpen(false);
-    selectFilter(parseCatalogFilter(tab));
-  }
+    link.href = href;
+  }, [modal.selectedProduct, products, shopBasePath, searchParams]);
+
+  const handleTabChange = useCallback(
+    (tab: string) => {
+      if (tab === CATALOG_MENU_TAB_CUSTOM) {
+        setPersonalizeOpen(true);
+        return;
+      }
+      setPersonalizeOpen(false);
+      selectFilter(parseCatalogFilter(tab));
+    },
+    [selectFilter],
+  );
+
+  const openCustom = useCallback(() => setPersonalizeOpen(true), []);
 
   function addToCart() {
-    const { selectedProduct, selectedSize, selectedQuantity, jerseyColor } = modal;
+    const { selectedProduct, selectedSize, selectedQuantity, jerseyColor, selectedOptionKey } = modal;
     if (catalogState === "error") return;
     if (!selectedProduct || !selectedSize) return;
     if (!isShopProductInStock(selectedProduct)) return;
@@ -142,7 +170,10 @@ export default function DingryShopPage() {
 
   return (
     <div className="dingry-shop relative h-dvh overflow-x-hidden overflow-hidden text-white">
-      <BackgroundGradientAnimation interactive={false} />
+      <BackgroundGradientAnimation
+        interactive={false}
+        paused={Boolean(modal.selectedProduct) || cart.open || personalizeOpen}
+      />
       <ShopNav
         shopBasePath={shopBasePath}
         cartCount={cart.count}
@@ -158,7 +189,7 @@ export default function DingryShopPage() {
         <CatalogSection
           tabValue={tabValue}
           onTabChange={handleTabChange}
-          onOpenCustom={() => setPersonalizeOpen(true)}
+          onOpenCustom={openCustom}
           catalogState={catalogState}
           onRetry={retry}
           filterKey={activeFilter}

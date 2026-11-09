@@ -1,18 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { motion } from "motion/react";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
-import { ProductCard } from "@/components/molecules/product-card";
-import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
+import type { ShopProduct } from "@/lib/catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
-import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
-import { prefetchShopProductMedia } from "@/lib/shop-prefetch";
 import { buildCatalogMenuSections } from "@/lib/shop-catalog";
 import type { CatalogState } from "./hooks/use-shop-catalog";
+import { CatalogProductCell } from "./catalog-product-cell";
 import { CollectionFeed } from "./collection-feed";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
-import { MODAL_OVERLAY_EASE } from "./motion";
 
 const GRID_CLASS = CATALOG_PRODUCT_GRID_CLASS;
 
@@ -26,34 +21,6 @@ type CatalogGridProps = {
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
 };
-
-function buildProductCells(
-  products: ShopProduct[],
-  onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void,
-  wishlistIds: readonly number[],
-  onToggleWishlist: (rectoId: number) => void,
-  indexOffset = 0,
-): ReactNode[] {
-  return products.map((product, index) => {
-    const globalIndex = indexOffset + index;
-    const rectoId = catalogRectoId(product.id);
-    return (
-      <ProductCard
-        key={product.id}
-        name={storefrontProductTitle(product)}
-        variant={storefrontProductSubtitle(product)}
-        image={product.image}
-        price={product.price}
-        priority={globalIndex === 0}
-        soldOut={!isShopProductInStock(product)}
-        onPrefetch={() => prefetchShopProductMedia(product.image, product.imageBack)}
-        onClick={() => onOpenProduct(product, "recto")}
-        wishlistActive={wishlistIds.includes(rectoId)}
-        onWishlistToggle={() => onToggleWishlist(rectoId)}
-      />
-    );
-  });
-}
 
 function EmptyCategory() {
   return (
@@ -97,40 +64,36 @@ export function CatalogGrid({
   const sections = isCollectionFeed ? buildCatalogMenuSections(products) : null;
 
   if (isCollectionFeed && sections) {
-    return (
-      <motion.div
-        key={filterKey}
-        initial={{ opacity: 0.5 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.28, ease: MODAL_OVERLAY_EASE }}
-      >
-        {sections.length === 0 ? (
-          <div className={GRID_CLASS}>
-            <EmptyCategory />
-          </div>
-        ) : (
-          <CollectionFeed
-            sections={sections}
-            onOpenProduct={onOpenProduct}
-            wishlistIds={wishlistIds}
-            onToggleWishlist={onToggleWishlist}
-          />
-        )}
-      </motion.div>
+    return sections.length === 0 ? (
+      <div className={GRID_CLASS}>
+        <EmptyCategory />
+      </div>
+    ) : (
+      <CollectionFeed
+        sections={sections}
+        onOpenProduct={onOpenProduct}
+        wishlistIds={wishlistIds}
+        onToggleWishlist={onToggleWishlist}
+      />
     );
   }
 
-  const cells = buildProductCells(products, onOpenProduct, wishlistIds, onToggleWishlist);
-
   return (
-    <motion.div
-      key={filterKey}
-      initial={{ opacity: 0.5 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.28, ease: MODAL_OVERLAY_EASE }}
-      className={GRID_CLASS}
-    >
-      {products.length > 0 ? cells : <EmptyCategory />}
-    </motion.div>
+    <div className={GRID_CLASS}>
+      {products.length > 0 ? (
+        products.map((product, index) => (
+          <CatalogProductCell
+            key={product.id}
+            product={product}
+            globalIndex={index}
+            wishlistActive={wishlistIds.includes(catalogRectoId(product.id))}
+            onOpenProduct={onOpenProduct}
+            onToggleWishlist={onToggleWishlist}
+          />
+        ))
+      ) : (
+        <EmptyCategory />
+      )}
+    </div>
   );
 }

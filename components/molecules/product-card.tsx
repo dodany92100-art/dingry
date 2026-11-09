@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { cn } from "@/lib/utils";
 import { ProductImageFlip, type ProductFlipSide } from "@/components/molecules/product-image-flip";
@@ -32,7 +33,7 @@ type ProductCardProps = ProductCardData & {
   onWishlistToggle?: () => void;
 };
 
-export function ProductCard({
+function ProductCardInner({
   name,
   variant,
   image,
@@ -51,7 +52,7 @@ export function ProductCard({
       onMouseEnter={() => onPrefetch?.()}
       onFocus={() => onPrefetch?.()}
     >
-      <div className="w-full min-w-0 touch-pan-y rounded-lg text-left sm:rounded-xl md:rounded-2xl">
+      <div className="w-full min-w-0 touch-pan-y text-left">
         <div className="relative">
           <ProductImageFlip
             frontImage={image}
@@ -100,3 +101,5 @@ export function ProductCard({
     </article>
   );
 }
+
+export const ProductCard = memo(ProductCardInner);

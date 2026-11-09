@@ -16,6 +16,8 @@ type BackgroundGradientAnimationProps = {
   size?: string;
   blendingValue?: string;
   interactive?: boolean;
+  /** Coupe les orbes GPU (modale / panier ouverts). */
+  paused?: boolean;
   containerClassName?: string;
 };
 
@@ -31,6 +33,7 @@ export function BackgroundGradientAnimation({
   size = "75%",
   blendingValue = "soft-light",
   interactive = true,
+  paused = false,
   containerClassName,
 }: BackgroundGradientAnimationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -87,6 +90,7 @@ export function BackgroundGradientAnimation({
       style={cssVars}
       className={cn(
         "dingry-bga pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
+        paused && "dingry-bga--paused",
         containerClassName,
       )}
     >

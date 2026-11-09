@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import type { ShopProduct } from "@/lib/catalog";
@@ -26,7 +27,7 @@ type CatalogSectionProps = {
   persoBanner: ShopCatalogPersoBanner;
 };
 
-export function CatalogSection({
+function CatalogSectionInner({
   tabValue,
   onTabChange,
   onOpenCustom,
@@ -58,3 +59,5 @@ export function CatalogSection({
     </section>
   );
 }
+
+export const CatalogSection = memo(CatalogSectionInner);

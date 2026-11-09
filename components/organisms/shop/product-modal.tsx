@@ -1,13 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
+import { DingryVariantProductImage } from "@/components/molecules/dingry-variant-product-image";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
 import {
   isTurnstileProductTestEnabled,
   ProductCaptchaTest,
 } from "@/components/molecules/product-captcha-test";
-import { cldOpt } from "@/lib/cloudinary-url";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { DINGRY_MANIFESTO_EN } from "@/lib/dingry-brand-voice";
 import {
@@ -61,7 +62,10 @@ function ProductModalContent({
   onAddToCart,
   purchaseDisabled = false,
 }: ContentProps) {
-  const { modalSide, jerseyColor, selectedSize, selectedQuantity } = modal;
+  const { modalSide, jerseyColor, selectedSize, selectedQuantity, selectedOptionKey, switchParentOption, modalHeroImage } =
+    modal;
+  const parentOptions = product.options ?? [];
+  const useParentOptions = parentOptions.length > 1;
 
   const activeFlipPair = findActiveFlipPair(product, flipPairs);
   const teeVersoMeta = TEE_VERSO_BY_RECTO_ID[product.id];
@@ -78,19 +82,25 @@ function ProductModalContent({
       : activeFlipPair.recto
     : teeVersoMeta && modalSide === "verso"
       ? { image: IMAGES[teeVersoMeta.image], name: product.name }
-      : { image: displayProduct.image, name: displayProduct.name };
+      : { image: useParentOptions ? modalHeroImage(product) : displayProduct.image, name: displayProduct.name };
 
   const flipImages = showSideToggle
     ? activeFlipPair
       ? { front: activeFlipPair.recto.image, back: activeFlipPair.verso.image }
       : teeVersoMeta
-        ? { front: product.image, back: IMAGES[teeVersoMeta.image] }
+        ? {
+            front: useParentOptions ? modalHeroImage(product) : product.image,
+            back: IMAGES[teeVersoMeta.image],
+          }
         : null
     : null;
 
   const crmFlipImages =
     !showSideToggle && product.imageBack?.trim()
-      ? { front: displayProduct.image, back: product.imageBack.trim() }
+      ? {
+          front: useParentOptions ? modalHeroImage(product) : displayProduct.image,
+          back: product.imageBack.trim(),
+        }
       : null;
   const effectiveFlipImages = flipImages ?? crmFlipImages;
   const showCrmFlip = Boolean(crmFlipImages);
@@ -115,7 +125,7 @@ function ProductModalContent({
   return (
     <div className="dingry-sale fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-12">
       <motion.div
-        className="dingry-sale-overlay absolute inset-0 bg-[#050505]/90 backdrop-blur-md"
+        className="dingry-sale-overlay absolute inset-0 bg-[#050505]/92"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -126,9 +136,9 @@ function ProductModalContent({
         ref={modal.productModalRef}
         data-product-modal=""
         className="dingry-sale-panel relative z-10 bg-[#0a0a0a] border border-white/[0.06] w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col md:flex-row"
-        initial={{ opacity: 0, scale: 0.96, y: 14 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
         transition={MODAL_PANEL_SPRING}
       >
         <div
@@ -143,15 +153,27 @@ function ProductModalContent({
               alt={storefrontProductTitle(product, products)}
               imgClassName="brightness-[0.85] contrast-[1.05] grayscale-[0.2]"
             />
+          ) : useParentOptions ? (
+            <DingryVariantProductImage
+              productName={product.name}
+              parentImage={product.image}
+              parentAlt={activeView.name}
+              options={parentOptions}
+              selectedOptionKey={selectedOptionKey}
+            />
           ) : (
-            <div className="relative aspect-[3/4] w-full overflow-hidden">
-              <img
+            <div
+              className="relative aspect-[3/4] w-full overflow-hidden"
+              style={{ filter: "brightness(0.85) contrast(1.05) grayscale(0.2)" }}
+            >
+              <DingryCloudinaryImage
                 src={activeView.image}
                 alt={activeView.name}
                 width={600}
                 height={800}
+                deliveryWidth={720}
                 className="h-full w-full object-cover"
-                style={{ filter: "brightness(0.85) contrast(1.05) grayscale(0.2)" }}
+                sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
               />
             </div>
           )}
@@ -202,7 +224,31 @@ function ProductModalContent({
                 <p className="text-xs leading-relaxed text-white/50">{detail.limitedEdition}</p>
               </div>
             ) : null}
-            {productLine && productLine.variants.length > 1 ? (
+            {useParentOptions ? (
+              <div className="mb-6">
+                <p className="mb-3 text-[10px] tracking-[0.3em] text-white/40 uppercase">Couleur</p>
+                <div className="flex flex-wrap gap-2">
+                  {parentOptions.map((option) => {
+                    const isActive = option.optionKey === selectedOptionKey;
+                    return (
+                      <button
+                        key={option.optionKey}
+                        type="button"
+                        onClick={() => switchParentOption(option.optionKey)}
+                        className={`border px-3 py-2 text-[10px] tracking-[0.16em] uppercase transition-colors ${
+                          isActive
+                            ? "border-[#0066FF] bg-[#0066FF] text-white"
+                            : "border-white/15 text-white/55 hover:border-white/40 hover:text-white"
+                        }`}
+                        aria-pressed={isActive}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : productLine && productLine.variants.length > 1 ? (
               <div className="mb-6">
                 <p className="mb-3 text-[10px] tracking-[0.3em] text-white/40 uppercase">Variantes</p>
                 <div className="flex flex-wrap gap-2">
@@ -338,12 +384,13 @@ function ProductModalContent({
                     onClick={() => modal.openProductModal(item)}
                     className="w-24 shrink-0 border border-white/10 bg-[#080808] text-left transition-colors hover:border-[#0066FF]/40"
                   >
-                    <img
-                      src={cldOpt(item.image, 192)}
+                    <DingryCloudinaryImage
+                      src={item.image}
                       alt=""
+                      width={96}
+                      height={128}
+                      deliveryWidth={192}
                       className="aspect-[3/4] w-full object-cover"
-                      loading="lazy"
-                      decoding="async"
                     />
                     <span className="block p-2 text-[9px] uppercase leading-snug tracking-wide text-white/55">
                       {storefrontProductTitle(item)}

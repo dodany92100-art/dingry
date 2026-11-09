@@ -55,7 +55,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
           className="fixed inset-0 z-[65] flex items-center justify-center p-4 md:p-8"
         >
           <motion.div
-            className="absolute inset-0 bg-[#050505]/90 backdrop-blur-md"
+            className="absolute inset-0 bg-[#050505]/92"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -64,9 +64,9 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
           />
           <motion.div
             className="relative z-10 bg-[#0a0a0a] border border-white/[0.06] w-full max-w-5xl max-h-[92vh] overflow-y-auto"
-            initial={{ opacity: 0, scale: 0.96, y: 14 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
             transition={MODAL_PANEL_SPRING}
           >
             <button
