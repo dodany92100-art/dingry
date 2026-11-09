@@ -199,16 +199,6 @@ function ProductModalContent({
               </div>
             )}
           </div>
-          {effectiveShowSideToggle ? (
-            <button
-              type="button"
-              onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
-              className={`${styles.sideToggle} ${styles.sideUnder} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
-              aria-pressed={modalSide === "verso"}
-            >
-              {modalSide === "verso" ? "recto" : "verso"}
-            </button>
-          ) : null}
         </div>
         <div className={styles.body}>
           <div>
@@ -321,6 +311,18 @@ function ProductModalContent({
                 </p>
               </div>
             </div>
+            {effectiveShowSideToggle ? (
+              <div className={styles.sideUnder}>
+                <button
+                  type="button"
+                  onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
+                  className={`${styles.sideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
+                  aria-pressed={modalSide === "verso"}
+                >
+                  {modalSide === "verso" ? "recto" : "verso"}
+                </button>
+              </div>
+            ) : null}
             {isJersey ? (
               <div className={styles.section}>
                 <p className={styles.sectionLabel}>Couleur</p>

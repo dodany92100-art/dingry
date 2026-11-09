@@ -162,9 +162,10 @@
 }
 
 .sideUnder {
-  margin-top: 0.75rem;
-  line-height: normal;
-  min-width: 7rem;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .sideToggle {
