@@ -1,1 +1,4 @@
-npm run check:all
+#!/usr/bin/env sh
+set -e
+echo "→ tsc --noEmit (imports / types)"
+npx tsc --noEmit

@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
@@ -11,9 +10,6 @@ import {
 } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
-
-const MODAL_OVERLAY_EASE = [0.16, 1, 0.3, 1] as const;
-const MODAL_PANEL_SPRING = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.85 };
 
 const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 
@@ -172,26 +168,17 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
         </div>
       </footer>
 
-      <AnimatePresence>
-        {activeLegal && legalDoc ? (
+      {activeLegal && legalDoc ? (
           <div
             key={`legal-${legalDoc}`}
             className="fixed inset-0 z-[70] flex items-center justify-center p-4 md:p-8"
           >
-            <motion.div
-              className="absolute inset-0 bg-[#050505]/90 backdrop-blur-md"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.22, ease: MODAL_OVERLAY_EASE }}
+            <div
+              className="dingry-legal-overlay absolute inset-0 bg-[#050505]/92"
               onClick={() => setLegalDoc(null)}
             />
-            <motion.div
-              className="relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col border border-white/[0.08] bg-[#0a0a0a]"
-              initial={{ opacity: 0, scale: 0.96, y: 14 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              transition={MODAL_PANEL_SPRING}
+            <div
+              className="dingry-legal-panel relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col border border-white/[0.08] bg-[#0a0a0a]"
               role="dialog"
               aria-modal="true"
               aria-labelledby="legal-modal-title"
@@ -228,10 +215,9 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
                   ))}
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
-        ) : null}
-      </AnimatePresence>
+      ) : null}
     </>
   );
 }

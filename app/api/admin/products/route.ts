@@ -3,6 +3,7 @@ import { isR2ImageStorageEnabled, requireAdmin } from "@/lib/admin/auth";
 import { parseProductFields } from "@/lib/admin/parse-product";
 import {
   createProduct,
+  listMakerTemplates,
   loadStoreReadOnly,
   StoreConflictError,
   StoreUnavailableError,
@@ -33,8 +34,10 @@ export async function GET() {
         return { ...product, stock: live };
       }),
     );
+    const makerTemplates = await listMakerTemplates();
     return jsonNoStore({
       products,
+      makerTemplates,
       r2ImageStorage: isR2ImageStorageEnabled(),
     });
   } catch (error) {

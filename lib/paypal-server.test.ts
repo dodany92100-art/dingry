@@ -66,8 +66,11 @@ describe("readVerifiedPayment", () => {
 
   it("rejette un montant PayPal différent du devis", () => {
     const order = completedOrder(digest);
-    order.purchase_units![0].amount!.value = "49.00";
-    order.purchase_units![0].payments!.captures![0].amount!.value = "49.00";
+    const unit = order.purchase_units?.[0];
+    const capture = unit?.payments?.captures?.[0];
+    if (!unit?.amount || !capture?.amount) throw new Error("fixture PayPal incomplète");
+    unit.amount.value = "49.00";
+    capture.amount.value = "49.00";
     expect(readVerifiedPayment(order, quote)).toBeNull();
   });
 });

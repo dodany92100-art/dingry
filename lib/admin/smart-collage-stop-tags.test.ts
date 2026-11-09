@@ -44,6 +44,24 @@ describe("smart-collage-stop-tags", () => {
     expect(tail).toBe("mat :");
   });
 
+  it("matière stop — # seul en fin de ligne (code squelette)", () => {
+    const { body, tail } = splitAtMaterialStop(
+      "70 % coton ringspun 20 % polyester 10 % polyester recyclé Heather Grey : 60 % coton 30 % polyester 10 % polyester recyclé#",
+    );
+    expect(body).toContain("70 % coton");
+    expect(body).toContain("Heather Grey");
+    expect(body).not.toContain("#");
+    expect(tail).toBe("");
+  });
+
+  it("story stop — @ en fin de ligne (avec espace)", () => {
+    const { body, tail } = splitAtStoryStop(
+      "Un essentiel streetwear à porter au quotidien @",
+    );
+    expect(body).toBe("Un essentiel streetwear à porter au quotidien");
+    expect(tail).toBe("");
+  });
+
   it("matière stop — fin de matiere # (code officiel)", () => {
     const { body, tail } = splitAtMaterialStop("100% coton fin de matiere # couleur :");
     expect(body).toBe("100% coton");

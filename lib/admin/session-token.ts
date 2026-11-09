@@ -54,7 +54,12 @@ function signaturesMatch(left: string, right: string): boolean {
   const b = new TextEncoder().encode(right);
   if (a.length === 0 || a.length !== b.length) return false;
   let diff = 0;
-  for (let index = 0; index < a.length; index += 1) diff |= a[index] ^ b[index];
+  for (let index = 0; index < a.length; index += 1) {
+    const left = a[index];
+    const right = b[index];
+    if (left === undefined || right === undefined) return false;
+    diff |= left ^ right;
+  }
   return diff === 0;
 }
 

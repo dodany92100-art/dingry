@@ -189,6 +189,15 @@ argu : jogpant oversize.`;
     expect(next.stock).toBe("25");
   });
 
+  it("smart parse : nom produit en MAJUSCULES (ex. chocolat → CHOCOLAT)", () => {
+    const parsed = parseSmartProductText(
+      "ref: HOODIES DINGRY SIGNATURE chocolat",
+      "Hoodies",
+    );
+    const next = patchFormFromSmartParse(emptyForm(), parsed, "replace");
+    expect(next.name).toBe("HOODIES DINGRY SIGNATURE CHOCOLAT");
+  });
+
   it("smart parse fill-empty : pas d’écrasement si collage sans story détectée", () => {
     const parsed = parseSmartProductText("Prix : 80", "T-shirts");
     const prev = { ...emptyForm(), description: "Texte manuel boutique" };

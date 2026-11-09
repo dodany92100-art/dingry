@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildFamilyDetectionSample,
   parseProductFamilyAndPrice,
   suggestedPriceLabelForCategory,
 } from "@/lib/admin/parse-product-family";
@@ -29,6 +30,19 @@ describe("parseProductFamilyAndPrice", () => {
     const r = parseProductFamilyAndPrice("CASQUETTE SNAPBACK");
     expect(r.category).toBe("Caps");
     expect(r.suggestedPriceLabel).toBe("35");
+  });
+
+  it("détecte sweat à capuche (FR)", () => {
+    const r = parseProductFamilyAndPrice("Sweat à capuche oversize DINGRY");
+    expect(r.category).toBe("Hoodies");
+  });
+});
+
+describe("buildFamilyDetectionSample", () => {
+  it("agrège nom et collage", () => {
+    expect(
+      buildFamilyDetectionSample({ name: "Hoodie Noir" }, "prix: 89"),
+    ).toContain("Hoodie Noir");
   });
 });
 

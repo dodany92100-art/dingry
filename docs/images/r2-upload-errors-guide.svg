@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 2480" width="920" height="2480" role="img" aria-labelledby="title desc">
+  <title id="title">DINGRY — Erreurs upload R2 (référence)</title>
+  <desc id="desc">Messages d’erreur possibles et corrections pour l’upload CRM Cloudflare R2.</desc>
+  <defs>
+    <linearGradient id="hdr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#0c1220"/>
+    </linearGradient>
+    <filter id="sh" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="920" height="2480" fill="#080d18"/>
+  <rect x="40" y="36" width="840" height="200" rx="20" fill="url(#hdr)" filter="url(#sh)"/>
+  <text x="460" y="100" text-anchor="middle" fill="#f5f7ff" font-family="system-ui,sans-serif" font-size="34" font-weight="700">DINGRY · Upload images R2</text>
+  <text x="460" y="145" text-anchor="middle" fill="#9aa8c7" font-family="system-ui,sans-serif" font-size="18">Toutes les erreurs fréquentes · Admin CRM</text>
+  <text x="460" y="200" text-anchor="middle" fill="#6ee7b7" font-family="ui-monospace,monospace" font-size="15">npm run check:prod-env → ligne « R2 upload CRM »</text>
+
+  <!-- Config OK -->
+  <rect x="40" y="260" width="840" height="300" rx="16" fill="#10192c" stroke="#2d3f63" stroke-width="1.5"/>
+  <text x="68" y="300" fill="#93c5fd" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Config correcte (Vercel + .env.local)</text>
+  <text x="68" y="345" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="15">R2_ACCESS_KEY_ID          → 32 car. (Access Key ID token S3 R2)</text>
+  <text x="68" y="378" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="15">R2_SECRET_ACCESS_KEY      → 64 car. (Secret Access Key)</text>
+  <text x="68" y="411" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="15">R2_ACCOUNT_ID             → ID compte Cloudflare</text>
+  <text x="68" y="444" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="15">R2_BUCKET_NAME            → dingrybuckets (défaut projet)</text>
+  <text x="68" y="477" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="15">R2_PUBLIC_BASE_URL        → https://pub-….r2.dev (lecture navigateur)</text>
+  <text x="68" y="528" fill="#fbbf24" font-family="system-ui,sans-serif" font-size="14">Création : Cloudflare → R2 → bucket → Manage R2 API Tokens → Create API token (S3)</text>
+
+  <!-- Error cards helper -->
+  <g id="errors" font-family="system-ui,sans-serif">
+    <!-- 1 -->
+    <rect x="40" y="590" width="840" height="168" rx="14" fill="#1c1018" stroke="#7f1d1d" stroke-width="1.2"/>
+    <text x="68" y="628" fill="#fca5a5" font-size="16" font-weight="700">1 · SDK AWS / navigateur</text>
+    <text x="68" y="662" fill="#fecaca" font-family="ui-monospace,monospace" font-size="14">Credential access key has length 65, should be 32</text>
+    <text x="68" y="698" fill="#d1d5db" font-size="15">Cause : clé secrète (64 car.) + espace/retour dans R2_ACCESS_KEY_ID, ou mauvaise variable.</text>
+    <text x="68" y="728" fill="#6ee7b7" font-size="14">Fix : 32 car. dans ACCESS_KEY_ID · 64 car. dans SECRET · redeploy Vercel.</text>
+
+    <!-- 2 -->
+    <rect x="40" y="778" width="840" height="148" rx="14" fill="#141c28" stroke="#b45309" stroke-width="1.2"/>
+    <text x="68" y="816" fill="#fdba74" font-size="16" font-weight="700">2 · Validation DINGRY (avant S3)</text>
+    <text x="68" y="850" fill="#fed7aa" font-family="ui-monospace,monospace" font-size="13">R2 : R2_ACCESS_KEY_ID invalide (N car., attendu 32). … ressemble à la clé secrète …</text>
+    <text x="68" y="886" fill="#6ee7b7" font-size="14">Fix : ne pas coller l’URL publique ni le token API global Cloudflare.</text>
+
+    <!-- 3 -->
+    <rect x="40" y="946" width="840" height="128" rx="14" fill="#141c28" stroke="#b45309" stroke-width="1.2"/>
+    <text x="68" y="984" fill="#fdba74" font-size="16" font-weight="700">3 · Clés inversées</text>
+    <text x="68" y="1018" fill="#fed7aa" font-family="ui-monospace,monospace" font-size="13">R2 : R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY semblent inversés (32 vs 64)</text>
+    <text x="68" y="1048" fill="#6ee7b7" font-size="14">Fix : échanger les deux valeurs entre les variables d’environnement.</text>
+
+    <!-- 4 -->
+    <rect x="40" y="1094" width="840" height="128" rx="14" fill="#141c28" stroke="#b45309" stroke-width="1.2"/>
+    <text x="68" y="1132" fill="#fdba74" font-size="16" font-weight="700">4 · Secret trop court / long</text>
+    <text x="68" y="1166" fill="#fed7aa" font-family="ui-monospace,monospace" font-size="13">R2 : R2_SECRET_ACCESS_KEY invalide (N car., attendu 64).</text>
+    <text x="68" y="1196" fill="#6ee7b7" font-size="14">Fix : recréer un token S3 R2 et recopier Access + Secret en entier (sans guillemets).</text>
+
+    <!-- 5 -->
+    <rect x="40" y="1242" width="840" height="128" rx="14" fill="#141c28" stroke="#b45309" stroke-width="1.2"/>
+    <text x="68" y="1280" fill="#fdba74" font-size="16" font-weight="700">5 · Variables absentes</text>
+    <text x="68" y="1314" fill="#fed7aa" font-family="ui-monospace,monospace" font-size="13">R2 : R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY requis.</text>
+    <text x="68" y="1344" fill="#6ee7b7" font-size="14">Fix : ajouter les 5 variables R2 (voir encadré vert) en Preview + Production.</text>
+
+    <!-- 6 -->
+    <rect x="40" y="1390" width="840" height="148" rx="14" fill="#0f1a14" stroke="#166534" stroke-width="1.2"/>
+    <text x="68" y="1428" fill="#86efac" font-size="16" font-weight="700">6 · API upload admin · 503</text>
+    <text x="68" y="1462" fill="#bbf7d0" font-family="ui-monospace,monospace" font-size="13">Stockage R2 non configuré.</text>
+    <text x="68" y="1492" fill="#d1d5db" font-size="14">Cause : isR2ImageStorageEnabled() = false (manque ACCOUNT_ID, clés, bucket ou endpoint).</text>
+    <text x="68" y="1518" fill="#6ee7b7" font-size="14">Fix : check:prod-env · session admin affiche r2ImageStorage: false tant que non corrigé.</text>
+
+    <!-- 7 -->
+    <rect x="40" y="1558" width="840" height="118" rx="14" fill="#0f1a14" stroke="#166534" stroke-width="1.2"/>
+    <text x="68" y="1596" fill="#86efac" font-size="16" font-weight="700">7 · API upload · 500</text>
+    <text x="68" y="1630" fill="#bbf7d0" font-family="ui-monospace,monospace" font-size="13">Échec de l’upload R2.</text>
+    <text x="68" y="1658" fill="#6ee7b7" font-size="14">Cause : erreur S3 (souvent clés) · détail dans les logs Vercel / terminal dev.</text>
+
+    <!-- 8 -->
+    <rect x="40" y="1696" width="840" height="148" rx="14" fill="#1a1520" stroke="#6b21a8" stroke-width="1.2"/>
+    <text x="68" y="1734" fill="#d8b4fe" font-size="16" font-weight="700">8 · Sauvegarde produit sans R2</text>
+    <text x="68" y="1768" fill="#e9d5ff" font-size="13">Stockage image indisponible : configurer R2 (…) ou npm run dev (fichiers locaux).</text>
+    <text x="68" y="1802" fill="#6ee7b7" font-size="14">Prod : R2 obligatoire · Local sans R2 : fallback disque selon config.</text>
+
+    <!-- 9 -->
+    <rect x="40" y="1864" width="840" height="148" rx="14" fill="#1c1018" stroke="#7f1d1d" stroke-width="1.2"/>
+    <text x="68" y="1902" fill="#fca5a5" font-size="16" font-weight="700">9 · Erreurs S3 après config « OK »</text>
+    <text x="68" y="1936" fill="#fecaca" font-family="ui-monospace,monospace" font-size="13">AccessDenied · NoSuchBucket · InvalidAccessKeyId · SignatureDoesNotMatch</text>
+    <text x="68" y="1970" fill="#d1d5db" font-size="14">Mauvais bucket · token sans droit Object Write · ACCOUNT_ID faux · secret tronqué.</text>
+    <text x="68" y="1996" fill="#6ee7b7" font-size="14">Vérifier bucket dingrybuckets · régénérer token · R2_ACCOUNT_ID = dashboard Cloudflare.</text>
+
+    <!-- 10 -->
+    <rect x="40" y="2032" width="840" height="118" rx="14" fill="#141c28" stroke="#2563eb" stroke-width="1.2"/>
+    <text x="68" y="2070" fill="#93c5fd" font-size="16" font-weight="700">10 · Pièges classiques</text>
+    <text x="68" y="2104" fill="#dbeafe" font-size="14">Coller https://pub-….r2.dev dans ACCESS_KEY_ID · SUPABASE_SERVICE_ROLE_KEY à la place du secret R2</text>
+    <text x="68" y="2132" fill="#dbeafe" font-size="14">Variable seulement en Development · oubli redeploy après changement Vercel</text>
+
+    <!-- checklist -->
+    <rect x="40" y="2180" width="840" height="260" rx="16" fill="#10192c" stroke="#2d3f63" stroke-width="1.5"/>
+    <text x="68" y="2220" fill="#93c5fd" font-size="22" font-weight="700">Checklist rapide</text>
+    <text x="88" y="2262" fill="#e2e8f0" font-size="16">☐  node -e "…" → ACCESS 32 · SECRET 64 (longueurs seulement)</text>
+    <text x="88" y="2298" fill="#e2e8f0" font-size="16">☐  npm run check:prod-env → R2 upload CRM ✓</text>
+    <text x="88" y="2334" fill="#e2e8f0" font-size="16">☐  Redéployer Preview / Production après edit env</text>
+    <text x="88" y="2370" fill="#e2e8f0" font-size="16">☐  Admin : indicateur r2ImageStorage: true (GET /api/admin/session)</text>
+    <text x="68" y="2410" fill="#9aa8c7" font-size="13">Fichier : docs/images/r2-upload-errors-guide.svg · projet DINGRY</text>
+  </g>
+</svg>

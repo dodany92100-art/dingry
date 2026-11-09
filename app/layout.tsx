@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 
+import { AdminSwitcherBarLazy } from '@/components/molecules/admin-switcher-bar-lazy'
 import { CookieConsentLazy } from '@/components/atoms/cookie-consent-lazy'
 import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL, DINGRY_OPEN_GRAPH_IMAGE } from '@/lib/dingry-brand'
 import { anton } from '@/lib/dingry-fonts'
@@ -51,6 +52,7 @@ export default function RootLayout({
     <html lang="fr" data-theme="light" className={`${anton.variable} overflow-x-hidden`}>
       <body className="overflow-x-hidden antialiased">
         {children}
+        <AdminSwitcherBarLazy />
         <CookieConsentLazy />
       </body>
     </html>

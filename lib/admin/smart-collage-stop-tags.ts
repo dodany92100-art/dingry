@@ -3,7 +3,10 @@
  */
 
 const STORY_STOP_PATTERN =
-  /(?:#\s*fin(?:de)?\s*(?:d[e']?\s*)?argumentaire\s*@?|#\s*findargumentaire\s*@?|\bfin\s+de\s+argu\b|#\s*fin\s+de\s+argu\s*@?|\bfin\s+argu\s*@|\bfin\s+d['']?\s*argu\s*@)/iu;
+  /(?:#\s*fin(?:de)?\s*(?:d[e']?\s*)?argumentaire\s*@?|#\s*findargumentaire\s*@?|\bfin\s+de\s+argu\b|#\s*fin\s+de\s+argu\s*@?|\bfin\s+argu\s*@?|\bfin\s+d['']?\s*argu\s*@?)/iu;
+
+/** Clôture argumentaire seule — `quotidien @` ou `quotidien@` (sans « fin d' argu »). */
+const STORY_LOOSE_TRAILING_AT = /\s*@\s*$/u;
 
 /** `@` avant `mat:` / `matière:` (fiche fournisseur, casse libre). */
 const STORY_LOOSE_AT_BEFORE_MAT = /\s@\s+(?=(?:mat|mati[eè]re)\s*[:：])/iu;
@@ -15,10 +18,11 @@ const STORY_STOP_PATTERNS: readonly RegExp[] = [
   STORY_STOP_PATTERN,
   STORY_LOOSE_AT_BEFORE_MAT,
   STORY_LOOSE_HASH_BEFORE_PRIX,
+  STORY_LOOSE_TRAILING_AT,
 ];
 
 const MATERIAL_STOP_PATTERN =
-  /(?:\bfin\s+de\s+mati[eè]r(?:e)?\s*#|#\s*fin\s+de\s+mati[eè]r(?:e)?\s*@?|\bfin\s+de\s+mati[eè]r(?:e)?\s*@|\bfin\s+mati[eè]re(?:\s*@)?|\bfin\s+de\s+mati[eè]re\b)/iu;
+  /(?:\bfin\s+de\s+mati[eè]r(?:e)?\s*#|#\s*fin\s+de\s+mati[eè]r(?:e)?\s*@?|\bfin\s+de\s+mati[eè]r(?:e)?\s*@|\bfin\s+mati[eè]re(?:\s*@)?|\bfin\s+de\s+mati[eè]re\b|\s*#\s*(?:\s*@)?\s*$)/iu;
 
 export function splitAtStoryStop(raw: string): { body: string; tail: string } {
   const trimmed = raw.trim();
@@ -47,4 +51,11 @@ export function splitAtMaterialStop(raw: string): { body: string; tail: string }
   const body = trimmed.slice(0, m.index).trim();
   const tail = trimmed.slice(m.index + m[0].length).trim();
   return { body, tail };
+}
+
+/** `true` si un stop-tag matière a tronqué la ligne (ex. `#` seul en fin de composition). */
+export function materialStopCutApplied(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  return splitAtMaterialStop(trimmed).body.length < trimmed.length;
 }

@@ -15,6 +15,7 @@ import {
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
+import { normalizeCrmProductNameField } from "@/lib/validations/price-family";
 
 export type ParsedProductFields = {
   sku: string;
@@ -95,13 +96,13 @@ export function parseProductFields(
   if (!partial || has("sku")) {
     const sku = getValue("sku").trim().slice(0, 32);
     if (sku.length < 2) return { fields, error: "Référence (SKU) invalide." };
-    fields.sku = sku.toUpperCase();
+    fields.sku = sku.replace(/\s+/g, "");
   }
 
   if (!partial || has("name")) {
     const name = getValue("name").trim();
     if (name.length < 2 || name.length > 80) return { fields, error: "Nom du produit invalide." };
-    fields.name = name;
+    fields.name = normalizeCrmProductNameField(name);
   }
 
   if (!partial || has("variant")) {

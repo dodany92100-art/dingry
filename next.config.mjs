@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
 import bundleAnalyzer from "@next/bundle-analyzer";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 import { validateProductionEnv } from "./lib/env-core.mjs";
 import { buildImageRemotePatterns, buildImgSrcCspList } from "./lib/media-cdn-hosts.mjs";
 
@@ -67,6 +71,14 @@ const noIndex = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
 
 const nextConfig = {
   reactStrictMode: false,
+  productionBrowserSourceMaps: false,
+  outputFileTracingRoot: projectRoot,
+  turbopack: {
+    root: projectRoot,
+  },
+  experimental: {
+    optimizePackageImports: ["motion/react"],
+  },
   env: {
     NEXT_PUBLIC_CRM_BUILD_AT:
       process.env.VERCEL_DEPLOYMENT_CREATED_AT ??

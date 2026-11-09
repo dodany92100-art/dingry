@@ -61,6 +61,26 @@ export function normalizeCatalogCategory(value: unknown): CatalogCategory | null
   return ALIASES[key] ?? (CATEGORY_SET.has(key) ? (key as CatalogCategory) : null);
 }
 
+function escapeRegExpFragment(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Cherche un alias catalogue dans un titre ou pavé (famille CRM, filtres boutique). */
+export function matchCatalogCategoryInText(text: string): CatalogCategory | null {
+  const raw = text.trim();
+  if (raw.length < 2) return null;
+  const ordered = Object.entries(ALIASES).sort((a, b) => b[0].length - a[0].length);
+  for (const [alias, category] of ordered) {
+    const pattern = alias
+      .split(/\s+/)
+      .map((part) => escapeRegExpFragment(part))
+      .join("\\s+");
+    const re = new RegExp(`(?:^|[^\\p{L}\\d])${pattern}(?:$|[^\\p{L}\\d])`, "iu");
+    if (re.test(raw)) return category;
+  }
+  return null;
+}
+
 export function parseCatalogFilter(value: string | null | undefined): CatalogFilter {
   if (!value) return "all";
   const key = slugKey(value);

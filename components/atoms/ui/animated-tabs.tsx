@@ -87,8 +87,10 @@ export function AnimatedTabs({
       }
 
       if (nextIndex !== null) {
+        const tab = tabs[nextIndex];
+        if (!tab) return;
         event.preventDefault();
-        selectTab(tabs[nextIndex]);
+        selectTab(tab);
       }
     },
     [active, selectTab, tabs],

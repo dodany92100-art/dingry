@@ -33,6 +33,25 @@ export type ProductFamilyParseResult = {
   suggestedPriceLabel?: string;
 };
 
+export type FamilyDetectionFormSlice = {
+  name: string;
+  variant?: string;
+  description?: string;
+  materials?: string;
+};
+
+/** Texte agrégé pour la détection (nom, collage, variantes, story). */
+export function buildFamilyDetectionSample(
+  form: FamilyDetectionFormSlice,
+  smartPasteText = "",
+): string {
+  return [form.name, smartPasteText, form.variant, form.description, form.materials]
+    .map((part) => (part ?? "").trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
 export function suggestedPriceForCategory(category: ProductCategory): number {
   return SUGGESTED_PRICE_EUR_BY_CATEGORY[category];
 }

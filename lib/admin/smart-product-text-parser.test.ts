@@ -132,6 +132,29 @@ mat : 70% coton peigné # fin de matier @`,
     expect(r.description).not.toContain("argu:");
   });
 
+  it("ardu: alias argu — espaces autour de :", () => {
+    const r = parseSmartProductText(
+      "ardu :Sa coupe droite oversize, poches kangourou.",
+      "Hoodies",
+    );
+    expect(r.description).toContain("coupe droite");
+    expect(r.description).not.toMatch(/ardu\s*:/i);
+  });
+
+  it("matière multi-coloris # + argu multiligne @ (espaces dans %)", () => {
+    const raw = `mat :
+70 % coton ringspun 20 % polyester 10 % polyester recyclé Heather Grey : 60 % coton ringspun 30 % polyester 10 % polyester recyclé#
+Sa coupe droite oversize, sa grande poche kangourou et sa mini-poche secrète offrent un équilibre parfait entre allure et praticité. Ses finitions côtelées assurent un maintien confortable.
+Un essentiel streetwear à porter au quotidien @`;
+    const r = parseSmartProductText(raw, "Hoodies");
+    expect(r.materials).toContain("70 % coton ringspun");
+    expect(r.materials).toContain("Heather Grey");
+    expect(r.materials).not.toContain("#");
+    expect(r.description).toContain("coupe droite oversize");
+    expect(r.description).toContain("quotidien");
+    expect(r.description).not.toContain("@");
+  });
+
   it("grammage — variantes gram / densité / g/m / g:", () => {
     const cases = [
       ["gram: 400", "400 g/m²"],

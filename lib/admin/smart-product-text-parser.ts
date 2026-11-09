@@ -2,7 +2,11 @@ import {
   parseOfficialRoutingLine,
   stripCollageRoutingPrefix,
 } from "@/lib/admin/smart-collage-routing";
-import { splitAtMaterialStop, splitAtStoryStop } from "@/lib/admin/smart-collage-stop-tags";
+import {
+  materialStopCutApplied,
+  splitAtMaterialStop,
+  splitAtStoryStop,
+} from "@/lib/admin/smart-collage-stop-tags";
 import { trimStoryField } from "@/lib/admin/product-story";
 import { normalizePantWaistSize } from "@/lib/admin/pant-waist";
 import { isLikelySkuReference, normalizeSkuInput } from "@/lib/admin/product-sku";
@@ -10,10 +14,12 @@ import { ADMIN_COLOR_VARIANTS, isPantsCategory } from "@/lib/admin/product-varia
 import {
   ADMIN_CATEGORY_SIZES,
   normalizeProductCategory,
+  productCategoryFromCatalogSlug,
   type ProductCategory,
   type ProductPrintPlacement,
   type ProductSize,
 } from "@/lib/admin/types";
+import { matchCatalogCategoryInText } from "@/lib/catalog-category";
 
 export type SmartParseFieldId =
   | "category"
@@ -101,7 +107,7 @@ const RE_NOM = /\b(?:nom|name)\b/i;
 const RE_TITRE = /\btitre(?:\s*nom)?\b/i;
 /** argu, zrgi, story, desc… (ligne structurée — préfixe retiré via stripLabelPrefix). */
 const RE_STORY_LABEL =
-  /^(?:argu\w*|argi|zrgi|ar|story|desc(?:ription)?|argui|descr[i1l][p]*tions?|dsric?r?i?ptions?)\s*(?:[:\-.–—])/iu;
+  /^(?:ardu|argu\w*|argi|zrgi|ar|story|desc(?:ription)?|argui|descr[i1l][p]*tions?|dsric?r?i?ptions?)\s*(?:[:\-.–—])/iu;
 const RE_CARE_LINE =
   /\b(?:lavable|entretien|lavage|séchage|repasser|machine|soin|nettoyage|ne pas|repassage)\b/i;
 const RE_GRAMMAGE = /\b(?:g\/m|gsm|grammage?|grammes?|grams?|densit[ée]|density|poids)\b/i;
@@ -127,8 +133,17 @@ const CATEGORY_KEYWORDS: readonly { category: ProductCategory; patterns: readonl
     patterns: [/\bjogpants?\b/i, /\bjoggers?\b/i, /\bpants?\b/i, /\bpantalons?\b/i, /\bcargo\b/i],
     weight: 2,
   },
-  { category: "T-shirts", patterns: [/\bt[\s\-]?shirts?\b/i, /\btees?\b/i], weight: 2 },
-  { category: "Crewnecks", patterns: [/\bsweats?\b/i, /\bcrew\b/i], weight: 1 },
+  {
+    category: "T-shirts",
+    patterns: [/\bt[\s\-]?shirts?\b/i, /\btee[\s\-]?shirts?\b/i, /\btees?\b/i],
+    weight: 2,
+  },
+  {
+    category: "Hoodies",
+    patterns: [/\bsweat\s+[àa]\s+capuche\b/i, /\bsweatcapuche\b/i, /\bcapuche\b/i],
+    weight: 2,
+  },
+  { category: "Crewnecks", patterns: [/\bsweats?\b/i, /\bpulls?\b/i, /\bcrew\b/i], weight: 1 },
 ];
 
 const SEMANTIC_CLIP = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
@@ -307,7 +322,13 @@ export function detectCategoryFromText(raw: string): ProductCategory | undefined
   const text = normalizePasteText(raw);
   if (!text) return undefined;
   const lines = linesFromText(text);
-  return extractCategoryFromLines(lines) ?? detectCategoryFromKeywords(text);
+  const fromLines = extractCategoryFromLines(lines);
+  if (fromLines) return fromLines;
+  const fromKeywords = detectCategoryFromKeywords(text);
+  if (fromKeywords) return fromKeywords;
+  const slug = matchCatalogCategoryInText(text);
+  if (slug) return productCategoryFromCatalogSlug(slug);
+  return undefined;
 }
 
 function isAllCapsTitleLine(line: string): boolean {
@@ -682,11 +703,13 @@ export function parseSmartProductText(
         case "material": {
           const { body, tail } = splitAtMaterialStop(value);
           const normalized = normalizeStoryLine(body);
-          if (normalized && compositionLines.length === 0) compositionLines.push(normalized);
+          if (normalized) compositionLines.push(normalized);
           captureMaterials = !tail && !normalized;
           if (normalized && !tail) captureMaterials = false;
           if (!normalized && !tail) captureMaterials = true;
-          captureDescription = false;
+          captureDescription = Boolean(
+            tail || (!captureMaterials && materialStopCutApplied(value)),
+          );
           if (tail) requeueTail(tail);
           break;
         }
@@ -764,7 +787,8 @@ export function parseSmartProductText(
       const { body, tail } = splitAtMaterialStop(line);
       const normalized = normalizeStoryLine(body);
       if (normalized) compositionLines.push(normalized);
-      captureMaterials = !tail;
+      captureMaterials = Boolean(tail);
+      if (!tail && materialStopCutApplied(line)) captureDescription = true;
       if (tail) requeueTail(tail);
       continue;
     }

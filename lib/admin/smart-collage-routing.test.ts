@@ -33,6 +33,12 @@ describe("smart-collage-routing", () => {
     expect(parseOfficialRoutingLine("g: 500")?.route).toBe("grammage");
   });
 
+  it("parse ardu → story (typo CRM)", () => {
+    const r = parseOfficialRoutingLine("ardu : pitch hoodie");
+    expect(r?.route).toBe("story");
+    expect(r?.value).toBe("pitch hoodie");
+  });
+
   it("parse argi/argu → story", () => {
     const r = parseOfficialRoutingLine("argui: Pitch produit");
     expect(r?.route).toBe("story");

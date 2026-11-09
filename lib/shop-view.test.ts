@@ -33,7 +33,7 @@ describe("panier", () => {
     cart = addCartLine(cart, hoodie, "M", 2);
     cart = addCartLine(cart, hoodie, "L", 1);
     expect(cart).toHaveLength(2);
-    expect(cart[0].qty).toBe(3);
+    expect(cart[0]?.qty).toBe(3);
     expect(cartItemCount(cart)).toBe(4);
   });
 
@@ -42,13 +42,13 @@ describe("panier", () => {
     cart = addPersonalizedCartLine(cart, tee, "M", 1, "PARIS — Noir (recto)");
     cart = addPersonalizedCartLine(cart, tee, "M", 2, "PARIS — Noir (recto)");
     expect(cart).toHaveLength(2);
-    expect(cart[1].qty).toBe(3);
+    expect(cart[1]?.qty).toBe(3);
   });
 
   it("supprime la ligne quand la quantité tombe à zéro", () => {
     const cart = addCartLine([], hoodie, "M", 1);
     expect(updateCartLineQuantity(cart, 0, -1)).toEqual([]);
-    expect(updateCartLineQuantity(cart, 0, 1)[0].qty).toBe(2);
+    expect(updateCartLineQuantity(cart, 0, 1)[0]?.qty).toBe(2);
   });
 
   it("retire une ligne par index", () => {
@@ -61,15 +61,15 @@ describe("panier", () => {
     cart = addCartLine(cart, hoodie, "L", 1);
     cart = updateCartLineSize(cart, 0, "L");
     expect(cart).toHaveLength(1);
-    expect(cart[0].size).toBe("L");
-    expect(cart[0].qty).toBe(3);
+    expect(cart[0]?.size).toBe("L");
+    expect(cart[0]?.qty).toBe(3);
   });
 
   it("sépare deux produits identiques en tailles différentes", () => {
     const cart = addCartLine(addCartLine([], hoodie, "S", 1), hoodie, "L", 1);
     expect(cart).toHaveLength(2);
-    expect(cart[0].size).toBe("S");
-    expect(cart[1].size).toBe("L");
+    expect(cart[0]?.size).toBe("S");
+    expect(cart[1]?.size).toBe("L");
   });
 
   it("calcule le sous-total avec le supplément de personnalisation", () => {

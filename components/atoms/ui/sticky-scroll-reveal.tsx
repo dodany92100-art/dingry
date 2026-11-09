@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { DingryLogo } from "@/components/atoms/dingry-logo";
@@ -147,15 +146,9 @@ export function StickyScroll({
           stickyClassName,
         )}
       >
-        <motion.div
-          key={activeIndex}
-          initial={{ opacity: 0.88 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="dingry-gpu-layer w-full"
-        >
+        <div key={activeIndex} className="dingry-gpu-layer dingry-sticky-panel-fade w-full">
           {stickyPanel}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

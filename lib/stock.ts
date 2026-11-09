@@ -174,8 +174,10 @@ export async function readStockQuantities(
   try {
     const values = await client.mget<(string | null)[]>(...keys);
     for (let i = 0; i < unique.length; i += 1) {
+      const productId = unique[i];
+      if (productId === undefined) continue;
       const parsed = parseStockQuantity(values[i]);
-      map.set(unique[i], parsed === "missing" ? "missing" : parsed);
+      map.set(productId, parsed === "missing" ? "missing" : parsed);
     }
   } catch (error) {
     console.error("[stock] Redis mget", error instanceof Error ? error.name : "erreur");
@@ -200,13 +202,15 @@ export async function assertCheckoutStock(
   try {
     const values = await client.mget<(string | null)[]>(...prepared.agg.map(([key]) => key));
     for (let i = 0; i < prepared.agg.length; i++) {
+      const row = prepared.agg[i];
+      if (!row) continue;
       const value = values[i];
       const quantity = parseStockQuantity(value);
       if (quantity === "missing") {
-        console.error("[stock] clé non initialisée", prepared.agg[i][0]);
+        console.error("[stock] clé non initialisée", row[0]);
         return { ok: false, status: 503, error: "Stock indisponible." };
       }
-      if (quantity < prepared.agg[i][1]) {
+      if (quantity < row[1]) {
         return {
           ok: false,
           status: 409,
