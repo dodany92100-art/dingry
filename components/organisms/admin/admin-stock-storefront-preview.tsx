@@ -72,6 +72,7 @@ function PreviewProductCard({
         </div>
       ) : null}
       <ProductCard
+        productId={product.id}
         name={storefrontProductTitle(product)}
         variant={storefrontProductSubtitle(product)}
         image={product.image}

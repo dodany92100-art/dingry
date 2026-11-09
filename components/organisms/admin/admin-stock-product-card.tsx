@@ -9,6 +9,7 @@ import { AdminStockControls } from "@/components/organisms/admin/admin-stock-con
 import { AdminStockStatusBadge } from "@/components/organisms/admin/admin-stock-status-badge";
 import { AdminProductOrderControls } from "@/components/organisms/admin/admin-product-order-controls";
 import { AdminReorderSurface } from "@/components/organisms/admin/admin-reorder-surface";
+import { ProductIdBadge } from "@/components/atoms/product-id-badge";
 
 type AdminStockProductCardProps = {
   product: AdminProduct;
@@ -93,8 +94,9 @@ export function AdminStockProductCard({
               className={`h-full w-full object-cover transition-[filter] duration-300 ${soldOut ? "opacity-50" : ""}`}
             />
           </button>
-          <div className="pointer-events-none absolute left-1.5 top-1.5 z-10 md:left-2 md:top-2">
-            <AdminStockStatusBadge product={product} className="max-w-[calc(100%-2.5rem)] truncate max-sm:px-1.5 max-sm:text-[8px] max-sm:tracking-[0.1em]" />
+          <div className="pointer-events-none absolute left-2 top-2 z-10 flex max-w-[calc(100%-3rem)] flex-col items-start gap-1">
+            <ProductIdBadge id={product.id} />
+            <AdminStockStatusBadge product={product} className="max-w-full truncate max-sm:px-1.5 max-sm:text-[8px] max-sm:tracking-[0.1em]" />
           </div>
           <div
             className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-full bg-black/50 p-0.5 backdrop-blur-[2px] md:right-1.5 md:top-1.5"

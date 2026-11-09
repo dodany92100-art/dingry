@@ -16,6 +16,8 @@ type ProductCardData = {
 };
 
 type ProductCardProps = ProductCardData & {
+  /** Id fiche CRM / catalogue (badge #ID sur le visuel). */
+  productId?: string | number;
   onClick?: (side: ProductFlipSide) => void;
   className?: string;
   /** Première cellule catalogue : LCP (lazy pour le reste). */
@@ -28,6 +30,7 @@ type ProductCardProps = ProductCardData & {
 };
 
 function ProductCardInner({
+  productId,
   name,
   variant,
   image,
@@ -79,6 +82,7 @@ function ProductCardInner({
       tabIndex={onClick ? 0 : undefined}
     >
       <ProductCardMedia
+        productId={productId}
         image={image}
         alt={alt}
         priority={priority}

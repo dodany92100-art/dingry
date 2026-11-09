@@ -1,10 +1,12 @@
 "use client";
 
 import { memo } from "react";
+import { ProductIdBadge } from "@/components/atoms/product-id-badge";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
 
 type ProductCardMediaProps = {
+  productId?: string | number;
   image: string;
   alt: string;
   priority?: boolean;
@@ -14,6 +16,7 @@ type ProductCardMediaProps = {
 };
 
 function ProductCardMediaInner({
+  productId,
   image,
   alt,
   priority = false,
@@ -25,6 +28,11 @@ function ProductCardMediaInner({
 
   return (
     <div className="dingry-product-card__media relative aspect-[3/4] w-full shrink-0 overflow-hidden">
+      {productId !== undefined && productId !== "" ? (
+        <div className="pointer-events-none absolute left-2 top-2 z-20">
+          <ProductIdBadge id={productId} />
+        </div>
+      ) : null}
       <ProductImageFlip
         frontImage={image}
         side="recto"

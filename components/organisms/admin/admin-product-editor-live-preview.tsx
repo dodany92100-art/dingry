@@ -74,6 +74,7 @@ export function AdminProductEditorLivePreview({ model, productId }: AdminProduct
           <div className="mt-6 flex justify-center">
             <div className="w-full max-w-[17rem] sm:max-w-[19rem]">
               <ProductCard
+                productId={productId ?? undefined}
                 name={storefrontProductTitle(shopProduct)}
                 variant={storefrontProductSubtitle(shopProduct)}
                 image={shopProduct.image}
