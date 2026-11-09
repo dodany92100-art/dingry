@@ -5,14 +5,13 @@ import { CookieConsentLazy } from '@/components/atoms/cookie-consent-lazy'
 import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL, DINGRY_OPEN_GRAPH_IMAGE } from '@/lib/dingry-brand'
 import { anton } from '@/lib/dingry-fonts'
 import { DINGRY_META_DESCRIPTION } from '@/lib/dingry-brand-voice'
+import { getSiteUrl } from '@/lib/site-url'
 import './globals.css'
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://www.dingry.com'
 
 export const metadata: Metadata = {
   title: 'DINGRY — True Luxury Is Attitude',
   description: DINGRY_META_DESCRIPTION,
-  metadataBase: new URL(siteUrl),
+  metadataBase: getSiteUrl(),
   alternates: { canonical: '/' },
   openGraph: {
     title: 'DINGRY — True Luxury Is Attitude',

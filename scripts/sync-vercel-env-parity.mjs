@@ -14,8 +14,8 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 loadDotenv({ path: path.join(root, ".env") });
 loadDotenv({ path: path.join(root, ".env.local"), override: true });
 
+/** Fallback local uniquement pour l’hôte CDN (dev sans .env.local). Jamais PAYPAL_ENV ici. */
 const LOCAL_DEFAULTS = {
-  PAYPAL_ENV: "sandbox",
   DINGRY_IMG_HOSTS: "pub-8ef850fa01fb9fda829a4ffa6455c86b.r2.dev",
 };
 
