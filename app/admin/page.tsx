@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "@/components/organisms/admin/admin-header";
 import { AdminGridWorkflowBanner } from "@/components/organisms/admin/admin-grid-workflow-banner";
@@ -12,11 +13,9 @@ import { useAdminLookbook } from "@/components/organisms/admin/hooks/use-admin-l
 import { useAdminOrders } from "@/components/organisms/admin/hooks/use-admin-orders";
 import { useAdminProducts } from "@/components/organisms/admin/hooks/use-admin-products";
 import { useAdminSession } from "@/components/organisms/admin/hooks/use-admin-session";
-import { LookbookEditorModal } from "@/components/organisms/admin/lookbook-editor-modal";
 import { CatalogPersoBannerTab } from "@/components/organisms/admin/catalog-perso-banner-tab";
 import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
-import { ProductEditorModal } from "@/components/organisms/admin/product-editor-modal";
 import { ReleaseBanner } from "@/components/organisms/admin/release-banner";
 import { AdminActionToast } from "@/components/organisms/admin/admin-action-toast";
 import { StockTab } from "@/components/organisms/admin/stock-tab";
@@ -29,7 +28,31 @@ import {
   sumProductStock,
 } from "@/lib/admin/order-view";
 import { sanitizeAdminLoginNext } from "@/lib/admin/login-next";
+import {
+  adminCategoryQueryValue,
+  parseAdminCategoryParam,
+  parseAdminProductParam,
+  readAdminScrollSnapshot,
+  saveAdminScrollSnapshot,
+} from "@/lib/admin/crm-navigation-state";
 import type { AdminLookbookSlide, AdminProduct } from "@/lib/admin/types";
+import type { AdminProductCategoryFilter } from "@/lib/shop-data";
+
+const ProductEditorModal = dynamic(
+  () =>
+    import("@/components/organisms/admin/product-editor-modal").then((m) => ({
+      default: m.ProductEditorModal,
+    })),
+  { ssr: false },
+);
+
+const LookbookEditorModal = dynamic(
+  () =>
+    import("@/components/organisms/admin/lookbook-editor-modal").then((m) => ({
+      default: m.LookbookEditorModal,
+    })),
+  { ssr: false },
+);
 
 /** null = fermé ; { product: null } = création ; { product } = modification. */
 type EditorState = { product: AdminProduct | null } | null;
@@ -79,6 +102,9 @@ function AdminDashboard() {
   const { load: loadPersoBanner, reset: resetPersoBanner } = persoBannerApi;
 
   const [tab, setTab] = useState<TabId>(() => parseTabParam(searchParams.get("tab")));
+  const [categoryFilter, setCategoryFilter] = useState<AdminProductCategoryFilter>(() =>
+    parseAdminCategoryParam(searchParams.get("cat")),
+  );
   const [editor, setEditor] = useState<EditorState>(null);
   const [lookbookEditor, setLookbookEditor] = useState<LookbookEditorState>(null);
   const [loaded, setLoaded] = useState(false);
@@ -121,7 +147,84 @@ function AdminDashboard() {
 
   useEffect(() => {
     setTab(parseTabParam(searchParams.get("tab")));
+    setCategoryFilter(parseAdminCategoryParam(searchParams.get("cat")));
   }, [searchParams]);
+
+  const replaceAdminQuery = useCallback(
+    (patch: { tab?: TabId; cat?: AdminProductCategoryFilter; product?: string | null }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (patch.tab !== undefined) {
+        if (patch.tab === "commandes") params.delete("tab");
+        else params.set("tab", patch.tab);
+      }
+      if (patch.cat !== undefined) {
+        const catValue = adminCategoryQueryValue(patch.cat);
+        if (catValue) params.set("cat", catValue);
+        else params.delete("cat");
+      }
+      if (patch.product !== undefined) {
+        if (patch.product) params.set("product", patch.product);
+        else params.delete("product");
+      }
+      const query = params.toString();
+      router.replace(query ? `/admin?${query}` : "/admin", { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const persistListScroll = useCallback(() => {
+    if (editor) return;
+    if (tab !== "produits" && tab !== "brouillons") return;
+    saveAdminScrollSnapshot({ y: window.scrollY, tab, cat: categoryFilter });
+  }, [categoryFilter, editor, tab]);
+
+  useEffect(() => {
+    if (!loaded || editor) return;
+    if (tab !== "produits" && tab !== "brouillons") return;
+    const snap = readAdminScrollSnapshot();
+    if (!snap || snap.tab !== tab || snap.cat !== categoryFilter) return;
+    const id = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: snap.y, left: 0, behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [loaded, editor, tab, categoryFilter]);
+
+  useEffect(() => {
+    if (!loaded || editor) return;
+    if (tab !== "produits" && tab !== "brouillons") return;
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        persistListScroll();
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [loaded, editor, tab, persistListScroll]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const productParam = parseAdminProductParam(searchParams.get("product"));
+    if (!productParam) {
+      setEditor(null);
+      return;
+    }
+    if (productParam === "new") {
+      setEditor({ product: null });
+      return;
+    }
+    const product = productsApi.products.find((item) => item.id === productParam);
+    if (product) {
+      setEditor((prev) => (prev?.product?.id === product.id ? prev : { product }));
+    } else {
+      setEditor(null);
+    }
+  }, [loaded, searchParams, productsApi.products]);
 
   useEffect(() => {
     if (!authenticated || session.backupCodes || !wantsShopRedirect) return;
@@ -135,11 +238,25 @@ function AdminDashboard() {
 
   function selectTab(next: TabId) {
     setTab(next);
-    const params = new URLSearchParams(searchParams.toString());
-    if (next === "commandes") params.delete("tab");
-    else params.set("tab", next);
-    const query = params.toString();
-    router.replace(query ? `/admin?${query}` : "/admin", { scroll: false });
+    persistListScroll();
+    replaceAdminQuery({ tab: next });
+  }
+
+  function selectCategory(next: AdminProductCategoryFilter) {
+    setCategoryFilter(next);
+    saveAdminScrollSnapshot({ y: window.scrollY, tab, cat: next });
+    replaceAdminQuery({ cat: next });
+  }
+
+  function closeProductEditor() {
+    setEditor(null);
+    replaceAdminQuery({ product: null });
+    const snap = readAdminScrollSnapshot();
+    if (snap) {
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: snap.y, left: 0, behavior: "auto" });
+      });
+    }
   }
 
   // Session valide → chargement du tableau de bord. 401 → retour au login.
@@ -189,11 +306,14 @@ function AdminDashboard() {
   const totalStock = useMemo(() => sumProductStock(productsApi.products), [productsApi.products]);
 
   function openNew() {
+    persistListScroll();
+    replaceAdminQuery({ product: "new" });
     setEditor({ product: null });
   }
 
   function openEdit(product: AdminProduct) {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    persistListScroll();
+    replaceAdminQuery({ product: product.id });
     setEditor({ product });
   }
 
@@ -272,11 +392,18 @@ function AdminDashboard() {
       <ProductEditorModal
         key={editor.product?.id ?? "new"}
         initial={editor.product}
+        catalogProducts={productsApi.products}
         existingSkus={existingProductSkus}
         busyProductId={productsApi.busyProductId}
-        onClose={() => setEditor(null)}
-        onStartNewProduct={() => setEditor({ product: null })}
-        onProductPersisted={(product) => setEditor({ product })}
+        onClose={closeProductEditor}
+        onStartNewProduct={() => {
+          replaceAdminQuery({ product: "new" });
+          setEditor({ product: null });
+        }}
+        onProductPersisted={(product) => {
+          replaceAdminQuery({ product: product.id });
+          setEditor({ product });
+        }}
         onSubmit={productsApi.save}
         onDelete={handleDelete}
       />
@@ -336,6 +463,8 @@ function AdminDashboard() {
               });
             }}
             onReorderProducts={productsApi.reorderProductsLocal}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={selectCategory}
           />
           </>
         ) : tab === "banniere" ? (

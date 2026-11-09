@@ -1,30 +1,37 @@
 import { PANT_WAIST_PRESET_SIZES, PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/admin/types";
 
-/** Toutes les couleurs / coloris DINGRY (admin stock). */
-export const ADMIN_COLOR_VARIANTS = [
+/** Pastilles CRM : une entrée canonique par teinte (pas de doublon Noir/BLACK). */
+export const ADMIN_COLOR_PRESETS_CANONICAL = [
   "NOIR",
-  "BLACK",
   "BLANC",
-  "WHITE",
   "VERT",
   "ROUGE",
   "GRIS",
   "GRIS CHINÉ",
-  "KING BLUE",
-  "PINK",
   "ROYAL BLUE",
-  "BLEU ROI",
+  "PINK",
   "JAUNE FLUO",
   "PURPLE",
   "CHOCOLAT",
   "ZENITH",
 ] as const;
 
+export type AdminColorPresetCanonical = (typeof ADMIN_COLOR_PRESETS_CANONICAL)[number];
+
+/** Toutes les clés acceptées (parseur, imports legacy, `colorDeclinations`). */
+export const ADMIN_COLOR_VARIANTS = [
+  ...ADMIN_COLOR_PRESETS_CANONICAL,
+  "BLACK",
+  "WHITE",
+  "KING BLUE",
+  "BLEU ROI",
+] as const;
+
 export type AdminColorVariant = (typeof ADMIN_COLOR_VARIANTS)[number];
 
 function variantPresetsForCategory(category: ProductCategory): readonly string[] {
   if (category === "Pants") return PANT_WAIST_PRESET_SIZES;
-  return ADMIN_COLOR_VARIANTS;
+  return ADMIN_COLOR_PRESETS_CANONICAL;
 }
 
 export const ADMIN_VARIANT_PRESETS = Object.fromEntries(

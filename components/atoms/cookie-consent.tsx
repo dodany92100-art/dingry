@@ -1,7 +1,6 @@
 "use client";
 
 import { Analytics } from "@vercel/analytics/next";
-import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -11,8 +10,6 @@ import {
   type DingryCookieConsent,
   readCookieConsent,
 } from "@/lib/cookie-consent";
-
-const OVERLAY_EASE = [0.16, 1, 0.3, 1] as const;
 
 export function CookieConsent() {
   const pathname = usePathname();
@@ -46,17 +43,12 @@ export function CookieConsent() {
   return (
     <>
       {process.env.NODE_ENV === "production" && analyticsEnabled ? <Analytics /> : null}
-      <AnimatePresence>
-        {visible ? (
-          <motion.div
+      {visible ? (
+          <div
             role="dialog"
             aria-labelledby="dingry-cookie-title"
             aria-describedby="dingry-cookie-desc"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.35, ease: OVERLAY_EASE }}
-            className="fixed inset-x-0 bottom-0 z-[100] border-t border-white/10 bg-[#0a0a0a]/92 px-4 py-4 backdrop-blur-xl md:px-8 md:py-5"
+            className="fixed inset-x-0 bottom-0 z-[100] border-t border-white/10 bg-[#0a0a0a]/92 px-4 py-4 md:px-8 md:py-5"
           >
             <div className="mx-auto flex max-w-5xl flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8">
               <div className="min-w-0">
@@ -96,9 +88,8 @@ export function CookieConsent() {
                 </button>
               </div>
             </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+          </div>
+      ) : null}
     </>
   );
 }

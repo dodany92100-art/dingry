@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 
-import { CookieConsent } from '@/components/atoms/cookie-consent'
+import { CookieConsentLazy } from '@/components/atoms/cookie-consent-lazy'
 import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL, DINGRY_OPEN_GRAPH_IMAGE } from '@/lib/dingry-brand'
-
+import { anton } from '@/lib/dingry-fonts'
 import { DINGRY_META_DESCRIPTION } from '@/lib/dingry-brand-voice'
-
 import './globals.css'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://www.dingry.com'
@@ -49,10 +48,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" data-theme="light" className="overflow-x-hidden">
+    <html lang="fr" data-theme="light" className={`${anton.variable} overflow-x-hidden`}>
       <body className="overflow-x-hidden antialiased">
         {children}
-        <CookieConsent />
+        <CookieConsentLazy />
       </body>
     </html>
   )

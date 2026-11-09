@@ -59,8 +59,8 @@ export function useShopCart() {
     writeStoredCart(items);
   }, [items, hydrated]);
 
-  const addLine = useCallback((product: ShopProduct, size: string, qty: number) => {
-    setItems((prev) => addCartLine(prev, product, size, qty));
+  const addLine = useCallback((product: ShopProduct, size: string, qty: number, selectedOption?: string) => {
+    setItems((prev) => addCartLine(prev, product, size, qty, selectedOption));
     setOpen(true);
   }, []);
 

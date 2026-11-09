@@ -1,6 +1,8 @@
+import { mergeDbOptionsWithDeclinations } from "@/lib/catalog/product-options";
 import type { AdminProduct } from "@/lib/admin/types";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { adminProductToRow, rowToAdminProduct, type ProductRow } from "@/lib/supabase/product-row";
+import { listProductOptionsForProductIds, syncProductOptionsFromDeclinations } from "@/lib/supabase/product-options";
 
 export async function listSupabaseProducts(): Promise<AdminProduct[]> {
   const { data, error } = await supabaseAdmin()
@@ -8,8 +10,20 @@ export async function listSupabaseProducts(): Promise<AdminProduct[]> {
     .select("*")
     .order("display_order", { ascending: true });
   if (error) throw new Error(error.message);
-  return ((data ?? []) as ProductRow[]).map(rowToAdminProduct);
+  const products = ((data ?? []) as ProductRow[]).map(rowToAdminProduct);
+  const optionMap = await listProductOptionsForProductIds(products.map((p) => p.id));
+  return products.map((product) => ({
+    ...product,
+    options: mergeDbOptionsWithDeclinations(
+      optionMap.get(product.id) ?? [],
+      product.colorDeclinations,
+      product.variant,
+      { parentSku: product.sku, productName: product.name },
+    ),
+  }));
 }
+
+export { syncProductOptionsFromDeclinations };
 
 export async function getSupabaseProduct(id: string): Promise<AdminProduct | null> {
   const { data, error } = await supabaseAdmin().from("products").select("*").eq("id", id).maybeSingle();
@@ -24,7 +38,25 @@ export async function upsertSupabaseProduct(product: AdminProduct): Promise<Admi
     .select("*")
     .single();
   if (error) throw new Error(error.message);
-  return rowToAdminProduct(data as ProductRow);
+  const saved = rowToAdminProduct(data as ProductRow);
+  await syncProductOptionsFromDeclinations({
+    productId: saved.id,
+    productName: saved.name,
+    parentSku: saved.sku,
+    category: saved.category,
+    variant: saved.variant,
+    colorDeclinations: saved.colorDeclinations,
+  });
+  const options = await listProductOptionsForProductIds([saved.id]);
+  return {
+    ...saved,
+    options: mergeDbOptionsWithDeclinations(
+      options.get(saved.id) ?? [],
+      saved.colorDeclinations,
+      saved.variant,
+      { parentSku: saved.sku, productName: saved.name },
+    ),
+  };
 }
 
 export async function deleteSupabaseProduct(id: string): Promise<boolean> {

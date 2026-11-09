@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
-import { PayPalPaymentButton } from "@/components/molecules/paypal-payment-button";
-import { TurnstileWidget } from "@/components/atoms/turnstile-widget";
 import {
   clearPendingCheckoutOrder,
   readPendingCheckoutOrder,
@@ -19,6 +18,20 @@ import {
 import { DINGRY_DELIVERY_ESTIMATE, DINGRY_SHIPPING_LABEL } from "@/lib/dingry-checkout-copy";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
+
+const PayPalPaymentButton = dynamic(
+  () =>
+    import("@/components/molecules/paypal-payment-button").then((m) => ({
+      default: m.PayPalPaymentButton,
+    })),
+  { ssr: false },
+);
+
+const TurnstileWidget = dynamic(
+  () =>
+    import("@/components/atoms/turnstile-widget").then((m) => ({ default: m.TurnstileWidget })),
+  { ssr: false },
+);
 
 type ServerQuote = {
   totalCents: number;
@@ -37,6 +50,7 @@ function orderLines(cart: StoredCartItem[]) {
     size: item.size,
     qty: item.qty,
     ...(item.personalization ? { personalization: item.personalization } : {}),
+    ...(item.selectedOption ? { selectedOption: item.selectedOption } : {}),
   }));
 }
 
@@ -254,7 +268,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="dingry-checkout-page min-h-screen bg-[#f6f6f4] text-[#4b5563]">
+    <main className="dingry-checkout-page dingry-sale-ui min-h-screen bg-[#f6f6f4] text-[#4b5563]">
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-8 md:px-6 md:py-14">
         <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -313,7 +327,7 @@ export default function CheckoutPage() {
             </Link>
           </section>
         ) : (
-          <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+          <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] md:gap-5">
             <section className="dingry-checkout-pay-surface border p-4 md:p-8">
               <div className="flex items-center justify-between gap-3">
                 <h1 className="dingry-checkout-pay-eyebrow">Votre commande</h1>

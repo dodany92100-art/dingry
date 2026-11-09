@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { buildCloudinaryPictureSet } from "@/lib/cloudinary-url";
 import { cn } from "@/lib/utils";
 
 type DingryCloudinaryImageProps = {
@@ -8,6 +9,8 @@ type DingryCloudinaryImageProps = {
   alt: string;
   width?: number;
   height?: number;
+  /** Largeur livraison Cloudinary (défaut = width). */
+  deliveryWidth?: number;
   priority?: boolean;
   className?: string;
   sizes?: string;
@@ -16,17 +19,42 @@ type DingryCloudinaryImageProps = {
 const DEFAULT_SIZES =
   "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
 
-/** Image Cloudinary / Blob : lazy par défaut, `priority` pour LCP above-the-fold. */
+/** Cloudinary : `<picture>` AVIF/WebP/JPG. R2 et autres : `next/image` simple. */
 export function DingryCloudinaryImage({
   src,
   alt,
   width = 600,
   height = 800,
+  deliveryWidth,
   priority = false,
   className,
   sizes = DEFAULT_SIZES,
 }: DingryCloudinaryImageProps) {
   if (!src.trim()) return null;
+
+  const targetWidth = deliveryWidth ?? width;
+  const picture = buildCloudinaryPictureSet(src, targetWidth);
+
+  if (picture) {
+    return (
+      <picture className="block h-full w-full">
+        <source srcSet={picture.avif} type="image/avif" />
+        <source srcSet={picture.webp} type="image/webp" />
+        <img
+          src={picture.fallback}
+          alt={alt}
+          width={width}
+          height={height}
+          sizes={sizes}
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
+          decoding="async"
+          draggable={false}
+          className={cn(className)}
+        />
+      </picture>
+    );
+  }
 
   return (
     <Image

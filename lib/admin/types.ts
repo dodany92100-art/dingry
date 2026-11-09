@@ -1,3 +1,4 @@
+import type { ProductOption } from "@/lib/catalog/product-options";
 import { PANT_WAIST_PRESET_SIZES, isValidPantWaistSize, normalizePantWaistSize } from "@/lib/admin/pant-waist";
 /** Grille admin + Smart collage (2XL–5XL, XXS). Ordre d'affichage modale produit. */
 export const PRODUCT_SIZES = [
@@ -80,7 +81,7 @@ export const ADMIN_CATEGORY_SIZES: Record<ProductCategory, readonly ProductSize[
   "T-shirts": PRODUCT_SIZES,
   Jerseys: PRODUCT_SIZES,
   Pants: PANT_WAIST_PRESET_SIZES,
-  "Crop tops": ["S", "M", "L", "XL"],
+  "Crop tops": ["S", "M", "L", "XL", "2XL"],
   Caps: ["TU"],
 };
 
@@ -179,6 +180,8 @@ export type AdminProduct = {
   publishStatus: ProductPublishStatus;
   /** Coloris proposés dans le modal boutique (déclinaisons). Vide = variante seule. */
   colorDeclinations: string[];
+  /** Déclinaisons persistées (`product_options`) — chargées depuis Supabase. */
+  options?: ProductOption[];
   imageUrl: string;
   blobUrl: string | null;
   blobPathname: string | null;
@@ -212,6 +215,7 @@ export type CatalogProduct = {
   sizes: ProductSize[];
   /** Coloris modal boutique (recto CRM associés par famille + nom). */
   colorDeclinations?: string[];
+  options?: ProductOption[];
   /** Absent si la source publique n’a pas d’info stock (devis serveur tranche). */
   stock?: number;
   isPinned?: boolean;
@@ -337,6 +341,7 @@ export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {
     ...(product.colorDeclinations.length > 0
       ? { colorDeclinations: [...product.colorDeclinations] }
       : {}),
+    ...(product.options && product.options.length > 0 ? { options: [...product.options] } : {}),
     isPinned: product.isPinned,
     displayOrder: product.displayOrder,
     adminCreatedAt: product.createdAt,

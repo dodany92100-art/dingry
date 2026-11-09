@@ -46,3 +46,5 @@ create policy "dgry-images public read"
 on storage.objects for select
 using (bucket_id in ('dgry-images', 'dgry images'));
 -- Upload CRM : API Next avec SUPABASE_SERVICE_ROLE_KEY (contourne le RLS).
+
+-- Voir aussi : supabase/migrations/20251109000000_product_options.sql (options parent + fulfillment_mode).

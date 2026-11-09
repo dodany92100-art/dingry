@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import type { ShopProduct } from "@/lib/catalog";
 import { productSlugForCatalogId, rectoIdFromProductSlug } from "@/lib/dingry-product-copy";
@@ -26,6 +26,7 @@ function currentSearchParams(fallback: string): URLSearchParams {
 }
 
 export function useProductModal({ products, catalogState }: Options) {
+  const router = useRouter();
   const pathname = usePathname();
   const shopBasePath = shopBasePathFromPathname(pathname ?? "/");
   const searchParams = useSearchParams();
@@ -96,10 +97,10 @@ export function useProductModal({ products, catalogState }: Options) {
       const query = params.toString();
       const href = query ? `${shopBasePath}?${query}` : shopBasePath;
       startTransition(() => {
-        window.history.replaceState(window.history.state, "", href);
+        router.replace(href, { scroll: false });
       });
     },
-    [searchParams, shopBasePath],
+    [router, searchParams, shopBasePath],
   );
 
   function defaultOptionKey(product: ShopProduct): string {
@@ -184,6 +185,17 @@ export function useProductModal({ products, catalogState }: Options) {
     setSelectedProduct(null);
     window.requestAnimationFrame(() => syncProductInUrl(null));
   }, [syncProductInUrl]);
+
+  useEffect(() => {
+    if (!selectedProduct) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeProductModal();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedProduct, closeProductModal]);
 
   function showProductSide(side: "recto" | "verso") {
     setModalSide(side);

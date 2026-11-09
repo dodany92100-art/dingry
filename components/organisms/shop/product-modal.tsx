@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
 import { DingryVariantProductImage } from "@/components/molecules/dingry-variant-product-image";
@@ -30,8 +31,12 @@ import {
 } from "@/lib/shop-view";
 import type { ProductModalState } from "./hooks/use-product-modal";
 import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
+import styles from "./product-modal.module.css";
+import { productModalDataFromShop, type ProductModalProps as ProductModalShellProps } from "./product-modal.types";
 
-type ProductModalProps = {
+export type { ProductModalData, ProductModalProps } from "./product-modal.types";
+
+type ShopProductModalProps = {
   modal: ProductModalState;
   products: ShopProduct[];
   flipPairs: FlipPair[];
@@ -41,19 +46,30 @@ type ProductModalProps = {
   purchaseDisabled?: boolean;
 };
 
-export function ProductModal(props: ProductModalProps) {
+export function ProductModal(props: ShopProductModalProps) {
   const product = props.modal.selectedProduct;
+  const data = product ? productModalDataFromShop(product) : null;
+  const shell: ProductModalShellProps = {
+    data,
+    onClose: props.modal.closeProductModal,
+  };
   return (
     <AnimatePresence>
-      {product ? <ProductModalContent key={product.id} product={product} {...props} /> : null}
+      {product && data ? (
+        <ProductModalContent key={product.id} product={product} shell={shell} {...props} />
+      ) : null}
     </AnimatePresence>
   );
 }
 
-type ContentProps = ProductModalProps & { product: ShopProduct };
+type ContentProps = ShopProductModalProps & {
+  product: ShopProduct;
+  shell: ProductModalShellProps;
+};
 
 function ProductModalContent({
   product,
+  shell,
   modal,
   products,
   flipPairs,
@@ -122,29 +138,34 @@ function ProductModalContent({
   const showTurnstileProductTest =
     isTurnstileProductTestEnabled() && isShopTeeCategory(String(shopCategory));
 
+  const data = shell.data;
+  if (!data) return null;
+
+  const sizeGridVars = {
+    "--size-cols": String(sizeCols),
+    "--recto-col": String(rectoColumn),
+  } as CSSProperties;
+
   return (
-    <div className="dingry-sale fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-12">
+    <div className={styles.root}>
       <motion.div
-        className="dingry-sale-overlay absolute inset-0 bg-[#050505]/92"
+        className={styles.overlay}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={MODAL_OVERLAY_TRANSITION}
-        onClick={() => modal.closeProductModal()}
+        onClick={shell.onClose}
       />
       <motion.div
         ref={modal.productModalRef}
         data-product-modal=""
-        className="dingry-sale-panel relative z-10 bg-[#0a0a0a] border border-white/[0.06] w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col md:flex-row"
+        className={styles.panel}
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
         transition={MODAL_PANEL_SPRING}
       >
-        <div
-          ref={modal.productImageRef}
-          className="dingry-sale-photo w-full shrink-0 overflow-hidden bg-[#080808] md:w-1/2 md:max-w-[520px] md:self-start"
-        >
+        <div ref={modal.productImageRef} className={styles.photo}>
           {effectiveFlipImages ? (
             <ProductImageFlip
               frontImage={effectiveFlipImages.front}
@@ -162,31 +183,28 @@ function ProductModalContent({
               selectedOptionKey={selectedOptionKey}
             />
           ) : (
-            <div
-              className="relative aspect-[3/4] w-full overflow-hidden"
-              style={{ filter: "brightness(0.85) contrast(1.05) grayscale(0.2)" }}
-            >
+            <div className={styles.photoFallback}>
               <DingryCloudinaryImage
                 src={activeView.image}
                 alt={activeView.name}
                 width={600}
                 height={800}
                 deliveryWidth={720}
-                className="h-full w-full object-cover"
+                className={styles.photoCover}
                 sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
               />
             </div>
           )}
         </div>
-        <div className="relative flex flex-1 flex-col justify-between bg-[#0a0a0a] p-6 md:p-10">
+        <div className={styles.body}>
           <div>
-            <div className="mb-2 flex items-center justify-end gap-3">
-              <div className="flex shrink-0 items-center gap-2">
+            <div className={styles.toolbar}>
+              <div className={styles.toolbarCluster}>
                 {effectiveShowSideToggle ? (
                   <button
                     type="button"
                     onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
-                    className={`border px-3 py-2 text-[10px] tracking-[0.22em] uppercase transition-colors md:hidden ${modalSide === "verso" ? "border-white bg-white text-black" : "border-white/20 text-white/50 hover:border-white/60 hover:text-white"}`}
+                    className={`${styles.sideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
                     aria-pressed={modalSide === "verso"}
                   >
                     {modalSide === "verso" ? "recto" : "verso"}
@@ -194,8 +212,8 @@ function ProductModalContent({
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => modal.closeProductModal()}
-                  className={`h-11 w-11 items-center justify-center text-white/40 transition-colors hover:text-white ${effectiveShowSideToggle ? "hidden md:flex" : "flex"}`}
+                  onClick={shell.onClose}
+                  className={`${styles.close} ${effectiveShowSideToggle ? styles.closeDesktopOnly : ""}`}
                   aria-label="Fermer"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -205,29 +223,27 @@ function ProductModalContent({
                 </button>
               </div>
             </div>
-            <p className="dingry-typo-manifesto-en mb-3">{DINGRY_MANIFESTO_EN}</p>
-            <h2 className="mb-2 text-2xl font-bold uppercase tracking-wide leading-tight">
-              {storefrontProductTitle(product, products)}
-            </h2>
+            <p className={`dingry-typo-manifesto-en ${styles.manifesto}`}>{DINGRY_MANIFESTO_EN}</p>
+            <h2 className={styles.title}>{data.title}</h2>
             {detail.description ? (
-              <p className="mb-4 text-sm leading-relaxed text-white/55">{detail.description}</p>
+              <p className={styles.description}>{detail.description}</p>
             ) : null}
             {detail.printPlacement ? (
-              <div className="mb-4">
-                <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Impression</p>
-                <p className="text-xs leading-relaxed text-white/50">{detail.printPlacement}</p>
+              <div className={styles.metaBlock}>
+                <p className={styles.metaLabel}>Impression</p>
+                <p className={styles.metaText}>{detail.printPlacement}</p>
               </div>
             ) : null}
             {detail.limitedEdition ? (
-              <div className="mb-4">
-                <p className="mb-1 text-[10px] tracking-[0.28em] text-white/35 uppercase">Édition limitée</p>
-                <p className="text-xs leading-relaxed text-white/50">{detail.limitedEdition}</p>
+              <div className={styles.metaBlock}>
+                <p className={styles.metaLabel}>Édition limitée</p>
+                <p className={styles.metaText}>{detail.limitedEdition}</p>
               </div>
             ) : null}
             {useParentOptions ? (
-              <div className="mb-6">
-                <p className="mb-3 text-[10px] tracking-[0.3em] text-white/40 uppercase">Couleur</p>
-                <div className="flex flex-wrap gap-2">
+              <div className={styles.section}>
+                <p className={styles.sectionLabel}>Couleur</p>
+                <div className={styles.chipRow}>
                   {parentOptions.map((option) => {
                     const isActive = option.optionKey === selectedOptionKey;
                     return (
@@ -235,11 +251,7 @@ function ProductModalContent({
                         key={option.optionKey}
                         type="button"
                         onClick={() => switchParentOption(option.optionKey)}
-                        className={`border px-3 py-2 text-[10px] tracking-[0.16em] uppercase transition-colors ${
-                          isActive
-                            ? "border-[#0066FF] bg-[#0066FF] text-white"
-                            : "border-white/15 text-white/55 hover:border-white/40 hover:text-white"
-                        }`}
+                        className={`${styles.chip} ${isActive ? styles.chipActive : ""}`}
                         aria-pressed={isActive}
                       >
                         {option.label}
@@ -249,9 +261,9 @@ function ProductModalContent({
                 </div>
               </div>
             ) : productLine && productLine.variants.length > 1 ? (
-              <div className="mb-6">
-                <p className="mb-3 text-[10px] tracking-[0.3em] text-white/40 uppercase">Variantes</p>
-                <div className="flex flex-wrap gap-2">
+              <div className={styles.section}>
+                <p className={styles.sectionLabel}>Variantes</p>
+                <div className={styles.chipRow}>
                   {productLine.variants.map((variant) => {
                     const isActive = variant.rectoId === rectoId;
                     const target = productById(variant.rectoId);
@@ -265,13 +277,7 @@ function ProductModalContent({
                           if (!target || isActive) return;
                           modal.switchProductVariant(target);
                         }}
-                        className={`border px-3 py-2 text-[10px] tracking-[0.16em] uppercase transition-colors ${
-                          isActive
-                            ? "border-[#0066FF] bg-[#0066FF] text-white"
-                            : disabled
-                              ? "cursor-not-allowed border-white/10 text-white/25"
-                              : "border-white/15 text-white/55 hover:border-white/40 hover:text-white"
-                        }`}
+                        className={`${styles.chip} ${isActive ? styles.chipActive : ""} ${disabled ? styles.chipDisabled : ""}`}
                         aria-pressed={isActive}
                       >
                         {variant.colorLabel}
@@ -282,26 +288,26 @@ function ProductModalContent({
                 </div>
               </div>
             ) : null}
-            <div className="mb-6 flex items-start justify-between gap-3">
-              <span className="text-[10px] tracking-[0.3em] text-white/40 uppercase">Quantité</span>
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-center border border-white/15">
+            <div className={styles.qtyRow}>
+              <span className={styles.qtyLabel}>Quantité</span>
+              <div className={styles.qtyCluster}>
+                <div className={styles.qtyControl}>
                   <button
                     type="button"
                     onClick={() => modal.setSelectedQuantity((quantity) => Math.max(1, quantity - 1))}
                     aria-label="Diminuer la quantité"
-                    className="w-9 h-9 text-white/60 hover:bg-white hover:text-black transition-colors"
+                    className={styles.qtyBtn}
                   >
                     −
                   </button>
-                  <span className="w-10 text-center text-sm font-medium" aria-live="polite">
+                  <span className={styles.qtyValue} aria-live="polite">
                     {selectedQuantity}
                   </span>
                   <button
                     type="button"
                     onClick={() => modal.setSelectedQuantity((quantity) => Math.min(99, quantity + 1))}
                     aria-label="Augmenter la quantité"
-                    className="w-9 h-9 text-white/60 hover:bg-white hover:text-black transition-colors"
+                    className={styles.qtyBtn}
                   >
                     +
                   </button>
@@ -312,19 +318,15 @@ function ProductModalContent({
               </div>
             </div>
             {isJersey ? (
-              <div className="mb-6">
-                <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase mb-3">Couleur</p>
-                <div className="flex flex-wrap gap-2">
+              <div className={styles.section}>
+                <p className={styles.sectionLabel}>Couleur</p>
+                <div className={styles.chipRow}>
                   {JERSEY_COLOR_OPTIONS.map((option) => (
                     <button
                       key={option.key}
                       type="button"
                       onClick={() => modal.setJerseyColor(option.key)}
-                      className={`border px-4 py-2.5 text-[10px] tracking-[0.22em] uppercase transition-colors ${
-                        jerseyColor === option.key
-                          ? "border-white bg-white text-black"
-                          : "border-white/15 text-white/50 hover:border-white/40 hover:text-white"
-                      }`}
+                      className={`${styles.jerseyChip} ${jerseyColor === option.key ? styles.jerseyOn : ""}`}
                       aria-pressed={jerseyColor === option.key}
                     >
                       {option.label}
@@ -333,40 +335,29 @@ function ProductModalContent({
                 </div>
               </div>
             ) : null}
-            <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase mb-4">Sélectionnez une taille</p>
+            <p className={styles.sizeLabel}>Sélectionnez une taille</p>
             <div
-              className={`grid gap-2 ${effectiveShowSideToggle ? "mb-2" : "mb-8"} ${sizeCols === 4 ? "grid-cols-4" : "grid-cols-6"}`}
+              className={`${styles.sizeGrid} ${effectiveShowSideToggle ? styles.sizeGridTight : ""}`}
+              style={sizeGridVars}
             >
               {sizes.map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => modal.setSelectedSize(s)}
-                  className={`py-2.5 text-xs font-medium tracking-widest border transition-colors duration-150 ${
-                    selectedSize === s
-                      ? "bg-[#0066FF] border-[#0066FF] text-white"
-                      : "border-white/10 text-white/50 hover:border-white/30 hover:text-white"
-                  }`}
+                  className={`${styles.sizeBtn} ${selectedSize === s ? styles.sizeOn : ""}`}
                 >
                   {s}
                 </button>
               ))}
             </div>
             {effectiveShowSideToggle ? (
-              <div
-                className="mb-8 hidden gap-2 md:grid"
-                style={{ gridTemplateColumns: `repeat(${sizeCols}, minmax(0, 1fr))` }}
-              >
+              <div className={styles.sideGrid} style={sizeGridVars}>
                 <button
                   type="button"
                   onClick={() => modal.showProductSide(nextSide)}
                   aria-pressed={modalSide === "verso"}
-                  style={{ gridColumn: rectoColumn }}
-                  className={`py-2.5 text-[10px] font-medium tracking-[0.18em] uppercase border transition-colors duration-150 ${
-                    modalSide === "verso"
-                      ? "border-white bg-white text-black"
-                      : "border-white/20 text-white/50 hover:border-white/60 hover:text-white"
-                  }`}
+                  className={`${styles.sideGridBtn} ${modalSide === "verso" ? styles.sideGridBtnOn : ""}`}
                 >
                   {nextSide}
                 </button>
@@ -374,15 +365,15 @@ function ProductModalContent({
             ) : null}
           </div>
           {completeLook.length > 0 ? (
-            <div className="mb-6 border-t border-white/[0.06] pt-5">
-              <p className="mb-3 text-[10px] tracking-[0.28em] text-[#0066FF] uppercase">Complète le look</p>
-              <div className="flex gap-3 overflow-x-auto pb-1">
+            <div className={styles.lookSection}>
+              <p className={styles.lookLabel}>Complète le look</p>
+              <div className={styles.lookRow}>
                 {completeLook.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => modal.openProductModal(item)}
-                    className="w-24 shrink-0 border border-white/10 bg-[#080808] text-left transition-colors hover:border-[#0066FF]/40"
+                    className={styles.lookCard}
                   >
                     <DingryCloudinaryImage
                       src={item.image}
@@ -390,9 +381,9 @@ function ProductModalContent({
                       width={96}
                       height={128}
                       deliveryWidth={192}
-                      className="aspect-[3/4] w-full object-cover"
+                      className={styles.lookThumb}
                     />
-                    <span className="block p-2 text-[9px] uppercase leading-snug tracking-wide text-white/55">
+                    <span className={styles.lookCaption}>
                       {storefrontProductTitle(item)}
                     </span>
                   </button>
@@ -400,16 +391,12 @@ function ProductModalContent({
               </div>
             </div>
           ) : null}
-          <div className="flex items-stretch gap-2">
+          <div className={styles.ctaRow}>
             <button
               type="button"
               onClick={onAddToCart}
               disabled={!selectedSize || cannotPurchase}
-              className={`dingry-add-to-cart-btn min-h-[52px] flex-1 py-4 text-xs font-bold tracking-[0.3em] uppercase transition-colors duration-200 ${
-                selectedSize && !cannotPurchase
-                  ? "bg-[#0066FF] text-white shadow-[0_8px_32px_rgba(0,102,255,0.35)] hover:bg-[#0052cc]"
-                  : "bg-white/10 text-white/20 cursor-not-allowed"
-              }`}
+              className={`dingry-add-to-cart-btn ${styles.addBtn} ${selectedSize && !cannotPurchase ? styles.addBtnOn : styles.addBtnOff}`}
             >
               {purchaseDisabled
                 ? "Catalogue indisponible"
@@ -422,7 +409,7 @@ function ProductModalContent({
               active={wishlistActive}
               label={wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
               onClick={() => onToggleWishlist(rectoId)}
-              className="shrink-0 self-auto"
+              className={styles.wishlist}
             />
           </div>
           {showTurnstileProductTest ? <ProductCaptchaTest /> : null}

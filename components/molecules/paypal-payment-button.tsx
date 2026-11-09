@@ -7,6 +7,7 @@ export type PayPalCartLine = {
   size: string;
   qty: number;
   personalization?: string;
+  selectedOption?: string;
 };
 
 type PayPalPaymentButtonProps = {

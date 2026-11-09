@@ -15,6 +15,22 @@ export function normalizeSkuInput(raw: string): string {
   return raw.toUpperCase().replace(/\s+/g, "").slice(0, 32);
 }
 
+/**
+ * `ref:` — référence technique (SKU) vs nom produit.
+ * Espaces / libellé marketing → nom ; `DGRY-PT-01`, codes sans espace → SKU.
+ */
+export function isLikelySkuReference(value: string): boolean {
+  const raw = value.trim();
+  if (!raw || /\s/.test(raw)) return false;
+  const norm = normalizeSkuInput(raw);
+  if (/^DGRY-[A-Z]{2}-\d{2,}$/.test(norm)) return true;
+  if (/^DINGRY-[A-Z]{2,}-\d{2,}$/.test(norm)) return true;
+  if (/^DINGRY-[A-Z0-9]+-\d{2,}$/.test(norm)) return true;
+  if (/^[A-Z]{2,12}-\d{2,}$/.test(norm)) return true;
+  if (/-/.test(norm) && /\d/.test(norm) && !/[a-z]/.test(raw)) return true;
+  return false;
+}
+
 export function categorySkuToken(category: ProductCategory): string {
   return SKU_CATEGORY_TOKEN[category] ?? "XX";
 }

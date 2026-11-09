@@ -41,6 +41,8 @@ type StockTabProps = {
   /** Modale fiche ouverte : pas de ± stock (évite conflit Blob avec la sauvegarde). */
   productEditorOpen?: boolean;
   stockAutosaveStatus?: StockAutosaveStatusMap;
+  categoryFilter: AdminProductCategoryFilter;
+  onCategoryFilterChange: (filter: AdminProductCategoryFilter) => void;
 };
 
 function filterByAdminCategory(
@@ -93,9 +95,10 @@ export function StockTab({
   onReorderProducts,
   productEditorOpen = false,
   stockAutosaveStatus = {},
+  categoryFilter,
+  onCategoryFilterChange,
 }: StockTabProps) {
   const stockControlsBusy = productEditorOpen;
-  const [categoryFilter, setCategoryFilter] = useState<AdminProductCategoryFilter>("Collection");
   const [viewMode, setViewMode] = useState<AdminStockViewMode>("grid");
   const [storefrontPreview, setStorefrontPreview] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<AdminProduct | null>(null);
@@ -167,7 +170,7 @@ export function StockTab({
           {!storefrontPreview ? <AdminStockViewToggle mode={viewMode} onChange={setViewMode} /> : null}
         </div>
         <div className="min-w-0 space-y-3">
-          <AdminCategoryFilterNav selected={categoryFilter} onChange={setCategoryFilter} />
+          <AdminCategoryFilterNav selected={categoryFilter} onChange={onCategoryFilterChange} />
           <div>
             <label htmlFor="dingry-admin-stock-search" className="sr-only">
               Rechercher un produit

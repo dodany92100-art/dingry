@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
 import { execSync } from "node:child_process";
+import bundleAnalyzer from "@next/bundle-analyzer";
 import { validateProductionEnv } from "./lib/env-core.mjs";
 import { buildImageRemotePatterns, buildImgSrcCspList } from "./lib/media-cdn-hosts.mjs";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+  openAnalyzer: false,
+});
 
 validateProductionEnv();
 
@@ -105,4 +111,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

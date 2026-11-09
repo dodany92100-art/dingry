@@ -2,12 +2,38 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   objectKeyFromR2PublicUrl,
   R2_DEFAULT_BUCKET_NAME,
+  R2_S3_ACCESS_KEY_ID_LENGTH,
+  R2_S3_SECRET_ACCESS_KEY_LENGTH,
   r2BucketName,
+  r2CredentialFormatError,
   r2PublicUrlForKey,
 } from "@/lib/r2/config";
 
 afterEach(() => {
   vi.unstubAllEnvs();
+});
+
+describe("r2CredentialFormatError", () => {
+  it("accepte 32 + 64 caractères", () => {
+    vi.stubEnv("R2_ACCESS_KEY_ID", "a".repeat(R2_S3_ACCESS_KEY_ID_LENGTH));
+    vi.stubEnv("R2_SECRET_ACCESS_KEY", "b".repeat(R2_S3_SECRET_ACCESS_KEY_LENGTH));
+    expect(r2CredentialFormatError()).toBeNull();
+  });
+
+  it("détecte une ACCESS_KEY_ID trop longue (souvent la secret key)", () => {
+    vi.stubEnv("R2_ACCESS_KEY_ID", "b".repeat(65));
+    vi.stubEnv("R2_SECRET_ACCESS_KEY", "a".repeat(R2_S3_SECRET_ACCESS_KEY_LENGTH));
+    expect(r2CredentialFormatError()).toMatch(/R2_ACCESS_KEY_ID invalide \(65/);
+  });
+
+  it("détecte l’URL publique / endpoint dans ACCESS_KEY_ID", () => {
+    vi.stubEnv(
+      "R2_ACCESS_KEY_ID",
+      "https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.r2.cloudflarestorage.com",
+    );
+    vi.stubEnv("R2_SECRET_ACCESS_KEY", "b".repeat(R2_S3_SECRET_ACCESS_KEY_LENGTH));
+    expect(r2CredentialFormatError()).toMatch(/URL publique/);
+  });
 });
 
 describe("r2 bucket", () => {

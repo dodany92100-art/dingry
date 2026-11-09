@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
 import { cn } from "@/lib/utils";
-import { CATALOG_CARD_IMAGE_WIDTH, cldOpt } from "@/lib/cloudinary-url";
+import { CATALOG_CARD_IMAGE_WIDTH } from "@/lib/cloudinary-url";
 
 /** Fenêtre pour distinguer double tap (flip) vs simple tap (modale) sur tactile. */
 const DOUBLE_TAP_MS = 320;
@@ -141,11 +141,9 @@ export function ProductImageFlip({
   };
 
   const cardW = priority ? 640 : CATALOG_CARD_IMAGE_WIDTH;
-  const frontSrc = cldOpt(frontImage, cardW);
-  const backSrc = backImage ? cldOpt(backImage, cardW) : frontSrc;
 
   const photoShellClass = cn(
-    "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden rounded-lg [touch-action:pan-y] sm:rounded-xl md:rounded-xl lg:aspect-[4/5] lg:max-h-[22rem]",
+    "dingry-product-photo relative aspect-[3/4] touch-pan-y overflow-hidden [touch-action:pan-y] lg:aspect-[4/5] lg:max-h-[22rem]",
     className,
   );
 
@@ -159,8 +157,9 @@ export function ProductImageFlip({
         tabIndex={onTap ? 0 : undefined}
       >
         <DingryCloudinaryImage
-          src={frontSrc}
+          src={frontImage}
           alt={alt}
+          deliveryWidth={cardW}
           priority={priority}
           className={cn(
             "h-full w-full object-cover transition-[filter] duration-300 ease-out motion-reduce:transition-none",
@@ -211,8 +210,9 @@ export function ProductImageFlip({
         )}
       >
         <DingryCloudinaryImage
-          src={frontSrc}
+          src={frontImage}
           alt={alt}
+          deliveryWidth={cardW}
           priority={priority}
           className={cn(
             "h-full w-1/2 shrink-0 object-cover",
@@ -221,8 +221,9 @@ export function ProductImageFlip({
           )}
         />
         <DingryCloudinaryImage
-          src={backSrc}
+          src={backImage ?? frontImage}
           alt={`${alt} — verso`}
+          deliveryWidth={cardW}
           className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
         />
       </div>

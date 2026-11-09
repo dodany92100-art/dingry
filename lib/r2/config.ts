@@ -44,6 +44,50 @@ export function r2S3Endpoint(): string {
   return `https://${account}.r2.cloudflarestorage.com`;
 }
 
+/** Longueurs des clés « S3 API » Cloudflare R2 (pas le token API global du compte). */
+export const R2_S3_ACCESS_KEY_ID_LENGTH = 32;
+export const R2_S3_SECRET_ACCESS_KEY_LENGTH = 64;
+
+/**
+ * Détecte une config R2 typique (clés inversées, secret dans ACCESS_KEY_ID, etc.).
+ * Ne retourne jamais les valeurs des clés.
+ */
+export function r2CredentialFormatError(): string | null {
+  const accessKeyId = trimmed("R2_ACCESS_KEY_ID");
+  const secretAccessKey = trimmed("R2_SECRET_ACCESS_KEY");
+  if (!accessKeyId || !secretAccessKey) return null;
+
+  if (accessKeyId.startsWith("cfat_") || secretAccessKey.startsWith("cfat_")) {
+    return "Token API Cloudflare (préfixe cfat_) : incompatible avec l’upload S3. Créer un token « R2 / S3 API » (Access Key ID 32 + Secret 64) dans R2 → Manage R2 API Tokens.";
+  }
+
+  if (
+    accessKeyId.length === R2_S3_SECRET_ACCESS_KEY_LENGTH &&
+    secretAccessKey.length === R2_S3_ACCESS_KEY_ID_LENGTH
+  ) {
+    return "R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY semblent inversés (32 vs 64 caractères).";
+  }
+
+  if (accessKeyId.length !== R2_S3_ACCESS_KEY_ID_LENGTH) {
+    const looksLikePublicUrl =
+      /^https?:\/\//i.test(accessKeyId) ||
+      accessKeyId.includes(".r2.dev") ||
+      accessKeyId.includes("r2.cloudflarestorage.com");
+    const hint = looksLikePublicUrl
+      ? "Vous avez collé l’URL publique du bucket : la mettre uniquement dans R2_PUBLIC_BASE_URL / DINGRY_IMG_HOSTS, pas dans R2_ACCESS_KEY_ID."
+      : accessKeyId.length === R2_S3_SECRET_ACCESS_KEY_LENGTH || accessKeyId.length === 65
+        ? "La valeur ressemble à la clé secrète : la mettre dans R2_SECRET_ACCESS_KEY, pas R2_ACCESS_KEY_ID."
+        : "Cloudflare → R2 → Manage R2 API Tokens → Create API token (permissions Object Read & Write sur le bucket) : utiliser l’« Access Key ID » (32 car.), pas le token API global ni l’URL publique.";
+    return `R2_ACCESS_KEY_ID invalide (${accessKeyId.length} car., attendu ${R2_S3_ACCESS_KEY_ID_LENGTH}). ${hint}`;
+  }
+
+  if (secretAccessKey.length !== R2_S3_SECRET_ACCESS_KEY_LENGTH) {
+    return `R2_SECRET_ACCESS_KEY invalide (${secretAccessKey.length} car., attendu ${R2_S3_SECRET_ACCESS_KEY_LENGTH}).`;
+  }
+
+  return null;
+}
+
 /** Upload CRM → R2 (clés API S3, pas l’URL publique seule). */
 export function isR2ImageStorageEnabled(): boolean {
   if (process.env.VITEST === "true") {

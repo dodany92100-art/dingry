@@ -25,10 +25,10 @@ export function isStandardLetterSize(raw: string): boolean {
 }
 
 /** Tailles cochées par défaut à la création — la grille admin garde toutes les lettres. */
+/** Nouvelle fiche CRM : tours pantalon vides ; vêtements lettres → S–2XL (XXL) ; casquette TU. */
 export function defaultSelectedSizesForCategory(category: ProductCategory): string[] {
   if (category === "Caps") return ["TU"];
   if (category === "Pants") return [];
-  if (category === "Crop tops") return ["S", "M", "L", "XL"];
   return [...STANDARD_LETTER_SIZES];
 }
 

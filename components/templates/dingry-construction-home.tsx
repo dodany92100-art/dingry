@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Anton } from "next/font/google";
 import { DingryConstructionScreen } from "@/components/templates/dingry-construction-screen";
 import { DINGRY_OPEN_GRAPH_IMAGE, DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
-
-const anton = Anton({ weight: "400", subsets: ["latin"], display: "swap" });
+import { anton } from "@/lib/dingry-fonts";
 
 export const constructionHomeMetadata: Metadata = {
   title: "DINGRY Paris — Site en construction",

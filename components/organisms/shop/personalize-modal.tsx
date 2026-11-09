@@ -16,6 +16,7 @@ import {
   personalizationPreviewLabel,
 } from "@/lib/shop-view";
 import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
+import styles from "./personalize-modal.module.css";
 
 export type PersonalizedLineInput = { size: string; qty: number; personalization: string };
 
@@ -52,10 +53,10 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
         <div
           key="dingry-personalize-modal"
           data-dingry-personalize-modal=""
-          className="fixed inset-0 z-[65] flex items-center justify-center p-4 md:p-8"
+          className={styles.root}
         >
           <motion.div
-            className="absolute inset-0 bg-[#050505]/92"
+            className={styles.overlay}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -63,7 +64,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
             onClick={onClose}
           />
           <motion.div
-            className="relative z-10 bg-[#0a0a0a] border border-white/[0.06] w-full max-w-5xl max-h-[92vh] overflow-y-auto"
+            className={styles.panel}
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
@@ -72,7 +73,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-5 right-5 z-20 w-11 h-11 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+              className={styles.close}
               aria-label="Fermer"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

@@ -42,17 +42,19 @@ export function addCartLine(
   product: ShopProduct,
   size: string,
   qty: number,
+  selectedOption?: string,
 ): CartLine[] {
   const normalizedSize = size.trim();
+  const opt = selectedOption?.trim() || undefined;
   if (!normalizedSize || qty <= 0) return [...cart];
-  const key = cartLineKey({ product, size: normalizedSize });
+  const key = cartLineKey({ product, size: normalizedSize, selectedOption: opt });
   const existing = cart.find((line) => !line.personalization && cartLineKey(line) === key);
   if (existing) {
     return cart.map((line) =>
       line === existing ? { ...line, qty: line.qty + qty } : line,
     );
   }
-  return [...cart, { product, size: normalizedSize, qty }];
+  return [...cart, { product, size: normalizedSize, qty, ...(opt ? { selectedOption: opt } : {}) }];
 }
 
 /** Ajoute une ligne personnalisée ; fusionne si même clé (id + taille + texte). */

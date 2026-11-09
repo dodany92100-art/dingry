@@ -6,6 +6,7 @@ import {
 } from "@/lib/admin/types";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 import { normalizePantWaistSize } from "@/lib/admin/pant-waist";
+import { normalizeOptionKey, resolveLineVariantSku } from "@/lib/catalog/product-options";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
 import { isShopCatalogIdHidden, type ShopProduct } from "@/lib/catalog";
 import type { ShopCatalogSnapshot } from "@/lib/shop-catalog-snapshot";
@@ -28,6 +29,7 @@ export type CheckoutLine = {
   size: string;
   qty: number;
   personalization?: string;
+  selectedOption?: string;
 };
 
 type CheckoutLineRejectReason =
@@ -125,14 +127,53 @@ export function resolveCheckoutLine(
 
   const unitCents = baseCents + (personalized ? PERSONALIZATION_SURCHARGE_EUR * 100 : 0);
 
-  const label = `${name}${variant ? ` — ${variant}` : ""}`.slice(0, 120);
+  const optionKey = line.selectedOption?.trim() ? normalizeOptionKey(line.selectedOption) : "";
+  const shopOption = optionKey ? shop?.options?.find((o) => o.optionKey === optionKey) : undefined;
+  const crmOption = optionKey ? crmLive?.options?.find((o) => o.optionKey === optionKey) : undefined;
+  const option =
+    shopOption ??
+    (crmOption
+      ? {
+          optionKey: crmOption.optionKey,
+          label: crmOption.label,
+          skuSuffix: crmOption.skuSuffix,
+          brand: crmOption.brand,
+          color: crmOption.color,
+          variantSku: crmOption.variantSku,
+          altText: crmOption.altText,
+          priceDelta: crmOption.priceDelta,
+          imageUrl: crmOption.imageUrl,
+          isDefault: crmOption.isDefault,
+        }
+      : undefined);
+
+  const parentSku = crmLive?.sku ?? shop?.sku ?? "";
+  const variantSku = option
+    ? resolveLineVariantSku(parentSku, option)
+    : optionKey && parentSku
+      ? resolveLineVariantSku(parentSku, {
+          optionKey,
+          label: optionKey,
+          skuSuffix: optionKey,
+          brand: "DINGRY",
+          color: optionKey,
+          variantSku: "",
+          altText: "",
+          priceDelta: 0,
+          imageUrl: "",
+          isDefault: false,
+        })
+      : parentSku || variant;
+
+  const colorLabel = option?.label ?? (optionKey || variant);
+  const label = `${name}${colorLabel ? ` — ${colorLabel}` : ""}`.slice(0, 120);
   const detail = personalized ? `${label} — ${line.personalization}` : label;
 
   return {
     ok: true,
     line: {
-      label: `${detail} — ${line.size} ×${line.qty}`.slice(0, 180),
-      paypalName: (personalized ? `${name} perso` : `${name} ${variant}`).trim().slice(0, 127),
+      label: `${detail} — ${line.size} ×${line.qty}${variantSku ? ` · ${variantSku}` : ""}`.slice(0, 220),
+      paypalName: (personalized ? `${name} perso` : `${name} ${colorLabel}`).trim().slice(0, 127),
       unitCents,
       qty: line.qty,
     },

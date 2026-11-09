@@ -25,6 +25,14 @@ describe("defaultSelectedSizesForCategory", () => {
   it("pré-coche S–2XL sur hoodie", () => {
     expect(defaultSelectedSizesForCategory("Hoodies")).toEqual(["S", "M", "L", "XL", "2XL"]);
   });
+
+  it("pré-coche S–2XL sur crop top", () => {
+    expect(defaultSelectedSizesForCategory("Crop tops")).toEqual(["S", "M", "L", "XL", "2XL"]);
+  });
+
+  it("pantalon : aucun tour par défaut", () => {
+    expect(defaultSelectedSizesForCategory("Pants")).toEqual([]);
+  });
 });
 
 describe("normalizeToStandardLetterSize", () => {

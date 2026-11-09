@@ -52,12 +52,22 @@ function readLine(value: unknown): CheckoutLine | null {
   if (!isProductSize(size)) return null;
   if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) return null;
 
-  if (record.personalization === undefined) return { productId, size, qty };
+  let selectedOption: string | undefined;
+  if (typeof record.selectedOption === "string") {
+    const raw = record.selectedOption.trim();
+    if (raw) selectedOption = raw;
+  }
+
+  if (record.personalization === undefined) {
+    return selectedOption ? { productId, size, qty, selectedOption } : { productId, size, qty };
+  }
   if (typeof record.personalization !== "string") return null;
   const personalization = record.personalization.trim();
   if (!personalization || personalization.length > MAX_PERSONALIZATION) return null;
   if (/[\r\n]/.test(personalization)) return null;
-  return { productId, size, qty, personalization };
+  return selectedOption
+    ? { productId, size, qty, personalization, selectedOption }
+    : { productId, size, qty, personalization };
 }
 
 export function parseCheckoutLines(value: unknown): CheckoutLine[] | null {
@@ -75,7 +85,10 @@ export function parseCheckoutLines(value: unknown): CheckoutLine[] | null {
 
 export function checkoutDigest(lines: CheckoutLine[]): string {
   const payload = lines
-    .map((line) => `${line.productId}|${line.size}|${line.qty}|${line.personalization ?? ""}`)
+    .map(
+      (line) =>
+        `${line.productId}|${line.size}|${line.qty}|${line.personalization ?? ""}|${line.selectedOption ?? ""}`,
+    )
     .join("\n");
   return createHash("sha256").update(payload).digest("hex");
 }

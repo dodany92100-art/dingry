@@ -10,13 +10,19 @@ export type StoredCartItem = {
   size: string;
   qty: number;
   personalization?: string;
+  /** Clé option parent (`ROUGE`, `NOIR`…) — SKU combiné au checkout. */
+  selectedOption?: string;
 };
 
 /** Clé stable panier / React : produit + taille (+ texte perso si besoin). */
-export function cartLineKey(item: Pick<StoredCartItem, "product" | "size" | "personalization">): string {
+export function cartLineKey(
+  item: Pick<StoredCartItem, "product" | "size" | "personalization" | "selectedOption">,
+): string {
   const size = item.size.trim();
   const perso = item.personalization?.trim();
-  return perso ? `${item.product.id}-${size}-${perso}` : `${item.product.id}-${size}`;
+  const opt = item.selectedOption?.trim().toUpperCase();
+  if (perso) return `${item.product.id}-${size}-${perso}`;
+  return opt ? `${item.product.id}-${size}-${opt}` : `${item.product.id}-${size}`;
 }
 
 export type CheckoutConfirmation = {
@@ -63,6 +69,9 @@ function isStoredCartItem(value: unknown): value is StoredCartItem {
   const personalizationOk =
     item.personalization === undefined ||
     (typeof item.personalization === "string" && item.personalization.length <= 28);
+  const selectedOptionOk =
+    item.selectedOption === undefined ||
+    (typeof item.selectedOption === "string" && item.selectedOption.trim().length > 0 && item.selectedOption.length <= 32);
   return (
     isShopProduct(item.product) &&
     typeof item.size === "string" &&
@@ -72,7 +81,8 @@ function isStoredCartItem(value: unknown): value is StoredCartItem {
     Number.isInteger(item.qty) &&
     item.qty > 0 &&
     item.qty <= 99 &&
-    personalizationOk
+    personalizationOk &&
+    selectedOptionOk
   );
 }
 

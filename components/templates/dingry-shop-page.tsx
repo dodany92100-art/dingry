@@ -7,7 +7,6 @@ import { storefrontProductTitle } from "@/lib/dingry-product-display";
 import { shopProductCanonicalPath, shopProductDocumentTitle } from "@/lib/seo/shop-product-seo";
 import { LazyWhenVisible } from "@/components/molecules/lazy-when-visible";
 import { BackgroundGradientAnimation } from "@/components/atoms/ui/background-gradient-animation";
-import { CartDrawer } from "@/components/organisms/shop/cart-drawer";
 import { CatalogSection } from "@/components/organisms/shop/catalog-section";
 import { useCatalogFilter } from "@/components/organisms/shop/hooks/use-catalog-filter";
 import { usePageScroll } from "@/components/organisms/shop/hooks/use-page-scroll";
@@ -16,9 +15,7 @@ import { useShopCart } from "@/components/organisms/shop/hooks/use-shop-cart";
 import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catalog";
 import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-perso-banner";
 import { useWishlist } from "@/components/organisms/shop/hooks/use-wishlist";
-import { PaymentToast } from "@/components/organisms/shop/payment-toast";
-import { PersonalizeModal, type PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
-import { ProductModal } from "@/components/organisms/shop/product-modal";
+import type { PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
 import { isShopProductInStock } from "@/lib/catalog";
@@ -30,6 +27,27 @@ import {
   resolveSaleProduct,
   visibleCatalogProducts,
 } from "@/lib/shop-view";
+
+const ProductModal = dynamic(
+  () => import("@/components/organisms/shop/product-modal").then((m) => ({ default: m.ProductModal })),
+  { ssr: false },
+);
+
+const PersonalizeModal = dynamic(
+  () =>
+    import("@/components/organisms/shop/personalize-modal").then((m) => ({ default: m.PersonalizeModal })),
+  { ssr: false },
+);
+
+const CartDrawer = dynamic(
+  () => import("@/components/organisms/shop/cart-drawer").then((m) => ({ default: m.CartDrawer })),
+  { ssr: false },
+);
+
+const PaymentToast = dynamic(
+  () => import("@/components/organisms/shop/payment-toast").then((m) => ({ default: m.PaymentToast })),
+  { ssr: false },
+);
 
 const LookbookCatalogStrip = dynamic(
   () =>

@@ -1,0 +1,50 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .root {
+    padding: 2rem;
+  }
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgb(5 5 5 / 0.92);
+}
+
+.panel {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 64rem;
+  max-height: 92vh;
+  overflow-y: auto;
+  border: 1px solid rgb(255 255 255 / 0.06);
+  background: #0a0a0a;
+}
+
+.close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 20;
+  display: flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  color: rgb(255 255 255 / 0.4);
+  transition: color 150ms ease;
+}
+
+.close:hover {
+  color: #fff;
+}

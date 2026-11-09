@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import {
   useCallback,
   useEffect,
@@ -32,7 +31,7 @@ export function AnimatedTabs({
   defaultValue,
   onValueChange,
   className,
-  layoutId = "animated-tabs-indicator",
+  layoutId: _layoutId = "animated-tabs-indicator",
   "aria-label": ariaLabel = "Tabs",
   variant = "underline",
   endAction,
@@ -40,14 +39,9 @@ export function AnimatedTabs({
   classNameForTab,
 }: AnimatedTabsProps) {
   const [internalValue, setInternalValue] = useState(defaultValue ?? tabs[0] ?? "");
-  const [motionReady, setMotionReady] = useState(false);
   const active = controlledValue ?? internalValue;
   const scrollRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-
-  useEffect(() => {
-    setMotionReady(true);
-  }, []);
 
   const scrollTabIntoView = useCallback((tab: string) => {
     const node = tabRefs.current.get(tab);
@@ -146,26 +140,10 @@ export function AnimatedTabs({
               )}
             >
               {isActive && isUnderline ? (
-                motionReady ? (
-                  <motion.span
-                    layoutId={layoutId}
-                    className="absolute inset-x-2 bottom-1 h-[2px] rounded-full bg-[#0066FF] shadow-[0_0_12px_rgba(0,102,255,0.55)]"
-                    transition={{ type: "spring", stiffness: 480, damping: 34, mass: 0.7 }}
-                  />
-                ) : (
-                  <span className="absolute inset-x-2 bottom-1 h-[2px] rounded-full bg-[#0066FF] shadow-[0_0_12px_rgba(0,102,255,0.55)]" />
-                )
+                <span className="absolute inset-x-2 bottom-1 h-[2px] rounded-full bg-[#0066FF] shadow-[0_0_12px_rgba(0,102,255,0.55)]" />
               ) : null}
               {isActive && !isUnderline ? (
-                motionReady ? (
-                  <motion.span
-                    layoutId={layoutId}
-                    className="absolute inset-0 border border-[#0066FF] bg-[#0066FF]"
-                    transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.75 }}
-                  />
-                ) : (
-                  <span className="absolute inset-0 border border-[#0066FF] bg-[#0066FF]" />
-                )
+                <span className="absolute inset-0 border border-[#0066FF] bg-[#0066FF]" />
               ) : null}
               <span className="relative z-[1]">{labelForTab?.(tab) ?? tab}</span>
             </button>

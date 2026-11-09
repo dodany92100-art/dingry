@@ -4,7 +4,7 @@
  */
 
 import { MIN_CRON_SECRET_LENGTH } from "../lib/cron-auth";
-import { isR2ImageStorageEnabled, r2BucketName } from "../lib/r2/config";
+import { isR2ImageStorageEnabled, r2BucketName, r2CredentialFormatError } from "../lib/r2/config";
 import { collectProductionEnvErrors, readSupabaseEnv } from "../lib/env";
 
 type Check = { name: string; ok: boolean; hint: string };
@@ -69,6 +69,10 @@ function dingryImgHosts(): Check {
 }
 
 function r2ImageUpload(): Check {
+  const formatError = r2CredentialFormatError();
+  if (formatError) {
+    return { name: "R2 upload CRM", ok: false, hint: formatError };
+  }
   const ok = isR2ImageStorageEnabled();
   return {
     name: "R2 upload CRM",

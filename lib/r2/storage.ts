@@ -5,6 +5,7 @@ import {
   isR2PublicUrl,
   objectKeyFromR2PublicUrl,
   r2BucketName,
+  r2CredentialFormatError,
   r2PublicUrlForKey,
   r2S3Endpoint,
 } from "@/lib/r2/config";
@@ -24,6 +25,10 @@ function r2Client(): S3Client {
   const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY ?? "").trim();
   if (!accessKeyId || !secretAccessKey) {
     throw new Error("R2 : R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY requis.");
+  }
+  const formatError = r2CredentialFormatError();
+  if (formatError) {
+    throw new Error(`R2 : ${formatError}`);
   }
   cachedClient ??= new S3Client({
     region: "auto",

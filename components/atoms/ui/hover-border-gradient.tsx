@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import {
   useCallback,
   useEffect,
@@ -87,14 +86,15 @@ export function HoverBorderGradient({
       {...props}
     >
       <div className={cn("relative z-[2] w-auto text-white", className)}>{children}</div>
-      <motion.div
+      <div
         className="absolute inset-0 z-0 flex-none overflow-hidden rounded-[inherit]"
-        style={{ filter: "blur(2px)", position: "absolute", width: "100%", height: "100%" }}
-        initial={{ background: movingMap[direction] }}
-        animate={{
-          background: hovered ? [movingMap[direction], highlight] : movingMap[direction],
+        style={{
+          filter: "blur(2px)",
+          width: "100%",
+          height: "100%",
+          background: hovered ? highlight : movingMap[direction],
+          transition: `background ${duration}s linear`,
         }}
-        transition={{ ease: "linear", duration }}
       />
       <div className="absolute inset-[1px] z-[1] flex-none rounded-[inherit] bg-[#12151c]" />
     </Tag>

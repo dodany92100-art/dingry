@@ -10,7 +10,7 @@ Guide de vérification **avant** `npm run build` et redémarrage du serveur.
 | `SUPABASE_SERVICE_ROLE_KEY` | Écriture serveur (jamais côté client) |
 | `R2_ACCOUNT_ID` | Compte Cloudflare |
 | `R2_BUCKET_NAME` | Bucket R2 (défaut `dingrybuckets`) |
-| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Clés S3 API R2 |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Clés S3 API R2 (32 + 64 car.) — aide visuelle : [`docs/images/r2-upload-errors-guide.jpg`](images/r2-upload-errors-guide.jpg) |
 | `R2_PUBLIC_BASE_URL` | `https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev` |
 | `DINGRY_IMG_HOSTS` | Hostname R2 sans `https://` (CSP au build) |
 | `UPSTASH_REDIS_REST_URL` / `TOKEN` | Stock + login admin |

@@ -1,9 +1,15 @@
+import {
+  parseOfficialRoutingLine,
+  stripCollageRoutingPrefix,
+} from "@/lib/admin/smart-collage-routing";
+import { splitAtMaterialStop, splitAtStoryStop } from "@/lib/admin/smart-collage-stop-tags";
 import { trimStoryField } from "@/lib/admin/product-story";
 import { normalizePantWaistSize } from "@/lib/admin/pant-waist";
+import { isLikelySkuReference, normalizeSkuInput } from "@/lib/admin/product-sku";
 import { ADMIN_COLOR_VARIANTS, isPantsCategory } from "@/lib/admin/product-variant-presets";
 import {
   ADMIN_CATEGORY_SIZES,
-  PRODUCT_PRINT_PLACEMENT_LABELS,
+  normalizeProductCategory,
   type ProductCategory,
   type ProductPrintPlacement,
   type ProductSize,
@@ -11,24 +17,28 @@ import {
 
 export type SmartParseFieldId =
   | "category"
+  | "sku"
   | "name"
   | "description"
   | "materials"
   | "fabrication"
   | "limitedEdition"
   | "price"
+  | "stock"
   | "sizes"
   | "variant"
   | "printPlacement";
 
 export const SMART_PARSE_FIELD_LABELS: Record<SmartParseFieldId, string> = {
   category: "Catégorie",
+  sku: "SKU / Référence",
   name: "Nom / Titre",
   description: "Description",
   materials: "Matières",
   fabrication: "Fabrication",
   limitedEdition: "Édition limitée",
   price: "Prix (€)",
+  stock: "Stock",
   sizes: "Tailles",
   variant: "Variante / couleur",
   printPlacement: "Impression",
@@ -36,12 +46,16 @@ export const SMART_PARSE_FIELD_LABELS: Record<SmartParseFieldId, string> = {
 
 export type SmartProductParseResult = {
   detectedCategory?: ProductCategory;
+  sku?: string;
   name?: string;
   description?: string;
   materials?: string;
+  /** Grammage (g/m², gsm) — mappé sur `sizeGuide` CRM. */
+  weight?: string;
   fabrication?: string;
   limitedEdition?: string;
   price?: string;
+  stock?: string;
   sizes?: ProductSize[];
   variantColor?: string;
   printPlacement?: ProductPrintPlacement;
@@ -53,7 +67,6 @@ export type SmartParseDiagnostics = {
   footnoteLinesSkipped: number;
 };
 
-/** Un « slot » Maker pour récap UI — l’ordre suit celui de `filled` (détection). */
 export type MakerSemanticBlock = {
   key:
     | "category"
@@ -61,6 +74,7 @@ export type MakerSemanticBlock = {
     | "color"
     | "sizes"
     | "price"
+    | "stock"
     | "materials"
     | "description"
     | "fabrication"
@@ -72,282 +86,55 @@ export type MakerSemanticBlock = {
 
 export type SmartProductParseOutput = SmartProductParseResult & {
   diagnostics: SmartParseDiagnostics;
-  /** Blocs sémantiques remplis (récap détaillé modale). */
   semanticBlocks: MakerSemanticBlock[];
 };
 
-const RE_PRICE =
-  /(?:^|[\s:()·|])(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€|EUR|euros?)(?=[\s.,;:!?)·|]|$)/i;
-const RE_MATERIAL_SIGNAL =
-  /%|g\/m²|g\/m2|g\/m\?|gsm|grammage|mg\/m²|mg\/m2|\b(coton|polyester|polyamide|laine|viscose|élasthanne|elasthanne|lin|soie|nylon|acrylique|fleece|molleton)\b/i;
-const RE_FABRICATION_LINE =
-  /fabriqué|made\s+in|confectionn|importé|produit\s+en|manufacturé|cousu/i;
-const RE_LIMITED_LINE =
-  /édition\s+limitée|limited\s+edition|numérotée|série\s+limitée|exemplaires?\s+limit/i;
-/** Ligne qui n’est qu’un prix affiché (ne doit pas alimenter la description). */
-const RE_LINE_PRICE_ONLY =
-  /^\s*(?:€|EUR|\$)?\s*\d{1,4}(?:[.,]\d{1,2})?\s*(?:€|EUR|euros?)?\s*$/i;
-/** Suffixe titre du type « — couleur noir » ou « · 75 € » (hors corps marketing). */
-const RE_TITLE_COLOR_SUFFIX = /\s*[—–\-|·]\s*(?:couleur|color|colour|coloris)\s*[:\-]?\s*.+$/i;
-const RE_TITLE_PRICE_SUFFIX = /\s*[—–\-|·]\s*[^—–\-|·]{0,52}\d{1,4}(?:[.,]\d{1,2})?\s*(?:€|EUR)\s*$/i;
-const RE_SECTION_LABEL =
-  /^\s*(matière|matériaux|composition|grammage|densité|tailles?|sizes?|couleur|coloris|colour|prix|price|fabriqué|origine)\s*[:\-.]?\s*/i;
+/** Algorithme collage DINGRY — une règle par type de ligne (pas de scoring legacy). */
+const RE_CATEGORY_LINE = /^(?:catégorie|categorie|categori|produit)\b/i;
+const RE_CATEGORY_SHORT = /^cat\s*(?:[:：\-.–—])/i;
+const RE_PRICE_SOFT = /(?:^|[^\d])(\d+(?:[.,]\d+)?)\s*(?:€|EUR|e|eur)(?:\s|$|[^\d\w])/i;
+const RE_PRICE_LABEL = /(?:^|[\s\n])(?:prix|price)\s*[:\-.]?\s*(\d+(?:[.,]\d+)?)/i;
+const RE_STOCK_LABEL =
+  /(?:^|[\s\n])(?:qte|qt[eé]|quantit[eé]s?|quantity|stock)\s*[:：\-.]?\s*(\d{1,4})\b/iu;
+const RE_REF = /\bref(?:\.|erence)?\b/i;
+const RE_NOM = /\b(?:nom|name)\b/i;
+const RE_TITRE = /\btitre(?:\s*nom)?\b/i;
+/** argu, zrgi, story, desc… (ligne structurée — préfixe retiré via stripLabelPrefix). */
+const RE_STORY_LABEL =
+  /^(?:argu\w*|argi|zrgi|ar|story|desc(?:ription)?|argui|descr[i1l][p]*tions?|dsric?r?i?ptions?)\s*(?:[:\-.–—])/iu;
+const RE_CARE_LINE =
+  /\b(?:lavable|entretien|lavage|séchage|repasser|machine|soin|nettoyage|ne pas|repassage)\b/i;
+const RE_GRAMMAGE = /\b(?:g\/m|gsm|grammage?|grammes?|grams?|densit[ée]|density|poids)\b/i;
+const RE_GRAMMAGE_LABEL =
+  /^(?:grammages?|grammes?|grams?|gsm|densit[ée]s?|density|poids)\s*$/i;
+const RE_MATIERE_LABEL = /^(?:mat|mati[eè]res?)\s*$/i;
+const RE_SIZE_LABEL = /^(?:tailles?|size|tzill)\s*(?:[:：\-.–—])/iu;
+const RE_DENSITY_IN_LINE = /(\d+(?:[.,]\d+)?)\s*g\s*\/?\s*m(?:\s*[²2])?/i;
+const RE_PERCENT = /%/;
+const RE_COULEUR = /\bcouleur\b/i;
+const RE_TAILLE = /\btailles?\b/i;
 
-const RE_PRINT_RECTO_VERSO =
-  /\b(?:impression\s+)?(?:recto\s*[/·\-–—]\s*verso|recto\s*\+\s*verso|recto\s+et\s+verso|recto[\s,/]+verso)\b/i;
-const RE_PRINT_RECTO_ONLY =
-  /\b(?:impression\s+)?(?:recto\s+seul|face\s+avant\s+seul|print\s+recto\s+only)\b/i;
-const RE_PRINT_VERSO_ONLY =
-  /\b(?:impression\s+)?(?:verso\s+seul|dos\s+seul|print\s+verso\s+only)\b/i;
-
-function detectPrintPlacementFromText(sample: string): ProductPrintPlacement | undefined {
-  const t = sample.replace(/\u00a0/g, " ");
-  if (RE_PRINT_RECTO_ONLY.test(t)) return "RECTO_ONLY";
-  if (RE_PRINT_VERSO_ONLY.test(t)) return "VERSO_ONLY";
-  if (RE_PRINT_RECTO_VERSO.test(t)) return "RECTO_VERSO";
-  return undefined;
-}
-
-/** Ligne dédiée finition (évite doublon dans la description). */
-function lineLooksLikePrintPlacementOnly(line: string): boolean {
-  const t = line.trim();
-  if (t.length === 0 || t.length > 120) return false;
-  if (!/\b(recto|verso)\b/i.test(t)) return false;
-  return detectPrintPlacementFromText(t) !== undefined;
-}
-
-const LETTER_SIZE_SCAN: readonly { pattern: string; size: ProductSize }[] = [
-  { pattern: "5XL", size: "5XL" },
-  { pattern: "4XL", size: "4XL" },
-  { pattern: "3XL", size: "3XL" },
-  { pattern: "XXXL", size: "3XL" },
-  { pattern: "2XL", size: "2XL" },
-  { pattern: "XXL", size: "2XL" },
-  { pattern: "XL", size: "XL" },
-  { pattern: "L", size: "L" },
-  { pattern: "M", size: "M" },
-  { pattern: "S", size: "S" },
-  { pattern: "XS", size: "XS" },
-  { pattern: "XXS", size: "XXS" },
-  { pattern: "TU", size: "TU" },
-];
-
-type CategoryLexicon = { category: ProductCategory; patterns: RegExp[]; weight: number };
-
-const CATEGORY_LEXICON: CategoryLexicon[] = [
-  {
-    category: "Hoodies zippés",
-    weight: 3,
-    patterns: [/\bhoodie\s*zipp/i, /\bzipp[\sée]*hoodie/i, /\bsweat\s*zip/i, /\bpull\s*zip/i],
-  },
-  {
-    category: "Hoodies",
-    weight: 2,
-    patterns: [/\bhoodies?\b/i, /\bhoodis\b/i, /\bsweat\s*shirt\b/i, /\bpull\s*capuche\b/i, /\bsweat\s*capuche\b/i],
-  },
-  {
-    category: "T-shirts",
-    weight: 2,
-    patterns: [/\bt[\s\-]?shirts?\b/i, /\btshirts?\b/i, /\btee[\s\-]?shirts?\b/i, /\btee\b/i],
-  },
+/** Scan univers produit si pas de ligne `catégorie:` / `produit:`. */
+const CATEGORY_KEYWORDS: readonly { category: ProductCategory; patterns: readonly RegExp[]; weight: number }[] = [
+  { category: "Hoodies zippés", patterns: [/\bhoodies?\s+zipp[ée]s?\b/i, /\bzip\s*hoodie\b/i], weight: 3 },
+  { category: "Hoodies", patterns: [/\bhoodies?\b/i], weight: 2 },
+  { category: "Crewnecks", patterns: [/\bcrew\s*necks?\b/i, /\bcrewneck\b/i], weight: 2 },
+  { category: "Crop tops", patterns: [/\bcrop\s*tops?\b/i], weight: 2 },
+  { category: "Jerseys", patterns: [/\bjerseys?\b/i, /\bmaillots?\b/i], weight: 2 },
+  { category: "Caps", patterns: [/\bcaps?\b/i, /\bcasquettes?\b/i], weight: 2 },
   {
     category: "Pants",
+    patterns: [/\bjogpants?\b/i, /\bjoggers?\b/i, /\bpants?\b/i, /\bpantalons?\b/i, /\bcargo\b/i],
     weight: 2,
-    patterns: [/\bpants?\b/i, /\bpantalons?\b/i, /\bcargo\b/i, /\bchinos?\b/i, /\bjoggers?\b/i, /\bjeans?\b/i],
   },
-  {
-    category: "Caps",
-    weight: 2,
-    patterns: [/\bcaps?\b/i, /\bcasquettes?\b/i, /\bsnapback\b/i, /\btrucker\b/i],
-  },
-  {
-    category: "Crewnecks",
-    weight: 1,
-    patterns: [/\bcrew\s*necks?\b/i, /\bcrewneck\b/i, /\bsweat\s*col\s*rond\b/i],
-  },
-  {
-    category: "Jerseys",
-    weight: 1,
-    patterns: [/\bjerseys?\b/i, /\bmaillots?\b/i],
-  },
-  {
-    category: "Crop tops",
-    /** Doit battre Pants quand le texte dit « cargo » (poche / style) sans être un pantalon. */
-    weight: 4,
-    patterns: [/\bcrop\s*tops?\b/i],
-  },
+  { category: "T-shirts", patterns: [/\bt[\s\-]?shirts?\b/i, /\btees?\b/i], weight: 2 },
+  { category: "Crewnecks", patterns: [/\bsweats?\b/i, /\bcrew\b/i], weight: 1 },
 ];
 
-const PURE_CATEGORY_LINE =
-  /^(HOODIES?|HOODIE\s*ZIPP[ÉE]?S?|T[\s\-]?SHIRTS?|TEES?|PANTS?|PANTALONS?|CARGO|CAPS?|CASQUETTES?|JERSEYS?|CREW(?:\s*NECKS?)?|SWEATS?|CREWNECKS?)\s*[.\-–—:|]?\s*$/i;
+const SEMANTIC_CLIP = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export function normalizePasteText(raw: string): string {
-  let t = raw.replace(/\u00a0/g, " ").replace(/\r\n/g, "\n");
-  t = t.normalize("NFKC");
-  t = t.replace(/g\s*\/\s*m\s*\?/gi, "g/m²");
-  t = t.replace(/g\s*\/\s*m\s*2\b/gi, "g/m²");
-  t = t.replace(/m\?²/gi, "m²");
-  t = t.replace(/\bm2\b/gi, "m²");
-  t = t.replace(/[^\S\r\n]+/g, " ");
-  return t.trim();
-}
-
-function linesFromText(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-}
-
-function isFootnoteLine(line: string): boolean {
-  return /^\s*\*/.test(line);
-}
-
-function stripFootnoteLines(text: string): { body: string; skipped: number } {
-  const lines = text.split(/\n/);
-  let skipped = 0;
-  const kept: string[] = [];
-  for (const line of lines) {
-    if (isFootnoteLine(line)) {
-      skipped += 1;
-      continue;
-    }
-    kept.push(line);
-  }
-  return { body: kept.join("\n"), skipped };
-}
-
-function scoreCategories(textSample: string): ProductCategory | undefined {
-  const upper = textSample.toUpperCase();
-  let best: ProductCategory | undefined;
-  let bestScore = 0;
-  for (const { category, patterns, weight } of CATEGORY_LEXICON) {
-    let s = 0;
-    for (const re of patterns) {
-      if (re.test(upper)) s += weight;
-    }
-    if (s > bestScore) {
-      bestScore = s;
-      best = category;
-    }
-  }
-  return bestScore > 0 ? best : undefined;
-}
-
-export function detectCategoryFromText(raw: string): ProductCategory | undefined {
-  const normalized = normalizePasteText(raw);
-  if (!normalized) return undefined;
-  const head = `${linesFromText(normalized)[0] ?? ""}\n${normalized.slice(0, 800)}`;
-  return scoreCategories(head);
-}
-
-function isPureCategoryLine(line: string): boolean {
-  return PURE_CATEGORY_LINE.test(line.trim());
-}
-
-function formatPriceEuro(raw: string): string | undefined {
-  const n = Number.parseFloat(raw.replace(",", "."));
-  if (!Number.isFinite(n) || n <= 0 || n > 99_999) return undefined;
-  if (Number.isInteger(n)) return String(n);
-  return String(Math.round(n * 100) / 100);
-}
-
-export function extractEuroPrice(text: string): string | undefined {
-  const m = text.match(RE_PRICE);
-  if (!m?.[1]) return undefined;
-  return formatPriceEuro(m[1]);
-}
-
-function extractBestPrice(text: string): string | undefined {
-  for (const m of text.matchAll(new RegExp(RE_PRICE.source, "gi"))) {
-    const g = m[1];
-    if (g) {
-      const v = formatPriceEuro(g);
-      if (v !== undefined) return v;
-    }
-  }
-  return undefined;
-}
-
-const COLOR_RULES: readonly { re: RegExp; variant: string; score: number }[] = [
-  { re: /\bheather\s+grey\b/i, variant: "GRIS CHINÉ", score: 50 },
-  { re: /\bgris\s+chiné\b/i, variant: "GRIS CHINÉ", score: 48 },
-  { re: /\bgris\s+chine\b/i, variant: "GRIS CHINÉ", score: 48 },
-  { re: /\broyal\s+blue\b/i, variant: "ROYAL BLUE", score: 45 },
-  { re: /\bbleu\s+roi\b/i, variant: "BLEU ROI", score: 45 },
-  { re: /\bking\s+blue\b/i, variant: "KING BLUE", score: 45 },
-  { re: /\bjaune\s+fluo\b/i, variant: "JAUNE FLUO", score: 45 },
-  { re: /\bnoir\b/i, variant: "NOIR", score: 20 },
-  { re: /\bblack\b/i, variant: "BLACK", score: 20 },
-  { re: /\bblanc\b/i, variant: "BLANC", score: 20 },
-  { re: /\bwhite\b/i, variant: "WHITE", score: 20 },
-  { re: /\bvert\b/i, variant: "VERT", score: 18 },
-  { re: /\brouge\b/i, variant: "ROUGE", score: 18 },
-  { re: /\bgris\b/i, variant: "GRIS", score: 15 },
-  { re: /\brose\b/i, variant: "PINK", score: 18 },
-  { re: /\bviolet\b/i, variant: "PURPLE", score: 18 },
-  { re: /\bchocolat\b/i, variant: "CHOCOLAT", score: 20 },
-  { re: /\bzenith\b/i, variant: "ZENITH", score: 22 },
-];
-
-function mapColorToken(raw: string): string | undefined {
-  const t = raw.trim();
-  if (!t) return undefined;
-  const upper = t.toUpperCase();
-  for (const preset of ADMIN_COLOR_VARIANTS) {
-    if (upper === preset.toUpperCase()) return preset;
-  }
-  const lut: Record<string, string> = {
-    NOIR: "NOIR",
-    BLACK: "BLACK",
-    BLANC: "BLANC",
-    WHITE: "WHITE",
-    GRIS: "GRIS",
-    GREY: "GRIS",
-    GRAY: "GRIS",
-    VERT: "VERT",
-    GREEN: "VERT",
-    ROUGE: "ROUGE",
-    RED: "ROUGE",
-    BLEU: "ROYAL BLUE",
-    BLUE: "ROYAL BLUE",
-  };
-  return lut[upper];
-}
-
-function extractVariantColor(fullText: string): string | undefined {
-  let best: { variant: string; score: number } | undefined;
-  const bump = (variant: string | undefined, score: number) => {
-    if (!variant) return;
-    if (!best || score > best.score) best = { variant, score };
-  };
-
-  for (const row of COLOR_RULES) {
-    if (row.re.test(fullText)) bump(row.variant, row.score);
-  }
-
-  for (const m of fullText.matchAll(/\bcouleur\s*[:\-]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-]{1,36})/gi)) {
-    bump(mapColorToken(m[1] ?? ""), 42);
-  }
-  for (const m of fullText.matchAll(/\*+\s*COULEUR\s+([A-Z0-9][A-Z0-9\s\-]{1,24})/gi)) {
-    bump(mapColorToken(m[1] ?? ""), 55);
-  }
-  /** Notes type `*4XL-5XL COULEUR NOIR` — la ligne est exclue des tailles mais la couleur compte. */
-  for (const m of fullText.matchAll(/\*[^\n]*\bCOULEUR\s+([A-ZÀ-ÿ][A-ZÀ-ÿa-z\s\-]{1,28})/gi)) {
-    bump(mapColorToken(m[1] ?? ""), 58);
-  }
-
-  const scan = fullText.slice(0, 2500);
-  for (const preset of ADMIN_COLOR_VARIANTS) {
-    const re = new RegExp(`\\b${escapeRegExp(preset)}\\b`, "i");
-    if (re.test(scan)) bump(preset, 28 + Math.min(12, preset.length));
-  }
-
-  return best?.variant;
 }
 
 const SIZE_ORDER: readonly ProductSize[] = [
@@ -364,355 +151,424 @@ const SIZE_ORDER: readonly ProductSize[] = [
   "TU",
 ];
 
-function sortSizes(found: Iterable<ProductSize>): ProductSize[] {
-  const idx = new Map<ProductSize, number>();
-  SIZE_ORDER.forEach((s, i) => idx.set(s, i));
-  return [...new Set(found)].sort((a, b) => (idx.get(a) ?? 99) - (idx.get(b) ?? 99));
+const LETTER_SIZE_SCAN: readonly { pattern: string; size: ProductSize }[] = [
+  { pattern: "5XL", size: "5XL" },
+  { pattern: "4XL", size: "4XL" },
+  { pattern: "3XL", size: "3XL" },
+  { pattern: "XXXL", size: "3XL" },
+  { pattern: "2XL", size: "2XL" },
+  { pattern: "XXL", size: "2XL" },
+  { pattern: "XL", size: "XL" },
+  { pattern: "XS", size: "XS" },
+  { pattern: "XXS", size: "XXS" },
+  { pattern: "TU", size: "TU" },
+  { pattern: "S", size: "S" },
+  { pattern: "M", size: "M" },
+  { pattern: "L", size: "L" },
+];
+
+export function normalizePasteText(raw: string): string {
+  let t = raw.replace(/\u00a0/g, " ").replace(/\r\n/g, "\n");
+  t = t.normalize("NFKC");
+  t = t.replace(/g\s*\/\s*m\s*\?/gi, "g/m²");
+  t = t.replace(/g\s*\/\s*m\s*2\b/gi, "g/m²");
+  t = t.replace(/\bg\s*\/\s*m(?!\s*[²2?\d])/gi, "g/m²");
+  t = t.replace(/[^\S\r\n]+/g, " ");
+  return t.trim();
 }
 
-/**
- * Tailles valides uniquement ; chiffres EU (grille XS→40 …) ignorés pour ne pas parasiter le scan lettres.
- */
-function extractLetterSizes(textNoFootnotes: string, allowed: readonly ProductSize[]): ProductSize[] {
-  let scan = textNoFootnotes;
-  scan = scan.replace(/\b(?:EU|US|UK)\b\s*[:.]?\s*[\d\s,/–-]{6,}/gi, " ");
-  /** Mensurations EU isolées (40–56), ex. tableau « XS 40 … 5XL* 54 ». */
-  scan = scan.replace(
-    /(?:^|[\s,;·|])(?:4[0-9]|5[0-6])\b(?=[\s,;·|*)\]]|$)/gi,
-    " ",
-  );
-  /** `4XL*` / `5XL*` en fin de cellule tableau. */
-  scan = scan.replace(
-    /\b(XXS|XS|[SML]|XL|2XL|3XL|4XL|5XL)\*(?=\s|$|[,;·|)])/gi,
-    "$1",
-  );
+function linesFromText(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
 
+const RE_EMBEDDED_ROUTE_CHUNK =
+  /(?=(?:mat|mati[eè]re|prix|price|couleur|qte|qt[eé]|quantit[eé]|quantity|stock)\s*[:：])/iu;
+
+/** Découpe `noir prix: 89 qte: 1` → tête + suite routée. */
+function splitEmbeddedRoutingTail(value: string): { head: string; tail: string } {
+  const t = value.trim();
+  const parts = t.split(RE_EMBEDDED_ROUTE_CHUNK);
+  if (parts.length <= 1) return { head: t, tail: "" };
+  return { head: (parts[0] ?? "").trim(), tail: parts.slice(1).join("").trim() };
+}
+
+function formatPriceEuro(raw: string): string | undefined {
+  const n = Number.parseFloat(raw.replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0 || n > 99_999) return undefined;
+  if (Number.isInteger(n)) return String(n);
+  return String(Math.round(n * 100) / 100);
+}
+
+/** Stock CRM (entier 0–9999). */
+function parseStockQuantity(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  const match = trimmed.match(/(\d{1,4})\b/);
+  if (!match?.[1]) return undefined;
+  const n = Number.parseInt(match[1], 10);
+  if (!Number.isInteger(n) || n < 0 || n > 9999) return undefined;
+  return String(n);
+}
+
+export function extractEuroPrice(text: string): string | undefined {
+  const m = text.match(RE_PRICE_SOFT);
+  if (m?.[1]) return formatPriceEuro(m[1]);
+  const m2 = text.match(RE_PRICE_LABEL);
+  if (m2?.[1]) return formatPriceEuro(m2[1]);
+  return undefined;
+}
+
+/** Retire les préfixes de routage (dictionnaire officiel). */
+export function stripRoutingTagsFromValue(value: string): string {
+  return stripCollageRoutingPrefix(value);
+}
+
+function formatRoutedGsmValue(raw: string): string {
+  const cleaned = stripCollageRoutingPrefix(raw);
+  const fromDensity = extractGrammageFromLine(cleaned);
+  if (fromDensity) return fromDensity;
+  const n = cleaned.match(/(\d+(?:[.,]\d+)?)/);
+  if (!n?.[1]) return cleaned;
+  return `${n[1].replace(",", ".")} g/m²`;
+}
+
+function stripLabelPrefix(line: string, labelRe: RegExp): string {
+  const trimmed = line.trim();
+  const lineStart = new RegExp(`^\\s*(?:${labelRe.source})\\s*(?:[:\\-.–—])?\\s*`, labelRe.flags);
+  let peeled = trimmed;
+  if (lineStart.test(trimmed)) {
+    peeled = trimmed.replace(lineStart, "");
+  } else {
+    const m = trimmed.match(labelRe);
+    if (!m || m.index === undefined) return stripRoutingTagsFromValue(trimmed);
+    peeled = trimmed.slice(m.index + m[0].length).replace(/^\s*[:\-.–—]\s*/, "");
+  }
+  return stripRoutingTagsFromValue(peeled);
+}
+
+function categoryFromLineValue(raw: string): ProductCategory | undefined {
+  const token = raw.trim();
+  if (!token) return undefined;
+  const normalized = normalizeProductCategory(token);
+  if (normalized !== "T-shirts" || /\bt-?shirts?\b/i.test(token)) return normalized;
+  if (token.length >= 3) {
+    const upper = token.toUpperCase();
+    for (const cat of [
+      "Crewnecks",
+      "Hoodies",
+      "Hoodies zippés",
+      "T-shirts",
+      "Pants",
+      "Crop tops",
+      "Caps",
+      "Jerseys",
+    ] as const) {
+      const key = cat.toUpperCase().replace(/\s+/g, "");
+      if (upper.replace(/\s+/g, "").includes(key.replace(/\s+/g, ""))) return cat;
+    }
+    return normalized;
+  }
+  return undefined;
+}
+
+function extractCategoryFromLines(lines: readonly string[]): ProductCategory | undefined {
+  for (const line of lines) {
+    const isCat = RE_CATEGORY_LINE.test(line) || RE_CATEGORY_SHORT.test(line);
+    if (!isCat) continue;
+    const value = RE_CATEGORY_LINE.test(line)
+      ? stripLabelPrefix(line, RE_CATEGORY_LINE)
+      : stripLabelPrefix(line, /\bcat\b/i);
+    const cat = categoryFromLineValue(value);
+    if (cat) return cat;
+  }
+  return undefined;
+}
+
+function detectCategoryFromKeywords(text: string): ProductCategory | undefined {
+  const sample = text.slice(0, 2500);
+  let best: ProductCategory | undefined;
+  let bestScore = 0;
+  for (const row of CATEGORY_KEYWORDS) {
+    let score = 0;
+    for (const re of row.patterns) {
+      if (re.test(sample)) score += row.weight;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = row.category;
+    }
+  }
+  return bestScore > 0 ? best : undefined;
+}
+
+export function detectCategoryFromText(raw: string): ProductCategory | undefined {
+  const text = normalizePasteText(raw);
+  if (!text) return undefined;
+  const lines = linesFromText(text);
+  return extractCategoryFromLines(lines) ?? detectCategoryFromKeywords(text);
+}
+
+function isAllCapsTitleLine(line: string): boolean {
+  const t = line.trim();
+  if (t.length < 4 || t.length > 96) return false;
+  if (/[a-zàâäéèêëïîôùûüœ]/.test(t)) return false;
+  if (!/[A-Z]/.test(t)) return false;
+  return /^[A-Z0-9\s\-–—'’.,]+$/.test(t);
+}
+
+function mapColorToken(raw: string): string | undefined {
+  const upper = raw.trim().toUpperCase();
+  if (!upper) return undefined;
+  for (const preset of ADMIN_COLOR_VARIANTS) {
+    if (upper === preset.toUpperCase()) return preset;
+  }
+  const lut: Record<string, string> = {
+    NOIR: "NOIR",
+    BLACK: "NOIR",
+    BLANC: "BLANC",
+    WHITE: "BLANC",
+    GRIS: "GRIS",
+    GREY: "GRIS",
+    GRAY: "GRIS",
+    VERT: "VERT",
+    GREEN: "VERT",
+    ROUGE: "ROUGE",
+    RED: "ROUGE",
+    BLEU: "ROYAL BLUE",
+    BLUE: "ROYAL BLUE",
+  };
+  return lut[upper];
+}
+
+/** Couleur dans titre / ref (`HOODIE SIGNATURE - Noir`, `… · White`). */
+function extractColorFromProductTitle(raw: string): string | undefined {
+  const t = raw.trim();
+  if (!t) return undefined;
+  const suffix = t.match(/\s*(?:[—–\-|·])\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-]{1,28})\s*$/);
+  if (suffix?.[1]) {
+    const fromSuffix = mapColorToken(suffix[1].trim());
+    if (fromSuffix) return fromSuffix;
+  }
+  if (/\bheather\s+grey\b/i.test(t)) return "GRIS CHINÉ";
+  for (const preset of ADMIN_COLOR_VARIANTS) {
+    const re = new RegExp(`\\b${escapeRegExp(preset)}\\b`, "i");
+    if (re.test(t)) return preset;
+  }
+  return undefined;
+}
+
+const RE_PURE_CATEGORY_LINE =
+  /^(?:HOODIES?|HOODIE\s+ZIPP[ÉE]?S?|CREWNECKS?|T[\s\-]?SHIRTS?|TEES?|PANTS?|PANTALONS?|CARGO|CAPS?|CASQUETTES?|JERSEYS?|CROP\s*TOPS?|SWEATS?)\s*[.\-–—:|]?\s*$/i;
+
+function isPureCategoryKeywordLine(line: string): boolean {
+  return RE_PURE_CATEGORY_LINE.test(line.trim());
+}
+
+function stripTitleColorSuffix(line: string): string {
+  return line
+    .replace(/\s*(?:[—–\-|·])\s*(?:couleur\s*)?[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-]{1,28}\s*$/i, "")
+    .trim();
+}
+
+/** Paragraphe libre en tête de collage (sans libellé argu/description). */
+function isPreambleMarketingLine(line: string): boolean {
+  const t = line.trim();
+  if (t.length < 16 || t.length > 420) return false;
+  if (isStructuredMetaLine(line)) return false;
+  if (/^\s*\*/.test(t)) return false;
+  if (isPureCategoryKeywordLine(line)) return false;
+  if (isAllCapsTitleLine(line)) return false;
+  if (isAllCapsTitleLine(stripTitleColorSuffix(line))) return false;
+  if (RE_PERCENT.test(line) || RE_GRAMMAGE.test(line)) return false;
+  if (!/[a-zàâäéèêëïîôùûüœ]/.test(t)) return false;
+  return t.length >= 24 || /[.!?]/.test(t);
+}
+
+function extractLetterSizes(text: string, allowed: readonly ProductSize[]): ProductSize[] {
+  const upper = text.toUpperCase();
   const found = new Set<ProductSize>();
   for (const { pattern, size } of LETTER_SIZE_SCAN) {
-    if (!allowed.includes(size)) continue;
-    const re = new RegExp(`\\b${escapeRegExp(pattern)}\\b`, "i");
-    if (re.test(scan)) found.add(size);
+    if (!(allowed as readonly string[]).includes(size)) continue;
+    const re = new RegExp(`(^|[^A-Z0-9])${pattern}([^A-Z0-9]|$)`, "i");
+    if (re.test(upper)) found.add(size);
   }
-  return sortSizes(found);
+  return SIZE_ORDER.filter((s) => found.has(s));
 }
 
-function extractPantWaists(textNoFootnotes: string): ProductSize[] {
-  const seen = new Set<ProductSize>();
-  const lines = linesFromText(textNoFootnotes);
-  const body =
-    lines
-      .filter((line) => {
-        const nums = line.match(/\b\d{2}\b/g) ?? [];
-        if (nums.length >= 5) return false;
-        return true;
-      })
-      .join("\n") || textNoFootnotes;
+const RE_TOUR_WAIST_NUM = /(2[8-9]|3[0-9]|4[0-2])/;
 
-  for (const m of body.matchAll(/\b(2[8-9]|3[0-9]|4[0-2])\b/g)) {
-    const w = normalizePantWaistSize(m[1] ?? "");
+/** Fautes courantes collage : tzill, t,aille → taille. */
+function normalizeTourSizeTypos(text: string): string {
+  return text
+    .replace(/\btzill\b/gi, "taille")
+    .replace(/\bt,aille\b/gi, "taille")
+    .replace(/\btaille\s*[:\-.]\s*/gi, "taille ")
+    .replace(/\bt\s*[:.\-]\s*(?=(?:2[8-9]|3[0-9]|4[0-2])\b)/gi, "T");
+}
+
+function pushNormalizedWaist(seen: Set<string>, raw: string): void {
+  const w = normalizePantWaistSize(raw);
     if (w) seen.add(w);
+}
+
+function extractPantWaists(text: string): string[] {
+  const sample = normalizeTourSizeTypos(text);
+  const seen = new Set<string>();
+  for (const m of sample.matchAll(/\b(2[8-9]|3[0-9]|4[0-2])\b/g)) {
+    pushNormalizedWaist(seen, m[1] ?? "");
+  }
+  for (const m of sample.matchAll(new RegExp(`\\bT\\s*[-.]?\\s*${RE_TOUR_WAIST_NUM.source}\\b`, "gi"))) {
+    pushNormalizedWaist(seen, m[1] ?? "");
+  }
+  for (const m of sample.matchAll(new RegExp(`\\btaille\\s+${RE_TOUR_WAIST_NUM.source}\\b`, "gi"))) {
+    pushNormalizedWaist(seen, m[1] ?? "");
   }
   return Array.from(seen).sort((a, b) => Number(a) - Number(b));
 }
 
-type TaggedSection = {
-  kind: "material" | "size" | "price" | "color" | "fabrication" | "other";
-  body: string;
-};
-
-function tagSections(lines: readonly string[]): TaggedSection[] {
-  const out: TaggedSection[] = [];
-  let buffer: string[] = [];
-  function flush() {
-    if (buffer.length) {
-      out.push({ kind: "other", body: buffer.join("\n") });
-      buffer = [];
-    }
-  }
-  for (const line of lines) {
-    const m = line.match(RE_SECTION_LABEL);
-    if (m) {
-      flush();
-      const rest = line.replace(RE_SECTION_LABEL, "").trim();
-      const label = m[1]?.toLowerCase() ?? "";
-      let kind: TaggedSection["kind"] = "other";
-      if (/matière|matériaux|composition|grammage|densité/.test(label)) kind = "material";
-      else if (/taille|size/.test(label)) kind = "size";
-      else if (/prix|price/.test(label)) kind = "price";
-      else if (/couleur|coloris|colour/.test(label)) kind = "color";
-      else if (/fabriqué|origine/.test(label)) kind = "fabrication";
-      out.push({ kind, body: rest });
-    } else {
-      buffer.push(line);
-    }
-  }
-  flush();
-  return out;
+function isTourWaistSizingLine(line: string): boolean {
+  const sample = normalizeTourSizeTypos(line);
+  return (
+    /\bt\s*[:.\-]\s*(?:2[8-9]|3[0-9]|4[0-2])\b/i.test(line) ||
+    /\bT\s*[-.]?\s*(?:2[8-9]|3[0-9]|4[0-2])\b/i.test(sample) ||
+    /\btaille\s+(?:2[8-9]|3[0-9]|4[0-2])\b/i.test(sample) ||
+    /\btzill\b/i.test(line) ||
+    /\bt,aille\b/i.test(line)
+  );
 }
 
-function looksLikeMaterialLine(line: string): boolean {
-  return RE_MATERIAL_SIGNAL.test(line);
-}
-
-function normalizeStoryBody(s: string): string {
-  return s
-    .replace(/g\s*\/\s*m\s*\?/gi, "g/m²")
-    .replace(/g\s*\/\s*m\s*2\b/gi, "g/m²")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Retire du libellé produit les mentions couleur / prix (réservées aux champs dédiés). */
-function stripTitleMarketingSuffix(raw: string): string {
-  let s = raw.trim();
-  s = s.replace(RE_TITLE_COLOR_SUFFIX, "").trim();
-  s = s.replace(RE_TITLE_PRICE_SUFFIX, "").trim();
-  return s;
-}
-
-/** Compare titre / ligne pour éviter de recopier le nom dans la description (espaces, tirets, ·). */
-function normalizeForTitleDedup(s: string): string {
-  return s
-    .normalize("NFKC")
-    .toUpperCase()
-    .replace(/[\s\-–—·|:]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function lineDuplicatesProductName(line: string, name: string): boolean {
-  const a = normalizeForTitleDedup(line);
-  const b = normalizeForTitleDedup(name);
-  if (a.length < 2 || b.length < 2) return false;
-  return a === b;
-}
-
-/** Codes taille lettre (scan parseur) — ordre longueur décroissante pour regex. */
-const LETTER_SIZE_PATTERN_SRC = "5XL|4XL|XXXL|3XL|XXL|2XL|XL|XS|XXS|TU|(?<![A-Z0-9])[SML](?![A-Z0-9])";
-
-/**
- * S 46, M 48/50, XL 48 · 50 — réservé gestion stock.
- * Les codes multi-lettres peuvent avoir des mensurations optionnelles ;
- * pour S/M/L seul, il faut un chiffre EU (évite d’effacer le « m » de `g/m²`).
- */
-const RE_LETTER_PLUS_MENSURATION_MULTI = new RegExp(
-  `\\b(?:5XL|4XL|XXXL|3XL|XXL|2XL|XL|XS|XXS|TU)\\s*\\*?\\s*(?:\\d{2}(?:\\s*[/·\\-–]\\s*\\d{2})?)?`,
-  "gi",
-);
-const RE_LETTER_PLUS_MENSURATION_SML = new RegExp(
-  "\\b[SML]\\s*\\*?\\s*\\d{2}(?:\\s*[/·\\-–]\\s*\\d{2})?",
-  "gi",
-);
-
-/** Fourchettes type 48/50, 50–52 (mensurations EU courantes grille). */
-const RE_EU_MENSURATION_RANGE = /\b(?:4[0-9]|5[0-6])\s*[/·\-–]\s*(?:4[0-9]|5[0-6])\b/gi;
-
-/**
- * Retire d’un champ « public » les morceaux qui ressemblent à une grille tailles / mensurations.
- */
-function stripPublicSizeFragments(raw: string): string {
-  const gpmPlaceholders: string[] = [];
-  let s = raw.replace(/\bg\s*\/\s*m[²2\u00B2]?/gi, (m) => {
-    const id = gpmPlaceholders.length;
-    gpmPlaceholders.push(m);
-    return `\uE000GPM${id}\uE000`;
-  });
-  for (let pass = 0; pass < 4; pass++) {
-    const next = s
-      .replace(RE_LETTER_PLUS_MENSURATION_MULTI, " ")
-      .replace(RE_LETTER_PLUS_MENSURATION_SML, " ")
-      .replace(RE_EU_MENSURATION_RANGE, " ")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-    if (next === s) break;
-    s = next;
-  }
-  return s.replace(/\uE000GPM(\d+)\uE000/g, (_, d) => gpmPlaceholders[Number(d)] ?? "");
-}
-
-function tokenizeSizeGridProbe(line: string): string[] {
+function normalizeStoryLine(line: string): string {
   return line
-    .split(/[\s,;|·]+/)
-    .map((t) => t.replace(/^\*+|\*+$/g, "").trim())
-    .filter(Boolean);
+    .replace(/g\s*\/\s*m\s*\?/gi, "g/m²")
+    .replace(/\bg\s*\/\s*m(?!\s*[²2?\d])/gi, "g/m²")
+    .replace(/(\d+(?:[.,]\d+)?)\s*g\s*\/\s*m\s*(?:²|2)?(?!\d)/gi, (_, n: string) => `${n.replace(",", ".")} g/m²`)
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-/** Ligne essentiellement une inventaire tailles / chiffres (pas du wording client). */
-function lineLooksLikeSizeGridOnly(line: string): boolean {
+/** Densité tissu : `440 g/m²`, `440g/m2`, ligne après libellé Grammage. */
+function extractGrammageFromLine(line: string): string | undefined {
+  const normalized = normalizeStoryLine(line);
+  if (!normalized) return undefined;
+  const m = normalized.match(RE_DENSITY_IN_LINE);
+  if (!m?.[1]) return undefined;
+  return `${m[1].replace(",", ".")} g/m²`;
+}
+
+function pushWeightLine(weightLines: string[], line: string): void {
+  const token = extractGrammageFromLine(line);
+  if (token) weightLines.push(token);
+}
+
+/** Prose fournisseur + `50% Coton…` collés sur une ligne (sans retour ligne). */
+function peelCompositionSuffix(line: string): { prose: string; composition?: string } {
   const t = line.trim();
-  if (t.length < 3) return false;
-  /** Libellés explicites — jamais dans la copy publique. */
-  if (/^\s*(tailles?|sizes?)\s*[:\-]/i.test(t) && t.length < 160) return true;
-
-  const tokens = tokenizeSizeGridProbe(t);
-  if (tokens.length < 2) return false;
-
-  let sizeLike = 0;
-  for (const tok of tokens) {
-    if (/^(?:5XL|4XL|XXXL|3XL|XXL|2XL|XL|XS|XXS|TU|[SML])$/i.test(tok)) {
-      sizeLike += 1;
-      continue;
-    }
-    if (/^(?:4[0-9]|5[0-6])$/i.test(tok)) {
-      sizeLike += 1;
-      continue;
-    }
-    if (/^(?:4[0-9]|5[0-6])[/·\-–](?:4[0-9]|5[0-6])$/i.test(tok)) {
-      sizeLike += 1;
+  const match = t.match(/^(.+?)(?<=[.!?…])\s*(\d+\s*%[\s\S]+)$/);
+  if (match?.[1] && match[2] && RE_PERCENT.test(match[2])) {
+    const prose = match[1].trim();
+    const composition = normalizeStoryLine(match[2]);
+    if (prose.length >= 8 && composition.length >= 4) {
+      return { prose, composition };
     }
   }
-  const ratio = sizeLike / tokens.length;
-  if (tokens.length >= 2 && ratio >= 0.85) return true;
-  if (tokens.length >= 4 && ratio >= 0.65) return true;
-  /** Beaucoup de codes courts sans phrase (pas de voyelle longue). */
-  if (tokens.length >= 5 && !/[.!?]/.test(t) && sizeLike >= 4) return true;
-  return false;
+  const glued = t.match(/^(.+?\.)(\d+\s*%.+)$/);
+  if (glued?.[1] && glued[2] && RE_PERCENT.test(glued[2])) {
+    return { prose: glued[1].trim(), composition: normalizeStoryLine(glued[2]) };
+  }
+  return { prose: t };
 }
 
-const SEMANTIC_CLIP = (s: string, max: number) => (s.length <= max ? s : `${s.slice(0, max)}…`);
+function pushDescriptionOrComposition(
+  line: string,
+  descriptionLines: string[],
+  compositionLines: string[],
+): void {
+  const { prose, composition } = peelCompositionSuffix(line);
+  const story = normalizeStoryLine(prose);
+  if (story) descriptionLines.push(story);
+  if (composition) compositionLines.push(composition);
+}
 
-function semanticBlockForField(
-  id: SmartParseFieldId,
-  result: SmartProductParseResult,
-): MakerSemanticBlock | undefined {
+function isStructuredMetaLine(line: string): boolean {
+  return (
+    RE_CATEGORY_LINE.test(line.trim()) ||
+    RE_CATEGORY_SHORT.test(line.trim()) ||
+    RE_PRICE_SOFT.test(line) ||
+    RE_PRICE_LABEL.test(line) ||
+    (RE_PERCENT.test(line) && !RE_STORY_LABEL.test(line)) ||
+    (RE_GRAMMAGE.test(line) && !RE_STORY_LABEL.test(line)) ||
+    RE_COULEUR.test(line) ||
+    RE_TAILLE.test(line) ||
+    RE_REF.test(line) ||
+    RE_NOM.test(line) ||
+    RE_TITRE.test(line) ||
+    RE_STORY_LABEL.test(line)
+  );
+}
+
+function pickBestTitle(candidates: string[]): string | undefined {
+  const cleaned = candidates
+    .map((c) => normalizeStoryLine(c))
+    .filter((c) => c.length >= 2);
+  if (cleaned.length === 0) return undefined;
+  cleaned.sort((a, b) => b.length - a.length);
+  return cleaned[0];
+}
+
+function semanticBlockForField(id: SmartParseFieldId, result: SmartProductParseOutput): MakerSemanticBlock | undefined {
   switch (id) {
     case "category":
-      return result.detectedCategory !== undefined
+      return result.detectedCategory
         ? { key: "category", label: "Catégorie", value: result.detectedCategory }
         : undefined;
+    case "sku":
+      return result.sku
+        ? { key: "title", label: "SKU", value: SEMANTIC_CLIP(result.sku, 80) }
+        : undefined;
     case "name":
-      return result.name !== undefined
-        ? { key: "title", label: "Titre", value: SEMANTIC_CLIP(result.name, 200) }
+      return result.name
+        ? { key: "title", label: "Titre", value: SEMANTIC_CLIP(result.name, 120) }
         : undefined;
     case "variant":
-      return result.variantColor !== undefined
+      return result.variantColor
         ? { key: "color", label: "Couleur", value: result.variantColor }
         : undefined;
     case "sizes":
-      return result.sizes !== undefined && result.sizes.length > 0
+      return result.sizes?.length
         ? { key: "sizes", label: "Tailles", value: result.sizes.join(", ") }
         : undefined;
     case "price":
-      return result.price !== undefined
+      return result.price
         ? { key: "price", label: "Prix", value: `${result.price} €` }
         : undefined;
+    case "stock":
+      return result.stock ? { key: "stock", label: "Stock", value: result.stock } : undefined;
     case "materials":
-      return result.materials !== undefined
-        ? {
-            key: "materials",
-            label: "Matières",
-            value: SEMANTIC_CLIP(result.materials, 280),
-          }
+      return result.materials
+        ? { key: "materials", label: "Matières", value: SEMANTIC_CLIP(result.materials, 280) }
         : undefined;
     case "fabrication":
-      return result.fabrication !== undefined
-        ? {
-            key: "fabrication",
-            label: "Fabrication",
-            value: SEMANTIC_CLIP(result.fabrication, 200),
-          }
-        : undefined;
-    case "limitedEdition":
-      return result.limitedEdition !== undefined
-        ? {
-            key: "limitedEdition",
-            label: "Édition limitée",
-            value: SEMANTIC_CLIP(result.limitedEdition, 200),
-          }
+      return result.fabrication
+        ? { key: "fabrication", label: "Entretien", value: SEMANTIC_CLIP(result.fabrication, 200) }
         : undefined;
     case "description":
-      return result.description !== undefined
-        ? {
-            key: "description",
-            label: "Description",
-            value: SEMANTIC_CLIP(result.description, 320),
-          }
+      return result.description
+        ? { key: "description", label: "Description", value: SEMANTIC_CLIP(result.description, 320) }
         : undefined;
-    case "printPlacement":
-      return result.printPlacement !== undefined
-        ? {
-            key: "printPlacement",
-            label: "Impression",
-            value: PRODUCT_PRINT_PLACEMENT_LABELS[result.printPlacement],
-          }
-        : undefined;
-    default: {
-      const _exhaustive: never = id;
-      return _exhaustive;
-    }
+    default:
+      return undefined;
   }
 }
 
-/** Ordre = ordre des entrées dans `filled` (détection), pas un ordre canonique fixe. */
 function buildMakerSemanticBlocks(result: SmartProductParseOutput): MakerSemanticBlock[] {
   const blocks: MakerSemanticBlock[] = [];
   for (const id of result.filled) {
     const block = semanticBlockForField(id, result);
-    if (block !== undefined) blocks.push(block);
+    if (block) blocks.push(block);
   }
   return blocks;
-}
-
-function extractNameFromLines(
-  lines: readonly string[],
-  detectedCategory: ProductCategory | undefined,
-): { name: string; titleLineIndex: number } | undefined {
-  if (lines.length === 0) return undefined;
-  let idx = 0;
-  if (isPureCategoryLine(lines[0] ?? "")) idx = 1;
-  if (idx >= lines.length) idx = 0;
-
-  const candidates: { line: string; i: number }[] = [];
-  for (let i = idx; i < Math.min(lines.length, idx + 5); i++) {
-    const line = lines[i];
-    if (!line) continue;
-    if (isFootnoteLine(line)) continue;
-    if (lineLooksLikeSizeGridOnly(line)) continue;
-    if (/^(prix|price|tailles?|sizes?|matière|matériaux)\s*[:\-]/i.test(line)) continue;
-    if (looksLikeMaterialLine(line) && /%/.test(line)) continue;
-    if (line.length >= 3 && line.length <= 140) candidates.push({ line, i });
-  }
-
-  const scored = candidates
-    .map(({ line, i }) => {
-      let score = 0;
-      const u = line.toUpperCase();
-      if (/\bDINGRY\b/.test(u)) score += 8;
-      if (/SIGNATURE|ORIGINAL|COLLECTION|ÉDITION|EDITION/.test(u)) score += 4;
-      if (/^[A-Z0-9\s\-–—'«».,]+$/u.test(line) && line.length <= 72) score += 3;
-      if (line.length >= 12 && line.length <= 90) score += 2;
-      /** Phrase marketing (souvent la description), pas le libellé produit. */
-      if (/[.!?]\s*$/.test(line.trim()) && line.length >= 28) score -= 10;
-      if (line.split(/\s+/).length >= 12) score -= 4;
-      if (detectedCategory) {
-        const catFrag = detectedCategory.toUpperCase().replace(/\s+/g, "").slice(0, 7);
-        if (catFrag && u.replace(/\s/g, "").includes(catFrag)) score -= 3;
-      }
-      return { line: normalizeStoryBody(line), score, i };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  const top = scored[0];
-  if (!top || top.score < 0) return undefined;
-  let name = stripTitleMarketingSuffix(top.line);
-  name = stripPublicSizeFragments(name);
-  if (name.length < 2) return undefined;
-  return { name, titleLineIndex: top.i };
-}
-
-function looksLikeLimitedLine(line: string): boolean {
-  return RE_LIMITED_LINE.test(line);
-}
-
-/** Ligne déjà couverte par prix / couleur / notes * — ne pas dupliquer dans la description. */
-function isLineExcludedFromDescription(line: string): boolean {
-  const t = line.trim();
-  if (t.length === 0) return true;
-  if (isFootnoteLine(t)) return true;
-  if (RE_LINE_PRICE_ONLY.test(t)) return true;
-  if (t.length < 72 && /^\s*couleur\s*[:\-]/i.test(t)) return true;
-  if (t.length < 55 && RE_PRICE.test(t) && !RE_MATERIAL_SIGNAL.test(t)) return true;
-  return false;
 }
 
 export function parseSmartProductText(
@@ -729,143 +585,386 @@ export function parseSmartProductText(
     };
   }
 
-  const blocks = text.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
-  const { body: textNoStarLines, skipped: footnoteSkipped } = stripFootnoteLines(text);
   const lines = linesFromText(text);
-  const tagged = tagSections(lines);
+  const lineQueue = [...lines];
+  const blocks = text.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
 
-  const printPlacementFromPaste = detectPrintPlacementFromText(text);
-  if (printPlacementFromPaste !== undefined) filled.push("printPlacement");
+  function expandInlineRoutingChunks(block: string): string[] {
+    const t = block.trim();
+    if (!t) return [];
+    const pieces = t.split(RE_EMBEDDED_ROUTE_CHUNK);
+    if (pieces.length <= 1) return [t];
+    return pieces.map((p) => p.trim()).filter(Boolean);
+  }
 
-  const detectedCategory = detectCategoryFromText(text);
+  function requeueTail(tail: string): void {
+    const parts: string[] = [];
+    for (const block of tail.split(/\r?\n/)) {
+      parts.push(...expandInlineRoutingChunks(block));
+    }
+    for (let i = parts.length - 1; i >= 0; i -= 1) {
+      lineQueue.unshift(parts[i] ?? "");
+    }
+  }
+
+  let footnoteSkipped = 0;
+
+  const titleCandidates: string[] = [];
+  const compositionLines: string[] = [];
+  const weightLines: string[] = [];
+  const descriptionLines: string[] = [];
+
+  function pushStoryFragment(fragment: string): void {
+    const cleaned = normalizeStoryLine(stripCollageRoutingPrefix(fragment));
+    if (cleaned) descriptionLines.push(cleaned);
+  }
+  const sizeScanChunks: string[] = [];
+  let price: string | undefined;
+  let stockQty: string | undefined;
+  let sku: string | undefined;
+  let variantColor: string | undefined;
+  let captureDescription = false;
+  let preamble = true;
+  let pendingGrammage = false;
+  let pendingMatiere = false;
+  let captureMaterials = false;
+
+  const detectedCategory =
+    extractCategoryFromLines(lines) ?? detectCategoryFromKeywords(text);
   const category = detectedCategory ?? fallbackCategory;
   if (detectedCategory !== undefined) filled.push("category");
 
-  const allowedSizes = ADMIN_CATEGORY_SIZES[category];
-  const pants = isPantsCategory(category);
-
-  const priceFromTags = tagged
-    .filter((s) => s.kind === "price")
-    .map((s) => s.body)
-    .join("\n");
-  const price = extractBestPrice(`${priceFromTags}\n${text}`);
-  if (price !== undefined) filled.push("price");
-
-  const sizeSet = new Set<ProductSize>();
-  if (pants) {
-    for (const w of extractPantWaists(textNoStarLines)) sizeSet.add(w);
-  } else {
-    for (const sz of extractLetterSizes(textNoStarLines, allowedSizes)) sizeSet.add(sz);
-    for (const sec of tagged) {
-      if (sec.kind !== "size" || !sec.body) continue;
-      for (const sz of extractLetterSizes(sec.body, allowedSizes)) sizeSet.add(sz);
+  while (lineQueue.length > 0) {
+    const line = lineQueue.shift() ?? "";
+    if (!line.trim()) continue;
+    if (/^\s*\*/.test(line)) {
+      footnoteSkipped += 1;
+      const colorInNote = line.match(/\bCOULEUR\s+([A-ZÀ-ÿ][A-ZÀ-ÿa-z\s\-]{1,28})/i);
+      if (colorInNote?.[1]) {
+        const mapped = mapColorToken(colorInNote[1]);
+        if (mapped) variantColor = mapped;
+      }
+      continue;
     }
+
+    // 1 — Catégorie (déjà extraite ; ignorer la ligne dans la suite)
+    if (RE_CATEGORY_LINE.test(line) || RE_CATEGORY_SHORT.test(line)) {
+      preamble = false;
+      continue;
+    }
+    if (isPureCategoryKeywordLine(line)) {
+      preamble = false;
+      continue;
+    }
+
+    const official = parseOfficialRoutingLine(line);
+    if (official) {
+      preamble = false;
+      const { route, value } = official;
+      switch (route) {
+        case "sku": {
+          const refValue = stripCollageRoutingPrefix(value);
+          if (isLikelySkuReference(refValue)) {
+            sku = normalizeSkuInput(refValue);
+          } else if (refValue) {
+            titleCandidates.push(normalizeStoryLine(refValue));
+          }
+          break;
+        }
+        case "story": {
+          const { body, tail } = splitAtStoryStop(value);
+          if (body) pushStoryFragment(body);
+          captureDescription = !tail;
+          if (!body && !value) captureDescription = true;
+          if (tail) requeueTail(tail);
+          break;
+        }
+        case "material": {
+          const { body, tail } = splitAtMaterialStop(value);
+          const normalized = normalizeStoryLine(body);
+          if (normalized && compositionLines.length === 0) compositionLines.push(normalized);
+          captureMaterials = !tail && !normalized;
+          if (normalized && !tail) captureMaterials = false;
+          if (!normalized && !tail) captureMaterials = true;
+          captureDescription = false;
+          if (tail) requeueTail(tail);
+          break;
+        }
+        case "size":
+          sizeScanChunks.push(normalizeTourSizeTypos(stripCollageRoutingPrefix(value)));
+          captureDescription = false;
+          break;
+        case "color": {
+          const { head, tail } = splitEmbeddedRoutingTail(value);
+          const mapped = mapColorToken(head) ?? mapColorToken(head.split(/[,\-]/)[0] ?? "");
+          if (mapped) variantColor = mapped;
+          captureDescription = false;
+          if (tail) requeueTail(tail);
+          break;
+        }
+        case "grammage":
+          pushWeightLine(weightLines, formatRoutedGsmValue(value));
+          captureDescription = false;
+          break;
+        case "price": {
+          const { head, tail } = splitEmbeddedRoutingTail(value);
+          const priceToken = head.match(/^(\d+(?:[.,]\d+)?)\s*(?:€|EUR|e|eur)?\b/i)?.[1] ?? head;
+          const p = extractEuroPrice(head) ?? formatPriceEuro(priceToken);
+          if (p) price = p;
+          captureDescription = false;
+          if (tail) requeueTail(tail);
+          break;
+        }
+        case "stock": {
+          const { head, tail } = splitEmbeddedRoutingTail(value);
+          const q = parseStockQuantity(head);
+          if (q !== undefined) stockQty = q;
+          captureDescription = false;
+          if (tail) requeueTail(tail);
+          break;
+        }
+        default:
+          break;
+      }
+      continue;
+    }
+
+    if (preamble && isPreambleMarketingLine(line)) {
+      pushDescriptionOrComposition(line, descriptionLines, compositionLines);
+      continue;
+    }
+
+    // 2 — Titre / REF (sans `:` — ex. `ref DINGRY SIGNATURE`)
+    if (RE_REF.test(line) && !/^(?:réf|ref)\s*(?:[:\-.–—])/iu.test(line.trim())) {
+      preamble = false;
+      const t = stripLabelPrefix(line, /\bref(?:\.|erence)?\b/i);
+      if (t) titleCandidates.push(t);
+      captureDescription = false;
+      continue;
+    }
+    if (RE_NOM.test(line) && !RE_COULEUR.test(line)) {
+      const t = stripLabelPrefix(line, /\b(?:nom|name)\b/i);
+      if (t && !/^catégorie|categorie/i.test(t)) titleCandidates.push(t);
+      captureDescription = false;
+      continue;
+    }
+    if (RE_TITRE.test(line)) {
+      const t = stripLabelPrefix(line, RE_TITRE);
+      if (t) titleCandidates.push(t);
+      captureDescription = false;
+      continue;
+    }
+    if (isPureCategoryKeywordLine(line)) {
+      preamble = false;
+      captureDescription = false;
+      continue;
+    }
+
+    if (captureMaterials) {
+      const { body, tail } = splitAtMaterialStop(line);
+      const normalized = normalizeStoryLine(body);
+      if (normalized) compositionLines.push(normalized);
+      captureMaterials = !tail;
+      if (tail) requeueTail(tail);
+      continue;
+    }
+
+    if (pendingMatiere) {
+      pendingMatiere = false;
+      const { body, tail } = splitAtMaterialStop(line);
+      const normalized = normalizeStoryLine(body);
+      if (normalized) compositionLines.push(normalized);
+      captureDescription = false;
+      if (tail) requeueTail(tail);
+      continue;
+    }
+
+    if (RE_MATIERE_LABEL.test(line.trim())) {
+      pendingMatiere = true;
+      captureDescription = false;
+      continue;
+    }
+
+    if (pendingGrammage) {
+      pendingGrammage = false;
+      pushWeightLine(weightLines, line);
+      captureDescription = false;
+      continue;
+    }
+
+    if (RE_GRAMMAGE_LABEL.test(line.trim())) {
+      pendingGrammage = true;
+      captureDescription = false;
+      continue;
+    }
+
+    const titleBody = stripTitleColorSuffix(line);
+    if (isAllCapsTitleLine(titleBody) || isAllCapsTitleLine(line)) {
+      const colorInline = extractColorFromProductTitle(line);
+      if (colorInline) variantColor = colorInline;
+      titleCandidates.push(titleBody.length >= 4 ? titleBody : line.trim());
+      captureDescription = false;
+      preamble = false;
+      continue;
+    }
+
+    // 3 — Prix
+    const priceEuro = line.match(RE_PRICE_SOFT);
+    if (priceEuro?.[1]) {
+      const v = formatPriceEuro(priceEuro[1]);
+      if (v) price = v;
+      captureDescription = false;
+      continue;
+    }
+    const priceLabel = line.match(RE_PRICE_LABEL);
+    if (priceLabel?.[1]) {
+      const v = formatPriceEuro(priceLabel[1]);
+      if (v) price = v;
+      captureDescription = false;
+      continue;
+    }
+    const stockLabel = line.match(RE_STOCK_LABEL);
+    if (stockLabel?.[1]) {
+      const q = parseStockQuantity(stockLabel[1]);
+      if (q !== undefined) stockQty = q;
+      captureDescription = false;
+      continue;
+    }
+
+    // Couleur (fiche structurée)
+    if (RE_COULEUR.test(line)) {
+      const body = stripLabelPrefix(line, RE_COULEUR);
+      const mapped = mapColorToken(body) ?? mapColorToken(body.split(/[,\-]/)[0] ?? "");
+      if (mapped) variantColor = mapped;
+      captureDescription = false;
+      continue;
+    }
+
+    // Tailles (libellé ou tour T40 / Taille 40 / tzill / size:)
+    if (RE_SIZE_LABEL.test(line) || RE_TAILLE.test(line) || isTourWaistSizingLine(line)) {
+      const body = RE_SIZE_LABEL.test(line)
+        ? stripLabelPrefix(line, /^(?:tailles?|size|tzill)/iu)
+        : RE_TAILLE.test(line)
+          ? stripLabelPrefix(line, RE_TAILLE)
+          : stripCollageRoutingPrefix(line.trim());
+      if (body) sizeScanChunks.push(normalizeTourSizeTypos(body));
+      captureDescription = false;
+      continue;
+    }
+
+    // 4 — Matière (%)
+    if (RE_PERCENT.test(line)) {
+      const { body, tail } = splitAtMaterialStop(line);
+      const normalized = normalizeStoryLine(body);
+      if (normalized) compositionLines.push(normalized);
+      const density = normalized.match(/\d+(?:[.,]\d+)?\s*g\/m²/i);
+      if (density?.[0]) weightLines.push(density[0].replace(/\s+/g, " "));
+      captureDescription = false;
+      if (tail) requeueTail(tail);
+      continue;
+    }
+
+    // 5 — Grammage
+    if (RE_GRAMMAGE.test(line)) {
+      const g = normalizeStoryLine(line);
+      if (!/^grammage\s*$/i.test(g)) pushWeightLine(weightLines, g);
+      captureDescription = false;
+      continue;
+    }
+
+    const densityOnly = extractGrammageFromLine(line);
+    if (densityOnly && !RE_PERCENT.test(line)) {
+      pushWeightLine(weightLines, line);
+      captureDescription = false;
+      continue;
+    }
+
+    // 6 — Arguments / description (argu, zrgi, story, typos)
+    if (RE_STORY_LABEL.test(line)) {
+      const rest = stripLabelPrefix(line, RE_STORY_LABEL);
+      const { body, tail } = splitAtStoryStop(rest);
+      if (body) pushStoryFragment(body);
+      captureDescription = !tail;
+      if (tail) requeueTail(tail);
+      continue;
+    }
+
+    if (captureDescription && !isStructuredMetaLine(line)) {
+      const { body, tail } = splitAtStoryStop(line);
+      if (body) pushDescriptionOrComposition(body, descriptionLines, compositionLines);
+      captureDescription = !tail;
+      if (tail) requeueTail(tail);
+      continue;
+    }
+
+    captureDescription = false;
+    preamble = false;
   }
-  const sizes = sortSizes(sizeSet);
+
+  const name = pickBestTitle(titleCandidates);
+  if (sku) filled.push("sku");
+  if (name) filled.push("name");
+  if (price !== undefined) filled.push("price");
+  if (stockQty !== undefined) filled.push("stock");
+
+  if (!variantColor) {
+    const titleColor =
+      (name && extractColorFromProductTitle(name)) ||
+      titleCandidates.map(extractColorFromProductTitle).find(Boolean);
+    if (titleColor) variantColor = titleColor;
+  }
+  if (variantColor !== undefined) filled.push("variant");
+
+  const pants = isPantsCategory(category);
+  const allowed = ADMIN_CATEGORY_SIZES[category];
+  const sizeSource =
+    sizeScanChunks.length > 0
+      ? sizeScanChunks.join("\n")
+      : lines.filter((l) => /\btailles?\s+disponibles\b/i.test(l)).join("\n") || text;
+  const sizes = pants
+    ? (extractPantWaists(sizeSource) as ProductSize[])
+  : extractLetterSizes(sizeSource, allowed);
   if (sizes.length > 0) filled.push("sizes");
 
-  let variantColor: string | undefined;
-  if (!pants) {
-    variantColor = extractVariantColor(text);
-    for (const sec of tagged) {
-      if (sec.kind !== "color" || !sec.body.trim()) continue;
-      const fromLabel = mapColorToken(sec.body) ?? extractVariantColor(sec.body);
-      if (fromLabel) variantColor = fromLabel;
-    }
-    if (variantColor !== undefined) filled.push("variant");
-  }
-
-  const nameExtract = extractNameFromLines(lines, detectedCategory);
-  const name = nameExtract?.name;
-  const titleLineIndex = nameExtract?.titleLineIndex;
-  if (name !== undefined) filled.push("name");
-
-  const materialLines: string[] = [];
-  const fabricationLines: string[] = [];
-  const limitedLines: string[] = [];
-  const descriptionCandidates: string[] = [];
-
-  for (const sec of tagged) {
-    if (sec.kind === "material" && sec.body.trim()) materialLines.push(sec.body);
-  }
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (titleLineIndex !== undefined && i === titleLineIndex) continue;
-    if (isLineExcludedFromDescription(line)) continue;
-    if (lineLooksLikeSizeGridOnly(line)) continue;
-    if (/^(prix|price)\s*[:\-]/i.test(line) && line.length < 55) continue;
-    if (/^(tailles?|sizes?)\s*[:\-]/i.test(line) && line.length < 90) continue;
-    if (looksLikeLimitedLine(line)) {
-      limitedLines.push(line);
-      continue;
-    }
-    if (RE_FABRICATION_LINE.test(line) && !looksLikeMaterialLine(line)) {
-      if (!lineLooksLikeSizeGridOnly(line)) fabricationLines.push(line);
-      continue;
-    }
-    if (looksLikeMaterialLine(line)) {
-      materialLines.push(line);
-      continue;
-    }
-    if (lineLooksLikePrintPlacementOnly(line)) continue;
-    if (line.length >= 18 || /[.!?]$/.test(line)) descriptionCandidates.push(line);
-    else if (line.length >= 8 && !/^\d{2}\b/.test(line) && !isPureCategoryLine(line)) {
-      descriptionCandidates.push(line);
-    }
-  }
-
   let materials: string | undefined;
-  if (materialLines.length > 0) {
-    materials = stripPublicSizeFragments(
-      trimStoryField(materialLines.map((l) => normalizeStoryBody(l)).join("\n\n")),
-    );
+  if (compositionLines.length > 0) {
+    materials = trimStoryField(Array.from(new Set(compositionLines)).join("\n"));
     if (materials.length > 0) filled.push("materials");
     else materials = undefined;
   }
 
+  let weight: string | undefined;
+  if (weightLines.length > 0) {
+    let uniq = Array.from(new Set(weightLines)).filter((l) => !/^grammage\s*$/i.test(l));
+    const withDensity = uniq.filter((l) => /g\/m²|gsm/i.test(l));
+    if (withDensity.length > 0) {
+      uniq = withDensity;
+    }
+    weight = trimStoryField(uniq.join("\n"));
+    if (weight.length > 0) {
+      filled.push("materials");
+    } else weight = undefined;
+  }
+
   let fabrication: string | undefined;
-  if (fabricationLines.length > 0) {
-    fabrication = stripPublicSizeFragments(
-      trimStoryField(fabricationLines.map((l) => normalizeStoryBody(l)).join("\n\n")),
-    );
-    if (fabrication.length > 0) filled.push("fabrication");
-    else fabrication = undefined;
-  }
-
-  let limitedEdition: string | undefined;
-  if (limitedLines.length > 0) {
-    limitedEdition = stripPublicSizeFragments(
-      trimStoryField(limitedLines.map((l) => normalizeStoryBody(l)).join("\n\n")),
-    );
-    if (limitedEdition.length > 0) filled.push("limitedEdition");
-    else limitedEdition = undefined;
-  }
-
   let description: string | undefined;
-  const descFiltered = descriptionCandidates.filter((l) => {
-    if (!name) return true;
-    if (l.trim() === name.trim()) return false;
-    if (lineDuplicatesProductName(l, name)) return false;
-    return true;
-  });
+  const descFiltered = descriptionLines.filter((l) => !name || l !== name);
   if (descFiltered.length > 0) {
-    description = stripPublicSizeFragments(
-      trimStoryField(descFiltered.map((l) => normalizeStoryBody(l)).join("\n\n")),
-    );
+    const care = descFiltered.filter((l) => RE_CARE_LINE.test(l));
+    const sales = descFiltered.filter((l) => !RE_CARE_LINE.test(l));
+    if (sales.length > 0) {
+      description = trimStoryField(sales.join("\n\n"));
     if (description.length > 0) filled.push("description");
     else description = undefined;
-  } else if (materialLines.length === 0 && lines.length > 1 && name !== undefined) {
-    const restParas = lines
-      .filter((_, j) => j !== titleLineIndex)
-      .filter((l) => !isLineExcludedFromDescription(l))
-      .filter((l) => !lineLooksLikeSizeGridOnly(l))
-      .filter((l) => !lineDuplicatesProductName(l, name));
-    const rest = restParas.join("\n\n");
-    const fallback = stripPublicSizeFragments(trimStoryField(normalizeStoryBody(rest)));
-    if (fallback.length >= 10) {
-      description = fallback;
-      filled.push("description");
+    }
+    if (care.length > 0) {
+      fabrication = trimStoryField(care.join("\n\n"));
+      if (fabrication.length > 0) filled.push("fabrication");
+      else fabrication = undefined;
+    }
+    if (!description && care.length === 0 && descFiltered.length > 0) {
+      description = trimStoryField(descFiltered.join("\n\n"));
+      if (description.length > 0) filled.push("description");
     }
   }
 
@@ -873,17 +972,18 @@ export function parseSmartProductText(
     filled,
     diagnostics: { blockCount: blocks.length || 1, footnoteLinesSkipped: footnoteSkipped },
     semanticBlocks: [],
+    detectedCategory: detectedCategory ?? undefined,
+    sku,
+    name,
+    description,
+    materials,
+    weight,
+    fabrication,
+    price,
+    stock: stockQty,
+    sizes: sizes.length > 0 ? sizes : undefined,
+    variantColor,
   };
-  if (detectedCategory !== undefined) result.detectedCategory = detectedCategory;
-  if (name !== undefined) result.name = name;
-  if (description !== undefined) result.description = description;
-  if (materials !== undefined) result.materials = materials;
-  if (fabrication !== undefined) result.fabrication = fabrication;
-  if (limitedEdition !== undefined) result.limitedEdition = limitedEdition;
-  if (price !== undefined) result.price = price;
-  if (sizes.length > 0) result.sizes = sizes;
-  if (variantColor !== undefined) result.variantColor = variantColor;
-  if (printPlacementFromPaste !== undefined) result.printPlacement = printPlacementFromPaste;
 
   result.semanticBlocks = buildMakerSemanticBlocks(result);
   return result;
@@ -891,7 +991,7 @@ export function parseSmartProductText(
 
 export function buildSmartParseRecap(result: SmartProductParseOutput): string {
   if (result.filled.length === 0) {
-    return "Smart collage · aucun champ détecté. Colle un pavé plus explicite (titre, prix, tailles, matière) ou vérifie la catégorie.";
+    return "Smart collage · aucun champ détecté. Utilise cat/ref/titre, prix, %, g/m, argu…";
   }
   const lines: string[] = ["Smart collage · détection :"];
   const blocks = result.semanticBlocks.length > 0 ? result.semanticBlocks : buildMakerSemanticBlocks(result);
@@ -899,7 +999,7 @@ export function buildSmartParseRecap(result: SmartProductParseOutput): string {
     lines.push(`• ${b.label} : ${b.value}`);
   }
   lines.push(
-    `• Analyse : ${result.diagnostics.blockCount} bloc(s), ${result.diagnostics.footnoteLinesSkipped} ligne(s) * ignorée(s) pour tailles.`,
+    `• Analyse : ${result.diagnostics.blockCount} bloc(s), ${result.diagnostics.footnoteLinesSkipped} ligne(s) * ignorée(s).`,
   );
   return lines.join("\n");
 }

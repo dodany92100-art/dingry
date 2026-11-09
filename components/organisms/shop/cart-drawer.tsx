@@ -79,7 +79,7 @@ export function CartDrawer({
             aria-hidden
           />
           <motion.div
-            className="dingry-cart-drawer-panel relative z-10 flex h-full min-h-0 w-full max-w-md flex-col border-l border-white/[0.06] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.45)] will-change-transform"
+            className="dingry-sale-ui dingry-cart-drawer-panel relative z-10 flex h-full min-h-0 w-full max-w-md flex-col border-l border-white/[0.06] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.45)] will-change-transform"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -112,7 +112,7 @@ export function CartDrawer({
             {items.length === 0 ? (
               <div className="flex-1 flex items-center justify-center px-8 overflow-y-auto">
                 {confirmation ? (
-                  <div className="w-full border border-[#0066FF]/40 bg-[#0066FF]/10 p-6">
+                  <div data-cart-confirm className="w-full border border-[#0066FF]/40 bg-[#0066FF]/10 p-6">
                     <p className="text-[10px] tracking-[0.35em] text-[#0066FF] uppercase">Commande validée</p>
                     <p className="mt-4 text-sm leading-relaxed text-white">
                       Merci {confirmation.payerName}. Un reçu e-mail vous a été envoyé par PayPal.
@@ -156,12 +156,16 @@ export function CartDrawer({
                 )}
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-6">
+              <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6">
                 {items.map((item, idx) => {
                   const lineKey = cartLineKey(item);
                   const sizeOptions = modalSizesFor(item.product);
                   return (
-                  <div key={lineKey} className="flex gap-4 border border-white/[0.05] p-4 bg-[#080808]">
+                  <div
+                    key={lineKey}
+                    data-cart-line
+                    className="flex gap-4 border border-white/[0.08] bg-[#080808] p-5 sm:gap-5"
+                  >
                     <div className="flex h-28 w-20 shrink-0 items-center justify-center overflow-hidden bg-[#0a0a0a]">
                       <img
                         src={cldOpt(item.product.image, 240)}
