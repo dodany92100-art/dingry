@@ -198,17 +198,17 @@ function ProductModalContent({
                 />
               </div>
             )}
-            {effectiveShowSideToggle ? (
-              <button
-                type="button"
-                onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
-                className={`${styles.sideToggle} ${styles.photoSideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
-                aria-pressed={modalSide === "verso"}
-              >
-                {modalSide === "verso" ? "recto" : "verso"}
-              </button>
-            ) : null}
           </div>
+          {effectiveShowSideToggle ? (
+            <button
+              type="button"
+              onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
+              className={`${styles.sideToggle} ${styles.sideUnder} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
+              aria-pressed={modalSide === "verso"}
+            >
+              {modalSide === "verso" ? "recto" : "verso"}
+            </button>
+          ) : null}
         </div>
         <div className={styles.body}>
           <div>
@@ -217,7 +217,7 @@ function ProductModalContent({
                 <button
                   type="button"
                   onClick={shell.onClose}
-                  className={`${styles.close} ${effectiveShowSideToggle ? styles.closeDesktopOnly : ""}`}
+                  className={styles.close}
                   aria-label="Fermer"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
