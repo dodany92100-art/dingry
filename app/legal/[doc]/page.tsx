@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
+
+const CLOSING_DOCS = new Set<LegalDocId>(["cgv", "rgpd", "retours"]);
 
 const DOCS: LegalDocId[] = ["mentions", "cgv", "rgpd", "retours"];
 
@@ -48,6 +51,9 @@ export default async function LegalDocPage({ params }: PageProps) {
           </section>
         ))}
       </div>
+      {CLOSING_DOCS.has(doc) ? (
+        <p className="mt-8 border-t border-white/20 pt-4 text-sm text-white/90">{DINGRY_LEGAL_CLOSING}</p>
+      ) : null}
     </article>
   );
 }

@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
-import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
-import {
-  DINGRY_COMPANY,
-  DINGRY_CONTACT_EMAIL,
-  DINGRY_REASSURANCE_LINE,
-} from "@/lib/dingry-legal";
+import { DINGRY_CONTACT_EMAIL, DINGRY_LEGAL_CLOSING, DINGRY_REASSURANCE_LINE } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
@@ -25,6 +20,50 @@ const SERVICE_LINES = [
   "Retours gratuits sous 14 jours",
   "Paiement sécurisé · PayPal",
 ] as const;
+
+const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours"]);
+
+function PaymentMarks() {
+  return (
+    <ul className="mt-3 flex flex-wrap items-center justify-center gap-2 md:justify-start" aria-label="Moyens de paiement acceptés">
+      <li className="dingry-pay-badge" title="PayPal">
+        <svg viewBox="0 0 88 24" width="72" height="20" role="img" aria-label="PayPal">
+          <text x="0" y="18" fill="#003087" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="700" fontStyle="italic">
+            Pay
+          </text>
+          <text x="34" y="18" fill="#009cde" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="700" fontStyle="italic">
+            Pal
+          </text>
+        </svg>
+      </li>
+      <li className="dingry-pay-badge" title="Visa">
+        <svg viewBox="0 0 64 24" width="52" height="20" role="img" aria-label="Visa">
+          <text x="2" y="18" fill="#1a1f71" fontFamily="Arial, Helvetica, sans-serif" fontSize="18" fontWeight="800" fontStyle="italic" letterSpacing="1">
+            VISA
+          </text>
+        </svg>
+      </li>
+      <li className="dingry-pay-badge" title="Mastercard">
+        <svg viewBox="0 0 40 24" width="40" height="24" role="img" aria-label="Mastercard">
+          <circle cx="15" cy="12" r="8" fill="#eb001b" />
+          <circle cx="25" cy="12" r="8" fill="#f79e1b" />
+          <path d="M20 6.2a8 8 0 0 1 0 11.6 8 8 0 0 1 0-11.6z" fill="#ff5f00" />
+        </svg>
+      </li>
+      <li className="dingry-pay-badge" title="Apple Pay">
+        <svg viewBox="0 0 78 24" width="68" height="20" role="img" aria-label="Apple Pay">
+          <path
+            fill="#111"
+            d="M14.2 6.3c.6-.8 1-1.8.9-2.8-1 .1-2.1.6-2.8 1.4-.6.7-1.1 1.8-.9 2.8 1.1.1 2.1-.5 2.8-1.4zM16.4 8c-1.5-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.1 2.9-2.3c.6-1.1.9-2.2 1.1-2.3-.1 0-2.3-.9-2.3-3.5 0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-.1 0-.2 0-.2.1z"
+          />
+          <text x="22" y="17" fill="#111" fontFamily="Arial, Helvetica, sans-serif" fontSize="13" fontWeight="600">
+            Pay
+          </text>
+        </svg>
+      </li>
+    </ul>
+  );
+}
 
 function InstagramIcon() {
   return (
@@ -60,8 +99,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-12">
             <div className="lg:col-span-4">
               <DingryLogo animate={false} className="h-8 md:h-10" />
-              <p className="dingry-typo-street dingry-typo-street--sm mt-4 text-white/90">{DINGRY_STREET_LINE}</p>
-              <p className="mt-3 text-xs leading-relaxed tracking-[0.06em] text-white/45">{DINGRY_REASSURANCE_LINE}</p>
+              <p className="mt-4 text-xs leading-relaxed tracking-[0.06em] text-white/80">{DINGRY_REASSURANCE_LINE}</p>
             </div>
 
             <div className="lg:col-span-2">
@@ -88,8 +126,8 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
             </div>
 
             <div className="lg:col-span-3">
-              <p className="dingry-footer-eyebrow">Service</p>
-              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-white/55 sm:text-[0.8125rem]">
+              <p className="dingry-footer-eyebrow">Services</p>
+              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-white/80 sm:text-[0.8125rem]">
                 {SERVICE_LINES.map((line) => (
                   <li key={line} className="flex items-start gap-2">
                     <span className="dingry-footer-dot mt-1.5 shrink-0" aria-hidden />
@@ -101,9 +139,9 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
 
             <div className="lg:col-span-3" id="mentions-legales">
               <p className="dingry-footer-eyebrow">Contact</p>
-              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-white/55 sm:text-[0.8125rem]">
+              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-white/80 sm:text-[0.8125rem]">
                 <li>
-                  <a href={`mailto:${DINGRY_CONTACT_EMAIL}`} className="dingry-footer-link text-white/85">
+                  <a href={`mailto:${DINGRY_CONTACT_EMAIL}`} className="dingry-footer-link text-white">
                     {DINGRY_CONTACT_EMAIL}
                   </a>
                 </li>
@@ -112,14 +150,11 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
                     href={DINGRY_INSTAGRAM_URL}
                     target="_blank"
                     rel="noreferrer"
-                    className="dingry-footer-link inline-flex items-center gap-2 text-white/85"
+                    className="dingry-footer-link inline-flex items-center gap-2 text-white"
                   >
                     <InstagramIcon />
                     @dingry_officiel
                   </a>
-                </li>
-                <li className="text-white/40">
-                  {DINGRY_COMPANY.legalName} · {DINGRY_COMPANY.registeredOffice}
                 </li>
               </ul>
             </div>
@@ -152,16 +187,10 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
 
           <div className="mt-8 flex flex-col items-center justify-between gap-6 border-t border-white/[0.06] pt-8 md:flex-row md:items-end">
             <div className="text-center md:text-left">
-              <p className="dingry-footer-eyebrow text-white/45">Moyens de paiement</p>
-              <ul className="mt-3 flex flex-wrap justify-center gap-2 md:justify-start" aria-label="Moyens de paiement acceptés">
-                {["PayPal", "Carte via PayPal"].map((method) => (
-                  <li key={method} className="dingry-footer-chip dingry-footer-chip--ghost">
-                    {method}
-                  </li>
-                ))}
-              </ul>
+              <p className="dingry-footer-eyebrow text-white/70">Moyens de paiement</p>
+              <PaymentMarks />
             </div>
-            <p className="text-center text-xs tracking-[0.08em] text-white/35 md:text-right">
+            <p className="text-center text-xs tracking-[0.08em] text-white/70 md:text-right">
               © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY · Tous droits réservés
             </p>
           </div>
@@ -214,6 +243,11 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
                     </section>
                   ))}
                 </div>
+                {LEGAL_CLOSING_IDS.has(legalDoc) ? (
+                  <p className="mt-8 border-t border-white/20 pt-4 text-sm tracking-normal text-white/90 normal-case">
+                    {DINGRY_LEGAL_CLOSING}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
