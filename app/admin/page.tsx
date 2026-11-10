@@ -8,11 +8,13 @@ import { AdminGridWorkflowBanner } from "@/components/organisms/admin/admin-grid
 import { AdminCrmPassage } from "@/components/organisms/admin/admin-crm-passage";
 import { AuthGate } from "@/components/organisms/admin/auth-gate";
 import { BackupCodesBanner } from "@/components/organisms/admin/backup-codes-banner";
+import { useAdminAtelierCustom } from "@/components/organisms/admin/hooks/use-admin-atelier-custom";
 import { useAdminCatalogPersoBanner } from "@/components/organisms/admin/hooks/use-admin-catalog-perso-banner";
 import { useAdminLookbook } from "@/components/organisms/admin/hooks/use-admin-lookbook";
 import { useAdminOrders } from "@/components/organisms/admin/hooks/use-admin-orders";
 import { useAdminProducts } from "@/components/organisms/admin/hooks/use-admin-products";
 import { useAdminSession } from "@/components/organisms/admin/hooks/use-admin-session";
+import { AtelierCustomTab } from "@/components/organisms/admin/atelier-custom-tab";
 import { CatalogPersoBannerTab } from "@/components/organisms/admin/catalog-perso-banner-tab";
 import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
@@ -69,7 +71,8 @@ function parseTabParam(value: string | null): TabId {
     value === "brouillons" ||
     value === "commandes" ||
     value === "lookbook" ||
-    value === "banniere"
+    value === "banniere" ||
+    value === "atelier"
   ) {
     return value;
   }
@@ -102,10 +105,12 @@ function AdminDashboard() {
   const ordersApi = useAdminOrders({ onUnauthorized: expire });
   const lookbookApi = useAdminLookbook({ onUnauthorized: expire });
   const persoBannerApi = useAdminCatalogPersoBanner({ onUnauthorized: expire });
+  const atelierApi = useAdminAtelierCustom({ onUnauthorized: expire });
   const { load: loadProducts, reset: resetProducts } = productsApi;
   const { load: loadOrders, reset: resetOrders } = ordersApi;
   const { load: loadLookbook, reset: resetLookbook } = lookbookApi;
   const { load: loadPersoBanner, reset: resetPersoBanner } = persoBannerApi;
+  const { load: loadAtelier, reset: resetAtelier } = atelierApi;
 
   const [tab, setTab] = useState<TabId>(() => parseTabParam(searchParams.get("tab")));
   const [categoryFilter, setCategoryFilter] = useState<AdminProductCategoryFilter>(() =>
@@ -274,18 +279,20 @@ function AdminDashboard() {
     let cancelled = false;
     void (async () => {
       setLoadError("");
-      const [productsResult, ordersResult, lookbookResult, bannerResult] = await Promise.all([
+      const [productsResult, ordersResult, lookbookResult, bannerResult, atelierResult] = await Promise.all([
         loadProducts(),
         loadOrders(),
         loadLookbook(),
         loadPersoBanner(),
+        loadAtelier(),
       ]);
       if (cancelled) return;
       if (
         productsResult === "unauthorized" ||
         ordersResult === "unauthorized" ||
         lookbookResult === "unauthorized" ||
-        bannerResult === "unauthorized"
+        bannerResult === "unauthorized" ||
+        atelierResult === "unauthorized"
       ) {
         expire();
         return;
@@ -294,7 +301,8 @@ function AdminDashboard() {
         productsResult !== "ok" ||
         ordersResult !== "ok" ||
         lookbookResult !== "ok" ||
-        bannerResult !== "ok"
+        bannerResult !== "ok" ||
+        atelierResult !== "ok"
       ) {
         setLoadError("Impossible de charger le CRM.");
       }
@@ -303,7 +311,16 @@ function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [authenticated, wantsShopRedirect, loadProducts, loadOrders, loadLookbook, loadPersoBanner, expire]);
+  }, [
+    authenticated,
+    wantsShopRedirect,
+    loadProducts,
+    loadOrders,
+    loadLookbook,
+    loadPersoBanner,
+    loadAtelier,
+    expire,
+  ]);
 
   const paypalOrders = useMemo(() => selectPaypalOrders(ordersApi.orders), [ordersApi.orders]);
   const pendingOrders = useMemo(() => countPendingShipments(paypalOrders), [paypalOrders]);
@@ -342,6 +359,7 @@ function AdminDashboard() {
     resetOrders();
     resetLookbook();
     resetPersoBanner();
+    resetAtelier();
     setEditor(null);
     setLookbookEditor(null);
   }
@@ -532,6 +550,17 @@ function AdminDashboard() {
             onSave={persoBannerApi.save}
           />
           </>
+        ) : tab === "atelier" ? (
+          <>
+            <AdminActionToast toast={atelierApi.toast} onDismiss={atelierApi.dismissToast} />
+            <AtelierCustomTab
+              config={atelierApi.config}
+              customized={atelierApi.customized}
+              saving={atelierApi.saving}
+              error={atelierApi.error}
+              onSave={atelierApi.save}
+            />
+          </>
         ) : tab === "lookbook" ? (
           <>
             <AdminActionToast toast={lookbookApi.toast} onDismiss={lookbookApi.dismissToast} />
@@ -551,7 +580,7 @@ function AdminDashboard() {
             }}
           />
           </>
-        ) : (
+        ) : tab === "commandes" ? (
           <OrdersTab
             orders={paypalOrders}
             busyOrderId={ordersApi.busyOrderId}
@@ -559,6 +588,8 @@ function AdminDashboard() {
             onCycleStatus={(order) => void ordersApi.cycleStatus(order)}
             onResolveReview={(order, reason) => void ordersApi.resolveReview(order, reason)}
           />
+        ) : (
+          <p className="text-sm text-white/50">Section inconnue.</p>
         )}
       </div>
       {showWorkflowBanner && workflowPhase ? (
