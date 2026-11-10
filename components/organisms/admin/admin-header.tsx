@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Power } from "lucide-react";
 import { formatCrmBuildLabel } from "@/lib/admin/crm-build-label";
 import { adminCrmVersion } from "@/lib/admin/crm-version";
 
@@ -78,9 +78,12 @@ export function AdminHeader({
         <button
           type="button"
           onClick={onLogout}
-          className="shrink-0 text-[10px] font-medium text-white/60 transition hover:text-white sm:text-[11px] md:text-sm"
+          aria-label="Déconnexion"
+          title="Déconnexion"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] text-white/65 ring-1 ring-white/10 transition hover:border-white/25 hover:text-white md:h-9 md:w-auto md:gap-1.5 md:px-3 md:text-[12px] md:font-medium"
         >
-          Déconnexion
+          <Power size={15} strokeWidth={1.75} className="shrink-0" aria-hidden />
+          <span className="hidden md:inline">Déconnexion</span>
         </button>
       </div>
     </header>
