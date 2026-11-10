@@ -2,9 +2,9 @@
 export const DINGRY_SHOP_SHELL_CLASS =
   "mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8";
 
-/** Grille catalogue : 1→4 colonnes sans étirement « court de tennis ». */
+/** Grille catalogue : 2 col. mobile · 3 tablette · 4 desktop. */
 export const CATALOG_PRODUCT_GRID_CLASS =
-  "grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5";
+  "grid w-full grid-cols-2 items-stretch gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5";
 
 /** CRM stock : 2 col. mobile · densité progressive desktop. */
 export const ADMIN_STOCK_PRODUCT_GRID_CLASS =
