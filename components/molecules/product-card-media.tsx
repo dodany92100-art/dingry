@@ -7,6 +7,8 @@ import { ProductImageFlip } from "@/components/molecules/product-image-flip";
 
 type ProductCardMediaProps = {
   productId?: string | number;
+  /** Badge #ID réservé à l’admin (aperçu CRM / stock), jamais sur la boutique publique. */
+  showAdminIdBadge?: boolean;
   image: string;
   alt: string;
   priority?: boolean;

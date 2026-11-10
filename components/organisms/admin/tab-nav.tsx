@@ -2,13 +2,14 @@
 
 import { motion } from "motion/react";
 
-export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "banniere";
+export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "banniere" | "atelier";
 
 const TABS: readonly (readonly [TabId, string])[] = [
   ["produits", "Stock"],
   ["brouillons", "Brouillons"],
   ["commandes", "Commandes"],
   ["banniere", "Bannière"],
+  ["atelier", "Atelier CUSTOM"],
   ["lookbook", "Lookbook"],
 ];
 

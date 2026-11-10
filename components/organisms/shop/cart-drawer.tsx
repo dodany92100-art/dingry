@@ -9,7 +9,7 @@ import {
   DINGRY_SHIPPING_LABEL,
 } from "@/lib/dingry-checkout-copy";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
-import { IMAGES } from "@/lib/shop-data";
+import { DINGRY_PRODUCT_MODAL_AMBIENCE_SRC } from "@/lib/dingry-brand";
 import { lineUnitPrice, cartLineKey, modalSizesFor, type CartLine } from "@/lib/shop-view";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "./motion";
 
@@ -54,7 +54,7 @@ export function CartDrawer({
         onClick={onDiscoverCollection}
         className={
           className ??
-          "dingry-gold-pill-btn mt-6 h-10 w-full max-w-xs rounded-full px-5 text-[10px] uppercase tracking-[0.14em]"
+          "dingry-gold-pill-btn mt-6 h-11 w-full max-w-xs rounded-full px-5 text-xs uppercase tracking-[0.16em] md:text-sm"
         }
       >
         <span className="gold-text">Découvrir la collection</span>
@@ -78,8 +78,15 @@ export function CartDrawer({
               className="absolute inset-0 z-20 cursor-pointer"
               aria-label="Fermer le panier et continuer vos achats"
             />
-            <img src={IMAGES.editorial} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/75 to-[#050505]/40" />
+            <img
+              src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover object-[center_35%]"
+            />
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent"
+              aria-hidden
+            />
             <div className="pointer-events-none relative z-10 flex h-full max-w-lg flex-col justify-end p-10 lg:p-14">
               <p className="dingry-typo-eyebrow text-[#FF3D00]">DINGRY Paris</p>
               <p className="dingry-typo-manifesto mt-4 text-white/75">{DINGRY_MANIFESTO_FR}</p>

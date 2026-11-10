@@ -16,8 +16,9 @@ type ProductCardData = {
 };
 
 type ProductCardProps = ProductCardData & {
-  /** Id fiche CRM / catalogue (badge #ID = product.id, jamais l’index de liste). */
+  /** Id fiche CRM — n’affiche le badge #ID que si {@link showAdminIdBadge} est vrai (admin uniquement). */
   productId?: string | number;
+  showAdminIdBadge?: boolean;
   onClick?: (side: ProductFlipSide) => void;
   className?: string;
   /** Première cellule catalogue : LCP (lazy pour le reste). */

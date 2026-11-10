@@ -1,32 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
-import { DINGRY_CONTACT_EMAIL, DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
+import { DingryContactForm } from "@/components/molecules/dingry-contact-form";
+import { DingryNewsletterForm } from "@/components/molecules/dingry-newsletter-form";
+import { DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
-import type { ShopBasePath } from "@/lib/shop-base-path";
+import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
 const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 
-const LEGAL_LINKS: { id: LegalDocId; label: string }[] = [
-  { id: "mentions", label: "Mentions légales" },
+const MENTIONS_LEGALES_LINKS: { id: LegalDocId; label: string }[] = [
   { id: "cgv", label: "CGV" },
   { id: "livraison", label: "Frais de livraison" },
   { id: "rgpd", label: "Confidentialité" },
   { id: "retours", label: "Retours" },
 ];
 
-const SERVICE_LINES = [
-  "Frais de livraison selon destination",
-  "Droit de rétractation 14 jours",
-  "Paiement sécurisé · PayPal",
-] as const;
-
 const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison"]);
 
 function PaymentMarks() {
   return (
-    <ul className="mt-3 flex flex-wrap items-center justify-center gap-2 md:justify-start" aria-label="Moyens de paiement acceptés">
+            <ul className="mt-0 flex flex-wrap items-center justify-center gap-2 sm:justify-start" aria-label="Moyens de paiement acceptés">
       <li className="dingry-pay-badge" title="PayPal">
         <svg viewBox="0 0 88 24" width="72" height="20" role="img" aria-label="PayPal">
           <text x="0" y="18" fill="#003087" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="700" fontStyle="italic">
@@ -79,12 +75,14 @@ function InstagramIcon() {
 type ShopFooterProps = {
   onScrollToCatalogue?: () => void;
   onScrollToSection?: (sectionId: string) => void;
+  onOpenHeritage?: () => void;
   shopBasePath?: ShopBasePath;
 };
 
 export function ShopFooter({
   onScrollToCatalogue,
   onScrollToSection,
+  onOpenHeritage,
   shopBasePath: _shopBasePath = "/",
 }: ShopFooterProps) {
   const [legalDoc, setLegalDoc] = useState<LegalDocId | null>(null);
@@ -108,112 +106,89 @@ export function ShopFooter({
 
   return (
     <>
-      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-14 md:py-16">
+      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-10 md:py-12">
         <div className="w-full">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-12">
-            <div className="lg:col-span-4">
-              <DingryLogo animate={false} className="h-11 max-md:max-h-none w-auto md:h-14" />
-            </div>
-
-            <div className="lg:col-span-2">
-              <ul className="space-y-2.5">
-                <li>
-                  <button
-                    type="button"
-                    onClick={goCatalogue}
-                    className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
-                  >
-                    Collection
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection("lookbook")}
-                    className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
-                  >
-                    Lookbook
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection("heritage")}
-                    className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
-                  >
-                    Heritage
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            <div className="lg:col-span-3">
-              <p className="dingry-footer-eyebrow">Services</p>
-              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-[#161616]/75 sm:text-[0.8125rem]">
-                {SERVICE_LINES.map((line) => (
-                  <li key={line} className="flex items-start gap-2">
-                    <span className="dingry-footer-dot dingry-footer-dot--gold mt-1.5 shrink-0" aria-hidden />
-                    {line}
+          <div className="grid gap-10 lg:grid-cols-12 lg:items-start lg:gap-x-10">
+            <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between lg:col-span-5 lg:flex-col lg:justify-start">
+              <div>
+                <DingryLogo animate={false} tone="on-light" className="h-10 w-auto max-md:max-h-none md:h-12" />
+                <a
+                  href={DINGRY_INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="dingry-footer-instagram-inline mt-4 inline-flex items-center gap-2 text-sm tracking-[0.14em]"
+                >
+                  <InstagramIcon />
+                  <span>@dingry_officiel</span>
+                </a>
+              </div>
+              <nav aria-label="Navigation boutique">
+                <p className="dingry-footer-eyebrow mb-3">Boutique</p>
+                <ul className="space-y-2">
+                  <li>
+                    <button type="button" onClick={goCatalogue} className="dingry-footer-link text-left text-[11px] tracking-[0.12em]">
+                      Collection
+                    </button>
                   </li>
-                ))}
-              </ul>
+                  <li>
+                    {onOpenHeritage ? (
+                      <button
+                        type="button"
+                        onClick={onOpenHeritage}
+                        className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
+                      >
+                        Héritage
+                      </button>
+                    ) : (
+                      <Link
+                        href={shopHref(_shopBasePath, "/?heritage=1")}
+                        className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
+                      >
+                        Héritage
+                      </Link>
+                    )}
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection("lookbook")}
+                      className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
+                    >
+                      Lookbook
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+              <div id="mentions-legales">
+                <p className="dingry-footer-eyebrow">Mentions légales</p>
+                <ul className="mt-3 space-y-2">
+                  {MENTIONS_LEGALES_LINKS.map((link) => (
+                    <li key={link.id}>
+                      <button
+                        type="button"
+                        onClick={() => setLegalDoc(link.id)}
+                        className="dingry-footer-legal-link dingry-footer-legal-link--compact text-left"
+                      >
+                        {link.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
-            <div className="lg:col-span-3" id="mentions-legales">
-              <p className="dingry-footer-eyebrow">Contact</p>
-              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-[#161616]/75 sm:text-[0.8125rem]">
-                <li>
-                  <a href={`mailto:${DINGRY_CONTACT_EMAIL}`} className="dingry-footer-link text-[#161616]">
-                    {DINGRY_CONTACT_EMAIL}
-                  </a>
-                </li>
-                <li className="pt-1">
-                  <a
-                    href={DINGRY_INSTAGRAM_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="dingry-footer-instagram-cta"
-                  >
-                    <InstagramIcon />
-                    <span className="dingry-footer-instagram-cta__label">Suivre sur Instagram</span>
-                    <span className="dingry-footer-instagram-cta__handle">@DINGRY_OFFICIEL</span>
-                  </a>
-                </li>
-              </ul>
+            <div className="flex flex-col gap-8 lg:col-span-7">
+              <DingryNewsletterForm />
+              <DingryContactForm />
             </div>
           </div>
 
-          <nav className="dingry-footer-legal-rail mt-12" aria-label="Documents légaux">
-            <div className="dingry-footer-legal-row dingry-gold-rule-top dingry-gold-rule-bottom relative flex flex-col gap-5 py-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="dingry-footer-eyebrow m-0">Légal</p>
-              <ul className="flex flex-wrap items-center gap-y-2">
-                {LEGAL_LINKS.map((link, index) => (
-                  <li key={link.id} className="flex items-center">
-                    {index > 0 ? (
-                      <span className="mx-3 hidden h-3 w-px shrink-0 bg-black/15 sm:inline-block" aria-hidden />
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => setLegalDoc(link.id)}
-                      className="dingry-footer-legal-link group"
-                    >
-                      <span className="dingry-footer-index mr-2 hidden opacity-60 transition-opacity group-hover:opacity-100 sm:inline">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      {link.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </nav>
-
-          <div className="mt-8 flex flex-col items-center justify-between gap-6 border-t border-black/10 pt-8 md:flex-row md:items-end">
-            <div className="text-center md:text-left">
-              <p className="dingry-footer-eyebrow text-[#161616]/60">Moyens de paiement</p>
+          <div className="mt-10 flex flex-col items-center gap-3 border-t border-black/10 pt-6 sm:flex-row sm:justify-between">
+            <div className="flex flex-col items-center gap-2 sm:items-start">
+              <p className="dingry-footer-eyebrow m-0 text-[#161616]/60">Paiement</p>
               <PaymentMarks />
             </div>
-            <p className="text-center text-xs tracking-[0.08em] text-[#161616]/55 md:text-right">
+            <p className="text-center text-[10px] tracking-[0.08em] text-[#161616]/55 sm:text-right">
               © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY · Tous droits réservés
             </p>
           </div>

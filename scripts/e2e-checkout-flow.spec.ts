@@ -112,7 +112,7 @@ test.describe('Parcours utilisateur boutique', () => {
 
     const personalizeModal = page.locator('[data-dingry-personalize-modal]');
     await expect(personalizeModal).toBeVisible({ timeout: 15000 });
-    await expect(personalizeModal.getByRole('heading', { name: /configurateur tee personnalisé/i })).toBeVisible();
+    await expect(personalizeModal.getByRole('heading', { name: /configurateur t-shirt personnalisé/i })).toBeVisible();
 
     await personalizeModal.getByPlaceholder(/ville/i).fill('DINGRY TEST');
 

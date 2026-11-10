@@ -118,7 +118,7 @@ export function clampPersonalizationLabel(value: string): string {
 }
 
 export function personalizationPreviewLabel(label: string): string {
-  return label.trim().slice(0, PERSONALIZATION_MAX_LABEL_LENGTH).toUpperCase() || "PARIS";
+  return label.trim().slice(0, PERSONALIZATION_MAX_LABEL_LENGTH).toUpperCase();
 }
 
 /** Ligne stockée dans le panier, ou null si le texte est vide. */

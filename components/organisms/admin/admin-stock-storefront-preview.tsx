@@ -73,6 +73,7 @@ function PreviewProductCard({
       ) : null}
       <ProductCard
         productId={product.id}
+        showAdminIdBadge
         name={storefrontProductTitle(product)}
         variant={storefrontProductSubtitle(product)}
         image={product.image}

@@ -33,7 +33,7 @@ const ORIGINAL_HOODIE_LINE: ProductLine = {
   materials: DINGRY_HOODIE_MATERIALS,
   sizeGuide: DINGRY_SIZE_GUIDE,
   description:
-    "Le hoodie signature DINGRY : coupe oversize, logo poitrine et statement au dos. Édition limitée, plusieurs coloris.",
+    "Le hoodie signature DINGRY : coupe oversize, logo poitrine et message signature au dos. Plusieurs coloris.",
   variants: [
     { rectoId: 6, colorLabel: "BLACK" },
     { rectoId: 2, colorLabel: "KING BLUE / PINK" },

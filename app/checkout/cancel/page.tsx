@@ -6,7 +6,7 @@ export default function CheckoutCancelPage() {
     <main className="dingry-checkout-page min-h-screen bg-[#f6f6f4] text-[#4b5563]">
       <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 py-8 md:px-6 md:py-14">
         <Link href="/" aria-label="Retour à la boutique DINGRY">
-          <DingryLogo animate={false} className="h-8 md:h-10" />
+          <DingryLogo animate={false} tone="on-light" className="h-8 md:h-10" />
         </Link>
 
         <section className="dingry-checkout-pay-surface mt-10 border p-4 md:p-8" role="status">

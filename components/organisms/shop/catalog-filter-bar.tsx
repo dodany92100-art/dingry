@@ -22,7 +22,8 @@ export function CatalogFilterBar({ value, onChange }: CatalogFilterBarProps) {
   const customActive = value === CATALOG_MENU_TAB_CUSTOM;
 
   return (
-    <div className="dingry-catalog-bar mb-6 border-b border-white/15 bg-[#12151c]/95 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.16)] backdrop-blur-2xl backdrop-saturate-150 md:mb-8">
+    <div className="dingry-catalog-bar dingry-catalog-bar--silver mb-6 md:mb-8">
+      <div className="dingry-catalog-bar__chrome py-3">
       <AnimatedTabs
         tabs={[...CATALOG_CATEGORY_TABS]}
         value={customActive ? "" : value}
@@ -47,6 +48,7 @@ export function CatalogFilterBar({ value, onChange }: CatalogFilterBarProps) {
           </button>
         }
       />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { useEffect, useMemo, useState } from "react";
 import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
@@ -180,7 +180,7 @@ export function StockTab({
             <label htmlFor="dingry-admin-stock-search" className="sr-only">
               Rechercher un produit
             </label>
-            <Search size={14} strokeWidth={1.75} className="shrink-0 text-white/38" aria-hidden />
+            <DingryLogo animate={false} className="h-5 w-auto shrink-0 opacity-80" />
             <input
               id="dingry-admin-stock-search"
               type="search"

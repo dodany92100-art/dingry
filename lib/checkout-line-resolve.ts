@@ -82,9 +82,14 @@ function priceToCents(price: number): number | null {
   return cents;
 }
 
+export type ResolveCheckoutLineOptions = {
+  personalizationProductIds?: readonly number[];
+};
+
 export function resolveCheckoutLine(
   line: CheckoutLine,
   snapshot: ShopCatalogSnapshot,
+  options?: ResolveCheckoutLineOptions,
 ): { ok: true; line: ResolvedCheckoutLine } | { ok: false; reason: CheckoutLineRejectReason } {
   if (isShopCatalogIdHidden(line.productId, snapshot.removed)) {
     return { ok: false, reason: "removed" };
@@ -121,7 +126,11 @@ export function resolveCheckoutLine(
   }
 
   const personalized = line.personalization !== undefined;
-  if (personalized && line.productId !== PERSONALIZABLE_PRODUCT_ID) {
+  const allowedPerso =
+    options?.personalizationProductIds && options.personalizationProductIds.length > 0
+      ? options.personalizationProductIds
+      : [PERSONALIZABLE_PRODUCT_ID];
+  if (personalized && !allowedPerso.includes(line.productId)) {
     return { ok: false, reason: "invalid_personalization" };
   }
 

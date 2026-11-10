@@ -101,7 +101,7 @@ export function AnimatedTabs({
   return (
     <div className={cn("relative min-w-0", className)}>
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[#12151c]/40 to-transparent md:w-8"
+        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-black/90 to-transparent md:w-8"
         aria-hidden
       />
       <div

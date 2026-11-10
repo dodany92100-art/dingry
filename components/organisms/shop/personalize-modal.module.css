@@ -76,11 +76,8 @@
   outline: none;
 }
 
-.priceMeta {
-  margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: rgb(22 22 22 / 0.45);
+.qtyRowSpaced {
+  margin-top: 1.25rem;
 }
 
 .eyebrow {

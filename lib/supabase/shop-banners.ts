@@ -2,6 +2,7 @@ import type { AdminCatalogPersoBanner } from "@/lib/admin/types";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const SHOP_BANNER_POSITION_CATALOG_PERSO = "catalog_perso" as const;
+export const SHOP_BANNER_POSITION_ATELIER_CUSTOM = "atelier_custom" as const;
 
 export type ShopBannerRow = {
   id: string;
@@ -82,6 +83,41 @@ export async function listSupabaseShopBanners(options?: { activeOnly?: boolean }
     throw new Error(error.message);
   }
   return (data ?? []) as ShopBannerRow[];
+}
+
+export async function upsertSupabaseAtelierCustomJson(
+  json: string,
+  enabled: boolean,
+): Promise<string> {
+  const position = SHOP_BANNER_POSITION_ATELIER_CUSTOM;
+  const existing = await getSupabaseShopBannerByPosition(position);
+  const id = existing?.id ?? crypto.randomUUID();
+  const now = new Date().toISOString();
+  const row = {
+    id,
+    title: "Atelier CUSTOM",
+    subtitle: "Configuration personnalisation",
+    eyebrow: "Atelier",
+    cta_label: "CUSTOM",
+    image_url: existing?.image_url?.trim() || "/dingry-favicon.jpg",
+    link_url: json,
+    image_blob_pathname: existing?.image_blob_pathname ?? null,
+    position,
+    is_active: enabled,
+    updated_at: now,
+    ...(existing ? {} : { created_at: now }),
+  };
+  const { error } = await supabaseAdmin().from("shop_banners").upsert(row, { onConflict: "position" });
+  if (error) throw new Error(error.message);
+  return now;
+}
+
+export async function readSupabaseAtelierCustomJson(): Promise<{ json: string | null; updatedAt: string }> {
+  const row = await getSupabaseShopBannerByPosition(SHOP_BANNER_POSITION_ATELIER_CUSTOM);
+  return {
+    json: row?.link_url?.trim() ? row.link_url : null,
+    updatedAt: row?.updated_at ?? "",
+  };
 }
 
 export async function upsertSupabaseCatalogPersoBanner(

@@ -8,6 +8,7 @@ import { AdminGridWorkflowBanner } from "@/components/organisms/admin/admin-grid
 import { AdminCrmPassage } from "@/components/organisms/admin/admin-crm-passage";
 import { AuthGate } from "@/components/organisms/admin/auth-gate";
 import { BackupCodesBanner } from "@/components/organisms/admin/backup-codes-banner";
+import { useAdminAtelierCustom } from "@/components/organisms/admin/hooks/use-admin-atelier-custom";
 import { useAdminCatalogPersoBanner } from "@/components/organisms/admin/hooks/use-admin-catalog-perso-banner";
 import { useAdminLookbook } from "@/components/organisms/admin/hooks/use-admin-lookbook";
 import { useAdminOrders } from "@/components/organisms/admin/hooks/use-admin-orders";
@@ -343,6 +344,7 @@ function AdminDashboard() {
   async function handleDeleteLookbookSlide(slide: AdminLookbookSlideView): Promise<boolean> {
     const confirmed = window.confirm(`Supprimer la slide « ${slide.title} » ?`);
     if (!confirmed) return false;
+    resetAtelierCustom();
     const error = await lookbookApi.remove(slide);
     if (error) {
       lookbookApi.setError(error);

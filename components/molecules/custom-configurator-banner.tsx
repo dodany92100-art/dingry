@@ -15,7 +15,7 @@ export function CustomConfiguratorBanner({ onOpen, content }: CustomConfigurator
       type="button"
       onClick={onOpen}
       className="dingry-custom-banner dingry-custom-banner--gift group relative mb-8 block w-full overflow-hidden text-left md:mb-10"
-      aria-label="Ouvrir le configurateur tee personnalisé"
+      aria-label="Ouvrir l'atelier custom T-shirt personnalisé"
     >
       <span className="absolute inset-0 overflow-hidden">
         <img

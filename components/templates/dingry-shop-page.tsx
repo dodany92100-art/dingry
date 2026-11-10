@@ -14,6 +14,7 @@ import { usePageScroll } from "@/components/organisms/shop/hooks/use-page-scroll
 import { useProductModal } from "@/components/organisms/shop/hooks/use-product-modal";
 import { useShopCart } from "@/components/organisms/shop/hooks/use-shop-cart";
 import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catalog";
+import { useShopAtelierCustom } from "@/components/organisms/shop/hooks/use-shop-atelier-custom";
 import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-perso-banner";
 import { FlyAnimationProvider, useFlyAnimation } from "@/hooks/use-fly-animation";
 import { useWishlist } from "@/hooks/use-wishlist";
@@ -22,8 +23,12 @@ import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
 import { isShopProductInStock } from "@/lib/catalog";
 import { CATALOG_MENU_TAB_CUSTOM, parseCatalogFilter } from "@/lib/shop-catalog";
+import {
+  enabledAtelierModels,
+  resolvePersonalizationShopProduct,
+} from "@/lib/atelier-custom-config";
 import { PERSONALIZABLE_PRODUCT_ID, PRODUCTS } from "@/lib/shop-data";
-import { shopBasePathFromPathname } from "@/lib/shop-base-path";
+import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import {
   buildFlipPairs,
   resolveSaleProduct,
@@ -46,8 +51,18 @@ const CartDrawer = dynamic(
   { ssr: false },
 );
 
+const WishlistDrawer = dynamic(
+  () => import("@/components/organisms/shop/wishlist-drawer").then((m) => ({ default: m.WishlistDrawer })),
+  { ssr: false },
+);
+
 const PaymentToast = dynamic(
   () => import("@/components/organisms/shop/payment-toast").then((m) => ({ default: m.PaymentToast })),
+  { ssr: false },
+);
+
+const HeritageReader = dynamic(
+  () => import("@/components/organisms/shop/heritage-reader").then((m) => ({ default: m.HeritageReader })),
   { ssr: false },
 );
 
@@ -55,6 +70,8 @@ const prefetchLookbookStrip = () =>
   import("@/components/organisms/shop/lookbook-catalog-strip");
 
 const prefetchHeritageSection = () => import("@/components/organisms/shop/heritage-section");
+
+const prefetchAtelierCustomSection = () => import("@/components/organisms/shop/atelier-custom-section");
 
 const prefetchShopFooter = () => import("@/components/organisms/shop-footer");
 
@@ -70,6 +87,14 @@ const HeritageSection = dynamic(
   () =>
     prefetchHeritageSection().then((m) => ({
       default: m.HeritageSection,
+    })),
+  { ssr: false },
+);
+
+const AtelierCustomSection = dynamic(
+  () =>
+    prefetchAtelierCustomSection().then((m) => ({
+      default: m.AtelierCustomSection,
     })),
   { ssr: false },
 );
@@ -90,6 +115,9 @@ function DingryShopPageInner() {
   const shopBasePath = shopBasePathFromPathname(pathname ?? "/");
   const { pageScrollRef, scrollToSection, restoreScrollPosition } = usePageScroll();
   const { products, catalogState, retry } = useShopCatalog();
+  const { config: atelierConfig } = useShopAtelierCustom({
+    enabled: catalogState !== "loading",
+  });
   const { banner: persoBanner } = useShopPersoBanner({
     enabled: catalogState === "ready",
   });
@@ -99,6 +127,8 @@ function DingryShopPageInner() {
   const { launchFromElement } = useFlyAnimation();
   const { activeFilter, selectFilter } = useCatalogFilter(scrollToSection);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
+  const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [heritageReaderOpen, setHeritageReaderOpen] = useState(false);
 
   const filtered = useMemo(() => visibleCatalogProducts(products, activeFilter), [products, activeFilter]);
   const flipPairs = useMemo(() => buildFlipPairs(products), [products]);
@@ -111,6 +141,34 @@ function DingryShopPageInner() {
 
   const tabValue = personalizeOpen ? CATALOG_MENU_TAB_CUSTOM : activeFilter;
   const [cartScrollLocked, setCartScrollLocked] = useState(false);
+
+  const openHeritageReader = useCallback(() => {
+    setHeritageReaderOpen(true);
+    const next = `${shopHref(shopBasePath, "/")}?heritage=1`;
+    router.replace(next, { scroll: false });
+  }, [router, shopBasePath]);
+
+  const closeHeritageReader = useCallback(() => {
+    setHeritageReaderOpen(false);
+    router.replace(shopHref(shopBasePath, "/"), { scroll: false });
+  }, [router, shopBasePath]);
+
+  useEffect(() => {
+    if (searchParams.get("heritage") === "1") {
+      setHeritageReaderOpen(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const scroller = pageScrollRef.current;
+    if (!scroller) return;
+    if (!heritageReaderOpen) return;
+    const previous = scroller.style.overflow;
+    scroller.style.overflow = "hidden";
+    return () => {
+      scroller.style.overflow = previous;
+    };
+  }, [heritageReaderOpen, pageScrollRef]);
 
   useEffect(() => {
     if (cart.open) setCartScrollLocked(true);
@@ -185,8 +243,14 @@ function DingryShopPageInner() {
 
   function addPersonalized(line: PersonalizedLineInput) {
     if (catalogState === "error") return;
-    if (!personalizationProduct) return;
-    cart.addPersonalizedLine(personalizationProduct, line.size, line.qty, line.personalization);
+    const models = enabledAtelierModels(atelierConfig);
+    const model =
+      models.find((m) => m.id === line.modelId || m.productId === line.productId) ?? models[0];
+    const product =
+      (model ? resolvePersonalizationShopProduct(products, model, PRODUCTS) : undefined) ??
+      personalizationProduct;
+    if (!product) return;
+    cart.addPersonalizedLine(product, line.size, line.qty, line.personalization);
     setPersonalizeOpen(false);
   }
 
@@ -201,15 +265,22 @@ function DingryShopPageInner() {
     <div className="dingry-shop relative h-dvh w-full overflow-x-hidden overflow-hidden bg-black text-white">
       <BackgroundGradientAnimation
         interactive={false}
-        paused={Boolean(modal.selectedProduct) || cart.open || personalizeOpen}
+        paused={
+          Boolean(modal.selectedProduct) ||
+          cart.open ||
+          wishlistOpen ||
+          personalizeOpen ||
+          heritageReaderOpen
+        }
       />
       <ShopNav
         shopBasePath={shopBasePath}
         cartCount={cart.count}
         favoriteCount={wishlist.favoriteCount}
-        onOpenFavorites={() => scrollToSection("catalogue")}
+        onOpenFavorites={() => setWishlistOpen(true)}
         onOpenCart={() => cart.setOpen(true)}
         onScrollToSection={scrollToSection}
+        onOpenHeritage={openHeritageReader}
       />
       <div
         ref={pageScrollRef}
@@ -221,7 +292,6 @@ function DingryShopPageInner() {
           <CatalogSection
             tabValue={tabValue}
             onTabChange={handleTabChange}
-            onOpenCustom={openCustom}
             catalogState={catalogState}
             onRetry={retry}
             filterKey={activeFilter}
@@ -230,8 +300,25 @@ function DingryShopPageInner() {
             onOpenProduct={modal.openProductModal}
             wishlistIds={wishlist.ids}
             onToggleWishlist={wishlist.toggle}
-            persoBanner={persoBanner}
           />
+          <LazyWhenVisible
+            scrollRootRef={pageScrollRef}
+            id="atelier-custom"
+            prefetch={prefetchAtelierCustomSection}
+            rootMargin="480px 0px 48px 0px"
+            placeholderClassName="dingry-gold-rule-top min-h-[16rem] [contain-intrinsic-size:auto_16rem]"
+          >
+            <AtelierCustomSection onOpenCustom={openCustom} persoBanner={persoBanner} />
+          </LazyWhenVisible>
+          <LazyWhenVisible
+            scrollRootRef={pageScrollRef}
+            id="heritage"
+            prefetch={prefetchHeritageSection}
+            rootMargin="420px 0px 48px 0px"
+            placeholderClassName="dingry-gold-rule-top min-h-[14rem] [contain-intrinsic-size:auto_14rem]"
+          >
+            <HeritageSection onOpenHeritage={openHeritageReader} />
+          </LazyWhenVisible>
           <LazyWhenVisible
             scrollRootRef={pageScrollRef}
             id="lookbook"
@@ -243,15 +330,6 @@ function DingryShopPageInner() {
           </LazyWhenVisible>
           <LazyWhenVisible
             scrollRootRef={pageScrollRef}
-            id="heritage"
-            prefetch={prefetchHeritageSection}
-            rootMargin="420px 0px 48px 0px"
-            placeholderClassName="dingry-gold-rule-top min-h-[50vh] [contain-intrinsic-size:auto_50vh]"
-          >
-            <HeritageSection scrollContainerRef={pageScrollRef} />
-          </LazyWhenVisible>
-          <LazyWhenVisible
-            scrollRootRef={pageScrollRef}
             prefetch={prefetchShopFooter}
             rootMargin="320px 0px 32px 0px"
             placeholderClassName="min-h-32 [contain-intrinsic-size:auto_8rem]"
@@ -260,6 +338,7 @@ function DingryShopPageInner() {
               shopBasePath={shopBasePath}
               onScrollToCatalogue={() => scrollToSection("catalogue")}
               onScrollToSection={scrollToSection}
+              onOpenHeritage={openHeritageReader}
             />
           </LazyWhenVisible>
         </div>
@@ -267,8 +346,9 @@ function DingryShopPageInner() {
 
       <PersonalizeModal
         open={personalizeOpen}
-        product={personalizationProduct}
-        onClose={() => setPersonalizeOpen(false)}
+        products={products}
+        atelierConfig={atelierConfig}
+        fallbackProduct={personalizationProduct}
         onSubmit={addPersonalized}
       />
       <ProductModal
@@ -300,6 +380,7 @@ function DingryShopPageInner() {
           scrollToSection("catalogue");
         }}
       />
+      <HeritageReader open={heritageReaderOpen} onClose={closeHeritageReader} />
     </div>
   );
 }

@@ -11,8 +11,9 @@ import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
 const SECTIONS = [
   ["catalogue", "Collection"],
+  ["atelier-custom", "Atelier"],
+  ["heritage", "Héritage"],
   ["lookbook", "Lookbook"],
-  ["heritage", "Heritage"],
 ] as const;
 
 type ShopNavProps = {
@@ -21,6 +22,7 @@ type ShopNavProps = {
   onOpenFavorites?: () => void;
   onOpenCart: () => void;
   onScrollToSection: (id: string) => void;
+  onOpenHeritage?: () => void;
   /** Aperçu CRM : même chrome, sans `position: fixed` sur la page admin. */
   embedded?: boolean;
   /** `/` ou `/websitedx` — logo renvoie au sommet de la boutique courante. */
@@ -33,6 +35,7 @@ export function ShopNav({
   onOpenFavorites,
   onOpenCart,
   onScrollToSection,
+  onOpenHeritage,
   embedded = false,
   shopBasePath = "/",
 }: ShopNavProps) {
@@ -90,7 +93,17 @@ export function ShopNav({
             <button
               key={id}
               type="button"
-              onClick={() => onScrollToSection(id)}
+              onClick={() => {
+                if (id === "heritage") {
+                  if (onOpenHeritage) {
+                    onOpenHeritage();
+                    return;
+                  }
+                  onScrollToSection("heritage");
+                  return;
+                }
+                onScrollToSection(id);
+              }}
               className="dingry-interactive-luxe text-xs tracking-[0.25em] text-white/40 uppercase hover:text-white"
             >
               {label}
@@ -108,7 +121,7 @@ export function ShopNav({
                   ? `Favoris, ${favoriteCount} article${favoriteCount > 1 ? "s" : ""}`
                   : "Voir le catalogue — favoris"
               }
-              className="dingry-nav-favoris-btn dingry-interactive-luxe relative flex h-11 w-11 items-center justify-center rounded-sm border border-white/20 bg-white/[0.06] text-white/75 hover:bg-white/[0.1] hover:text-white md:h-11 md:w-auto md:gap-2 md:px-3.5"
+              className="dingry-nav-favoris-btn dingry-interactive-luxe relative flex h-11 w-11 items-center justify-center rounded-sm border border-white/20 bg-white/[0.06] text-white/75 hover:bg-white/[0.1] hover:text-white"
             >
               <motion.span animate={favorisControls} className="inline-flex">
                 <Heart
@@ -120,9 +133,8 @@ export function ShopNav({
                   aria-hidden
                 />
               </motion.span>
-              <span className="hidden text-[10px] font-medium tracking-[0.22em] uppercase md:inline">Favoris</span>
               {favoriteCount > 0 ? (
-                <span className="dingry-nav-favoris-badge absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-sm px-1 text-[10px] font-bold tabular-nums leading-none md:static md:ml-0.5">
+                <span className="dingry-nav-favoris-badge absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-sm px-1 text-[10px] font-bold tabular-nums leading-none">
                   {favoriteCount}
                 </span>
               ) : null}

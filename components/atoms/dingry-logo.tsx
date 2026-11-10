@@ -9,6 +9,8 @@ type DingryLogoProps = {
   animate?: boolean;
   interactive?: boolean;
   shimmer?: boolean;
+  /** Fond clair (checkout, modale blog…) — wordmark en noir. */
+  tone?: "on-dark" | "on-light";
 };
 
 const LERP = 0.14;
@@ -82,7 +84,13 @@ function DingryLogoInteractive({ children }: { children: ReactNode }) {
   );
 }
 
-export function DingryLogo({ className, animate = true, interactive = false, shimmer = false }: DingryLogoProps) {
+export function DingryLogo({
+  className,
+  animate = true,
+  interactive = false,
+  shimmer = false,
+  tone = "on-dark",
+}: DingryLogoProps) {
   const img = (
     <img
       src={DINGRY_LOGO_URL}
@@ -90,6 +98,7 @@ export function DingryLogo({ className, animate = true, interactive = false, shi
       draggable={false}
       className={cn(
         "relative z-[1] h-7 w-auto max-md:max-h-7 md:h-11",
+        tone === "on-light" && "dingry-logo-on-light",
         animate && !interactive && !shimmer && "dingry-logo-flip",
         className,
       )}

@@ -1,62 +1,44 @@
 "use client";
 
-import type { RefObject } from "react";
-import { StickyScroll, type StickyScrollItem } from "@/components/atoms/ui/sticky-scroll-reveal";
-import { DINGRY_STREET_WORDMARK_URL } from "@/lib/dingry-brand";
-import { IMAGES } from "@/lib/shop-data";
-
-const EDITORIAL_SCROLL_ITEMS: StickyScrollItem[] = [
-  {
-    kickerLogo: true,
-    title: "Chaque silhouette raconte l'attitude.",
-    titleVariant: "street",
-    description:
-      "DINGRY Paris est une marque de streetwear française en plein développement, qui séduit un public toujours plus large grâce à une identité forte, un style affirmé et surtout un nom aussi original qu'universel.\n\nEntre coupes oversize, finitions soignées et drops en édition limitée, DINGRY réinvente le streetwear premium pensé pour Paris, Lyon et la scène urbaine européenne.",
-  },
-  {
-    title: "ROCK THE STREET.",
-    titleVariant: "street",
-    titleImage: {
-      src: DINGRY_STREET_WORDMARK_URL,
-      alt: "ROCK THE STREET.",
-    },
-    description:
-      "DINGRY, c'est peut-être l'un des meilleurs noms qu'une marque de streetwear puisse porter aujourd'hui. Un mot populaire, utilisé par toutes les générations et toutes les classes sociales, qui reflète parfaitement notre époque. Son écriture singulière en fait une signature immédiatement reconnaissable.",
-    elasticLogoCenter: true,
-  },
-];
+import {
+  DINGRY_HERITAGE_BASELINE,
+  DINGRY_HERITAGE_HOMEPAGE_HOOK,
+} from "@/lib/dingry-heritage-content";
+import { DINGRY_HERITAGE_EDITORIAL_SRC } from "@/lib/dingry-brand";
 
 type HeritageSectionProps = {
-  scrollContainerRef: RefObject<HTMLDivElement | null>;
+  onOpenHeritage: () => void;
 };
 
-export function HeritageSection({ scrollContainerRef }: HeritageSectionProps) {
+export function HeritageSection({ onOpenHeritage }: HeritageSectionProps) {
+
   return (
-    <section className="dingry-below-hero-surface dingry-gold-rule-top py-12 md:py-16">
-      <p className="dingry-section-eyebrow mb-4">Heritage</p>
-      <h2 className="dingry-sticky-editorial-title max-w-xl text-3xl uppercase leading-tight md:text-5xl">
-        True luxury is attitude.
-      </h2>
-      <p className="dingry-sticky-copy mt-6 max-w-xl text-sm leading-relaxed text-white/70">
-        DINGRY est une attitude. Une vision du luxe qui ne demande pas la permission.
-      </p>
-      <StickyScroll
-        scrollContainerRef={scrollContainerRef}
-        items={EDITORIAL_SCROLL_ITEMS}
-        stickyPanel={
-          <div className="dingry-editorial-frame relative w-full md:p-3">
-            <div className="dingry-editorial-frame__inner relative">
-              <img
-                src={IMAGES.editorial}
-                alt="DINGRY editorial"
-                className="block h-auto w-full object-cover object-center"
-                style={{ filter: "brightness(0.75) contrast(1.1) grayscale(0.4)" }}
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050505]/35 via-transparent to-transparent" />
-            </div>
-          </div>
-        }
-      />
+    <section className="dingry-below-hero-surface dingry-gold-rule-top py-10 md:py-14">
+      <p className="dingry-section-eyebrow mb-4">Héritage</p>
+
+      <div className="dingry-heritage-teaser group relative isolate w-full overflow-hidden">
+        <img
+          src={DINGRY_HERITAGE_EDITORIAL_SRC}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
+          style={{ filter: "brightness(0.55) contrast(1.08)" }}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" aria-hidden />
+
+        <div className="relative z-10 flex min-h-[12.5rem] flex-col justify-end gap-4 px-5 py-8 sm:min-h-[14rem] md:min-h-[16.5rem] md:px-10 md:py-11 lg:max-w-[48rem]">
+          <h2 className="dingry-sticky-editorial-title text-2xl uppercase leading-tight text-white md:text-4xl">
+            {DINGRY_HERITAGE_BASELINE}
+          </h2>
+          <p className="dingry-heritage-teaser-hook max-w-md text-sm leading-relaxed text-white md:text-base">
+            {DINGRY_HERITAGE_HOMEPAGE_HOOK}
+          </p>
+          <button type="button" onClick={onOpenHeritage} className="dingry-heritage-teaser-cta mt-2 w-fit">
+            Découvrir l&apos;histoire
+          </button>
+        </div>
+      </div>
     </section>
   );
 }

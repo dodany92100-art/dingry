@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryProductImage } from "@/components/atoms/dingry-product-image";
 import { DingryVariantProductImage } from "@/components/molecules/dingry-variant-product-image";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
@@ -11,15 +12,13 @@ import {
   ProductCaptchaTest,
 } from "@/components/molecules/product-captcha-test";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
+import { DINGRY_PRODUCT_MODAL_AMBIENCE_SRC } from "@/lib/dingry-brand";
 import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
-import {
-  catalogRectoId,
-  completeLookForProduct,
-  productDetailCopy,
-  productLineForShop,
-  storefrontProductTitle,
-} from "@/lib/dingry-product-display";
+import { catalogRectoId, productDetailCopy, storefrontProductTitle } from "@/lib/dingry-product-display";
+import { similarProductsForShop } from "@/lib/storefront/similar-products";
+import { SimilarProductsStrip } from "@/components/molecules/similar-products-strip";
 import { isJerseyShopProduct, JERSEY_COLOR_OPTIONS } from "@/lib/jersey-shop";
+import { colorSwatchChipStyle } from "@/lib/storefront/color-swatch-chip";
 import { isShopTeeCategory, resolveShopCategory } from "@/lib/shop-catalog";
 import { IMAGES, TEE_VERSO_BY_RECTO_ID } from "@/lib/shop-data";
 import {
@@ -122,17 +121,9 @@ function ProductModalContent({
   const showCrmFlip = Boolean(crmFlipImages);
   const effectiveShowSideToggle = showSideToggle || showCrmFlip;
 
-  const productLine = productLineForShop(product.id, products);
   const rectoId = catalogRectoId(product.id);
   const detail = productDetailCopy(product, products);
-  const completeLook = completeLookForProduct(product.id, products);
-  const lineVariantProducts =
-    productLine && productLine.variants.length > 1
-      ? productLine.variants.flatMap((variant) => {
-          const target = products.find((item) => catalogRectoId(item.id) === variant.rectoId);
-          return target ? [{ product: target, variant, isActive: variant.rectoId === rectoId }] : [];
-        })
-      : [];
+  const similar = similarProductsForShop(product.id, products);
   const wishlistActive = wishlistIds.includes(rectoId);
 
   const sizes = modalSizesFor(product);
@@ -167,6 +158,10 @@ function ProductModalContent({
         exit={{ opacity: 0, scale: 0.98 }}
         transition={MODAL_PANEL_SPRING}
       >
+        <div className={styles.ambience} aria-hidden>
+          <img src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC} alt="" decoding="async" className={styles.ambienceImg} />
+          <div className={styles.ambienceVeil} />
+        </div>
         <div ref={modal.productImageRef} className={styles.photo}>
           <div className={styles.photoStage}>
             {effectiveFlipImages ? (
@@ -205,6 +200,40 @@ function ProductModalContent({
               </div>
             )}
           </div>
+          {effectiveShowSideToggle && effectiveFlipImages ? (
+            <div className={styles.viewThumbs} role="tablist" aria-label="Vues produit">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={modalSide === "recto"}
+                onClick={() => modal.showProductSide("recto")}
+                className={`${styles.viewThumb} ${modalSide === "recto" ? styles.viewThumbOn : ""}`}
+              >
+                <img
+                  src={effectiveFlipImages.front}
+                  alt=""
+                  className={styles.viewThumbImg}
+                  decoding="async"
+                />
+                <span className={styles.viewThumbLabel}>Face</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={modalSide === "verso"}
+                onClick={() => modal.showProductSide("verso")}
+                className={`${styles.viewThumb} ${modalSide === "verso" ? styles.viewThumbOn : ""}`}
+              >
+                <img
+                  src={effectiveFlipImages.back}
+                  alt=""
+                  className={styles.viewThumbImg}
+                  decoding="async"
+                />
+                <span className={styles.viewThumbLabel}>Dos</span>
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className={styles.body}>
           <div>
@@ -223,6 +252,7 @@ function ProductModalContent({
                 </button>
               </div>
             </div>
+            <DingryLogo animate={false} tone="on-light" className="mb-3 h-8 w-auto opacity-90 md:mb-4 md:h-9" />
             <p className={`dingry-typo-manifesto ${styles.manifesto}`}>{DINGRY_MANIFESTO_FR}</p>
             <h2 className={styles.title}>{data.title}</h2>
             {detail.description ? (
@@ -251,7 +281,8 @@ function ProductModalContent({
                         key={option.optionKey}
                         type="button"
                         onClick={() => switchParentOption(option.optionKey)}
-                        className={`${styles.chip} ${isActive ? styles.chipActive : ""}`}
+                        className={`${styles.chip} ${styles.colorSwatchChip} ${isActive ? styles.colorSwatchChipOn : ""}`}
+                        style={colorSwatchChipStyle(option.label, option.color, option.optionKey)}
                         aria-pressed={isActive}
                       >
                         {option.label}
@@ -288,33 +319,25 @@ function ProductModalContent({
                 </button>
               </div>
             </div>
-            {effectiveShowSideToggle ? (
-              <div className={styles.sideUnder}>
-                <button
-                  type="button"
-                  onClick={() => modal.showProductSide(modalSide === "verso" ? "recto" : "verso")}
-                  className={`${styles.sideToggle} ${modalSide === "verso" ? styles.sideToggleOn : ""}`}
-                  aria-pressed={modalSide === "verso"}
-                >
-                  {modalSide === "verso" ? "recto" : "verso"}
-                </button>
-              </div>
-            ) : null}
             {isJersey ? (
               <div className={styles.section}>
                 <p className={styles.sectionLabel}>Couleur</p>
                 <div className={styles.chipRow}>
-                  {JERSEY_COLOR_OPTIONS.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      onClick={() => modal.setJerseyColor(option.key)}
-                      className={`${styles.jerseyChip} ${jerseyColor === option.key ? styles.jerseyOn : ""}`}
-                      aria-pressed={jerseyColor === option.key}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                  {JERSEY_COLOR_OPTIONS.map((option) => {
+                    const isActive = jerseyColor === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => modal.setJerseyColor(option.key)}
+                        className={`${styles.chip} ${styles.colorSwatchChip} ${isActive ? styles.colorSwatchChipOn : ""}`}
+                        style={colorSwatchChipStyle(option.label, option.key)}
+                        aria-pressed={isActive}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}
@@ -332,72 +355,13 @@ function ProductModalContent({
               ))}
             </div>
           </div>
-          {lineVariantProducts.length > 0 || completeLook.length > 0 ? (
-            <div className={styles.lookSection}>
-              {lineVariantProducts.length > 0 ? (
-                <>
-                  <p className={`${styles.sectionLabel} ${styles.lookLabel}`}>Coloris du modèle</p>
-                  <div className={styles.lookRow}>
-                    {lineVariantProducts.map(({ product: variantProduct, variant, isActive }) => (
-                      <button
-                        key={variant.rectoId}
-                        type="button"
-                        disabled={variant.comingSoon}
-                        onClick={() => {
-                          if (isActive) return;
-                          modal.switchProductVariant(variantProduct);
-                        }}
-                        className={`${styles.lookCard} ${isActive ? styles.lookCardActive : ""} ${variant.comingSoon ? styles.lookCardDisabled : ""}`}
-                        aria-pressed={isActive}
-                      >
-                        <DingryProductImage
-                          src={variantProduct.image}
-                          alt=""
-                          width={96}
-                          height={128}
-                          deliveryWidth={192}
-                          className={styles.lookThumb}
-                        />
-                        <span className={styles.lookCaption}>
-                          {variant.colorLabel}
-                          {variant.comingSoon ? " · bientôt" : ""}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : null}
-              {completeLook.length > 0 ? (
-                <>
-                  <p
-                    className={`${styles.sectionLabel} ${styles.lookLabel} ${lineVariantProducts.length > 0 ? styles.lookLabelSpaced : ""}`}
-                  >
-                    Complète le look
-                  </p>
-                  <div className={styles.lookRow}>
-                    {completeLook.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => modal.openProductModal(item)}
-                        className={styles.lookCard}
-                      >
-                        <DingryProductImage
-                          src={item.image}
-                          alt=""
-                          width={96}
-                          height={128}
-                          deliveryWidth={192}
-                          className={styles.lookThumb}
-                        />
-                        <span className={styles.lookCaption}>{storefrontProductTitle(item, products)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : null}
-            </div>
-          ) : null}
+          <SimilarProductsStrip
+            variants={similar.variants}
+            crossSell={similar.crossSell}
+            catalog={products}
+            onPickVariant={modal.switchProductVariant}
+            onPickCrossSell={modal.openProductModal}
+          />
           <div className={styles.ctaRow}>
             <button
               type="button"

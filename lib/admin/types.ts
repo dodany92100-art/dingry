@@ -114,9 +114,9 @@ export const PRODUCT_PRINT_PLACEMENT_OPTIONS: readonly ProductPrintPlacement[] =
 
 export const PRODUCT_PRINT_PLACEMENT_LABELS: Record<ProductPrintPlacement, string> = {
   "": "Non renseigné",
-  RECTO_VERSO: "RECTO / VERSO",
-  RECTO_ONLY: "RECTO SEUL",
-  VERSO_ONLY: "VERSO SEUL",
+  RECTO_VERSO: "Face / dos",
+  RECTO_ONLY: "Face uniquement",
+  VERSO_ONLY: "Dos uniquement",
 };
 
 export function printPlacementDisplayLabel(value: ProductPrintPlacement): string {

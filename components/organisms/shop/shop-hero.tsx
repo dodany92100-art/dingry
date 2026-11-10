@@ -2,11 +2,10 @@
 
 import Image from "next/image";
 import { DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
-import { DINGRY_HERO_QUOTE, DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
+import { DINGRY_HERO_QUOTE, DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 
 const HERO_IMAGE = DINGRY_TEASING_HERO_SRC;
-const STREET_WATERMARK = "XRCKTHSTRT";
-
+const STREET_WATERMARK = DINGRY_STREET_LINE;
 /** Hero : manifeste dossier (gauche), accroche hauteur coude (droite). */
 export function ShopHero() {
   return (

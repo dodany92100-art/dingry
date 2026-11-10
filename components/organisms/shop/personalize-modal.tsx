@@ -1,53 +1,94 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
 import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
 import {
-  PERSONALIZATION_MAX_LABEL_LENGTH,
-  PERSONALIZATION_SHIRTS,
-  SIZES,
-  type PersonalizationShirtId,
-} from "@/lib/shop-data";
+  enabledAtelierModels,
+  previewTextStyleClass,
+  resolvePersonalizationShopProduct,
+  type ShopAtelierCustomConfig,
+} from "@/lib/atelier-custom-config";
+import { PERSONALIZATION_MAX_LABEL_LENGTH, PRODUCTS } from "@/lib/shop-data";
 import {
   clampPersonalizationLabel,
   personalizationLine,
   personalizationPreviewLabel,
 } from "@/lib/shop-view";
+import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
 import modalStyles from "./product-modal.module.css";
 import styles from "./personalize-modal.module.css";
 
-export type PersonalizedLineInput = { size: string; qty: number; personalization: string };
+export type PersonalizedLineInput = {
+  size: string;
+  qty: number;
+  personalization: string;
+  productId: number;
+  modelId: string;
+};
 
 type PersonalizeModalProps = {
   open: boolean;
-  product: ShopProduct | undefined;
+  products: readonly ShopProduct[];
+  atelierConfig: ShopAtelierCustomConfig;
+  fallbackProduct?: ShopProduct;
   onClose: () => void;
   onSubmit: (line: PersonalizedLineInput) => void;
 };
 
 /** Formulaire conservé entre ouvertures (état local React). */
-export function PersonalizeModal({ open, product, onClose, onSubmit }: PersonalizeModalProps) {
-  const [label, setLabel] = useState("PARIS");
+export function PersonalizeModal({
+  open,
+  products,
+  atelierConfig,
+  fallbackProduct,
+  onClose,
+  onSubmit,
+}: PersonalizeModalProps) {
+  const models = useMemo(() => enabledAtelierModels(atelierConfig), [atelierConfig]);
+  const [label, setLabel] = useState("");
   const [size, setSize] = useState("");
   const [qty, setQty] = useState(1);
-  const [shirtId, setShirtId] = useState<PersonalizationShirtId>("noir");
+  const [modelId, setModelId] = useState("");
 
-  const shirt = PERSONALIZATION_SHIRTS.find((s) => s.id === shirtId) ?? PERSONALIZATION_SHIRTS[0];
-  const previewLabel = personalizationPreviewLabel(label);
-  const inStock = product ? isShopProductInStock(product) : false;
-  const canSubmit = Boolean(size) && Boolean(label.trim()) && inStock;
-  const unitPrice = (product?.price ?? 0) + PERSONALIZATION_SURCHARGE_EUR;
+  useEffect(() => {
+    if (!open) return;
+    if (models.length === 0) return;
+    setModelId((prev) => (models.some((m) => m.id === prev) ? prev : models[0]!.id));
+  }, [open, models]);
+
+  const model = models.find((m) => m.id === modelId) ?? models[0];
+  const saleProduct = useMemo(() => {
+    if (!model) return fallbackProduct;
+    return (
+      resolvePersonalizationShopProduct(products, model, PRODUCTS) ??
+      fallbackProduct
+    );
+  }, [fallbackProduct, model, products]);
+
+  const previewLabel = label.trim() ? personalizationPreviewLabel(label) : "";
+  const inStock = saleProduct ? isShopProductInStock(saleProduct) : false;
+  const canSubmit = Boolean(model) && Boolean(size) && Boolean(label.trim()) && inStock;
+  const unitPrice = (saleProduct?.price ?? 0) + PERSONALIZATION_SURCHARGE_EUR;
   const sizeGridVars = { "--size-cols": "6" } as CSSProperties;
+  const cityClass = model ? previewTextStyleClass(model.previewTextStyle) : "dingry-personalize-city";
+
+  const sizeOptions = model?.sizes.length ? model.sizes : [];
 
   function handleAdd() {
-    if (!product || !size || !isShopProductInStock(product)) return;
-    const line = personalizationLine(label, shirt.label);
+    if (!model || !saleProduct || !size || !isShopProductInStock(saleProduct)) return;
+    const line = personalizationLine(label, `${model.label} ${model.catalogRef}`.trim());
     if (!line) return;
-    onSubmit({ size, qty, personalization: line });
+    onSubmit({
+      size,
+      qty,
+      personalization: line,
+      productId: model.productId,
+      modelId: model.id,
+    });
   }
 
   return (
@@ -71,19 +112,23 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
           >
             <div className={modalStyles.photo}>
               <div className={styles.previewStage}>
-                <img
-                  src={shirt.image}
-                  alt={`Tee ${shirt.label} — vue recto`}
-                  className="h-full w-full object-cover"
-                  style={{ filter: "brightness(0.92) contrast(1.05)" }}
-                />
-                <div
-                  className="dingry-personalize-city pointer-events-none absolute left-1/2 -translate-x-1/2 text-center uppercase"
-                  style={{ top: shirt.cityTop, width: "78%", fontSize: shirt.citySize }}
-                  aria-live="polite"
-                >
-                  {previewLabel}
-                </div>
+                {model ? (
+                  <img
+                    src={model.previewImageUrl}
+                    alt={`${model.label} — vue recto`}
+                    className="h-full w-full object-cover"
+                    style={{ filter: "brightness(0.92) contrast(1.05)" }}
+                  />
+                ) : null}
+                {previewLabel && model ? (
+                  <div
+                    className={`${cityClass} pointer-events-none absolute left-1/2 -translate-x-1/2 text-center uppercase`}
+                    style={{ top: model.cityTop, width: "78%", fontSize: model.citySize }}
+                    aria-live="polite"
+                  >
+                    {previewLabel}
+                  </div>
+                ) : null}
                 <p className={styles.previewCaptionTop}>Vue recto — sous le logo</p>
                 <p className={styles.previewCaptionBottom}>Simulation indicative</p>
               </div>
@@ -99,57 +144,56 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                     </svg>
                   </button>
                 </div>
+                <DingryLogo animate={false} tone="on-light" className="mb-4 h-9 w-auto md:h-10" />
                 <p className={`dingry-typo-manifesto ${modalStyles.manifesto}`}>{DINGRY_MANIFESTO_FR}</p>
-                <p className={styles.eyebrow}>Custom · Studio</p>
-                <h2 className={modalStyles.title}>Configurateur tee personnalisé</h2>
+                <p className={styles.eyebrow}>Atelier custom</p>
+                <h2 className={modalStyles.title}>Configurateur T-shirt personnalisé</h2>
                 <p className={modalStyles.description}>
-                  Choisissez la couleur, saisissez votre texte, vérifiez l&apos;aperçu recto, puis ajoutez au panier.
+                  Choisis le modèle ({models.map((m) => m.catalogRef).join(" ou ")}), ton texte, la taille, puis
+                  ajoute au panier.
                 </p>
                 <ol className={styles.steps}>
-                  <li className={styles.stepPill}>1 · Couleur</li>
-                  <li className={styles.stepPill}>2 · Texte</li>
-                  <li className={styles.stepPill}>3 · Taille & quantité</li>
+                  <li className={styles.stepPill}>1 — Modèle</li>
+                  <li className={styles.stepPill}>2 — Texte</li>
+                  <li className={styles.stepPill}>3 — Taille &amp; Quantité</li>
                 </ol>
 
-                <div className={modalStyles.section}>
-                  <p className={modalStyles.metaText}>
-                    Choisis ta ville et personnalise ton DINGRY. Personnalisation possible,{" "}
-                    <span className="dingry-product-price dingry-product-price--sm inline-block align-baseline">
-                      {PERSONALIZATION_SURCHARGE_EUR}€
-                    </span>{" "}
-                    par article.
-                  </p>
-                </div>
-
-                <div className={modalStyles.section}>
-                  <p className={modalStyles.sectionLabel}>Étape 1 · Couleur du tee</p>
-                  <div className={modalStyles.chipRow}>
-                    {PERSONALIZATION_SHIRTS.map((option) => {
-                      const active = shirtId === option.id;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => setShirtId(option.id)}
-                          className={`${modalStyles.chip} ${active ? styles.colorChipActive : ""}`}
-                          style={
-                            active
-                              ? ({
-                                  "--shirt-swatch": option.swatch,
-                                  "--shirt-swatch-text": option.swatchText,
-                                } as CSSProperties)
-                              : undefined
-                          }
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
+                {models.length === 0 ? (
+                  <p className="text-sm text-neutral-500">Atelier temporairement indisponible.</p>
+                ) : (
+                  <div className={modalStyles.section}>
+                    <p className={modalStyles.sectionLabel}>1 — Modèle</p>
+                    <div className={modalStyles.chipRow}>
+                      {models.map((option) => {
+                        const active = model?.id === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => {
+                              setModelId(option.id);
+                              if (size && !option.sizes.includes(size)) setSize("");
+                            }}
+                            className={`${modalStyles.chip} ${active ? styles.colorChipActive : ""}`}
+                            style={
+                              active
+                                ? ({
+                                    "--shirt-swatch": option.swatch,
+                                    "--shirt-swatch-text": option.swatchText,
+                                  } as CSSProperties)
+                                : undefined
+                            }
+                          >
+                            {option.label} {option.catalogRef}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <label className={`${modalStyles.section} block`}>
-                  <span className={modalStyles.sectionLabel}>Étape 2 · Ville, pays ou texte</span>
+                  <span className={modalStyles.sectionLabel}>2 — Texte</span>
                   <input
                     type="text"
                     value={label}
@@ -157,13 +201,21 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                     placeholder="Ville, Pays"
                     className={styles.fieldInput}
                     maxLength={PERSONALIZATION_MAX_LABEL_LENGTH}
+                    list={atelierConfig.suggestedCities.length ? "dingry-atelier-cities" : undefined}
                   />
+                  {atelierConfig.suggestedCities.length > 0 ? (
+                    <datalist id="dingry-atelier-cities">
+                      {atelierConfig.suggestedCities.map((city) => (
+                        <option key={city} value={city} />
+                      ))}
+                    </datalist>
+                  ) : null}
                 </label>
 
                 <div className={modalStyles.section}>
-                  <p className={modalStyles.sizeLabel}>Étape 3 · Taille</p>
+                  <p className={modalStyles.sizeLabel}>3 — Taille &amp; quantité</p>
                   <div className={`${modalStyles.sizeGrid} ${modalStyles.sizeGridTight}`} style={sizeGridVars}>
-                    {SIZES.map((s) => (
+                    {sizeOptions.map((s) => (
                       <button
                         key={s}
                         type="button"
@@ -178,13 +230,10 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
               </div>
 
               <div>
-                <div className={modalStyles.qtyRow}>
+                <div className={`${modalStyles.qtyRow} ${styles.qtyRowSpaced}`}>
                   <div className={modalStyles.qtyLead}>
                     <span className={modalStyles.qtyLabel}>Quantité</span>
                     <p className={modalStyles.qtyPrice}>{unitPrice * qty}€</p>
-                    <p className={styles.priceMeta}>
-                      ({unitPrice}€ × {qty})
-                    </p>
                   </div>
                   <div className={modalStyles.qtyControl}>
                     <button
@@ -210,9 +259,9 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                   type="button"
                   onClick={handleAdd}
                   disabled={!canSubmit}
-                  className={`${modalStyles.addBtn} ${canSubmit ? modalStyles.addBtnOn : modalStyles.addBtnOff}`}
+                  className={`${modalStyles.addBtn} dingry-add-to-cart-btn ${canSubmit ? modalStyles.addBtnOn : modalStyles.addBtnOff}`}
                 >
-                  {product && !inStock ? "Épuisé" : "Ajouter au panier"}
+                  {saleProduct && !inStock ? "Épuisé" : "Ajouter au panier"}
                 </button>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { isProductSize } from "@/lib/admin/types";
+import { loadPersonalizationProductIds } from "@/lib/atelier-custom-server";
 import { loadStoreReadOnly } from "@/lib/admin/store";
 import {
   resolveCheckoutLine,

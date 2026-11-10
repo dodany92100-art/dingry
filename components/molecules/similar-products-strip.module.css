@@ -1,0 +1,59 @@
+.root {
+  margin-bottom: 1.5rem;
+  border-top: 1px solid rgb(0 0 0 / 0.08);
+  padding-top: 1.25rem;
+}
+
+.label {
+  margin-bottom: 0.75rem;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgb(22 22 22 / 0.45);
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.card {
+  width: 6rem;
+  flex-shrink: 0;
+  border: 1px solid rgb(0 0 0 / 0.1);
+  background: #fff;
+  text-align: left;
+  transition: border-color 150ms ease;
+}
+
+.card:hover {
+  border-color: rgb(0 0 0 / 0.35);
+}
+
+.cardActive {
+  border-color: #161616;
+  box-shadow: 0 0 0 1px rgb(22 22 22 / 0.2);
+}
+
+.cardDisabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.thumb {
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  object-fit: cover;
+}
+
+.caption {
+  display: block;
+  padding: 0.5rem;
+  font-size: 9px;
+  line-height: 1.375;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: rgb(22 22 22 / 0.58);
+}

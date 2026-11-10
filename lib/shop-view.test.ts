@@ -86,7 +86,7 @@ describe("personnalisation", () => {
   });
 
   it("aperçu : défaut PARIS, majuscules, 28 caractères max", () => {
-    expect(personalizationPreviewLabel("")).toBe("PARIS");
+    expect(personalizationPreviewLabel("")).toBe("");
     expect(personalizationPreviewLabel("lyon")).toBe("LYON");
     expect(personalizationPreviewLabel("a".repeat(40))).toHaveLength(28);
   });

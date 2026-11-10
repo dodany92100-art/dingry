@@ -278,7 +278,7 @@ export default function CheckoutPage() {
         <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
           <div>
             <Link href="/" aria-label="Retour à la boutique DINGRY">
-              <DingryLogo animate={false} className="h-8 md:h-10" />
+              <DingryLogo animate={false} tone="on-light" className="h-8 md:h-10" />
             </Link>
             <p className="dingry-typo-manifesto mt-3 text-[10px]">{DINGRY_MANIFESTO_FR}</p>
             <p className="dingry-typo-street dingry-typo-street--sm mt-2">{DINGRY_STREET_LINE}</p>
