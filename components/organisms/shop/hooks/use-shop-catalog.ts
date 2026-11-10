@@ -69,8 +69,8 @@ export function useShopCatalog() {
         }
       } catch {
         if (!cancelled) {
-          setProducts(PRODUCTS);
-          setCatalogState("ready");
+          setProducts([]);
+          setCatalogState("error");
         }
       }
     }

@@ -1,15 +1,19 @@
 import { revalidatePath } from "next/cache";
-import { isR2ImageStorageEnabled, requireAdmin } from "@/lib/admin/auth";
+import { requireAdmin } from "@/lib/admin/auth";
+import {
+  adminCrmBackendFlags,
+  adminCrmMediaBackendGuard,
+  respondAdminCrmReadError,
+  respondAdminCrmWriteError,
+} from "@/lib/admin/admin-crm-route";
 import { parseCatalogPersoBannerFields } from "@/lib/admin/parse-catalog-perso-banner";
 import {
   loadStoreReadOnly,
-  StoreConflictError,
-  StoreUnavailableError,
   upsertCatalogPersoBanner,
-  validateImageFile,
+  validateCrmContentImageFile,
 } from "@/lib/admin/store";
 import { resolveAdminCatalogPersoBanner } from "@/lib/catalog-perso-banner";
-import { preuploadedRectoFromForm } from "@/lib/admin/preuploaded-image";
+import { persoBannerImageFromForm, preuploadedRectoFromForm } from "@/lib/admin/preuploaded-image";
 import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -17,11 +21,15 @@ export const runtime = "nodejs";
 function revalidateCatalogPersoBanner() {
   revalidatePath("/");
   revalidatePath("/api/catalog-perso-banner");
+  revalidatePath("/api/banners");
 }
 
 export async function GET() {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
+
+  const blocked = adminCrmMediaBackendGuard();
+  if (blocked) return blocked;
 
   try {
     const store = await loadStoreReadOnly();
@@ -29,19 +37,19 @@ export async function GET() {
     return jsonNoStore({
       banner,
       customized: Boolean(store.catalogPersoBanner),
-      r2ImageStorage: isR2ImageStorageEnabled(),
+      ...adminCrmBackendFlags(),
     });
   } catch (error) {
-    if (error instanceof StoreUnavailableError) {
-      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
-    }
-    return jsonNoStore({ error: "Impossible de charger la bannière." }, { status: 500 });
+    return respondAdminCrmReadError(error, "admin catalog-perso-banner GET", "Impossible de charger la bannière.");
   }
 }
 
 export async function PATCH(request: Request) {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
+
+  const blocked = adminCrmMediaBackendGuard();
+  if (blocked) return blocked;
 
   let formData: FormData;
   try {
@@ -68,9 +76,10 @@ export async function PATCH(request: Request) {
 
   const image = formData.get("image");
   const preuploadedImage = preuploadedRectoFromForm(formData);
+  const persistedImage = persoBannerImageFromForm(formData);
   const file = image instanceof File && image.size > 0 ? image : undefined;
   if (file) {
-    const imageError = validateImageFile(file);
+    const imageError = validateCrmContentImageFile(file);
     if (imageError) {
       return jsonNoStore({ error: imageError }, { status: 400 });
     }
@@ -81,16 +90,15 @@ export async function PATCH(request: Request) {
       { enabled, eyebrow, title, subtitle, ctaLabel },
       file,
       preuploadedImage,
+      persistedImage,
     );
     revalidateCatalogPersoBanner();
     return jsonNoStore({ banner });
   } catch (error) {
-    if (error instanceof StoreUnavailableError) {
-      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
-    }
-    if (error instanceof StoreConflictError) {
-      return jsonNoStore({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
-    }
-    return jsonNoStore({ error: "Impossible d'enregistrer la bannière." }, { status: 500 });
+    return respondAdminCrmWriteError(
+      error,
+      "admin catalog-perso-banner PATCH",
+      "Impossible d'enregistrer la bannière.",
+    );
   }
 }

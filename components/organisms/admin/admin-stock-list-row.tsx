@@ -5,7 +5,7 @@ import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
 import type { StockAutosavePhase } from "@/lib/admin/stock-autosave-types";
 import type { AdminProduct } from "@/lib/admin/types";
-import { cldOpt } from "@/lib/cloudinary-url";
+import { deliveryImageUrl as cldOpt } from "@/lib/media/delivery-image-url";
 import { AdminStockControls } from "@/components/organisms/admin/admin-stock-controls";
 import { AdminStockStatusBadge } from "@/components/organisms/admin/admin-stock-status-badge";
 import { AdminProductOrderControls } from "@/components/organisms/admin/admin-product-order-controls";

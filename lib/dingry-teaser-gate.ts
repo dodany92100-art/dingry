@@ -12,6 +12,7 @@ const TEASER_GATED_EXACT = new Set([
   "/api/catalog",
   "/api/checkout",
   "/api/lookbook",
+  "/api/banners",
   "/api/catalog-perso-banner",
 ]);
 

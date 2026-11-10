@@ -10,6 +10,7 @@ import {
 } from "@/lib/client/admin-upload-image";
 import { prepareAndUploadAdminImage } from "@/lib/client/admin-media-upload";
 import type { SaveLookbookResult } from "./hooks/use-admin-lookbook";
+import { useAdminUploadGuard } from "./hooks/use-admin-upload-guard";
 
 type LookbookEditorModalProps = {
   initial: AdminLookbookSlideView | null;
@@ -37,6 +38,7 @@ export function LookbookEditorModal({
 
   const editingId = initial?.id ?? null;
   const busy = saving || convertingImage || (editingId !== null && busySlideId === editingId);
+  useAdminUploadGuard(busy);
 
   useEffect(() => {
     if (!imageFile) return;
@@ -47,20 +49,24 @@ export function LookbookEditorModal({
 
   async function handleImageChange(file: File | null) {
     if (!file) {
+      if (convertingImage || saving) return;
       setImageFile(null);
       setPreuploaded(null);
       if (initial) setImagePreview(initial.imageUrl);
       return;
     }
+    const priorPreview = imagePreview;
+    const priorPreuploaded = preuploaded;
     setConvertingImage(true);
     setFormError("");
     const folder = editingId ? R2_LOOKBOOK_FOLDER(editingId) : R2_LOOKBOOK_STAGING_FOLDER;
-    const result = await prepareAndUploadAdminImage(file, { folder });
+    const result = await prepareAndUploadAdminImage(file, { folder, contentImage: true });
     setConvertingImage(false);
     if (!result.ok) {
       setFormError(result.error);
       setImageFile(null);
-      setPreuploaded(null);
+      setPreuploaded(priorPreuploaded);
+      setImagePreview(priorPreview);
       return;
     }
     if (result.uploaded) {
@@ -77,6 +83,10 @@ export function LookbookEditorModal({
     event.preventDefault();
     if (!title.trim()) {
       setFormError("Le titre est requis.");
+      return;
+    }
+    if (convertingImage) {
+      setFormError("Attendez la fin de l’upload R2 avant d’enregistrer.");
       return;
     }
     if (!editingId && !imageFile && !preuploaded?.url) {
@@ -114,8 +124,12 @@ export function LookbookEditorModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
-            className="text-white/40 hover:text-white"
+            disabled={busy}
+            onClick={() => {
+              if (busy) return;
+              onClose();
+            }}
+            className="text-white/40 hover:text-white disabled:opacity-30"
             aria-label="Fermer"
           >
             ✕
@@ -145,17 +159,22 @@ export function LookbookEditorModal({
 
         <div className="mb-6">
           <span className="mb-2 block text-[10px] uppercase tracking-[0.22em] text-white/45">
-            Image {editingId ? "(optionnel)" : ""}
+            Image WebP · 1 Mo max {editingId ? "(optionnel)" : ""}
           </span>
           {imagePreview ? (
             <img src={imagePreview} alt="" className="mb-3 aspect-[3/4] w-full max-w-[200px] object-cover" />
           ) : null}
+          {convertingImage ? (
+            <p className="mb-2 text-[10px] uppercase tracking-[0.16em] text-amber-300/90">
+              Upload R2 en cours… ne fermez pas cette fenêtre.
+            </p>
+          ) : null}
           <input
             type="file"
             accept="image/*"
-            disabled={convertingImage}
+            disabled={busy}
             onChange={(event) => void handleImageChange(event.target.files?.[0] ?? null)}
-            className="block w-full text-xs text-white/55"
+            className="block w-full text-xs text-white/55 disabled:opacity-40"
           />
         </div>
 

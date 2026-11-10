@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
+import { DingryProductImage } from "@/components/atoms/dingry-product-image";
+import { CATALOG_CARD_IMAGE_WIDTH } from "@/lib/media/catalog-image-sizes";
 import { cn } from "@/lib/utils";
-import { CATALOG_CARD_IMAGE_WIDTH } from "@/lib/cloudinary-url";
 
 /** Fenêtre pour distinguer double tap (flip) vs simple tap (modale) sur tactile. */
 const DOUBLE_TAP_MS = 320;
@@ -160,7 +160,7 @@ export function ProductImageFlip({
     const src = side === "verso" && backImage?.trim() ? backImage : frontImage;
     return (
       <div className={cn("relative", className)}>
-        <DingryCloudinaryImage
+        <DingryProductImage
           src={src}
           alt={side === "verso" ? `${alt} — verso` : alt}
           width={600}
@@ -183,7 +183,7 @@ export function ProductImageFlip({
         role={onTap ? "button" : undefined}
         tabIndex={onTap ? 0 : undefined}
       >
-        <DingryCloudinaryImage
+        <DingryProductImage
           src={frontImage}
           alt={alt}
           deliveryWidth={cardW}
@@ -236,7 +236,7 @@ export function ProductImageFlip({
           side === "verso" && "dingry-flip-track--verso",
         )}
       >
-        <DingryCloudinaryImage
+        <DingryProductImage
           src={frontImage}
           alt={alt}
           deliveryWidth={cardW}
@@ -247,7 +247,7 @@ export function ProductImageFlip({
             soldOut && "opacity-50",
           )}
         />
-        <DingryCloudinaryImage
+        <DingryProductImage
           src={backImage ?? frontImage}
           alt={`${alt} — verso`}
           deliveryWidth={cardW}

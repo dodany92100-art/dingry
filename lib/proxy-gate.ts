@@ -17,6 +17,7 @@ export const PROXY_MATCHER = [
   "/api/catalog/:path*",
   "/api/checkout",
   "/api/lookbook",
+  "/api/banners",
   "/api/catalog-perso-banner",
 ] as const;
 

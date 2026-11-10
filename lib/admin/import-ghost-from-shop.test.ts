@@ -6,7 +6,7 @@ import { shopProductToImportAdminProduct } from "@/lib/admin/import-ghost-from-s
 import { PRODUCTS } from "@/lib/shop-data";
 
 describe("shopProductToImportAdminProduct", () => {
-  it("remplit imageBackUrl et conserve le SKU seed", () => {
+  it("mappe la fiche seed et conserve le SKU", () => {
     const shop = PRODUCTS.find((p) => p.id === 2);
     expect(shop).toBeDefined();
     const admin = shopProductToImportAdminProduct(shop!);
@@ -14,7 +14,6 @@ describe("shopProductToImportAdminProduct", () => {
     expect(admin.name).toBe(shop!.name);
     expect(admin.price).toBe(shop!.price);
     expect(admin.imageUrl).toBe(shop!.image.trim());
-    expect(admin.imageBackUrl.trim().length).toBeGreaterThan(0);
     expect(admin.sku).toBe("DINGRY-H01");
   });
 });

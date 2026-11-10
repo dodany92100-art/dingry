@@ -27,7 +27,7 @@ export function LookbookTab({
         <div>
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Lookbook boutique</p>
           <p className="mt-1 max-w-md text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
-            Même liste que la vitrine (y compris slides par défaut si le store est vide). Supprimer = définitif.
+            Slides CRM Supabase · visibles sur la boutique quand elles sont en ligne. Supprimer = définitif.
           </p>
         </div>
         <button
@@ -64,7 +64,7 @@ export function LookbookTab({
                 ) : null}
                 <p className="mt-1 text-[9px] tracking-[0.12em] text-white/25">
                   Ordre {index + 1}
-                  {isSeed ? " · défaut vitrine" : " · enregistrée"}
+                  {isSeed ? " · défaut vitrine" : " · en ligne"}
                 </p>
               </div>
               <div className="flex shrink-0 flex-col gap-1">

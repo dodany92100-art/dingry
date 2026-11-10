@@ -39,6 +39,19 @@ import {
   reorderSupabaseProducts,
   upsertSupabaseProduct,
 } from "@/lib/supabase/admin-products";
+import {
+  deleteSupabaseLookbookSlide,
+  insertSupabaseLookbookSlide,
+  listSupabaseLookbookSlides,
+  reorderSupabaseLookbookSlides,
+  updateSupabaseLookbookSlide,
+} from "@/lib/supabase/lookbook-slides";
+import {
+  getSupabaseShopBannerByPosition,
+  rowToAdminCatalogPersoBanner,
+  SHOP_BANNER_POSITION_CATALOG_PERSO,
+  upsertSupabaseCatalogPersoBanner,
+} from "@/lib/supabase/shop-banners";
 import { getSharedRedis } from "@/lib/ratelimit";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { buildStorefrontOnlineProducts } from "@/lib/admin/storefront-online-catalog";
@@ -88,13 +101,17 @@ import {
   normalizeDisplayOrder,
   normalizeIsPinned,
 } from "@/lib/admin/product-display-order";
-import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 import { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
+import {
+  CRM_CONTENT_IMAGE_MAX_BYTES,
+  CRM_CONTENT_IMAGE_MAX_LABEL,
+  PRODUCT_IMAGE_MAX_BYTES,
+  PRODUCT_IMAGE_MAX_LABEL,
+} from "@/lib/admin/image-limits";
 
 export { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
 
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
 const STORE_WRITE_ATTEMPTS = 8;
 const STORE_LOCK_KEY = "dingry:store-lock";
@@ -456,10 +473,11 @@ export function publicLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
 
 /** Admin lookbook : même liste que la vitrine, avec origine stockée vs seed. */
 export function adminLookbookSlideViews(raw: AdminStore): AdminLookbookSlideView[] {
+  const slides = isSupabaseStoreEnabled() ? mergeLookbookSlides(raw) : publicLookbookSlides(raw);
   const storedIds = new Set(raw.lookbook.map((slide) => slide.id));
-  return publicLookbookSlides(raw).map((slide) => ({
+  return slides.map((slide) => ({
     ...slide,
-    source: storedIds.has(slide.id) ? "stored" : "seed",
+    source: isSupabaseStoreEnabled() || storedIds.has(slide.id) ? "stored" : "seed",
   }));
 }
 
@@ -482,6 +500,13 @@ function normalizeCatalogPersoBannerRecord(value: unknown): AdminCatalogPersoBan
 }
 
 function mergeLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
+  if (isSupabaseStoreEnabled()) {
+    return sortLookbook(
+      (Array.isArray(raw.lookbook) ? raw.lookbook : [])
+        .map(normalizeLookbookSlide)
+        .filter((item): item is AdminLookbookSlide => item !== null),
+    );
+  }
   const tombstone = removedLookbookSlideIdSet(raw);
   const isRetiredLookbookSlide = (item: AdminLookbookSlide) =>
     tombstone.has(item.id) || RETIRED_LOOKBOOK_SEED_TITLES.has(item.title);
@@ -726,6 +751,26 @@ function mergeRemovedCatalogIds(
   ].filter((id) => id.trim().length > 0);
 }
 
+async function overlaySupabaseContent(store: AdminStore): Promise<AdminStore> {
+  if (!isSupabaseStoreEnabled()) return store;
+  try {
+    const lookbook = await listSupabaseLookbookSlides();
+    const persoRow = await getSupabaseShopBannerByPosition(SHOP_BANNER_POSITION_CATALOG_PERSO);
+    return {
+      ...store,
+      lookbook,
+      ...(persoRow ? { catalogPersoBanner: rowToAdminCatalogPersoBanner(persoRow) } : {}),
+    };
+  } catch (error) {
+    console.error("[store] lecture Supabase contenus", error instanceof Error ? error.message : "erreur");
+    throw new StoreUnavailableError("Contenus Supabase indisponibles.");
+  }
+}
+
+async function overlaySupabaseStore(store: AdminStore): Promise<AdminStore> {
+  return overlaySupabaseContent(await overlaySupabaseProducts(store));
+}
+
 async function overlaySupabaseProducts(store: AdminStore): Promise<AdminStore> {
   if (!isSupabaseStoreEnabled()) return store;
   try {
@@ -750,21 +795,21 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
       if (isSupabaseStoreEnabled()) {
         const products = await listSupabaseProducts();
         const removed = await listRemovedCatalogIds();
-        return {
+        return overlaySupabaseStore({
           version: STORE_VERSION,
           products,
           orders: [],
           lookbook: [],
           removedCatalogIds: mergeRemovedCatalogIds(undefined, removed),
-        };
+        });
       }
       if (!allowCatalogSeedFallback()) {
         throw new StoreUnavailableError();
       }
       console.warn("[store] snapshot absent, catalogue seed (preview/dev)");
-      return overlaySupabaseProducts(normalizeStore(createSeededStore()));
+      return overlaySupabaseStore(normalizeStore(createSeededStore()));
     }
-    return overlaySupabaseProducts(coalesceStoreMakerTemplates(snapshot.store));
+    return overlaySupabaseStore(coalesceStoreMakerTemplates(snapshot.store));
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
       if (!allowCatalogSeedFallback()) {
@@ -817,14 +862,23 @@ function safeFileName(name: string): string {
   return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 60);
 }
 
-export function validateImageFile(file: File): string | null {
+function validateImageFileWithMax(file: File, maxBytes: number, maxLabel: string): string | null {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
     return "L'image doit être convertie en WebP avant l'enregistrement.";
   }
-  if (file.size > MAX_IMAGE_BYTES) {
-    return "Image trop lourde (10 Mo maximum après conversion).";
+  if (file.size > maxBytes) {
+    return `Image trop lourde (${maxLabel} maximum après conversion).`;
   }
   return null;
+}
+
+export function validateImageFile(file: File): string | null {
+  return validateImageFileWithMax(file, PRODUCT_IMAGE_MAX_BYTES, PRODUCT_IMAGE_MAX_LABEL);
+}
+
+/** Lookbook + bannière boutique. */
+export function validateCrmContentImageFile(file: File): string | null {
+  return validateImageFileWithMax(file, CRM_CONTENT_IMAGE_MAX_BYTES, CRM_CONTENT_IMAGE_MAX_LABEL);
 }
 
 type ProductImageFace = "recto" | "verso";
@@ -1640,6 +1694,31 @@ const LOOKBOOK_STORE_WRITE_OPTIONS: StoreOptimisticOptions = { adminRelaxedFinal
 export async function createLookbookSlide(
   input: LookbookInput & { file?: File; preuploadedImage?: UploadedAdminImage | null },
 ): Promise<AdminLookbookSlide> {
+  if (isSupabaseStoreEnabled()) {
+    const id = randomUUID();
+    let uploaded: UploadedAdminImage;
+    if (input.file && input.file.size > 0) {
+      uploaded = await uploadLookbookImage(id, input.file);
+    } else if (input.preuploadedImage?.imageUrl) {
+      uploaded = input.preuploadedImage;
+    } else {
+      throw new StoreUnavailableError("Une image est requise.");
+    }
+    const existing = await listSupabaseLookbookSlides();
+    const sortOrder = input.sortOrder ?? existing.length;
+    const slide: AdminLookbookSlide = {
+      id,
+      title: input.title,
+      caption: input.caption,
+      imageUrl: uploaded.imageUrl,
+      blobUrl: uploaded.blobUrl,
+      blobPathname: uploaded.blobPathname,
+      sortOrder,
+      createdAt: new Date().toISOString(),
+    };
+    return insertSupabaseLookbookSlide(slide);
+  }
+
   const snapshot = await readStoreSnapshot();
   const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
   const id = nextLookbookId(base.lookbook);
@@ -1677,6 +1756,39 @@ export async function updateLookbookSlide(
   input: Partial<LookbookInput> & { preuploadedImage?: UploadedAdminImage | null },
   file?: File,
 ): Promise<AdminLookbookSlide | null> {
+  if (isSupabaseStoreEnabled()) {
+    const slides = await listSupabaseLookbookSlides();
+    const current = slides.find((item) => item.id === id);
+    if (!current) return null;
+
+    let uploaded: Awaited<ReturnType<typeof uploadLookbookImage>> | undefined;
+    if (file && file.size > 0) {
+      uploaded = await uploadLookbookImage(id, file);
+    } else if (input.preuploadedImage?.imageUrl) {
+      uploaded = input.preuploadedImage;
+    }
+    const { preuploadedImage: _pre, ...lookbookFields } = input;
+    void _pre;
+    const next: AdminLookbookSlide = {
+      ...current,
+      ...(lookbookFields.title !== undefined ? { title: lookbookFields.title } : {}),
+      ...(lookbookFields.caption !== undefined ? { caption: lookbookFields.caption } : {}),
+      ...(lookbookFields.sortOrder !== undefined ? { sortOrder: lookbookFields.sortOrder } : {}),
+      ...(uploaded
+        ? {
+            imageUrl: uploaded.imageUrl,
+            blobUrl: uploaded.blobUrl,
+            blobPathname: uploaded.blobPathname,
+          }
+        : {}),
+    };
+    const updated = await updateSupabaseLookbookSlide(next);
+    if (uploaded) {
+      await deleteLookbookImage(current);
+    }
+    return updated;
+  }
+
   let uploaded: Awaited<ReturnType<typeof uploadLookbookImage>> | undefined;
   let previous: AdminLookbookSlide | undefined;
 
@@ -1726,6 +1838,21 @@ export async function updateLookbookSlide(
 }
 
 export async function removeLookbookSlide(id: string): Promise<boolean> {
+  if (isSupabaseStoreEnabled()) {
+    const slides = await listSupabaseLookbookSlides();
+    const slide = slides.find((item) => item.id === id);
+    if (!slide) return false;
+    const ok = await deleteSupabaseLookbookSlide(id);
+    if (
+      ok &&
+      slide.imageUrl &&
+      (slide.blobUrl || slide.blobPathname || slide.imageUrl.startsWith("/admin-uploads/"))
+    ) {
+      await deleteLookbookImage(slide);
+    }
+    return ok;
+  }
+
   const removed = await withStoreOptimistic(
     (store) => {
       const slide = store.lookbook.find((item) => item.id === id);
@@ -1774,6 +1901,26 @@ export async function removeLookbookSlide(id: string): Promise<boolean> {
 }
 
 export async function reorderLookbookSlide(id: string, direction: "up" | "down"): Promise<AdminLookbookSlide[] | null> {
+  if (isSupabaseStoreEnabled()) {
+    const ordered = sortLookbook(await listSupabaseLookbookSlides());
+    const index = ordered.findIndex((item) => item.id === id);
+    if (index < 0) return null;
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= ordered.length) {
+      return ordered;
+    }
+    const current = ordered[index];
+    const swap = ordered[swapIndex];
+    if (!current || !swap) return ordered;
+    const reordered = ordered.map((item, itemIndex) => {
+      if (itemIndex === index) return { ...item, sortOrder: swap.sortOrder };
+      if (itemIndex === swapIndex) return { ...item, sortOrder: current.sortOrder };
+      return item;
+    });
+  const sortedIds = sortLookbook(reordered).map((item) => item.id);
+    return reorderSupabaseLookbookSlides(sortedIds);
+  }
+
   return withStoreOptimistic(
     (store) => {
       const ordered = sortLookbook(store.lookbook);
@@ -1831,6 +1978,7 @@ export async function upsertCatalogPersoBanner(
   input: CatalogPersoBannerInput,
   file?: File,
   preuploadedImage?: UploadedAdminImage | null,
+  persistedImage?: UploadedAdminImage | null,
 ): Promise<AdminCatalogPersoBanner> {
   let uploaded: Awaited<ReturnType<typeof uploadCatalogPersoBannerImage>> | undefined;
   let previous: AdminCatalogPersoBanner | undefined;
@@ -1841,13 +1989,47 @@ export async function upsertCatalogPersoBanner(
     uploaded = preuploadedImage;
   }
 
+  if (isSupabaseStoreEnabled()) {
+    const existingRow = await getSupabaseShopBannerByPosition(SHOP_BANNER_POSITION_CATALOG_PERSO);
+    previous = existingRow ? rowToAdminCatalogPersoBanner(existingRow) : undefined;
+    const baseImage =
+      uploaded?.imageUrl ?? persistedImage?.imageUrl?.trim() ?? previous?.imageUrl?.trim();
+    if (!baseImage) {
+      throw new StoreUnavailableError("Uploadez un visuel WebP sur R2 avant d'enregistrer.");
+    }
+    const next: AdminCatalogPersoBanner = {
+      enabled: input.enabled,
+      imageUrl: baseImage,
+      blobUrl: uploaded
+        ? uploaded.blobUrl
+        : (persistedImage?.blobUrl ?? previous?.blobUrl ?? null),
+      blobPathname: uploaded
+        ? uploaded.blobPathname
+        : (persistedImage?.blobPathname ?? previous?.blobPathname ?? null),
+      eyebrow: input.eyebrow,
+      title: input.title,
+      subtitle: input.subtitle,
+      ctaLabel: input.ctaLabel,
+      updatedAt: new Date().toISOString(),
+    };
+  const saved = await upsertSupabaseCatalogPersoBanner(next);
+    if (uploaded && previous?.blobUrl) {
+      const hadLocalOnly =
+        previous.imageUrl.startsWith("/admin-uploads/") || previous.blobUrl || previous.blobPathname;
+      if (hadLocalOnly && previous.imageUrl !== saved.imageUrl) {
+        await deleteCatalogPersoBannerImage(previous);
+      }
+    }
+    return saved;
+  }
+
   const result = await withStoreOptimistic(
     (store) => {
       previous = store.catalogPersoBanner ? { ...store.catalogPersoBanner } : undefined;
-      const baseImage =
-        uploaded?.imageUrl ??
-        previous?.imageUrl?.trim() ??
-        DEFAULT_CATALOG_PERSO_BANNER.imageUrl;
+      const baseImage = uploaded?.imageUrl ?? previous?.imageUrl?.trim();
+      if (!baseImage) {
+        throw new StoreUnavailableError("Uploadez un visuel WebP sur R2 avant d'enregistrer.");
+      }
       const next: AdminCatalogPersoBanner = {
         enabled: input.enabled,
         imageUrl: baseImage,

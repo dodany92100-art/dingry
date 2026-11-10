@@ -1,18 +1,14 @@
 "use client";
 
 import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
-import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 
 type CustomConfiguratorBannerProps = {
   onOpen: () => void;
-  content?: ShopCatalogPersoBanner;
+  content: ShopCatalogPersoBanner;
 };
 
-export function CustomConfiguratorBanner({
-  onOpen,
-  content = DEFAULT_CATALOG_PERSO_BANNER,
-}: CustomConfiguratorBannerProps) {
-  if (!content.enabled) return null;
+export function CustomConfiguratorBanner({ onOpen, content }: CustomConfiguratorBannerProps) {
+  if (!content.enabled || !content.imageUrl.trim()) return null;
 
   return (
     <button

@@ -1,13 +1,17 @@
 import { revalidatePath } from "next/cache";
-import { isR2ImageStorageEnabled, requireAdmin } from "@/lib/admin/auth";
+import { requireAdmin } from "@/lib/admin/auth";
+import {
+  adminCrmBackendFlags,
+  adminCrmMediaBackendGuard,
+  respondAdminCrmReadError,
+  respondAdminCrmWriteError,
+} from "@/lib/admin/admin-crm-route";
 import { parseLookbookFields } from "@/lib/admin/parse-lookbook";
 import {
   adminLookbookSlideViews,
   createLookbookSlide,
   loadStoreReadOnly,
-  StoreConflictError,
-  StoreUnavailableError,
-  validateImageFile,
+  validateCrmContentImageFile,
 } from "@/lib/admin/store";
 import { preuploadedRectoFromForm } from "@/lib/admin/preuploaded-image";
 import { jsonNoStore } from "@/lib/http";
@@ -17,27 +21,31 @@ export const runtime = "nodejs";
 function revalidateLookbook() {
   revalidatePath("/");
   revalidatePath("/api/lookbook");
+  revalidatePath("/api/banners");
 }
 
 export async function GET() {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
 
+  const blocked = adminCrmMediaBackendGuard();
+  if (blocked) return blocked;
+
   try {
     const store = await loadStoreReadOnly();
     const slides = adminLookbookSlideViews(store);
-    return jsonNoStore({ slides, r2ImageStorage: isR2ImageStorageEnabled() });
+    return jsonNoStore({ slides, ...adminCrmBackendFlags() });
   } catch (error) {
-    if (error instanceof StoreUnavailableError) {
-      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
-    }
-    return jsonNoStore({ error: "Impossible de charger le lookbook." }, { status: 500 });
+    return respondAdminCrmReadError(error, "admin lookbook GET", "Impossible de charger le lookbook.");
   }
 }
 
 export async function POST(request: Request) {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
+
+  const blocked = adminCrmMediaBackendGuard();
+  if (blocked) return blocked;
 
   let formData: FormData;
   try {
@@ -55,11 +63,11 @@ export async function POST(request: Request) {
   const preuploadedImage = preuploadedRectoFromForm(formData);
   const hasFile = image instanceof File && image.size > 0;
   if (!hasFile && !preuploadedImage) {
-    return jsonNoStore({ error: "Une image est requise." }, { status: 400 });
+    return jsonNoStore({ error: "Une image R2 est requise (upload ou preupload)." }, { status: 400 });
   }
 
   if (hasFile) {
-    const imageError = validateImageFile(image as File);
+    const imageError = validateCrmContentImageFile(image as File);
     if (imageError) {
       return jsonNoStore({ error: imageError }, { status: 400 });
     }
@@ -76,12 +84,6 @@ export async function POST(request: Request) {
     revalidateLookbook();
     return jsonNoStore({ slide }, { status: 201 });
   } catch (error) {
-    if (error instanceof StoreUnavailableError) {
-      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
-    }
-    if (error instanceof StoreConflictError) {
-      return jsonNoStore({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
-    }
-    return jsonNoStore({ error: "Impossible d'enregistrer la slide." }, { status: 500 });
+    return respondAdminCrmWriteError(error, "admin lookbook POST", "Impossible d'enregistrer la slide.");
   }
 }

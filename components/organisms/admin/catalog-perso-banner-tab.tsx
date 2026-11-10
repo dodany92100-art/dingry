@@ -8,7 +8,9 @@ import {
   type AdminImageUploadResponse,
 } from "@/lib/client/admin-upload-image";
 import { prepareAndUploadAdminImage } from "@/lib/client/admin-media-upload";
+import { isR2PublicUrl } from "@/lib/r2/config";
 import type { SavePersoBannerResult } from "./hooks/use-admin-catalog-perso-banner";
+import { useAdminUploadGuard } from "./hooks/use-admin-upload-guard";
 
 type CatalogPersoBannerTabProps = {
   banner: AdminCatalogPersoBanner;
@@ -54,19 +56,26 @@ export function CatalogPersoBannerTab({
 
   async function handleImageChange(file: File | null) {
     if (!file) {
+      if (convertingImage || saving) return;
       setImageFile(null);
       setPreuploaded(null);
       setImagePreview(banner.imageUrl);
       return;
     }
+    const priorPreview = imagePreview;
+    const priorPreuploaded = preuploaded;
     setConvertingImage(true);
     setFormError("");
-    const result = await prepareAndUploadAdminImage(file, { folder: R2_PERSO_BANNER_FOLDER });
+    const result = await prepareAndUploadAdminImage(file, {
+      folder: R2_PERSO_BANNER_FOLDER,
+      contentImage: true,
+    });
     setConvertingImage(false);
     if (!result.ok) {
       setFormError(result.error);
       setImageFile(null);
-      setPreuploaded(null);
+      setPreuploaded(priorPreuploaded);
+      setImagePreview(priorPreview);
       return;
     }
     if (result.uploaded) {
@@ -82,6 +91,16 @@ export function CatalogPersoBannerTab({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setFormError("");
+    if (convertingImage) {
+      setFormError("Attendez la fin de l’upload R2 avant d’enregistrer.");
+      return;
+    }
+    const hasNewImage = Boolean(imageFile || preuploaded?.url);
+    const hasCrmR2Image = isR2PublicUrl(banner.imageUrl) || isR2PublicUrl(imagePreview);
+    if (!hasNewImage && !hasCrmR2Image) {
+      setFormError("Ajoutez un visuel WebP — upload obligatoire (stockage R2, pas d’URL externe).");
+      return;
+    }
     const formData = new FormData();
     formData.set("enabled", enabled ? "true" : "false");
     formData.set("eyebrow", eyebrow.trim());
@@ -89,7 +108,13 @@ export function CatalogPersoBannerTab({
     formData.set("subtitle", subtitle.trim());
     formData.set("ctaLabel", ctaLabel.trim());
     if (imageFile) formData.set("image", imageFile);
-    else appendPreuploadedImageFields(formData, preuploaded);
+    else {
+      appendPreuploadedImageFields(formData, preuploaded);
+      if (!preuploaded?.url && isR2PublicUrl(imagePreview)) {
+        formData.set("imageUrl", imagePreview.trim());
+        if (banner.blobPathname) formData.set("imageBlobPathname", banner.blobPathname);
+      }
+    }
     const result = await onSave(formData);
     if ("error" in result) {
       setFormError(result.error);
@@ -100,6 +125,7 @@ export function CatalogPersoBannerTab({
   }
 
   const busy = saving || convertingImage;
+  useAdminUploadGuard(busy);
 
   return (
     <div>
@@ -110,7 +136,7 @@ export function CatalogPersoBannerTab({
           recommandé (paysage large).
           {customized ? null : (
             <span className="mt-2 block text-white/45">
-              Valeurs actuelles = défaut boutique (Cloudinary). Enregistrer pour figer dans le CRM.
+              Textes par défaut ci-dessous. Uploadez un visuel WebP (R2) puis enregistrez dans Supabase.
             </span>
           )}
         </p>
@@ -134,17 +160,30 @@ export function CatalogPersoBannerTab({
         </label>
 
         <div className="mb-5 overflow-hidden border border-white/10">
-          <img src={imagePreview} alt="" className="aspect-[21/9] w-full object-cover" loading="lazy" decoding="async" />
+          {imagePreview.trim() ? (
+            <img src={imagePreview} alt="" className="aspect-[21/9] w-full object-cover" loading="lazy" decoding="async" />
+          ) : (
+            <p className="flex aspect-[21/9] w-full items-center justify-center bg-white/[0.04] text-[10px] uppercase tracking-[0.2em] text-white/35">
+              Visuel R2 requis
+            </p>
+          )}
         </div>
 
         <label className="mb-4 block">
-          <span className="mb-2 block text-[10px] uppercase tracking-[0.22em] text-white/45">Nouveau visuel (WebP)</span>
+          <span className="mb-2 block text-[10px] uppercase tracking-[0.22em] text-white/45">
+            Nouveau visuel (WebP · 1 Mo max)
+          </span>
+          {convertingImage ? (
+            <p className="mb-2 text-[10px] uppercase tracking-[0.16em] text-amber-300/90">
+              Upload R2 en cours… ne rechargez pas la page.
+            </p>
+          ) : null}
           <input
             type="file"
             accept="image/*"
             disabled={busy}
             onChange={(event) => void handleImageChange(event.target.files?.[0] ?? null)}
-            className="block w-full text-[11px] text-white/60 file:mr-3 file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-[10px] file:uppercase file:tracking-widest file:text-white"
+            className="block w-full text-[11px] text-white/60 file:mr-3 file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-[10px] file:uppercase file:tracking-widest file:text-white disabled:opacity-40"
           />
         </label>
 

@@ -470,6 +470,8 @@ function AdminDashboard() {
           />
           </>
         ) : tab === "banniere" ? (
+          <>
+            <AdminActionToast toast={persoBannerApi.toast} onDismiss={persoBannerApi.dismissToast} />
           <CatalogPersoBannerTab
             banner={persoBannerApi.banner}
             customized={persoBannerApi.customized}
@@ -477,7 +479,10 @@ function AdminDashboard() {
             error={persoBannerApi.error}
             onSave={persoBannerApi.save}
           />
+          </>
         ) : tab === "lookbook" ? (
+          <>
+            <AdminActionToast toast={lookbookApi.toast} onDismiss={lookbookApi.dismissToast} />
           <LookbookTab
             slides={lookbookApi.slides}
             busySlideId={lookbookApi.busySlideId}
@@ -493,6 +498,7 @@ function AdminDashboard() {
               void handleDeleteLookbookSlide(slide);
             }}
           />
+          </>
         ) : (
           <OrdersTab
             orders={paypalOrders}

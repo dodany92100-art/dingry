@@ -1,18 +1,23 @@
-import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 import type { AdminCatalogPersoBanner, ShopCatalogPersoBanner } from "@/lib/admin/types";
 
-export const DEFAULT_CATALOG_PERSO_BANNER: ShopCatalogPersoBanner = {
+/** Textes formulaire admin — pas d’URL image (uniquement R2 + Supabase). */
+export const CATALOG_PERSO_BANNER_COPY: Omit<ShopCatalogPersoBanner, "imageUrl"> = {
   enabled: true,
-  imageUrl: DINGRY_PRODUCT_MEDIA.customConfiguratorBanner,
   eyebrow: "Custom · Configurateur",
   title: "Ville, texte sous le logo",
   subtitle: "Tee personnalisable · aperçu en direct",
   ctaLabel: "CUSTOM",
 };
 
+/** @deprecated Préférer CATALOG_PERSO_BANNER_COPY ; imageUrl toujours vide hors CRM. */
+export const DEFAULT_CATALOG_PERSO_BANNER: ShopCatalogPersoBanner = {
+  ...CATALOG_PERSO_BANNER_COPY,
+  imageUrl: "",
+};
+
 function normalizeCatalogPersoCtaLabel(label: string | undefined): string {
   const trimmed = label?.trim() ?? "";
-  if (!trimmed) return DEFAULT_CATALOG_PERSO_BANNER.ctaLabel;
+  if (!trimmed) return CATALOG_PERSO_BANNER_COPY.ctaLabel;
   if (trimmed.localeCompare("Personnaliser", undefined, { sensitivity: "accent" }) === 0) {
     return "CUSTOM";
   }
@@ -23,13 +28,12 @@ export function resolveShopCatalogPersoBanner(
   stored: AdminCatalogPersoBanner | null | undefined,
 ): ShopCatalogPersoBanner {
   if (!stored) return { ...DEFAULT_CATALOG_PERSO_BANNER };
-  const imageUrl = stored.imageUrl.trim() || DEFAULT_CATALOG_PERSO_BANNER.imageUrl;
   return {
     enabled: stored.enabled,
-    imageUrl,
-    eyebrow: stored.eyebrow.trim() || DEFAULT_CATALOG_PERSO_BANNER.eyebrow,
-    title: stored.title.trim() || DEFAULT_CATALOG_PERSO_BANNER.title,
-    subtitle: stored.subtitle.trim() || DEFAULT_CATALOG_PERSO_BANNER.subtitle,
+    imageUrl: stored.imageUrl.trim(),
+    eyebrow: stored.eyebrow.trim() || CATALOG_PERSO_BANNER_COPY.eyebrow,
+    title: stored.title.trim() || CATALOG_PERSO_BANNER_COPY.title,
+    subtitle: stored.subtitle.trim() || CATALOG_PERSO_BANNER_COPY.subtitle,
     ctaLabel: normalizeCatalogPersoCtaLabel(stored.ctaLabel),
   };
 }

@@ -50,6 +50,8 @@ describe("alto-last-public-url", () => {
   });
 
   it("redirige Alto / teaser vers /websitedx avant ouverture", () => {
+    vi.stubEnv("DINGRY_PUBLIC_HOME", "");
+    vi.stubEnv("NEXT_PUBLIC_DINGRY_PUBLIC_HOME", "");
     const beforeOpen = DINGRY_TEASER_OPENING_AT - 60_000;
     expect(normalizeAltoPublicUrl("/", beforeOpen)).toBe("/websitedx");
     expect(normalizeAltoPublicUrl("/?foo=1", beforeOpen)).toBe("/websitedx?foo=1");

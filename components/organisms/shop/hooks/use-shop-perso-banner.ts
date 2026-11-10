@@ -21,20 +21,20 @@ export function useShopPersoBanner(options?: UseShopPersoBannerOptions) {
     try {
       const response = await fetch("/api/catalog-perso-banner");
       if (!response.ok) {
-        setBanner(DEFAULT_CATALOG_PERSO_BANNER);
+        setBanner({ ...DEFAULT_CATALOG_PERSO_BANNER, enabled: false });
         setState("error");
         return;
       }
       const data = (await response.json()) as { banner?: ShopCatalogPersoBanner };
-      if (data.banner) {
+      if (data.banner?.imageUrl?.trim()) {
         setBanner(data.banner);
         setState("ready");
       } else {
-        setBanner(DEFAULT_CATALOG_PERSO_BANNER);
+        setBanner({ ...DEFAULT_CATALOG_PERSO_BANNER, enabled: false });
         setState("error");
       }
     } catch {
-      setBanner(DEFAULT_CATALOG_PERSO_BANNER);
+      setBanner({ ...DEFAULT_CATALOG_PERSO_BANNER, enabled: false });
       setState("error");
     }
   }, []);

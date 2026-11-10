@@ -26,20 +26,23 @@ type CliOptions = {
   limit: number | null;
   productId: string | null;
   skipCloudinary: boolean;
+  liveOnly: boolean;
 };
 
 function parseCli(argv: string[]): CliOptions {
   let dryRun = false;
   let limit: number | null = null;
   let productId: string | null = null;
-  let skipCloudinary = true;
+  let skipCloudinary = false;
+  let liveOnly = false;
   for (const arg of argv) {
     if (arg === "--dry-run") dryRun = true;
     else if (arg.startsWith("--limit=")) limit = Number(arg.slice("--limit=".length)) || null;
     else if (arg.startsWith("--id=")) productId = arg.slice("--id=".length).trim() || null;
-    else if (arg === "--include-cloudinary") skipCloudinary = false;
+    else if (arg === "--skip-cloudinary") skipCloudinary = true;
+    else if (arg === "--live-only") liveOnly = true;
   }
-  return { dryRun, limit, productId, skipCloudinary };
+  return { dryRun, limit, productId, skipCloudinary, liveOnly };
 }
 
 function isCloudinaryUrl(url: string): boolean {
@@ -68,6 +71,9 @@ async function main(): Promise<void> {
   if (error) throw new Error(error.message);
 
   let rows = (data ?? []) as ProductRow[];
+  if (options.liveOnly) {
+    rows = rows.filter((row) => String(row.publish_status).toLowerCase() === "live");
+  }
   if (options.productId) {
     rows = rows.filter((row) => String(row.id) === options.productId);
   }

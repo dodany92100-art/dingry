@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import type { AdminActionToastState } from "@/components/organisms/admin/admin-action-toast";
 import type { AdminCatalogPersoBanner } from "@/lib/admin/types";
 import { resolveAdminCatalogPersoBanner } from "@/lib/catalog-perso-banner";
 
@@ -23,6 +24,7 @@ export function useAdminCatalogPersoBanner({ onUnauthorized }: Options) {
   const [customized, setCustomized] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState<AdminActionToastState>(null);
 
   const load = useCallback(async (): Promise<LoadResult> => {
     try {
@@ -67,6 +69,12 @@ export function useAdminCatalogPersoBanner({ onUnauthorized }: Options) {
         }
         setBanner(data.banner);
         setCustomized(true);
+        setToast({
+          variant: "success",
+          message: data.banner.enabled
+            ? "Bannière en ligne — visible sur la grille catalogue."
+            : "Bannière enregistrée (masquée boutique).",
+        });
         return { banner: data.banner };
       } catch {
         return { error: "Impossible d'enregistrer la bannière." };
@@ -77,12 +85,16 @@ export function useAdminCatalogPersoBanner({ onUnauthorized }: Options) {
     [onUnauthorized],
   );
 
+  const dismissToast = useCallback(() => setToast(null), []);
+
   return {
     banner,
     customized,
     saving,
     error,
     setError,
+    toast,
+    dismissToast,
     load,
     reset,
     save,

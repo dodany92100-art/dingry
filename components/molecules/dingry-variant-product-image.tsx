@@ -1,6 +1,6 @@
 "use client";
 
-import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
+import { DingryProductImage } from "@/components/atoms/dingry-product-image";
 import { resolveOptionVisual, type ShopProductOption } from "@/lib/catalog/product-options";
 import { buildVariantAltText } from "@/lib/catalog/dingry-variant-naming";
 
@@ -44,7 +44,7 @@ export function DingryVariantProductImage({
       className={className}
       style={isModal ? undefined : { filter: "brightness(0.85) contrast(1.05) grayscale(0.2)" }}
     >
-      <DingryCloudinaryImage
+      <DingryProductImage
         src={image}
         alt={alt}
         width={width}

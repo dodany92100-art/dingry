@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { DingryCloudinaryImage } from "@/components/atoms/dingry-cloudinary-image";
+import { DingryProductImage } from "@/components/atoms/dingry-product-image";
 import { DingryVariantProductImage } from "@/components/molecules/dingry-variant-product-image";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
@@ -192,7 +192,7 @@ function ProductModalContent({
               />
             ) : (
               <div className={styles.photoFallback}>
-                <DingryCloudinaryImage
+                <DingryProductImage
                   src={activeView.image}
                   alt={activeView.name}
                   width={600}
@@ -350,7 +350,7 @@ function ProductModalContent({
                         className={`${styles.lookCard} ${isActive ? styles.lookCardActive : ""} ${variant.comingSoon ? styles.lookCardDisabled : ""}`}
                         aria-pressed={isActive}
                       >
-                        <DingryCloudinaryImage
+                        <DingryProductImage
                           src={variantProduct.image}
                           alt=""
                           width={96}
@@ -382,7 +382,7 @@ function ProductModalContent({
                         onClick={() => modal.openProductModal(item)}
                         className={styles.lookCard}
                       >
-                        <DingryCloudinaryImage
+                        <DingryProductImage
                           src={item.image}
                           alt=""
                           width={96}

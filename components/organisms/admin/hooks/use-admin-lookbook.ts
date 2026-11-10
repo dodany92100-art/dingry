@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import type { AdminActionToastState } from "@/components/organisms/admin/admin-action-toast";
 import type { AdminLookbookSlide, AdminLookbookSlideView } from "@/lib/admin/types";
 
 export type LoadResult = "ok" | "unauthorized" | "error";
@@ -20,6 +21,7 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
   const [slides, setSlides] = useState<AdminLookbookSlideView[]>([]);
   const [busySlideId, setBusySlideId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState<AdminActionToastState>(null);
 
   const load = useCallback(async (): Promise<LoadResult> => {
     try {
@@ -65,6 +67,12 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
             ? current.map((item) => (item.id === editingId ? savedView : item))
             : [...current, savedView];
           return [...next].sort((a, b) => a.sortOrder - b.sortOrder);
+        });
+        setToast({
+          variant: "success",
+          message: editingId
+            ? "Slide mise à jour — visible sur la boutique (lookbook en ligne)."
+            : "Slide en ligne — visible sur la boutique (lookbook).",
         });
         return { slide: saved };
       } catch {
@@ -149,11 +157,15 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
     [onUnauthorized],
   );
 
+  const dismissToast = useCallback(() => setToast(null), []);
+
   return {
     slides,
     busySlideId,
     error,
     setError,
+    toast,
+    dismissToast,
     load,
     reset,
     save,

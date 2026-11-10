@@ -1,14 +1,16 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/auth";
+import {
+  adminCrmMediaBackendGuard,
+  respondAdminCrmWriteError,
+} from "@/lib/admin/admin-crm-route";
 import { parseLookbookFields } from "@/lib/admin/parse-lookbook";
 import {
   loadStoreReadOnly,
   removeLookbookSlide,
   reorderLookbookSlide,
-  StoreConflictError,
-  StoreUnavailableError,
   updateLookbookSlide,
-  validateImageFile,
+  validateCrmContentImageFile,
 } from "@/lib/admin/store";
 import { preuploadedRectoFromForm } from "@/lib/admin/preuploaded-image";
 import { jsonNoStore } from "@/lib/http";
@@ -18,6 +20,7 @@ export const runtime = "nodejs";
 function revalidateLookbook() {
   revalidatePath("/");
   revalidatePath("/api/lookbook");
+  revalidatePath("/api/banners");
 }
 
 export async function PATCH(
@@ -26,6 +29,9 @@ export async function PATCH(
 ) {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
+
+  const blocked = adminCrmMediaBackendGuard();
+  if (blocked) return blocked;
 
   const { id } = await params;
   if (!id) {
@@ -70,7 +76,7 @@ export async function PATCH(
       const preuploadedImage = preuploadedRectoFromForm(formData);
       let file: File | undefined;
       if (image instanceof File && image.size > 0) {
-        const imageError = validateImageFile(image);
+        const imageError = validateCrmContentImageFile(image);
         if (imageError) {
           return jsonNoStore({ error: imageError }, { status: 400 });
         }
@@ -87,19 +93,16 @@ export async function PATCH(
         },
         file,
       );
+      if (!slide) {
+        return jsonNoStore({ error: "Slide introuvable." }, { status: 404 });
+      }
       revalidateLookbook();
       return jsonNoStore({ slide });
     }
 
     return jsonNoStore({ error: "Requête non supportée." }, { status: 400 });
   } catch (error) {
-    if (error instanceof StoreUnavailableError) {
-      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
-    }
-    if (error instanceof StoreConflictError) {
-      return jsonNoStore({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
-    }
-    return jsonNoStore({ error: "Impossible de mettre à jour la slide." }, { status: 500 });
+    return respondAdminCrmWriteError(error, "admin lookbook PATCH", "Impossible de mettre à jour la slide.");
   }
 }
 
@@ -109,6 +112,9 @@ export async function DELETE(
 ) {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
+
+  const blocked = adminCrmMediaBackendGuard();
+  if (blocked) return blocked;
 
   const { id } = await params;
   if (!id) {
@@ -123,12 +129,6 @@ export async function DELETE(
     revalidateLookbook();
     return jsonNoStore({ ok: true });
   } catch (error) {
-    if (error instanceof StoreUnavailableError) {
-      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
-    }
-    if (error instanceof StoreConflictError) {
-      return jsonNoStore({ error: "Conflit d'enregistrement. Réessayez." }, { status: 503 });
-    }
-    return jsonNoStore({ error: "Impossible de supprimer la slide." }, { status: 500 });
+    return respondAdminCrmWriteError(error, "admin lookbook DELETE", "Impossible de supprimer la slide.");
   }
 }

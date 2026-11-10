@@ -6,12 +6,14 @@ Guide de vérification **avant** `npm run build` et redémarrage du serveur.
 
 | Variable | Rôle |
 |----------|------|
-| `NEXT_PUBLIC_SUPABASE_URL` | API Supabase (catalogue CRM) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Écriture serveur (jamais côté client) |
+| `NEXT_PUBLIC_SUPABASE_URL` | API Supabase — **produits**, **`lookbook_slides`**, **`shop_banners`** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Écriture serveur (jamais côté client) — obligatoire pour admin catalogue, lookbook, bannière |
+| `DINGRY_CRM_SOURCE=1` | Vitrine catalogue = live Supabase uniquement (recommandé prod) |
 | `R2_ACCOUNT_ID` | Compte Cloudflare |
 | `R2_BUCKET_NAME` | Bucket R2 (défaut `dingrybuckets`) |
-| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Clés S3 API R2 (32 + 64 car.) — aide visuelle : [`docs/images/r2-upload-errors-guide.jpg`](images/r2-upload-errors-guide.jpg) |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Clés S3 API R2 (32 + 64 car.) — uploads admin produits / lookbook / bannière — aide : [`docs/images/r2-upload-errors-guide.jpg`](images/r2-upload-errors-guide.jpg) |
 | `R2_PUBLIC_BASE_URL` | `https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev` |
+| `DINGRY_IMG_HOSTS` | Hostname R2 autorisé (CSP + images) |
 | `DINGRY_IMG_HOSTS` | Hostname R2 sans `https://` (CSP au build) |
 | `UPSTASH_REDIS_REST_URL` / `TOKEN` | Stock + login admin |
 | `ADMIN_SESSION_SECRET` (≥ 32) | Cookie admin |
@@ -19,7 +21,7 @@ Guide de vérification **avant** `npm run build` et redémarrage du serveur.
 
 Optionnel mais recommandé :
 
-- `ADMIN_STORE_SNAPSHOT_PATH` — fichier JSON commandes / lookbook (défaut `data/admin/store.json`, **volume persistant**)
+- `ADMIN_STORE_SNAPSHOT_PATH` — snapshot JSON commandes (legacy ; lookbook + bannières = Supabase)
 - `TURNSTILE_EXPECTED_HOSTNAME=dingry.com,www.dingry.com`
 
 ## 2. Contrôles automatisés

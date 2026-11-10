@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { requireAdmin } from "@/lib/admin/auth";
-import { validateImageFile } from "@/lib/admin/store";
+import { validateCrmContentImageFile, validateImageFile } from "@/lib/admin/store";
 import { jsonNoStore } from "@/lib/http";
 import { isR2ImageStorageEnabled, r2ObjectKey, uploadR2PublicImage } from "@/lib/r2";
 
@@ -41,14 +41,14 @@ export async function POST(request: Request) {
     return jsonNoStore({ error: "Fichier image manquant." }, { status: 400 });
   }
 
-  const imageError = validateImageFile(file);
-  if (imageError) {
-    return jsonNoStore({ error: imageError }, { status: 400 });
-  }
-
   const folder = resolveFolder(formData, request);
   if (!folder) {
     return jsonNoStore({ error: "Dossier cible invalide." }, { status: 400 });
+  }
+  const contentImage = folder.includes("lookbook") || folder.includes("banner");
+  const imageError = contentImage ? validateCrmContentImageFile(file) : validateImageFile(file);
+  if (imageError) {
+    return jsonNoStore({ error: imageError }, { status: 400 });
   }
 
   const fileName = file.name.toLowerCase().endsWith(".webp") ? file.name : `${file.name.replace(/\.[^.]+$/, "")}.webp`;

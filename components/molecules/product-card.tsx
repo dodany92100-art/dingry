@@ -6,7 +6,7 @@ import { ProductCardCopy } from "@/components/molecules/product-card-copy";
 import { ProductCardMedia } from "@/components/molecules/product-card-media";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 
-export { cldOpt } from "@/lib/cloudinary-url";
+export { deliveryImageUrl as cldOpt } from "@/lib/media/delivery-image-url";
 
 type ProductCardData = {
   name: string;
