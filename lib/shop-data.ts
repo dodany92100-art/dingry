@@ -14,14 +14,22 @@ export {
 export const IMAGES = {
   hero1: DINGRY_TEASING_HERO_SRC,
   editorial: DINGRY_EDITORIAL_IMAGE_URL,
-  hoodie1: "",
-  hoodie2: "",
-  hoodie3: "",
-  hoodie4: "",
-  hoodie5: "",
-  hoodie6: "",
-  hoodie7: "",
-  hoodie8: "",
+  hoodie1:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie1/1794331470853-emp7wu-hoodie1.webp",
+  hoodie2:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie2/1794331491746-cu3g3x-hoodie2.webp",
+  hoodie3:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie3/1794331522041-5xhivn-hoodie3.webp",
+  hoodie4:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie4/1794331612245-e1e8d5-hoodie4.webp",
+  hoodie5:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie5/1794331670297-4r365y-hoodie5.webp",
+  hoodie6:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie6/1794331715578-wrsnh3-hoodie6.webp",
+  hoodie7:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie7/1794331750008-72kewj-hoodie7.webp",
+  hoodie8:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie8/1794331769827-e2bgg6-hoodie8.webp",
   cargo1: "https://images.unsplash.com/photo-1552902875-9ac1f9fe0c07?w=800&h=1000&fit=crop&auto=format",
   cargo2: "https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800&h=1000&fit=crop&auto=format",
   bomber1: "https://images.unsplash.com/photo-1660486044177-45cd45bb5e99?w=800&h=1000&fit=crop&auto=format",
@@ -33,11 +41,11 @@ export const IMAGES = {
   sneaker2: "https://images.unsplash.com/photo-1763750581767-b367bcd6c117?w=800&h=1000&fit=crop&auto=format",
   tee1: DINGRY_PRODUCT_MEDIA.teeWhiteVerso,
   tee2: "",
-  tee3: "",
+  tee3: "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/tee3/1794331773069-qvqd39-tee3.webp",
   tee4: DINGRY_PRODUCT_MEDIA.teeWhiteRecto,
-  tee5: "",
+  tee5: "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/tee5/1794331774103-pli1oe-tee5.webp",
   tee6: "",
-  tee7: "",
+  tee7: "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/tee7/1794331775363-elrxfe-tee7.webp",
   tee8: "",
   tee9: "",
   tee10: "",
