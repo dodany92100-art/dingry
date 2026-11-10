@@ -12,7 +12,10 @@ import {
   AdminStockViewToggle,
   type AdminStockViewMode,
 } from "@/components/organisms/admin/admin-stock-view-toggle";
-import { sortAdminProductsLikeShop } from "@/lib/admin/product-display-order";
+import {
+  catalogSlugForAdminProduct,
+  sortAdminProductsLikeShop,
+} from "@/lib/admin/product-display-order";
 import {
   adminStockCatalogCards,
   buildAdminStockMenuSections,
@@ -154,10 +157,16 @@ export function StockTab({
   const moveProduct = (fromIndex: number, toIndex: number) => {
     if (reorderBlocked) return;
     if (fromIndex === toIndex) return;
+    const moved = visibleProducts[fromIndex];
+    const target = visibleProducts[toIndex];
+    if (!moved || !target) return;
+    const movedSlug = catalogSlugForAdminProduct(moved);
+    const targetSlug = catalogSlugForAdminProduct(target);
+    if (!movedSlug || !targetSlug || movedSlug !== targetSlug) return;
     const next = [...visibleProducts];
-    const [moved] = next.splice(fromIndex, 1);
-    if (!moved) return;
-    next.splice(toIndex, 0, moved);
+    const [spliced] = next.splice(fromIndex, 1);
+    if (!spliced) return;
+    next.splice(toIndex, 0, spliced);
     onReorderProducts(next.map((item) => item.id));
   };
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { toCatalogProduct, type CatalogProduct } from "@/lib/admin/types";
+import { toCatalogProduct, type AdminProduct, type CatalogProduct } from "@/lib/admin/types";
 import { SEEDED_PRODUCTS } from "@/lib/admin/seed";
 import { overlayShopCatalog, shopProductFromUnknown, type ShopProduct } from "@/lib/catalog";
+import { sortCatalogProducts } from "@/lib/catalog-sort";
+import { PRODUCTS } from "@/lib/shop-data";
 
 const fallbackProduct = (id: number, price: number): ShopProduct => ({
   id,
@@ -124,6 +126,54 @@ describe("overlayShopCatalog", () => {
     );
     expect(merged.some((p) => p.id === 1)).toBe(false);
     expect(merged.find((p) => p.id === 39)?.price).toBe(169);
+  });
+});
+
+function crmCatalogWireRow(id: number, displayOrder: number): unknown {
+  const shop = PRODUCTS.find((p) => p.id === id);
+  if (!shop) throw new Error(`seed manquant: ${id}`);
+  const admin = {
+    id: String(id),
+    sku: `T-${id}`,
+    name: shop.name,
+    variant: shop.variant,
+    description: shop.description ?? "",
+    fabrication: "",
+    limitedEdition: "",
+    materials: "",
+    sizeGuide: "",
+    printPlacement: "",
+    category: shop.category,
+    price: shop.price,
+    sizes: ["S", "M", "L", "XL"],
+    stock: 5,
+    publishStatus: "live",
+    colorDeclinations: [],
+    imageUrl: shop.image,
+    blobUrl: null,
+    blobPathname: null,
+    imageBackUrl: "",
+    imageBackBlobUrl: null,
+    imageBackBlobPathname: null,
+    createdAt: "2026-10-01T10:00:00.000Z",
+    isPinned: false,
+    displayOrder,
+  } as AdminProduct;
+  const catalog = toCatalogProduct(admin);
+  if (!catalog) throw new Error(`catalogue null: ${id}`);
+  return JSON.parse(JSON.stringify(catalog));
+}
+
+describe("ordre vitrine = ordre CRM (aller-retour /api/catalog)", () => {
+  it("displayOrder 0 conservé : #35 avant #7 en tri Sélection", () => {
+    const wire = [crmCatalogWireRow(7, 1), crmCatalogWireRow(35, 0)];
+    const live = wire.map((row) => shopProductFromUnknown(row)).filter((p) => p !== null);
+    expect(live.find((p) => p.id === 35)?.displayOrder).toBe(0);
+    expect(live.find((p) => p.id === 7)?.displayOrder).toBe(1);
+    const shop = overlayShopCatalog(PRODUCTS, live);
+    const hoodies = shop.filter((p) => p.id === 7 || p.id === 35);
+    const sorted = sortCatalogProducts(hoodies, "featured");
+    expect(sorted.map((p) => p.id)).toEqual([35, 7]);
   });
 });
 

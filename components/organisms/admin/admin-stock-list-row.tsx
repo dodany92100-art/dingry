@@ -85,6 +85,11 @@ export function AdminStockListRow({
               {adminStockIdLabel(product.id)}
             </span>
             <AdminStockStatusBadge product={product} />
+            {product.isPinned ? (
+              <span className="inline-flex bg-[#FF3D00]/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#FF3D00] ring-1 ring-[#FF3D00]/50">
+                Épinglé
+              </span>
+            ) : null}
             <span className="text-[9px] uppercase tracking-[0.16em] text-zinc-500">{product.category}</span>
           </div>
           <p className="truncate text-[11px] font-bold uppercase tracking-[0.2em] text-white">{product.name}</p>

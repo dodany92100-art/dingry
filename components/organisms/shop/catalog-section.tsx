@@ -20,6 +20,7 @@ type CatalogSectionProps = {
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
+  showAdminIdBadge?: boolean;
 };
 
 function CatalogSectionInner({ tabValue, onTabChange, ...grid }: CatalogSectionProps) {

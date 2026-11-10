@@ -27,15 +27,36 @@ function publishDropHint(index: number | null): void {
   window.dispatchEvent(new CustomEvent<number | null>(ADMIN_DROP_HINT_EVENT, { detail: index }));
 }
 
-function dragIndexAt(clientY: number): number | null {
+/** Hit-test tactile (grille multi-colonnes) — le drag souris reste en HTML5. */
+function dragIndexAtTouch(clientX: number, clientY: number): number | null {
   const nodes = document.querySelectorAll<HTMLElement>("[data-admin-drag-index]");
-  for (const node of nodes) {
-    const rect = node.getBoundingClientRect();
-    if (clientY < rect.top || clientY > rect.bottom) continue;
+  const rects: DOMRect[] = [];
+  const indices: number[] = [];
+  nodes.forEach((node) => {
     const index = Number(node.dataset.adminDragIndex);
-    if (Number.isInteger(index)) return index;
-  }
-  return null;
+    if (!Number.isInteger(index)) return;
+    rects.push(node.getBoundingClientRect());
+    indices.push(index);
+  });
+  if (rects.length === 0) return null;
+
+  const inside = rects.findIndex(
+    (r) => clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom,
+  );
+  if (inside >= 0) return indices[inside] ?? null;
+
+  let best = 0;
+  let bestDist = Infinity;
+  rects.forEach((r, i) => {
+    const dx = clientX - (r.left + r.width / 2);
+    const dy = clientY - (r.top + r.height / 2);
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  });
+  return indices[best] ?? null;
 }
 
 type AdminReorderSurfaceProps = {
@@ -156,7 +177,7 @@ export function AdminReorderSurface({
     }
 
     event.preventDefault();
-    setHint(dragIndexAt(event.clientY));
+    setHint(dragIndexAtTouch(event.clientX, event.clientY));
   };
 
   const finishPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -167,7 +188,7 @@ export function AdminReorderSurface({
     }
 
     if (current.armed) {
-      const toIndex = dragIndexAt(event.clientY);
+      const toIndex = dragIndexAtTouch(event.clientX, event.clientY);
       if (toIndex !== null && toIndex !== dragIndex) {
         onDrop(dragIndex, toIndex);
       }

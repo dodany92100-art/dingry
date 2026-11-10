@@ -48,7 +48,7 @@ export function AdminGridWorkflowBanner({
             <>
               <div className="min-w-0">
                 <p className="text-[11px] uppercase tracking-[0.18em] text-white/70">
-                  Finalisez le classement avant de valider la grille
+                  Classement modifié — annule ou valide la grille
                 </p>
                 {orderError ? (
                   <p className="mt-1 text-[10px] leading-snug text-red-400">{orderError}</p>
@@ -61,7 +61,7 @@ export function AdminGridWorkflowBanner({
                   onClick={onReset}
                   className="h-9 flex-1 border border-zinc-600 px-4 text-[10px] uppercase tracking-[0.18em] text-white/60 transition hover:border-zinc-400 hover:text-white disabled:opacity-40 sm:flex-none"
                 >
-                  Réinitialiser
+                  Annuler
                 </button>
                 <button
                   type="button"

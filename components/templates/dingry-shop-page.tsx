@@ -17,6 +17,7 @@ import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catal
 import { useShopAtelierCustom } from "@/components/organisms/shop/hooks/use-shop-atelier-custom";
 import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-perso-banner";
 import { FlyAnimationProvider, useFlyAnimation } from "@/hooks/use-fly-animation";
+import { useAdminSessionProbe } from "@/components/organisms/admin/hooks/use-admin-session";
 import { useWishlist } from "@/hooks/use-wishlist";
 import type { PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
@@ -124,6 +125,7 @@ function DingryShopPageInner() {
   const cart = useShopCart();
   const modal = useProductModal({ products, catalogState });
   const wishlist = useWishlist();
+  const { authenticated: adminSession } = useAdminSessionProbe();
   const { launchFromElement } = useFlyAnimation();
   const { activeFilter, selectFilter } = useCatalogFilter(scrollToSection);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
@@ -300,6 +302,7 @@ function DingryShopPageInner() {
             onOpenProduct={modal.openProductModal}
             wishlistIds={wishlist.ids}
             onToggleWishlist={wishlist.toggle}
+            showAdminIdBadge={adminSession}
           />
           <LazyWhenVisible
             scrollRootRef={pageScrollRef}
@@ -349,6 +352,7 @@ function DingryShopPageInner() {
         products={products}
         atelierConfig={atelierConfig}
         fallbackProduct={personalizationProduct}
+        onClose={() => setPersonalizeOpen(false)}
         onSubmit={addPersonalized}
       />
       <ProductModal

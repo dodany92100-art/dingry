@@ -89,9 +89,7 @@ export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
     ...(product.colorDeclinations?.length ? { colorDeclinations: [...product.colorDeclinations] } : {}),
     ...(options?.length ? { options } : {}),
     ...(product.isPinned ? { isPinned: true } : {}),
-    ...(product.displayOrder !== undefined && product.displayOrder > 0
-      ? { displayOrder: product.displayOrder }
-      : {}),
+    ...(product.displayOrder !== undefined ? { displayOrder: product.displayOrder } : {}),
     ...(product.adminCreatedAt ? { adminCreatedAt: product.adminCreatedAt } : {}),
   };
 }
@@ -290,5 +288,12 @@ export function shopProductFromUnknown(value: unknown): CatalogProduct | null {
     image: record.image,
     sizes: sizesFromApiRecord(record),
     stock: stockFromApi,
+    ...(Number.isFinite(Number(record.displayOrder))
+      ? { displayOrder: Math.max(0, Math.floor(Number(record.displayOrder))) }
+      : {}),
+    ...(record.isPinned === true ? { isPinned: true } : {}),
+    ...(typeof record.adminCreatedAt === "string" && record.adminCreatedAt
+      ? { adminCreatedAt: record.adminCreatedAt }
+      : {}),
   };
 }

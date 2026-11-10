@@ -20,6 +20,7 @@ type CatalogGridProps = {
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
+  showAdminIdBadge?: boolean;
 };
 
 function EmptyCategory() {
@@ -42,6 +43,7 @@ export function CatalogGrid({
   onOpenProduct,
   wishlistIds,
   onToggleWishlist,
+  showAdminIdBadge = false,
 }: CatalogGridProps) {
   if (catalogState === "error") {
     return (
@@ -75,6 +77,7 @@ export function CatalogGrid({
         onOpenProduct={onOpenProduct}
         wishlistIds={wishlistIds}
         onToggleWishlist={onToggleWishlist}
+        showAdminIdBadge={showAdminIdBadge}
       />
     );
   }
@@ -91,6 +94,7 @@ export function CatalogGrid({
             wishlistActive={wishlistIds.includes(catalogRectoId(product.id))}
             onOpenProduct={onOpenProduct}
             onToggleWishlist={onToggleWishlist}
+            showAdminIdBadge={showAdminIdBadge}
           />
         ))
       ) : (

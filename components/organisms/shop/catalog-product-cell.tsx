@@ -14,6 +14,7 @@ export const CatalogProductCell = memo(function CatalogProductCell({
   wishlistActive,
   onOpenProduct,
   onToggleWishlist,
+  showAdminIdBadge = false,
 }: {
   product: ShopProduct;
   catalog: readonly ShopProduct[];
@@ -21,6 +22,7 @@ export const CatalogProductCell = memo(function CatalogProductCell({
   wishlistActive: boolean;
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
   onToggleWishlist: (rectoId: number) => void;
+  showAdminIdBadge?: boolean;
 }) {
   const rectoId = catalogRectoId(product.id);
   const onClick = useCallback(() => onOpenProduct(product, "recto"), [onOpenProduct, product]);
@@ -32,6 +34,8 @@ export const CatalogProductCell = memo(function CatalogProductCell({
   return (
     <ProductCard
       className="h-full"
+      productId={product.id}
+      showAdminIdBadge={showAdminIdBadge}
       name={storefrontProductTitle(product, catalog)}
       variant={storefrontProductSubtitle(product, catalog)}
       image={product.image}

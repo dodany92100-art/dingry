@@ -14,6 +14,7 @@ type CollectionFeedProps = {
   onOpenProduct: (product: ShopProduct, side: ProductFlipSide) => void;
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
+  showAdminIdBadge?: boolean;
 };
 
 export function CollectionFeed({
@@ -22,6 +23,7 @@ export function CollectionFeed({
   onOpenProduct,
   wishlistIds,
   onToggleWishlist,
+  showAdminIdBadge = false,
 }: CollectionFeedProps) {
   let indexOffset = 0;
 
@@ -45,6 +47,7 @@ export function CollectionFeed({
               wishlistActive={wishlistIds.includes(rectoId)}
               onOpenProduct={onOpenProduct}
               onToggleWishlist={onToggleWishlist}
+              showAdminIdBadge={showAdminIdBadge}
             />
           );
         });

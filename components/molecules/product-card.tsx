@@ -32,6 +32,7 @@ type ProductCardProps = ProductCardData & {
 
 function ProductCardInner({
   productId,
+  showAdminIdBadge = false,
   name,
   variant,
   image,
@@ -84,6 +85,7 @@ function ProductCardInner({
     >
       <ProductCardMedia
         productId={productId}
+        showAdminIdBadge={showAdminIdBadge}
         image={image}
         alt={alt}
         priority={priority}

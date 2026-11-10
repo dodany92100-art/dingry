@@ -97,6 +97,11 @@ export function AdminStockProductCard({
           </button>
           <div className="pointer-events-none absolute left-2 top-2 z-10 flex max-w-[calc(100%-3rem)] flex-col items-start gap-1">
             <ProductIdBadge id={product.id} />
+            {product.isPinned ? (
+              <span className="inline-flex max-w-full truncate bg-[#FF3D00]/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#FF3D00] ring-1 ring-[#FF3D00]/50">
+                Épinglé
+              </span>
+            ) : null}
             <AdminStockStatusBadge product={product} className="max-w-full truncate max-sm:px-1.5 max-sm:text-[8px] max-sm:tracking-[0.1em]" />
           </div>
           <div

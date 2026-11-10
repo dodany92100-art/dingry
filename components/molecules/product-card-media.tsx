@@ -19,6 +19,7 @@ type ProductCardMediaProps = {
 
 function ProductCardMediaInner({
   productId,
+  showAdminIdBadge = false,
   image,
   alt,
   priority = false,
@@ -27,10 +28,11 @@ function ProductCardMediaInner({
   onWishlistToggle,
 }: ProductCardMediaProps) {
   const wishlistVisible = onWishlistToggle !== undefined && wishlistActive !== undefined;
+  const showId = showAdminIdBadge && productId !== undefined && productId !== "";
 
   return (
     <div className="dingry-product-card__media relative aspect-[3/4] w-full shrink-0 overflow-hidden">
-      {productId !== undefined && productId !== "" ? (
+      {showId ? (
         <div className="pointer-events-none absolute left-2 top-2 z-20">
           <ProductIdBadge id={productId} />
         </div>
