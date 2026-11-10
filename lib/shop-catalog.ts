@@ -52,8 +52,8 @@ export const SHOP_CATALOG_TABS = ["Collection", ...SHOP_CATEGORY_TABS] as const;
 
 export type ShopCatalogTab = (typeof SHOP_CATALOG_TABS)[number];
 
-/** Retirés boutique (doublons tee + fiche #23 crop top retirée). */
-export const DINGRY_RETIRED_PRODUCT_IDS = new Set([12, 13, 14, 15, 16, 23]);
+/** Retirés boutique (doublons Collection 05 — même photo que 09). */
+export const DINGRY_RETIRED_PRODUCT_IDS = new Set([12, 13, 14, 15, 16]);
 
 export function isActiveShopProduct(product: { id: number }): boolean {
   return !DINGRY_RETIRED_PRODUCT_IDS.has(product.id);
