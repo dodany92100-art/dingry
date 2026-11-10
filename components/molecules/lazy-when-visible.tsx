@@ -36,7 +36,7 @@ function scheduleAfterPaint(activate: () => void) {
 export function LazyWhenVisible({
   children,
   scrollRootRef,
-  rootMargin = "min(85vh, 640px) 0px 96px 0px",
+  rootMargin = "640px 0px 96px 0px",
   prefetch,
   className,
   placeholderClassName,

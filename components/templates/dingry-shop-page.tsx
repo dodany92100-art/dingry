@@ -236,7 +236,7 @@ function DingryShopPageInner() {
             scrollRootRef={pageScrollRef}
             id="lookbook"
             prefetch={prefetchLookbookStrip}
-            rootMargin="min(70vh, 520px) 0px 48px 0px"
+            rootMargin="520px 0px 48px 0px"
             placeholderClassName="dingry-gold-rule-top min-h-[18rem] [contain-intrinsic-size:auto_18rem]"
           >
             <LookbookCatalogStrip />
@@ -245,7 +245,7 @@ function DingryShopPageInner() {
             scrollRootRef={pageScrollRef}
             id="heritage"
             prefetch={prefetchHeritageSection}
-            rootMargin="min(55vh, 420px) 0px 48px 0px"
+            rootMargin="420px 0px 48px 0px"
             placeholderClassName="dingry-gold-rule-top min-h-[50vh] [contain-intrinsic-size:auto_50vh]"
           >
             <HeritageSection scrollContainerRef={pageScrollRef} />
@@ -253,7 +253,7 @@ function DingryShopPageInner() {
           <LazyWhenVisible
             scrollRootRef={pageScrollRef}
             prefetch={prefetchShopFooter}
-            rootMargin="min(40vh, 320px) 0px 32px 0px"
+            rootMargin="320px 0px 32px 0px"
             placeholderClassName="min-h-32 [contain-intrinsic-size:auto_8rem]"
           >
             <ShopFooter

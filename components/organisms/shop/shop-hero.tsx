@@ -19,7 +19,7 @@ export function ShopHero() {
           fill
           sizes="100vw"
           unoptimized
-          className="object-cover object-[center_42%] brightness-90 md:object-center"
+          className="object-cover object-[center_32%] brightness-90 sm:object-[center_36%] md:object-[center_40%]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40" aria-hidden />
       </div>
