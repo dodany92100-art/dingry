@@ -108,7 +108,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
 
         <section
           aria-label="Ouverture et compte à rebours"
-          className="mt-auto shrink-0 space-y-1.5 pb-1 text-center md:col-start-2 md:row-start-1 md:mt-0 md:justify-self-end md:pb-0 md:text-right"
+          className="mt-auto shrink-0 space-y-1.5 pb-1 text-center max-md:translate-y-10 sm:max-md:translate-y-12 md:col-start-2 md:row-start-1 md:mt-0 md:translate-y-0 md:justify-self-end md:pb-0 md:text-right"
         >
           <p className="text-[10px] tracking-[0.38em] text-white/80 sm:text-[11px] sm:tracking-[0.42em]">OUVERTURE DU</p>
           <p
@@ -154,7 +154,11 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
         </svg>
       </div>
 
-      <form noValidate onSubmit={onSubmit} className="mx-auto w-full max-w-xs shrink-0 sm:max-w-sm md:max-w-xl">
+      <form
+        noValidate
+        onSubmit={onSubmit}
+        className="mx-auto w-full max-w-xs shrink-0 max-md:translate-y-10 sm:max-w-sm sm:max-md:translate-y-12 md:max-w-xl md:translate-y-0"
+      >
         <label htmlFor="teaser-email" className="sr-only">
           Inscrivez-vous pour être informé
         </label>
