@@ -114,6 +114,17 @@ describe("overlayShopCatalog", () => {
     expect(merged.some((p) => p.id === 25)).toBe(false);
     expect(merged.some((p) => p.id === 26)).toBe(false);
   });
+
+  it("crmOnly : uniquement les fiches live (pas de fallback statique)", () => {
+    const merged = overlayShopCatalog(
+      [fallbackProduct(1, 189), fallbackProduct(39, 100)],
+      [liveProduct({ id: 39, sku: "DINGRY-S03", price: 169 })],
+      [],
+      { crmOnly: true },
+    );
+    expect(merged.some((p) => p.id === 1)).toBe(false);
+    expect(merged.find((p) => p.id === 39)?.price).toBe(169);
+  });
 });
 
 describe("shopProductFromUnknown", () => {

@@ -1,6 +1,7 @@
 import type { AdminProduct, AdminStore } from "@/lib/admin/types";
 import { toCatalogProduct } from "@/lib/admin/types";
 import { overlayShopCatalog, type ShopProduct } from "@/lib/catalog";
+import { isDingryCrmOnlyCatalog } from "@/lib/dingry-crm-catalog";
 import { PRODUCTS } from "@/lib/shop-data";
 
 export type ShopCatalogSnapshot = {
@@ -43,8 +44,9 @@ function adminProductById(store: AdminStore): ReadonlyMap<number, AdminProduct> 
 export function buildShopCatalogSnapshot(store: AdminStore): ShopCatalogSnapshot {
   const removed = removedCatalogIdSet(store);
   const live = publicLiveCatalogRows(store);
+  const crmOnly = isDingryCrmOnlyCatalog();
   const shopById = new Map(
-    overlayShopCatalog(PRODUCTS, live, [...removed]).map((product) => [product.id, product]),
+    overlayShopCatalog(PRODUCTS, live, [...removed], { crmOnly }).map((product) => [product.id, product]),
   );
   return { shopById, removed, adminById: adminProductById(store) };
 }

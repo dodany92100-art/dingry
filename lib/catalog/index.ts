@@ -201,15 +201,22 @@ export function isShopCatalogIdHidden(
   return rectoId !== catalogId && removed.has(rectoId);
 }
 
+export type OverlayShopCatalogOptions = {
+  /** Pas de fallback statique (PRODUCTS) : catalogue = live CRM filtré. */
+  crmOnly?: boolean;
+};
+
 export function overlayShopCatalog(
   fallback: ShopProduct[],
   live: CatalogProduct[],
   removedCatalogIds: readonly (string | number)[] = [],
+  options: OverlayShopCatalogOptions = {},
 ): ShopProduct[] {
   const removed = normalizeRemovedCatalogIds(removedCatalogIds);
   const liveById = new Map(live.map((product) => [product.id, product]));
+  const base = options.crmOnly ? [] : fallback;
 
-  const merged = fallback.map((product) => {
+  const merged = base.map((product) => {
     const resolved = resolveLiveOverlay(product.id, liveById);
     const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[product.id];
     if (!resolved) {
@@ -227,7 +234,7 @@ export function overlayShopCatalog(
   });
 
   const extras = live
-    .filter((product) => !fallback.some((item) => item.id === product.id))
+    .filter((product) => !base.some((item) => item.id === product.id))
     .map(catalogToShopProduct)
     .map((product) => {
       const liveImage = product.image.trim();

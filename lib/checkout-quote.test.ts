@@ -117,6 +117,22 @@ describe("quoteCheckout — prix CRM", () => {
     expect(quote?.totalCents).toBe(5000);
   });
 
+  it("avec DINGRY_CRM_SOURCE=1 : refuse un id vitrine sans fiche CRM", async () => {
+    vi.stubEnv("DINGRY_CRM_SOURCE", "1");
+    try {
+      vi.mocked(loadStoreReadOnly).mockResolvedValue({
+        version: 4,
+        products: [],
+        orders: [],
+        lookbook: [],
+      });
+      const quote = await quoteCheckout([{ productId: 39, size: "M", qty: 1 }]);
+      expect(quote).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("facture le prix CRM du recto pour un verso sans fiche (id 8 → 6)", async () => {
     vi.mocked(loadStoreReadOnly).mockResolvedValue({
       version: 4,

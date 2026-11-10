@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { StoreUnavailableError } from "@/lib/admin/store";
+import { isDingryCrmOnlyCatalog } from "@/lib/dingry-crm-catalog";
 import { getCachedCatalogProductRows } from "@/lib/server/shop-catalog-cache";
 import { isInStockFromQuantity, readStockQuantities } from "@/lib/stock";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const crmOnly = isDingryCrmOnlyCatalog();
   try {
     const { products: catalogRows, removedCatalogIds } = await getCachedCatalogProductRows();
     const stockById = await readStockQuantities(catalogRows.map((product) => product.id));
@@ -16,7 +18,7 @@ export async function GET() {
       return { ...publicProduct, inStock };
     });
     return NextResponse.json(
-      { products, removedCatalogIds },
+      { products, removedCatalogIds, crmOnly },
       {
         headers: {
           "Cache-Control": "private, no-store, max-age=0, must-revalidate",
@@ -26,9 +28,15 @@ export async function GET() {
   } catch (error) {
     if (error instanceof StoreUnavailableError) {
       console.error("Catalogue injoignable", error.name);
-      return NextResponse.json({ error: "Catalogue momentanément indisponible." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Catalogue momentanément indisponible.", crmOnly },
+        { status: 503 },
+      );
     }
     console.error("Catalogue injoignable", error instanceof Error ? error.name : "erreur");
-    return NextResponse.json({ error: "Catalogue momentanément indisponible." }, { status: 503 });
+    return NextResponse.json(
+      { error: "Catalogue momentanément indisponible.", crmOnly },
+      { status: 503 },
+    );
   }
 }

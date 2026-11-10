@@ -162,7 +162,11 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
         <label htmlFor="teaser-email" className="sr-only">
           Inscrivez-vous pour être informé
         </label>
-        <div className="flex flex-col gap-2 rounded-2xl border border-white/55 bg-black/35 p-2 backdrop-blur-sm sm:flex-row sm:items-center sm:rounded-full sm:py-1 sm:pr-1 sm:pl-5">
+        <div
+          className={`flex flex-row items-center gap-1 rounded-full border bg-black/35 py-1 pr-1 pl-4 backdrop-blur-sm ${
+            status === "error" ? "border-white/35" : "border-white/55"
+          }`}
+        >
           <input
             id="teaser-email"
             name="email"
@@ -172,6 +176,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
             required
             maxLength={180}
             value={email}
+            aria-invalid={status === "error"}
             onChange={(event) => {
               setEmail(event.target.value);
               if (status !== "sending") {
@@ -179,17 +184,22 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
                 setMessage("");
               }
             }}
-            placeholder="Inscrivez-vous pour être informé"
-            className="w-full min-w-0 bg-transparent px-3 py-2.5 text-[10px] tracking-[0.12em] text-white normal-case outline-none placeholder:text-white/75 sm:flex-1 sm:px-0 sm:text-[11px] sm:tracking-[0.16em] sm:uppercase"
+            placeholder="E-mail"
+            className="min-h-9 min-w-0 flex-1 bg-transparent py-2 text-[10px] tracking-[0.12em] text-white normal-case outline-none placeholder:text-white/75 sm:text-[11px] sm:tracking-[0.16em] sm:uppercase"
           />
           <button
             type="submit"
             disabled={status === "sending"}
-            className="w-full shrink-0 rounded-full bg-white px-4 py-2.5 text-[11px] font-semibold tracking-[0.14em] text-black uppercase transition-opacity disabled:opacity-60 sm:w-auto sm:py-2"
+            className="shrink-0 rounded-full bg-white px-4 py-2 text-[11px] font-semibold tracking-[0.14em] text-black uppercase transition-opacity disabled:opacity-60"
           >
             {status === "sending" ? "…" : "OK →"}
           </button>
         </div>
+        {message ? (
+          <p className="sr-only" role="status">
+            {message}
+          </p>
+        ) : null}
         <input
           name="website"
           value={website}
@@ -199,12 +209,6 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           aria-hidden
           className="sr-only"
         />
-        <p
-          className={`mt-3 min-h-5 text-center text-[11px] tracking-[0.18em] ${status === "error" ? "text-white/55" : "text-white/85"}`}
-          role="status"
-        >
-          {message}
-        </p>
       </form>
 
       <div className="mt-3 flex w-full max-w-xs shrink-0 items-end justify-between gap-4 sm:max-w-sm md:max-w-none">
