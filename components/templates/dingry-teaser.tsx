@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
-import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import {
   COUNTDOWN_UNITS,
   DINGRY_COUNTDOWN_LABEL,
@@ -90,63 +89,76 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
   }
 
   return (
-    <div className="relative z-10 flex min-h-dvh flex-col px-5 py-7 sm:px-8 md:px-12 lg:px-16">
-      <div className="grid flex-1 items-center gap-10 md:grid-cols-2 md:gap-6">
-        <div className="w-fit max-w-full md:justify-self-start">
-          <img
-            src={DINGRY_LOGO_URL}
-            alt="DINGRY Paris"
-            className="h-auto w-[min(58vw,240px)] brightness-0 invert"
-          />
-          <div className="mx-auto mt-4 h-px w-16 bg-white/80" />
-          <p className="dingry-typo-manifesto mt-3 text-center text-[10px] sm:text-[11px]">
-            {DINGRY_MANIFESTO_FR}
-          </p>
-          <p className={`${displayClassName} dingry-typo-street mt-4 text-center text-[clamp(1.25rem,3.2vw,1.65rem)]`}>
-            {DINGRY_STREET_LINE}
-          </p>
-        </div>
+    <div className="relative z-10 flex min-h-[100dvh] w-full max-w-lg flex-col items-center justify-between px-5 py-6 sm:max-w-none sm:px-8 sm:py-8 md:px-12 lg:px-16">
+      {/* Mobile : logo haut · compte à rebours bas · desktop : grille 2 col */}
+      <div className="relative flex w-full min-h-0 flex-1 flex-col md:grid md:grid-cols-2 md:items-center md:gap-8">
+        <section
+          aria-label="DINGRY Paris"
+          className="relative flex min-h-0 flex-1 flex-col md:col-start-1 md:row-start-1 md:h-auto md:flex-none md:justify-self-start"
+        >
+          <header className="relative z-20 shrink-0 text-center md:text-left">
+            <img
+              src={DINGRY_LOGO_URL}
+              alt="DINGRY Paris"
+              className="mx-auto h-auto w-[min(44vw,190px)] brightness-0 invert md:mx-0 md:w-[min(58vw,240px)]"
+            />
+            <div className="mx-auto mt-2 h-px w-14 bg-white/80 md:mx-0 md:mt-4 md:w-16" />
+          </header>
+        </section>
 
-        <div className="md:justify-self-end md:text-right">
-          <p className="text-[11px] tracking-[0.42em] text-white/80 sm:text-xs">OUVERTURE DU</p>
-          <p className={`${displayClassName} mt-2 text-[clamp(2rem,4.6vw,3.4rem)] leading-[0.92] tracking-[0.02em] text-white`}>
+        <section
+          aria-label="Ouverture et compte à rebours"
+          className="mt-auto shrink-0 space-y-1.5 pb-1 text-center md:col-start-2 md:row-start-1 md:mt-0 md:justify-self-end md:pb-0 md:text-right"
+        >
+          <p className="text-[10px] tracking-[0.38em] text-white/80 sm:text-[11px] sm:tracking-[0.42em]">OUVERTURE DU</p>
+          <p
+            className={`${displayClassName} text-[clamp(1.55rem,4.2vw,3.4rem)] leading-[0.92] tracking-[0.02em] text-white`}
+          >
             SITE OFFICIEL
           </p>
-          <div className="mt-4 flex items-center gap-3 md:justify-end">
-            <span className="h-px w-8 bg-white/75 md:w-10" />
-            <p className="text-[11px] tracking-[0.28em] text-white sm:text-xs">{DINGRY_COUNTDOWN_LABEL}</p>
-            <span className="h-px w-8 bg-white/75 md:w-10" />
+          <div className="flex items-center justify-center gap-2 sm:gap-3 md:justify-end">
+            <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" />
+            <p className="text-[10px] tracking-[0.24em] text-white sm:text-[11px] sm:tracking-[0.28em]">
+              {DINGRY_COUNTDOWN_LABEL}
+            </p>
+            <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" />
           </div>
-          <div className="mt-6 flex items-start justify-start gap-0 md:justify-end" aria-live="polite">
+          <div className="flex items-start justify-center gap-0 md:justify-end" aria-live="polite">
             {UNITS.map((unit, index) => (
               <div key={unit.key} className="flex items-start">
-                {index > 0 ? <span className="mx-3 mt-1 text-2xl font-light text-white/35 sm:mx-4">|</span> : null}
-                <div className="min-w-[3.1rem] text-center sm:min-w-[3.6rem]">
-                  <p className={`${displayClassName} text-[clamp(1.7rem,3vw,2.35rem)] leading-none tabular-nums`}>
+                {index > 0 ? (
+                  <span className="mx-2 mt-1 text-xl font-light text-white/35 sm:mx-3 sm:text-2xl md:mx-4">|</span>
+                ) : null}
+                <div className="min-w-[2.65rem] text-center sm:min-w-[3.1rem] md:min-w-[3.6rem]">
+                  <p
+                    className={`${displayClassName} text-[clamp(1.45rem,2.8vw,2.35rem)] leading-none tabular-nums`}
+                  >
                     {parts ? parts[unit.key] : "––"}
                   </p>
-                  <p className="mt-2 text-[9px] tracking-[0.18em] text-white/70 uppercase sm:text-[10px]">{unit.label}</p>
+                  <p className="mt-1 text-[8px] tracking-[0.16em] text-white/70 uppercase sm:mt-2 sm:text-[9px] md:text-[10px]">
+                    {unit.label}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="mt-4 max-w-md text-[10px] leading-relaxed tracking-[0.14em] text-white/65 sm:text-[11px] md:ml-auto md:text-right">
+          <p className="mx-auto max-w-md text-[9px] leading-relaxed tracking-[0.12em] text-white/65 sm:text-[10px] sm:tracking-[0.14em] md:ml-auto md:text-right md:text-[11px]">
             {DINGRY_SITE_CONSTRUCTION_LABEL}
           </p>
-        </div>
+        </section>
       </div>
 
-      <div className="mx-auto mb-5 text-white/55" aria-hidden>
+      <div className="mx-auto mb-2 hidden shrink-0 text-white/55 sm:mb-4 md:block" aria-hidden>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="1.4" />
         </svg>
       </div>
 
-      <form noValidate onSubmit={onSubmit} className="mx-auto w-full max-w-xl">
+      <form noValidate onSubmit={onSubmit} className="mx-auto w-full max-w-xs shrink-0 sm:max-w-sm md:max-w-xl">
         <label htmlFor="teaser-email" className="sr-only">
           Inscrivez-vous pour être informé
         </label>
-        <div className="flex items-center rounded-full border border-white/55 bg-black/35 py-1 pr-1 pl-5 backdrop-blur-sm">
+        <div className="flex flex-col gap-2 rounded-2xl border border-white/55 bg-black/35 p-2 backdrop-blur-sm sm:flex-row sm:items-center sm:rounded-full sm:py-1 sm:pr-1 sm:pl-5">
           <input
             id="teaser-email"
             name="email"
@@ -164,12 +176,12 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
               }
             }}
             placeholder="Inscrivez-vous pour être informé"
-            className="min-w-0 flex-1 bg-transparent py-2.5 text-[11px] tracking-[0.16em] text-white uppercase outline-none placeholder:text-white/75 sm:text-xs"
+            className="w-full min-w-0 bg-transparent px-3 py-2.5 text-[10px] tracking-[0.12em] text-white normal-case outline-none placeholder:text-white/75 sm:flex-1 sm:px-0 sm:text-[11px] sm:tracking-[0.16em] sm:uppercase"
           />
           <button
             type="submit"
             disabled={status === "sending"}
-            className="shrink-0 rounded-full bg-white px-4 py-2 text-[11px] font-semibold tracking-[0.14em] text-black uppercase transition-opacity disabled:opacity-60"
+            className="w-full shrink-0 rounded-full bg-white px-4 py-2.5 text-[11px] font-semibold tracking-[0.14em] text-black uppercase transition-opacity disabled:opacity-60 sm:w-auto sm:py-2"
           >
             {status === "sending" ? "…" : "OK →"}
           </button>
@@ -191,7 +203,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
         </p>
       </form>
 
-      <div className="mt-2 flex items-end justify-between gap-4">
+      <div className="mt-3 flex w-full max-w-xs shrink-0 items-end justify-between gap-4 sm:max-w-sm md:max-w-none">
         <a
           href="https://www.instagram.com/dingry_officiel/"
           target="_blank"

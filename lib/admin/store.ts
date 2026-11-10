@@ -699,7 +699,6 @@ async function overlaySupabaseProducts(store: AdminStore): Promise<AdminStore> {
   if (!isSupabaseStoreEnabled()) return store;
   try {
     const products = await listSupabaseProducts();
-    if (products.length === 0) return store;
     const removed = await listRemovedCatalogIds();
     return {
       ...store,

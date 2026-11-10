@@ -12,6 +12,7 @@ import {
   writeStoredCart,
   type CheckoutConfirmation,
 } from "@/lib/checkout-draft";
+import { formatClientCheckoutError } from "@/lib/checkout-diagnostic";
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
 import { isPayPalOrderId } from "@/lib/paypal-order-id";
 

@@ -6,8 +6,8 @@ import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 /** Fiches seed retirées — masquées boutique après migration magasin. */
 export const DEFAULT_REMOVED_CATALOG_IDS = [] as const;
 
-/** Réintégrées au seed : retirées des tombstones CRM à chaque migration. */
-export const RESTORED_CATALOG_SEED_IDS = ["23"] as const;
+/** CRM (Supabase) = source de vérité : ne plus forcer de réintégration seed dans les tombstones. */
+export const RESTORED_CATALOG_SEED_IDS = [] as const;
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL"] as const;
 

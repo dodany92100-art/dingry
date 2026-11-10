@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
-import { DINGRY_CONTACT_EMAIL, DINGRY_LEGAL_CLOSING, DINGRY_REASSURANCE_LINE } from "@/lib/dingry-legal";
+import { DINGRY_CONTACT_EMAIL, DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
@@ -78,19 +78,32 @@ function InstagramIcon() {
 
 type ShopFooterProps = {
   onScrollToCatalogue?: () => void;
+  onScrollToSection?: (sectionId: string) => void;
   shopBasePath?: ShopBasePath;
 };
 
-export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFooterProps) {
+export function ShopFooter({
+  onScrollToCatalogue,
+  onScrollToSection,
+  shopBasePath = "/",
+}: ShopFooterProps) {
   const [legalDoc, setLegalDoc] = useState<LegalDocId | null>(null);
   const activeLegal = legalDoc ? LEGAL_DOCUMENTS[legalDoc] : null;
+
+  function scrollToSection(sectionId: string) {
+    if (onScrollToSection) {
+      onScrollToSection(sectionId);
+      return;
+    }
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
+  }
 
   function goCatalogue() {
     if (onScrollToCatalogue) {
       onScrollToCatalogue();
       return;
     }
-    document.getElementById("catalogue")?.scrollIntoView({ behavior: "smooth" });
+    scrollToSection("catalogue");
   }
 
   return (
@@ -100,19 +113,17 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-12">
             <div className="lg:col-span-4">
               <DingryLogo animate={false} className="h-11 max-md:max-h-none w-auto md:h-14" />
-              <p className="mt-4 text-xs leading-relaxed tracking-[0.06em] text-[#161616]/75">{DINGRY_REASSURANCE_LINE}</p>
             </div>
 
             <div className="lg:col-span-2">
-              <p className="dingry-footer-eyebrow">Boutique</p>
-              <ul className="mt-4 space-y-2.5">
+              <ul className="space-y-2.5">
                 <li>
                   <button
                     type="button"
                     onClick={goCatalogue}
                     className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
                   >
-                    Catalogue
+                    Collection
                   </button>
                 </li>
                 <li>
@@ -122,6 +133,24 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
                   >
                     Paiement
                   </a>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection("lookbook")}
+                    className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
+                  >
+                    Lookbook
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection("catalogue-landing")}
+                    className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
+                  >
+                    Collection CIC
+                  </button>
                 </li>
               </ul>
             </div>

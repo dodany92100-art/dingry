@@ -20,7 +20,7 @@ export const teaserHomeMetadata: Metadata = {
 /** Accueil teasing prod — visuel plein écran sans calques d'assombrissement. */
 export default function DingryTeaserHome() {
   return (
-    <main className="relative min-h-dvh overflow-x-hidden bg-black text-white">
+    <main className="relative min-h-[100dvh] overflow-x-hidden bg-black text-white">
       <h1 className="sr-only">
         DINGRY Paris. Site en construction. Jeudi 12 novembre 2026 à 20h.
       </h1>

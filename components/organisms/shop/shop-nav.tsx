@@ -10,7 +10,7 @@ import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-lay
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
 const SECTIONS = [
-  ["catalogue", "Catalogue"],
+  ["catalogue", "Collection"],
   ["lookbook", "Lookbook"],
   ["heritage", "Heritage"],
 ] as const;
@@ -133,7 +133,7 @@ export function ShopNav({
             data-fly-target="cart"
             onClick={onOpenCart}
             aria-label={cartCount > 0 ? `Panier, ${cartCount} article${cartCount > 1 ? "s" : ""}` : "Ouvrir le panier"}
-            className="dingry-interactive-luxe relative flex h-11 items-center gap-2.5 rounded-sm border border-white/20 bg-white/[0.06] px-3.5 text-white/90 hover:border-[#FF3D00]/50 hover:bg-white/[0.1] hover:text-white md:px-4"
+            className="dingry-interactive-luxe dingry-nav-favoris-btn relative flex h-11 items-center gap-2.5 rounded-sm border border-white/20 bg-white/[0.06] px-3.5 text-white/90 hover:bg-white/[0.1] hover:text-white md:px-4"
           >
             <motion.span animate={cartControls} className="inline-flex">
             <svg
@@ -154,7 +154,7 @@ export function ShopNav({
             </motion.span>
             <span className="text-[10px] font-medium tracking-[0.22em] uppercase">Panier</span>
             {cartCount > 0 ? (
-              <span className="flex h-5 min-w-5 items-center justify-center bg-[#FF3D00] px-1.5 text-[10px] font-bold leading-none text-white">
+              <span className="dingry-nav-favoris-badge flex h-5 min-w-5 items-center justify-center px-1.5 text-[10px] font-bold leading-none">
                 {cartCount}
               </span>
             ) : null}

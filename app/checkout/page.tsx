@@ -21,6 +21,7 @@ import {
   DINGRY_SHIPPING_LABEL,
 } from "@/lib/dingry-checkout-copy";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
+import { formatClientCheckoutError } from "@/lib/checkout-diagnostic";
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
 
 const PayPalPaymentButton = dynamic(

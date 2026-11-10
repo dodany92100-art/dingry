@@ -51,7 +51,7 @@ export function WishlistIconButton({
         "dingry-interactive-luxe flex items-center justify-center rounded-md transition-[color,opacity,transform] duration-200",
         hit,
         active
-          ? "text-[#FF5F00] drop-shadow-[0_0_12px_rgba(255,61,0,0.28)]"
+          ? "text-transparent"
           : tone === "on-dark"
             ? "text-white/40 hover:text-white/75"
             : "text-white/35 hover:text-white/70",
@@ -63,7 +63,11 @@ export function WishlistIconButton({
         strokeWidth={1.5}
         className={cn(
           "shrink-0",
-          active ? "fill-[#FF5F00] text-[#FF5F00]" : "fill-none",
+          active
+            ? "dingry-nav-favoris-heart--on"
+            : tone === "on-dark"
+              ? "fill-none stroke-current"
+              : "fill-none stroke-current",
         )}
         aria-hidden
       />

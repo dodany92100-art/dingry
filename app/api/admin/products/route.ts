@@ -15,6 +15,7 @@ import { readStockQuantity } from "@/lib/stock";
 import { normalizePublishStatus } from "@/lib/admin/types";
 import type { ParsedProductFields } from "@/lib/admin/parse-product";
 import { preuploadedRectoFromForm, preuploadedVersoFromForm } from "@/lib/admin/preuploaded-image";
+import { catalogProductSource } from "@/lib/catalog-source";
 import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -39,6 +40,7 @@ export async function GET() {
       products,
       makerTemplates,
       r2ImageStorage: isR2ImageStorageEnabled(),
+      catalogSource: catalogProductSource(),
     });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {

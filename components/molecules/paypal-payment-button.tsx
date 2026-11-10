@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatClientCheckoutError } from "@/lib/checkout-diagnostic";
 
 export type PayPalCartLine = {
   productId: number;
@@ -65,9 +66,13 @@ export function PayPalPaymentButton({
       const payload = (await response.json().catch(() => null)) as {
         approvalUrl?: string;
         error?: string;
+        code?: string;
       } | null;
       if (!response.ok || !payload?.approvalUrl) {
-        const message = payload?.error ?? "La commande PayPal n'a pas pu être ouverte.";
+        const message = formatClientCheckoutError(
+          payload?.error ?? "La commande PayPal n'a pas pu être ouverte.",
+          payload?.code,
+        );
         setError(message);
         onAfterCreateFailure?.();
         setRedirecting(false);

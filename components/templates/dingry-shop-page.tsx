@@ -243,6 +243,7 @@ function DingryShopPageInner() {
             <ShopFooter
               shopBasePath={shopBasePath}
               onScrollToCatalogue={() => scrollToSection("catalogue")}
+              onScrollToSection={scrollToSection}
             />
           </LazyWhenVisible>
         </div>

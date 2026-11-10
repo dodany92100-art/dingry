@@ -18,14 +18,19 @@ import {
 } from "@/lib/paypal-webhook";
 import { limitPayPalWebhook } from "@/lib/ratelimit";
 import { clientIp } from "@/lib/request-ip";
+import { WEBHOOK_CODES, logPayPalWebhookDiag } from "@/lib/checkout-diagnostic";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MAX_BODY_BYTES = 100_000;
 
-function logWebhook(scope: string, details: Record<string, string | undefined> = {}): void {
-  console.error(`[paypal-webhook] ${scope}`, details);
+function logWebhook(
+  code: (typeof WEBHOOK_CODES)[keyof typeof WEBHOOK_CODES],
+  scope: string,
+  details: Record<string, string | undefined> = {},
+): void {
+  logPayPalWebhookDiag(code, scope, details);
 }
 
 function unavailable() {
@@ -70,7 +75,7 @@ export async function POST(request: Request) {
   }
 
   if (!paypalWebhookConfigured()) {
-    logWebhook("webhook_id ou credentials absents");
+    logWebhook(WEBHOOK_CODES.CREDENTIALS, "webhook_id ou credentials absents");
     return unavailable();
   }
 
@@ -88,12 +93,14 @@ export async function POST(request: Request) {
 
   const verdict = await verifyPayPalWebhookSignature(signature, raw);
   if (verdict === "auth") {
+    logWebhook(WEBHOOK_CODES.VERIFY, "signature refusée (401/403 PayPal)");
     await sendOpsAlertOnce("paypal-webhook-verify-auth", "Webhook PayPal — identifiants", {
       reason: "verify-webhook-signature refusé (401/403 PayPal)",
     });
     return unavailable();
   }
   if (verdict === "unavailable") {
+    logWebhook(WEBHOOK_CODES.VERIFY, "verify indisponible (OAuth ou API)");
     await sendOpsAlertOnce("paypal-webhook-verify-down", "Webhook PayPal indisponible", {
       reason: "verify-webhook-signature ou OAuth indisponible",
     });
@@ -115,7 +122,7 @@ export async function POST(request: Request) {
 
   const refund = paypalRefundAlertContext(event);
   if (refund) {
-    logWebhook("remboursement ou annulation capture", { eventType: refund.eventType });
+    logWebhook(WEBHOOK_CODES.REFUND, "remboursement ou annulation capture", { eventType: refund.eventType });
     const reason = [
       refund.eventType,
       refund.captureId ? `capture ${refund.captureId}` : null,
@@ -136,7 +143,9 @@ export async function POST(request: Request) {
   if (orderId === "ignore") return received();
   if (orderId === "invalid") {
     const ids = paypalCaptureResourceIds(event);
-    logWebhook("capture sans order_id valide", { eventType: paypalWebhookEventType(event) ?? "unknown" });
+    logWebhook(WEBHOOK_CODES.CAPTURE_INVALID, "capture sans order_id valide", {
+      eventType: paypalWebhookEventType(event) ?? "unknown",
+    });
     return permanentWebhookIssue(
       `capture-invalid:${ids.captureId ?? "unknown"}`,
       "Capture PayPal sans order_id",
@@ -148,7 +157,7 @@ export async function POST(request: Request) {
   const draft = await loadPayPalDraft(orderId);
   if (draft === "unavailable") return unavailable();
   if (draft === "missing") {
-    logWebhook("brouillon expiré ou absent — intervention manuelle", { orderId });
+    logWebhook(WEBHOOK_CODES.DRAFT, "brouillon expiré ou absent — intervention manuelle", { orderId });
     return permanentWebhookIssue(
       `draft-missing:${orderId}`,
       "Paiement sans brouillon",
@@ -157,7 +166,7 @@ export async function POST(request: Request) {
     );
   }
   if (draft === "invalid") {
-    logWebhook("brouillon invalide — intervention manuelle", { orderId });
+    logWebhook(WEBHOOK_CODES.DRAFT, "brouillon invalide — intervention manuelle", { orderId });
     return permanentWebhookIssue(
       `draft-invalid:${orderId}`,
       "Paiement brouillon invalide",
@@ -171,7 +180,7 @@ export async function POST(request: Request) {
   try {
     const fetched = await fetchPayPalOrder(orderId);
     if (!fetched.ok) {
-      logWebhook("lecture commande PayPal", { orderId, issue: fetched.issue });
+      logWebhook(WEBHOOK_CODES.PAYPAL_READ, "lecture commande PayPal", { orderId, issue: fetched.issue });
       if (fetched.status >= 500 || fetched.status === 429 || fetched.issue === "oauth" || fetched.issue === "unconfigured") {
         return unavailable();
       }
@@ -186,7 +195,9 @@ export async function POST(request: Request) {
     const payment = readVerifiedPayment(fetched.order, quote);
     if (!payment || payment.orderId !== orderId) {
       if (fetched.order.status === "COMPLETED") {
-        logWebhook("ALERTE montant refusé commande payée — intervention manuelle", { orderId });
+        logWebhook(WEBHOOK_CODES.AMOUNT, "ALERTE montant refusé commande payée — intervention manuelle", {
+          orderId,
+        });
         return permanentWebhookIssue(
           `amount-rejected:${orderId}`,
           "Paiement sans commande CRM",
@@ -194,18 +205,20 @@ export async function POST(request: Request) {
           "montant ou digest refusé alors que PayPal est COMPLETED",
         );
       }
-      logWebhook("montant refusé commande non finalisée", { orderId });
+      logWebhook(WEBHOOK_CODES.AMOUNT, "montant refusé commande non finalisée", { orderId });
       return received();
     }
 
     const saved = await persistPayPalPayment(payment, quote);
     if (!saved.ok) {
       if (saved.status === 503) return unavailable();
-      logWebhook("conflit persistance", { orderId });
+      logWebhook(WEBHOOK_CODES.PERSIST, "conflit persistance", { orderId });
     }
     return received();
   } catch (error) {
-    logWebhook("enregistrement", { issue: error instanceof Error ? error.name : "erreur" });
+    logWebhook(WEBHOOK_CODES.PERSIST, "enregistrement", {
+      issue: error instanceof Error ? error.name : "erreur",
+    });
     return unavailable();
   }
 }

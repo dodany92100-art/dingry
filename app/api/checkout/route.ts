@@ -20,6 +20,7 @@ import { jsonNoStore } from "@/lib/http";
 import { markPayPalPaymentOrphan, sendOpsAlertOnce } from "@/lib/ops-alert";
 import { turnstileRemoteIp, turnstileTokenFromBody, verifyTurnstileToken } from "@/lib/turnstile";
 import { deferAfter } from "@/lib/defer-after";
+import { CHECKOUT_CODES, checkoutErrorResponse } from "@/lib/checkout-diagnostic";
 
 export const runtime = "nodejs";
 /** Inférieur au TTL du verrou Redis PayPal (`PAYPAL_ORDER_LOCK_TTL_SECONDS`). */
@@ -36,7 +37,7 @@ function limited(gate: RateGate) {
     headers["X-RateLimit-Limit"] = String(gate.limit);
     headers["X-RateLimit-Remaining"] = String(gate.remaining);
   }
-  return jsonNoStore({ error: gate.error }, { status: gate.status, headers });
+  return checkoutErrorResponse(CHECKOUT_CODES.RATE_LIMIT, gate.error, gate.status, { headers });
 }
 
 function rateHeaders(gate: { limit: number; remaining: number }): Record<string, string> {
@@ -50,16 +51,17 @@ function persistFailed(
   saved: { ok: false; status: 409 | 503; error: string },
   orderId: string,
 ) {
-  const headers: Record<string, string> = {};
   if (saved.status === 503 && saved.error === PAYPAL_ORDER_FINALIZING_MESSAGE) {
-    headers["Retry-After"] = "3";
-    return jsonNoStore({ error: saved.error }, { status: saved.status, headers });
+    return checkoutErrorResponse(CHECKOUT_CODES.FINALIZING, saved.error, saved.status, {
+      headers: { "Retry-After": "3" },
+      log: { orderId },
+    });
   }
   if (saved.status === 409) {
-    return jsonNoStore({ error: saved.error }, { status: 409 });
+    return checkoutErrorResponse(CHECKOUT_CODES.PERSIST_ORPHAN, saved.error, 409, { log: { orderId } });
   }
   const error = `Paiement reçu, contactez-nous avec la référence ${orderId}.`;
-  return jsonNoStore({ error }, { status: saved.status, headers });
+  return checkoutErrorResponse(CHECKOUT_CODES.PERSIST_ORPHAN, error, saved.status, { log: { orderId } });
 }
 
 async function notifyMissingPayPalDraft(orderId: string, reason: string): Promise<void> {
@@ -95,33 +97,33 @@ export async function POST(request: Request) {
 
   const contentLength = Number(request.headers.get("content-length") ?? "");
   if (Number.isFinite(contentLength) && contentLength > CHECKOUT_MAX_BODY) {
-    return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+    return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400);
   }
 
   let raw = "";
   try {
     raw = await request.text();
   } catch {
-    return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+    return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400);
   }
   if (Buffer.byteLength(raw, "utf8") === 0 || Buffer.byteLength(raw, "utf8") > CHECKOUT_MAX_BODY) {
-    return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+    return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400);
   }
 
   let body: unknown;
   try {
     body = JSON.parse(raw) as unknown;
   } catch {
-    return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+    return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400);
   }
 
   if (!body || typeof body !== "object") {
-    return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+    return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400);
   }
 
   const intent = (body as { intent?: unknown }).intent;
   if (!isCheckoutIntent(intent)) {
-    return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+    return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400);
   }
 
   const gate =
@@ -131,18 +133,22 @@ export async function POST(request: Request) {
   if (intent === "capture") {
     // Turnstile uniquement sur `create` : brouillon + limiteur + vérif PayPal côté serveur.
     if (!paypalConfigured()) {
-      return jsonNoStore({ error: "Paiement indisponible." }, { status: 503 });
+      return checkoutErrorResponse(CHECKOUT_CODES.PAYMENT_UNAVAILABLE, "Paiement indisponible.", 503, {
+        log: { intent: "capture" },
+      });
     }
 
     const rawOrderId = (body as { orderId?: unknown }).orderId;
     const orderId = typeof rawOrderId === "string" ? rawOrderId.trim() : "";
     if (!isPayPalOrderId(orderId)) {
-      return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+      return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400, { log: { intent: "capture" } });
     }
 
     const draft = await loadPayPalDraft(orderId);
     if (draft === "unavailable") {
-      return jsonNoStore({ error: "Paiement indisponible." }, { status: 503 });
+      return checkoutErrorResponse(CHECKOUT_CODES.PAYMENT_UNAVAILABLE, "Paiement indisponible.", 503, {
+        log: { intent: "capture", orderId },
+      });
     }
     if (draft === "missing" || draft === "invalid") {
       const orphanReason =
@@ -150,25 +156,31 @@ export async function POST(request: Request) {
           ? "brouillon Redis absent à la capture (expiré ou perdu)"
           : "brouillon Redis invalide à la capture";
       await notifyMissingPayPalDraft(orderId, orphanReason);
-      return jsonNoStore({ error: "Paiement indisponible." }, { status: 503 });
+      return checkoutErrorResponse(CHECKOUT_CODES.DRAFT_MISSING, "Paiement indisponible.", 503, {
+        log: { intent: "capture", orderId },
+      });
     }
     const quote = quoteFromDraft(draft);
 
     try {
       const fetched = await fetchPayPalOrder(orderId);
       if (!fetched.ok) {
-        console.error("PayPal lecture", fetched.issue);
         const status = fetched.status === 503 ? 503 : 400;
         const error = status === 503 ? "Paiement indisponible." : "Paiement PayPal introuvable.";
-        return jsonNoStore({ error }, { status });
+        const code = status === 503 ? CHECKOUT_CODES.PAYMENT_UNAVAILABLE : CHECKOUT_CODES.PAYPAL_API;
+        return checkoutErrorResponse(code, error, status, {
+          log: { intent: "capture", orderId, issue: fetched.issue },
+        });
       }
 
       const lookedUp = fetched.order;
       const ready = orderReadyToCapture(lookedUp, quote);
       if (!ready && lookedUp.status !== "COMPLETED") {
-        return jsonNoStore(
-          { error: "Le montant PayPal ne correspond pas à la commande." },
-          { status: 400 },
+        return checkoutErrorResponse(
+          CHECKOUT_CODES.AMOUNT_MISMATCH,
+          "Le montant PayPal ne correspond pas à la commande.",
+          400,
+          { log: { intent: "capture", orderId } },
         );
       }
 
@@ -176,15 +188,19 @@ export async function POST(request: Request) {
       if (ready) {
         const captured = await capturePayPalOrder(orderId);
         if (!captured.ok) {
-          console.error("PayPal capture", captured.issue);
           if (captured.issue !== "ORDER_ALREADY_CAPTURED") {
             const status = captured.status === 503 ? 503 : 400;
             const error = status === 503 ? "Paiement indisponible." : "Le paiement PayPal n'a pas abouti.";
-            return jsonNoStore({ error }, { status });
+            const code = status === 503 ? CHECKOUT_CODES.PAYMENT_UNAVAILABLE : CHECKOUT_CODES.PAYPAL_API;
+            return checkoutErrorResponse(code, error, status, {
+              log: { intent: "capture", orderId, issue: captured.issue },
+            });
           }
           const again = await fetchPayPalOrder(orderId);
           if (!again.ok) {
-            return jsonNoStore({ error: "Paiement indisponible." }, { status: 503 });
+            return checkoutErrorResponse(CHECKOUT_CODES.PAYMENT_UNAVAILABLE, "Paiement indisponible.", 503, {
+              log: { intent: "capture", orderId },
+            });
           }
           paypalOrder = again.order;
         } else {
@@ -194,9 +210,11 @@ export async function POST(request: Request) {
 
       const payment = readVerifiedPayment(paypalOrder, quote);
       if (!payment || payment.orderId !== orderId) {
-        return jsonNoStore(
-          { error: "Le montant PayPal ne correspond pas à la commande." },
-          { status: 400 },
+        return checkoutErrorResponse(
+          CHECKOUT_CODES.AMOUNT_MISMATCH,
+          "Le montant PayPal ne correspond pas à la commande.",
+          400,
+          { log: { intent: "capture", orderId } },
         );
       }
 
@@ -210,35 +228,41 @@ export async function POST(request: Request) {
         { headers: rateHeaders(gate) },
       );
     } catch (error) {
-      console.error("Enregistrement commande", error instanceof Error ? error.name : "erreur");
-      return jsonNoStore({ error: "Enregistrement indisponible." }, { status: 503 });
+      const issue = error instanceof Error ? error.name : "erreur";
+      return checkoutErrorResponse(CHECKOUT_CODES.PERSIST_ORPHAN, "Enregistrement indisponible.", 503, {
+        log: { intent: "capture", issue },
+      });
     }
   }
 
   const lines = parseCheckoutLines(body);
-  if (!lines) return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+  if (!lines) {
+    return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400, { log: { intent } });
+  }
 
   let quote: CheckoutQuote | null = null;
   try {
     quote = await quoteCheckout(lines);
   } catch (error) {
     if (error instanceof StockCheckoutError) {
-      return jsonNoStore({ error: error.message }, { status: error.status });
+      return checkoutErrorResponse(CHECKOUT_CODES.STOCK, error.message, error.status, { log: { intent } });
     }
     if (error instanceof StoreUnavailableError) {
-      console.error("Catalogue injoignable", error.name);
-      return jsonNoStore({ error: "Dingry collection indisponible." }, { status: 503 });
+      return checkoutErrorResponse(CHECKOUT_CODES.STORE, "Dingry collection indisponible.", 503, {
+        log: { intent, issue: error.name },
+      });
     }
-    console.error("Catalogue injoignable", error instanceof Error ? error.name : "erreur");
-    return jsonNoStore({ error: "Dingry collection indisponible." }, { status: 503 });
+    const issue = error instanceof Error ? error.name : "erreur";
+    return checkoutErrorResponse(CHECKOUT_CODES.STORE, "Dingry collection indisponible.", 503, {
+      log: { intent, issue },
+    });
   }
   if (!quote) {
-    return jsonNoStore(
-      {
-        error:
-          "Un article du panier ne correspond plus à Dingry collection (retiré, taille ou référence). Videz le panier, rajoutez la pièce depuis la boutique, puis réessayez.",
-      },
-      { status: 400 },
+    return checkoutErrorResponse(
+      CHECKOUT_CODES.CATALOG_LINE,
+      "Un article du panier ne correspond plus à Dingry collection (retiré, taille ou référence). Videz le panier, rajoutez la pièce depuis la boutique, puis réessayez.",
+      400,
+      { log: { intent } },
     );
   }
 
@@ -256,33 +280,48 @@ export async function POST(request: Request) {
   }
 
   if (!paypalConfigured()) {
-    return jsonNoStore({ error: "Paiement indisponible." }, { status: 503 });
+    return checkoutErrorResponse(CHECKOUT_CODES.PAYMENT_UNAVAILABLE, "Paiement indisponible.", 503, {
+      log: { intent },
+    });
   }
 
   if (intent === "create") {
     const createVerdict = await verifyTurnstileToken(turnstileTokenFromBody(body), turnstileRemoteIp(request));
     if (!createVerdict.ok) {
-      return jsonNoStore({ error: createVerdict.error }, { status: createVerdict.status });
+      return checkoutErrorResponse(CHECKOUT_CODES.TURNSTILE, createVerdict.error, createVerdict.status, {
+        log: { intent: "create" },
+      });
     }
     try {
       const created = await createPayPalOrder(quote);
       if (!created || !isPayPalOrderId(created.orderId)) {
-        return jsonNoStore({ error: "Le paiement PayPal n'a pas abouti." }, { status: 502 });
+        return checkoutErrorResponse(
+          CHECKOUT_CODES.PAYPAL_API,
+          "Le paiement PayPal n'a pas abouti.",
+          502,
+          { log: { intent: "create" } },
+        );
       }
       const drafted = await savePayPalDraft(created.orderId, quote);
       if (!drafted && process.env.NODE_ENV !== "development") {
-        console.error("Brouillon PayPal non enregistré", created.orderId);
-        return jsonNoStore({ error: "Paiement indisponible." }, { status: 503 });
+        return checkoutErrorResponse(CHECKOUT_CODES.DRAFT_MISSING, "Paiement indisponible.", 503, {
+          log: { intent: "create", orderId: created.orderId },
+        });
       }
       return jsonNoStore(
         { orderId: created.orderId, approvalUrl: created.approvalUrl },
         { headers: rateHeaders(gate) },
       );
     } catch (error) {
-      console.error("PayPal création", error instanceof Error ? error.name : "erreur");
-      return jsonNoStore({ error: "Le paiement PayPal n'a pas abouti." }, { status: 502 });
+      const issue = error instanceof Error ? error.name : "erreur";
+      return checkoutErrorResponse(
+        CHECKOUT_CODES.PAYPAL_API,
+        "Le paiement PayPal n'a pas abouti.",
+        502,
+        { log: { intent: "create", issue } },
+      );
     }
   }
 
-  return jsonNoStore({ error: "Commande invalide." }, { status: 400 });
+  return checkoutErrorResponse(CHECKOUT_CODES.INVALID, "Commande invalide.", 400, { log: { intent } });
 }
