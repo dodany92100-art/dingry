@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { TabNav, type TabId } from "@/components/organisms/admin/tab-nav";
 
@@ -27,7 +25,9 @@ export function AdminCrmTabRow({
         className="mb-0 min-w-0 flex-1"
       />
       {trailing ? (
-        <div className="flex shrink-0 items-center justify-end gap-2.5 max-[449px]:w-full">{trailing}</div>
+        <div className="flex shrink-0 items-center justify-center gap-2.5 max-[449px]:w-full sm:justify-end">
+          {trailing}
+        </div>
       ) : null}
     </div>
   );

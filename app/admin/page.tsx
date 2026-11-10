@@ -456,7 +456,7 @@ function AdminDashboard() {
           hideStockTabsOnNarrow={tab === "produits" || tab === "brouillons"}
           trailing={
             tab === "produits" || tab === "brouillons" ? (
-              <div className="flex w-full items-center justify-end gap-2.5 md:hidden">
+              <div className="flex w-full items-center justify-center gap-2.5 md:hidden">
                 <AdminStockPreviewToggle
                   active={stockViewPrefs.storefrontPreview}
                   onChange={stockViewPrefs.setStorefrontPreview}
