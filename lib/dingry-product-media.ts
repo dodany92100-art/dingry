@@ -117,7 +117,7 @@ export const DINGRY_SWEAT_PRODUCT_IDS = new Set<number>(
 
 /** IDs t-shirts boutique (recto + verso + perso) — catégorie figée côté shop. */
 export const DINGRY_TEE_PRODUCT_IDS = new Set<number>([
-  11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+  11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24,
 ]);
 
 export const DINGRY_JERSEY_PRODUCT_IDS = new Set<number>([41, 42]);

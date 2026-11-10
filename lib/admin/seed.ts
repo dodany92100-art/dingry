@@ -160,12 +160,12 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
   product(
     "23",
     "DINGRY-TF02",
-    "DINGRY TEE FEMME",
+    "DINGRY CROP TOP",
     "SIGNATURE — RECTO",
     35,
     "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_21.13.25_ypgmnf.jpg",
     "",
-    "T-shirts",
+    "Crop tops",
     13,
   ),
   product(
