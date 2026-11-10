@@ -22,6 +22,23 @@ type LazyWhenVisibleProps = {
   id?: string;
 };
 
+const DEFAULT_ROOT_MARGIN = "640px 0px 96px 0px";
+
+/** IntersectionObserver n’accepte que px ou % (pas min(), vh, calc…). */
+function sanitizeRootMargin(margin: string): string {
+  const tokens = margin.trim().split(/\s+/);
+  if (tokens.length === 0) return DEFAULT_ROOT_MARGIN;
+  const valid = (token: string) => /^-?\d+(\.\d+)?(px|%)$/.test(token);
+  if (tokens.every(valid)) {
+    return tokens.length === 4
+      ? tokens.join(" ")
+      : tokens.length === 1
+        ? `${tokens[0]} ${tokens[0]} ${tokens[0]} ${tokens[0]}`
+        : DEFAULT_ROOT_MARGIN;
+  }
+  return DEFAULT_ROOT_MARGIN;
+}
+
 function scheduleAfterPaint(activate: () => void) {
   if (typeof requestIdleCallback !== "undefined") {
     requestIdleCallback(activate, { timeout: 150 });
@@ -36,7 +53,7 @@ function scheduleAfterPaint(activate: () => void) {
 export function LazyWhenVisible({
   children,
   scrollRootRef,
-  rootMargin = "640px 0px 96px 0px",
+  rootMargin = DEFAULT_ROOT_MARGIN,
   prefetch,
   className,
   placeholderClassName,
@@ -56,6 +73,7 @@ export function LazyWhenVisible({
     };
 
     const root = scrollRootRef?.current ?? null;
+    const safeRootMargin = sanitizeRootMargin(rootMargin);
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -73,7 +91,7 @@ export function LazyWhenVisible({
           run();
         }
       },
-      { root, rootMargin, threshold: 0 },
+      { root, rootMargin: safeRootMargin, threshold: 0 },
     );
 
     observer.observe(node);
