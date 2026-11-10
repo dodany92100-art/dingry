@@ -191,8 +191,8 @@ export function ShopFooter({
             </div>
           </div>
 
-          <nav className="dingry-footer-legal-rail mt-12 border-black/10" aria-label="Documents légaux">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <nav className="dingry-footer-legal-rail mt-12" aria-label="Documents légaux">
+            <div className="dingry-footer-legal-row dingry-gold-rule-top dingry-gold-rule-bottom relative flex flex-col gap-5 py-5 sm:flex-row sm:items-center sm:justify-between">
               <p className="dingry-footer-eyebrow m-0">Légal</p>
               <ul className="flex flex-wrap items-center gap-y-2">
                 {LEGAL_LINKS.map((link, index) => (

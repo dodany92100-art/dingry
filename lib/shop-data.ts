@@ -84,9 +84,33 @@ export const PERSONALIZABLE_PRODUCT_ID = 24;
 
 /** Maquettes recto (devant) — même logique que la PJ Paris / Marseille / Lyon */
 export const PERSONALIZATION_SHIRTS = [
-  { id: "noir", label: "Noir", image: IMAGES.tee11, cityTop: "57%", citySize: "clamp(0.55rem, 2.9vw, 0.82rem)" },
-  { id: "vert", label: "Vert", image: IMAGES.tee8, cityTop: "53%", citySize: "clamp(0.65rem, 3.1vw, 0.95rem)" },
-  { id: "rouge", label: "Rouge", image: IMAGES.tee9, cityTop: "53%", citySize: "clamp(0.65rem, 3.1vw, 0.95rem)" },
+  {
+    id: "noir",
+    label: "Noir",
+    image: IMAGES.tee11,
+    cityTop: "57%",
+    citySize: "clamp(0.55rem, 2.9vw, 0.82rem)",
+    swatch: "#161616",
+    swatchText: "#ffffff",
+  },
+  {
+    id: "vert",
+    label: "Vert",
+    image: IMAGES.tee8,
+    cityTop: "53%",
+    citySize: "clamp(0.65rem, 3.1vw, 0.95rem)",
+    swatch: "#1f4d32",
+    swatchText: "#ffffff",
+  },
+  {
+    id: "rouge",
+    label: "Rouge",
+    image: IMAGES.tee9,
+    cityTop: "53%",
+    citySize: "clamp(0.65rem, 3.1vw, 0.95rem)",
+    swatch: "#8f1d2b",
+    swatchText: "#ffffff",
+  },
 ] as const;
 
 export type PersonalizationShirtId = (typeof PERSONALIZATION_SHIRTS)[number]["id"];

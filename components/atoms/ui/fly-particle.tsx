@@ -49,7 +49,7 @@ export function FlyParticle({ from, to, variant, onComplete }: FlyParticleProps)
       {variant === "heart" ? (
         <Heart size={22} strokeWidth={1.5} className="dingry-nav-favoris-heart--on" />
       ) : (
-        <span className="dingry-nav-favoris-badge block h-3.5 min-w-3.5 rounded-sm shadow-[0_0_14px_rgb(252_246_186/0.45)]" aria-hidden />
+        <span className="dingry-nav-favoris-badge block h-3.5 min-w-3.5 rounded-sm" aria-hidden />
       )}
     </motion.div>
   );

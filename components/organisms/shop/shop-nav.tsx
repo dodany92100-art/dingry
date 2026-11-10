@@ -122,7 +122,7 @@ export function ShopNav({
               </motion.span>
               <span className="hidden text-[10px] font-medium tracking-[0.22em] uppercase md:inline">Favoris</span>
               {favoriteCount > 0 ? (
-                <span className="dingry-nav-favoris-badge absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center px-1 text-[10px] font-bold leading-none md:static md:ml-0.5">
+                <span className="dingry-nav-favoris-badge absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-sm px-1 text-[10px] font-bold tabular-nums leading-none md:static md:ml-0.5">
                   {favoriteCount}
                 </span>
               ) : null}
@@ -133,7 +133,7 @@ export function ShopNav({
             data-fly-target="cart"
             onClick={onOpenCart}
             aria-label={cartCount > 0 ? `Panier, ${cartCount} article${cartCount > 1 ? "s" : ""}` : "Ouvrir le panier"}
-            className="dingry-interactive-luxe dingry-nav-favoris-btn relative flex h-11 items-center gap-2.5 rounded-sm border border-white/20 bg-white/[0.06] px-3.5 text-white/90 hover:bg-white/[0.1] hover:text-white md:px-4"
+            className="dingry-interactive-luxe dingry-nav-cart-btn relative flex h-11 items-center gap-2.5 rounded-sm border border-white/20 bg-white/[0.06] px-3.5 text-white/90 hover:bg-white/[0.1] hover:text-white md:px-4"
           >
             <motion.span animate={cartControls} className="inline-flex">
             <svg
@@ -154,7 +154,7 @@ export function ShopNav({
             </motion.span>
             <span className="text-[10px] font-medium tracking-[0.22em] uppercase">Panier</span>
             {cartCount > 0 ? (
-              <span className="dingry-nav-favoris-badge flex h-5 min-w-5 items-center justify-center px-1.5 text-[10px] font-bold leading-none">
+              <span className="dingry-nav-favoris-badge flex h-5 min-w-[1.25rem] items-center justify-center rounded-sm px-1.5 text-[10px] font-bold tabular-nums leading-none">
                 {cartCount}
               </span>
             ) : null}

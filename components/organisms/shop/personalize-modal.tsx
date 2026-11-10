@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
+import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
 import {
   PERSONALIZATION_MAX_LABEL_LENGTH,
   PERSONALIZATION_SHIRTS,
@@ -16,6 +17,7 @@ import {
   personalizationPreviewLabel,
 } from "@/lib/shop-view";
 import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
+import modalStyles from "./product-modal.module.css";
 import styles from "./personalize-modal.module.css";
 
 export type PersonalizedLineInput = { size: string; qty: number; personalization: string };
@@ -39,6 +41,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
   const inStock = product ? isShopProductInStock(product) : false;
   const canSubmit = Boolean(size) && Boolean(label.trim()) && inStock;
   const unitPrice = (product?.price ?? 0) + PERSONALIZATION_SURCHARGE_EUR;
+  const sizeGridVars = { "--size-cols": "6" } as CSSProperties;
 
   function handleAdd() {
     if (!product || !size || !isShopProductInStock(product)) return;
@@ -50,13 +53,9 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
   return (
     <AnimatePresence>
       {open ? (
-        <div
-          key="dingry-personalize-modal"
-          data-dingry-personalize-modal=""
-          className={styles.root}
-        >
+        <div key="dingry-personalize-modal" data-dingry-personalize-modal="" className={modalStyles.root}>
           <motion.div
-            className={styles.overlay}
+            className={modalStyles.overlay}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -64,43 +63,18 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
             onClick={onClose}
           />
           <motion.div
-            className={styles.panel}
+            className={`${modalStyles.panel} dingry-sale-ui`}
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={MODAL_PANEL_SPRING}
           >
-            <button
-              type="button"
-              onClick={onClose}
-              className={styles.close}
-              aria-label="Fermer"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-            <div className="dingry-gold-rule-bottom relative p-8 md:p-10">
-              <p className="text-[10px] tracking-[0.35em] text-[#FF3D00] uppercase mb-2">Custom · Studio</p>
-              <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight pr-12">
-                Configurateur tee personnalisé
-              </h2>
-              <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/55">
-                Choisissez la couleur, saisissez votre texte, vérifiez l&apos;aperçu recto, puis ajoutez au panier.
-              </p>
-              <ol className="mt-6 flex flex-wrap gap-2 text-[9px] tracking-[0.16em] text-white/40 uppercase md:gap-3 md:text-[10px]">
-                <li className="rounded-full border border-white/15 px-3 py-1.5">1 · Couleur</li>
-                <li className="rounded-full border border-white/15 px-3 py-1.5">2 · Texte</li>
-                <li className="rounded-full border border-white/15 px-3 py-1.5">3 · Taille & quantité</li>
-              </ol>
-            </div>
-            <div className="p-8 md:p-10 grid md:grid-cols-2 gap-10 md:gap-12 items-start">
-              <div className="relative mx-auto w-full max-w-xs" style={{ aspectRatio: "3/4" }}>
+            <div className={modalStyles.photo}>
+              <div className={styles.previewStage}>
                 <img
                   src={shirt.image}
                   alt={`Tee ${shirt.label} — vue recto`}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
                   style={{ filter: "brightness(0.92) contrast(1.05)" }}
                 />
                 <div
@@ -110,120 +84,133 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                 >
                   {previewLabel}
                 </div>
-                <p className="absolute top-3 left-0 right-0 text-center text-[9px] tracking-[0.25em] text-white/60 uppercase">
-                  Vue recto — sous le logo
-                </p>
-                <p className="absolute bottom-3 left-0 right-0 text-center text-[9px] tracking-[0.3em] text-white/45 uppercase">
-                  Simulation indicative
-                </p>
+                <p className={styles.previewCaptionTop}>Vue recto — sous le logo</p>
+                <p className={styles.previewCaptionBottom}>Simulation indicative</p>
               </div>
-              <div className="flex flex-col gap-6">
-                <div>
-                  <p className="text-sm text-white/70 leading-relaxed mb-1">
-                    Choisis ta ville et personnalise ton DINGRY
-                  </p>
-                  <p className="text-sm text-white/45">
-                    Personnalisation possible,{" "}
-                    <span className="dingry-product-price dingry-product-price--sm dingry-product-price--accent dingry-product-price--on-dark inline-block align-baseline">
+            </div>
+
+            <div className={modalStyles.body}>
+              <div>
+                <div className={modalStyles.toolbar}>
+                  <button type="button" onClick={onClose} className={modalStyles.close} aria-label="Fermer">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <p className={`dingry-typo-manifesto ${modalStyles.manifesto}`}>{DINGRY_MANIFESTO_FR}</p>
+                <p className={styles.eyebrow}>Custom · Studio</p>
+                <h2 className={modalStyles.title}>Configurateur tee personnalisé</h2>
+                <p className={modalStyles.description}>
+                  Choisissez la couleur, saisissez votre texte, vérifiez l&apos;aperçu recto, puis ajoutez au panier.
+                </p>
+                <ol className={styles.steps}>
+                  <li className={styles.stepPill}>1 · Couleur</li>
+                  <li className={styles.stepPill}>2 · Texte</li>
+                  <li className={styles.stepPill}>3 · Taille & quantité</li>
+                </ol>
+
+                <div className={modalStyles.section}>
+                  <p className={modalStyles.metaText}>
+                    Choisis ta ville et personnalise ton DINGRY. Personnalisation possible,{" "}
+                    <span className="dingry-product-price dingry-product-price--sm inline-block align-baseline">
                       {PERSONALIZATION_SURCHARGE_EUR}€
                     </span>{" "}
                     par article.
                   </p>
                 </div>
-                <div>
-                  <p className="mb-3 text-[10px] tracking-[0.3em] text-[#FF3D00] uppercase">Étape 1 · Couleur du tee</p>
-                  <div className="flex flex-wrap gap-2">
-                    {PERSONALIZATION_SHIRTS.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => setShirtId(option.id)}
-                        className={`px-4 py-2 text-[11px] tracking-[0.2em] uppercase border transition-colors ${
-                          shirtId === option.id
-                            ? "bg-[#FF3D00] border-[#FF3D00] text-white"
-                            : "border-white/15 text-white/50 hover:border-white/40 hover:text-white"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+
+                <div className={modalStyles.section}>
+                  <p className={modalStyles.sectionLabel}>Étape 1 · Couleur du tee</p>
+                  <div className={modalStyles.chipRow}>
+                    {PERSONALIZATION_SHIRTS.map((option) => {
+                      const active = shirtId === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => setShirtId(option.id)}
+                          className={`${modalStyles.chip} ${active ? styles.colorChipActive : ""}`}
+                          style={
+                            active
+                              ? ({
+                                  "--shirt-swatch": option.swatch,
+                                  "--shirt-swatch-text": option.swatchText,
+                                } as CSSProperties)
+                              : undefined
+                          }
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-                <label className="block">
-                  <span className="mb-2 block text-[10px] tracking-[0.3em] text-[#FF3D00] uppercase">
-                    Étape 2 · Ville, pays ou texte
-                  </span>
+
+                <label className={`${modalStyles.section} block`}>
+                  <span className={modalStyles.sectionLabel}>Étape 2 · Ville, pays ou texte</span>
                   <input
                     type="text"
                     value={label}
                     onChange={(e) => setLabel(clampPersonalizationLabel(e.target.value))}
                     placeholder="Ville, Pays"
-                    className="w-full rounded-full border border-white/20 bg-[#080808] px-5 py-3.5 text-sm text-white placeholder:text-white/30 focus:border-[#FF3D00] focus:outline-none"
+                    className={styles.fieldInput}
                     maxLength={PERSONALIZATION_MAX_LABEL_LENGTH}
                   />
                 </label>
-                <div>
-                  <p className="mb-3 text-[10px] tracking-[0.3em] text-[#FF3D00] uppercase">Étape 3 · Taille</p>
-                  <div className="grid grid-cols-6 gap-2">
+
+                <div className={modalStyles.section}>
+                  <p className={modalStyles.sizeLabel}>Étape 3 · Taille</p>
+                  <div className={`${modalStyles.sizeGrid} ${modalStyles.sizeGridTight}`} style={sizeGridVars}>
                     {SIZES.map((s) => (
                       <button
                         key={s}
                         type="button"
                         onClick={() => setSize(s)}
-                        className={`py-2.5 text-xs font-medium tracking-widest border transition-all duration-200 ${
-                          size === s
-                            ? "bg-[#FF3D00] border-[#FF3D00] text-white"
-                            : "border-white/10 text-white/50 hover:border-white/30 hover:text-white"
-                        }`}
+                        className={`${modalStyles.sizeBtn} ${size === s ? modalStyles.sizeOn : ""}`}
                       >
                         {s}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="dingry-gold-rule-top dingry-gold-rule-bottom relative flex items-center justify-between py-4">
-                  <span className="text-[10px] tracking-[0.3em] text-white/40 uppercase">Quantité</span>
-                  <div className="flex items-center border border-white/15">
+              </div>
+
+              <div>
+                <div className={modalStyles.qtyRow}>
+                  <div className={modalStyles.qtyLead}>
+                    <span className={modalStyles.qtyLabel}>Quantité</span>
+                    <p className={modalStyles.qtyPrice}>{unitPrice * qty}€</p>
+                    <p className={styles.priceMeta}>
+                      ({unitPrice}€ × {qty})
+                    </p>
+                  </div>
+                  <div className={modalStyles.qtyControl}>
                     <button
                       type="button"
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
-                      className="w-9 h-9 text-white/60 hover:bg-white hover:text-black transition-colors"
+                      className={modalStyles.qtyBtn}
                       aria-label="Diminuer la quantité"
                     >
                       −
                     </button>
-                    <span className="w-10 text-center text-sm">{qty}</span>
+                    <span className={modalStyles.qtyValue}>{qty}</span>
                     <button
                       type="button"
                       onClick={() => setQty((q) => Math.min(99, q + 1))}
-                      className="w-9 h-9 text-white/60 hover:bg-white hover:text-black transition-colors"
+                      className={modalStyles.qtyBtn}
                       aria-label="Augmenter la quantité"
                     >
                       +
                     </button>
                   </div>
                 </div>
-                <p>
-                  <span className="dingry-product-price dingry-product-price--lg dingry-product-price--accent dingry-product-price--on-dark">
-                    {unitPrice * qty}€
-                  </span>{" "}
-                  <span className="text-[11px] text-white/45 tracking-wider">
-                    (
-                    <span className="dingry-product-price dingry-product-price--sm dingry-product-price--accent dingry-product-price--on-dark inline-block align-baseline">
-                      {unitPrice}€
-                    </span>{" "}
-                    × {qty})
-                  </span>
-                </p>
                 <button
                   type="button"
                   onClick={handleAdd}
                   disabled={!canSubmit}
-                  className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
-                    canSubmit
-                      ? "bg-[#FF3D00] text-white hover:bg-[#e03500]"
-                      : "bg-white/10 text-white/20 cursor-not-allowed"
-                  }`}
+                  className={`${modalStyles.addBtn} ${canSubmit ? modalStyles.addBtnOn : modalStyles.addBtnOff}`}
                 >
                   {product && !inStock ? "Épuisé" : "Ajouter au panier"}
                 </button>
