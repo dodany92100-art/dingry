@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import { useAdminSessionProbe } from "@/components/organisms/admin/hooks/use-admin-session";
 import {
   buildRelativeUrl,
   isAdminAppPath,
@@ -10,6 +11,7 @@ import {
 } from "@/lib/alto-last-public-url";
 
 export function AdminSwitcherBar() {
+  const { booting, authenticated } = useAdminSessionProbe();
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
@@ -33,6 +35,10 @@ export function AdminSwitcherBar() {
   const hint = onAdmin
     ? "Revenir à la dernière page boutique mémorisée"
     : "Ouvrir le panneau d'administration";
+
+  if (booting || !authenticated) {
+    return null;
+  }
 
   return (
     <button

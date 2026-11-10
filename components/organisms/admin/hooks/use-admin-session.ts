@@ -2,17 +2,32 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export function useAdminSession() {
+export const DINGRY_ADMIN_SESSION_EVENT = "dingry:admin-session";
+
+function broadcastAdminSession(authenticated: boolean) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(DINGRY_ADMIN_SESSION_EVENT, { detail: { authenticated } }),
+  );
+}
+
+/** Cookie session admin (sans enrôlement TOTP) — barre Alto, garde UI. */
+export function useAdminSessionProbe() {
   const [booting, setBooting] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
-  const [totpCode, setTotpCodeState] = useState("");
-  const [totpQr, setTotpQr] = useState("");
-  const [totpEnrollment, setTotpEnrollment] = useState(false);
-  const [loginError, setLoginError] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
 
-  // Session existante ?
+  useEffect(() => {
+    function onSession(ev: Event) {
+      const detail = (ev as CustomEvent<{ authenticated?: boolean }>).detail;
+      if (typeof detail?.authenticated === "boolean") {
+        setAuthenticated(detail.authenticated);
+        setBooting(false);
+      }
+    }
+    window.addEventListener(DINGRY_ADMIN_SESSION_EVENT, onSession);
+    return () => window.removeEventListener(DINGRY_ADMIN_SESSION_EVENT, onSession);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     async function boot() {
@@ -31,6 +46,18 @@ export function useAdminSession() {
       cancelled = true;
     };
   }, []);
+
+  return { booting, authenticated, setAuthenticated };
+}
+
+export function useAdminSession() {
+  const { booting, authenticated, setAuthenticated } = useAdminSessionProbe();
+  const [totpCode, setTotpCodeState] = useState("");
+  const [totpQr, setTotpQr] = useState("");
+  const [totpEnrollment, setTotpEnrollment] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
 
   // QR d'enrôlement (local uniquement, le serveur décide).
   useEffect(() => {
@@ -83,12 +110,13 @@ export function useAdminSession() {
         Array.isArray(data.backupCodes) && data.backupCodes.length > 0 ? data.backupCodes : null,
       );
       setAuthenticated(true);
+      broadcastAdminSession(true);
     } catch {
       setLoginError("Connexion impossible.");
     } finally {
       setLoginLoading(false);
     }
-  }, [totpCode]);
+  }, [setAuthenticated, totpCode]);
 
   const logout = useCallback(async () => {
     try {
@@ -97,12 +125,16 @@ export function useAdminSession() {
       /* la session locale est quand même fermée */
     }
     setAuthenticated(false);
+    broadcastAdminSession(false);
     setBackupCodes(null);
     setTotpCodeState("");
-  }, []);
+  }, [setAuthenticated]);
 
   /** Appelé quand une route admin répond 401. */
-  const expire = useCallback(() => setAuthenticated(false), []);
+  const expire = useCallback(() => {
+    setAuthenticated(false);
+    broadcastAdminSession(false);
+  }, [setAuthenticated]);
 
   const dismissBackupCodes = useCallback(() => setBackupCodes(null), []);
 

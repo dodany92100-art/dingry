@@ -11,6 +11,7 @@ const AdminSwitcherBar = dynamic(
   { ssr: false },
 );
 
+/** Chargé globalement ; le widget ne s’affiche qu’après session admin valide (`AdminSwitcherBar`). */
 export function AdminSwitcherBarLazy() {
   return (
     <Suspense fallback={null}>
