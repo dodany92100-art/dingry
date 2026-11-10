@@ -12,19 +12,20 @@ config({ path: path.join(process.cwd(), ".env.local"), override: true });
 async function main(): Promise<void> {
   const { PRODUCTS } = await import("../lib/shop-data");
   const { isVersoCatalogId } = await import("../lib/catalog-verso-recto");
-  const { listSupabaseProducts, listRemovedCatalogIds, addRemovedCatalogIds } = await import(
-    "../lib/supabase/admin-products"
-  );
+  const { addRemovedCatalogIds } = await import("../lib/supabase/admin-products");
 
-  const crm = await listSupabaseProducts();
-  const crmIds = new Set(crm.map((p) => Number(p.id)));
-  const removed = new Set((await listRemovedCatalogIds()).map(Number));
+  const { loadStoreReadOnly } = await import("../lib/admin/store");
+  const { buildShopCatalogSnapshot } = await import("../lib/shop-catalog-snapshot");
+
+  const store = await loadStoreReadOnly();
+  const crmIds = new Set(store.products.map((p) => Number(p.id)));
+  const removed = buildShopCatalogSnapshot(store).removed;
 
   const ghosts = PRODUCTS.filter(
     (p) => !isVersoCatalogId(p.id) && !crmIds.has(p.id) && !removed.has(p.id),
   );
 
-  console.log(`CRM : ${crm.length} fiches · tombstones : ${removed.size}`);
+  console.log(`CRM : ${store.products.length} fiches · tombstones : ${removed.size}`);
   console.log(`Fantômes visibles sur le site sans fiche CRM : ${ghosts.length}`);
   for (const p of ghosts) {
     console.log(`  #${p.id}  ${p.name} — ${p.variant}  (${p.category})`);
