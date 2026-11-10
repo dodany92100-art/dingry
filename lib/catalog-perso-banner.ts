@@ -7,8 +7,17 @@ export const DEFAULT_CATALOG_PERSO_BANNER: ShopCatalogPersoBanner = {
   eyebrow: "Custom · Configurateur",
   title: "Ville, texte sous le logo",
   subtitle: "Tee personnalisable · aperçu en direct",
-  ctaLabel: "Personnaliser",
+  ctaLabel: "CUSTOM",
 };
+
+function normalizeCatalogPersoCtaLabel(label: string | undefined): string {
+  const trimmed = label?.trim() ?? "";
+  if (!trimmed) return DEFAULT_CATALOG_PERSO_BANNER.ctaLabel;
+  if (trimmed.localeCompare("Personnaliser", undefined, { sensitivity: "accent" }) === 0) {
+    return "CUSTOM";
+  }
+  return trimmed;
+}
 
 export function resolveShopCatalogPersoBanner(
   stored: AdminCatalogPersoBanner | null | undefined,
@@ -21,7 +30,7 @@ export function resolveShopCatalogPersoBanner(
     eyebrow: stored.eyebrow.trim() || DEFAULT_CATALOG_PERSO_BANNER.eyebrow,
     title: stored.title.trim() || DEFAULT_CATALOG_PERSO_BANNER.title,
     subtitle: stored.subtitle.trim() || DEFAULT_CATALOG_PERSO_BANNER.subtitle,
-    ctaLabel: stored.ctaLabel.trim() || DEFAULT_CATALOG_PERSO_BANNER.ctaLabel,
+    ctaLabel: normalizeCatalogPersoCtaLabel(stored.ctaLabel),
   };
 }
 

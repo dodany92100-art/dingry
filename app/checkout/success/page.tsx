@@ -164,7 +164,7 @@ function CheckoutSuccessInner() {
               <button
                 type="button"
                 onClick={() => router.push("/")}
-                className="mt-8 w-full bg-[#FF3D00] py-4 text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#e03500]"
+                className="dingry-checkout-pay-primary mt-8"
               >
                 Retour à la boutique
               </button>
@@ -181,7 +181,7 @@ function CheckoutSuccessInner() {
               ) : null}
               <Link
                 href="/checkout"
-                className="mt-8 block w-full border border-[#e5e7eb] py-4 text-center text-[11px] font-medium tracking-[0.28em] text-[#4b5563] uppercase hover:border-[#FF3D00] hover:text-[#FF3D00]"
+                className="dingry-checkout-pay-secondary mt-8 block w-full border py-4 text-center text-[11px] font-medium tracking-[0.28em] uppercase"
               >
                 Retour au paiement
               </Link>

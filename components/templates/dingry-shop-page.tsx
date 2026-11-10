@@ -14,7 +14,7 @@ import { useProductModal } from "@/components/organisms/shop/hooks/use-product-m
 import { useShopCart } from "@/components/organisms/shop/hooks/use-shop-cart";
 import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catalog";
 import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-perso-banner";
-import { useWishlist } from "@/components/organisms/shop/hooks/use-wishlist";
+import { useWishlist } from "@/hooks/use-wishlist";
 import type { PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
@@ -54,7 +54,7 @@ const LookbookCatalogStrip = dynamic(
     import("@/components/organisms/shop/lookbook-catalog-strip").then((m) => ({
       default: m.LookbookCatalogStrip,
     })),
-  { loading: () => <div className="min-h-[18rem] border-t border-white/[0.06]" aria-hidden /> },
+  { loading: () => <div className="dingry-gold-rule-top min-h-[18rem]" aria-hidden /> },
 );
 
 const HeritageSection = dynamic(
@@ -62,7 +62,7 @@ const HeritageSection = dynamic(
     import("@/components/organisms/shop/heritage-section").then((m) => ({
       default: m.HeritageSection,
     })),
-  { loading: () => <div className="min-h-[50vh] border-t border-white/[0.06]" aria-hidden /> },
+  { loading: () => <div className="dingry-gold-rule-top min-h-[50vh]" aria-hidden /> },
 );
 
 const ShopFooter = dynamic(
@@ -70,7 +70,7 @@ const ShopFooter = dynamic(
     import("@/components/organisms/shop-footer").then((m) => ({
       default: m.ShopFooter,
     })),
-  { loading: () => <div className="min-h-32 border-t border-white/[0.06]" aria-hidden /> },
+  { loading: () => <div className="dingry-gold-rule-top min-h-32" aria-hidden /> },
 );
 
 /** Boutique : orchestre hooks + organisms/shop. */
@@ -195,6 +195,8 @@ export default function DingryShopPage() {
       <ShopNav
         shopBasePath={shopBasePath}
         cartCount={cart.count}
+        favoriteCount={wishlist.favoriteCount}
+        onOpenFavorites={() => scrollToSection("catalogue")}
         onOpenCart={() => cart.setOpen(true)}
         onScrollToSection={scrollToSection}
       />
@@ -221,14 +223,14 @@ export default function DingryShopPage() {
         <LazyWhenVisible
           scrollRootRef={pageScrollRef}
           id="lookbook"
-          placeholderClassName="min-h-[18rem] border-t border-white/[0.06]"
+          placeholderClassName="dingry-gold-rule-top min-h-[18rem]"
         >
           <LookbookCatalogStrip />
         </LazyWhenVisible>
         <LazyWhenVisible
           scrollRootRef={pageScrollRef}
           id="heritage"
-          placeholderClassName="min-h-[50vh] border-t border-white/[0.06]"
+          placeholderClassName="dingry-gold-rule-top min-h-[50vh]"
         >
           <HeritageSection scrollContainerRef={pageScrollRef} />
         </LazyWhenVisible>
@@ -270,6 +272,10 @@ export default function DingryShopPage() {
         onRemove={cart.removeLine}
         onCheckout={goToCheckout}
         checkoutDisabled={catalogState === "error"}
+        onDiscoverCollection={() => {
+          cart.setOpen(false);
+          scrollToSection("catalogue");
+        }}
       />
     </div>
   );

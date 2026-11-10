@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "motion/react";
+
 export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "banniere";
 
 const TABS: readonly (readonly [TabId, string])[] = [
@@ -10,6 +12,8 @@ const TABS: readonly (readonly [TabId, string])[] = [
   ["lookbook", "Lookbook"],
 ];
 
+const INDICATOR_LAYOUT_ID = "dingry-admin-main-tab-indicator";
+
 type TabNavProps = {
   tab: TabId;
   onChange: (tab: TabId) => void;
@@ -18,25 +22,39 @@ type TabNavProps = {
 export function TabNav({ tab, onChange }: TabNavProps) {
   return (
     <div
-      className="dingry-admin-glass mb-8 inline-flex max-w-full flex-wrap gap-1 rounded-full p-1"
+      className="dingry-admin-glass mb-8 inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15"
       role="tablist"
+      aria-label="Sections administration"
     >
-      {TABS.map(([id, label]) => (
-        <button
-          key={id}
-          type="button"
-          role="tab"
-          aria-selected={tab === id}
-          onClick={() => onChange(id)}
-          className={`h-9 rounded-full px-4 text-[13px] font-medium tracking-tight transition duration-200 ${
-            tab === id
-              ? "bg-white/95 text-black shadow-sm"
-              : "text-white/55 hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          {label}
-        </button>
-      ))}
+      {TABS.map(([id, label]) => {
+        const active = tab === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(id)}
+            className="relative z-0 shrink-0 rounded-full px-3.5 py-2 transition-colors duration-200 md:px-4 md:py-2.5"
+          >
+            {active ? (
+              <motion.span
+                layoutId={INDICATOR_LAYOUT_ID}
+                className="absolute inset-0 rounded-full bg-gradient-to-br from-white via-white to-violet-100/90 shadow-[0_4px_24px_rgba(167,139,250,0.35),0_0_0_1px_rgba(255,255,255,0.25)_inset]"
+                transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.85 }}
+                aria-hidden
+              />
+            ) : null}
+            <span
+              className={`relative z-10 block whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.18em] md:text-[11px] md:tracking-[0.2em] ${
+                active ? "text-[#0a0f18]" : "text-white/50 hover:text-white/85"
+              }`}
+            >
+              {label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

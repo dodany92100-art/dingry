@@ -1,6 +1,5 @@
 "use client";
 
-import { HoverBorderGradient } from "@/components/atoms/ui/hover-border-gradient";
 import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
 import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
 
@@ -38,19 +37,12 @@ export function CustomConfiguratorBanner({
       </span>
       <span className="dingry-custom-banner-shine pointer-events-none absolute inset-0" aria-hidden />
 
-      <span className="relative z-10 flex min-h-[11.5rem] flex-col justify-end gap-6 px-5 py-7 sm:min-h-[13.5rem] sm:flex-row sm:items-end sm:justify-between md:min-h-[16rem] md:px-12 md:py-10 lg:min-h-[17.5rem]">
+      <span className="relative z-10 flex min-h-[11.5rem] flex-col justify-end px-5 py-7 sm:min-h-[13.5rem] md:min-h-[16rem] md:px-12 md:py-10 lg:min-h-[17.5rem]">
         <span className="max-w-[min(36rem,70%)]">
           <span className="dingry-typo-eyebrow block">{content.eyebrow}</span>
           <span className="dingry-custom-banner-title mt-3 block uppercase">{content.title}</span>
           <span className="dingry-typo-body-alt mt-3 block">{content.subtitle}</span>
         </span>
-        <HoverBorderGradient
-          as="span"
-          containerClassName="relative z-10 shrink-0 rounded-sm"
-          className="dingry-custom-banner-cta dingry-custom-banner-cta--border-gradient"
-        >
-          {content.ctaLabel}
-        </HoverBorderGradient>
       </span>
     </button>
   );

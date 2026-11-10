@@ -94,7 +94,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
 
   return (
     <>
-      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface relative border-t border-black/10 py-14 md:py-16">
+      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-14 md:py-16">
         <div className="mx-auto max-w-6xl px-6 md:px-10">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-12">
             <div className="lg:col-span-4">
@@ -130,7 +130,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
               <ul className="mt-4 space-y-2.5 text-xs leading-relaxed tracking-[0.06em] text-[#161616]/75 sm:text-[0.8125rem]">
                 {SERVICE_LINES.map((line) => (
                   <li key={line} className="flex items-start gap-2">
-                    <span className="dingry-footer-dot mt-1.5 shrink-0" aria-hidden />
+                    <span className="dingry-footer-dot dingry-footer-dot--gold mt-1.5 shrink-0" aria-hidden />
                     {line}
                   </li>
                 ))}
@@ -214,7 +214,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
             >
               <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] p-6 md:p-8">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.35em] text-[#FF3D00]">Légal</p>
+                  <p className="dingry-section-eyebrow">Légal</p>
                   <h2 id="legal-modal-title" className="mt-2 text-xl font-bold uppercase tracking-wide md:text-2xl">
                     {activeLegal.title}
                   </h2>
@@ -244,7 +244,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
                   ))}
                 </div>
                 {LEGAL_CLOSING_IDS.has(legalDoc) ? (
-                  <p className="mt-8 border-t border-white/20 pt-4 text-sm tracking-normal text-white/90 normal-case">
+                  <p className="dingry-gold-rule-top relative mt-8 block pt-4 text-sm tracking-normal text-white/90 normal-case">
                     {DINGRY_LEGAL_CLOSING}
                   </p>
                 ) : null}

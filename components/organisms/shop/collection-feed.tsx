@@ -6,7 +6,7 @@ import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import type { CatalogMenuSection } from "@/lib/shop-catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
 import { CatalogProductCell } from "./catalog-product-cell";
-import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
+import { CATALOG_PRODUCT_GRID_CLASS, CATALOG_SECTION_HEADING_CLASS } from "./catalog-layout";
 
 type CollectionFeedProps = {
   sections: CatalogMenuSection[];
@@ -27,8 +27,8 @@ export function CollectionFeed({
 
   return (
     <div className="space-y-12 md:space-y-16">
-      <div className="border-b border-white/[0.08] pb-4 md:pb-5">
-        <p className="text-[10px] font-semibold tracking-[0.35em] text-[#FF3D00] uppercase">Collection</p>
+      <div className="dingry-gold-rule-bottom pb-4 md:pb-5">
+        <p className="dingry-section-eyebrow">Collection</p>
         <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{DINGRY_STREET_LINE}</p>
       </div>
 
@@ -52,7 +52,7 @@ export function CollectionFeed({
 
         return (
           <div key={section.category} className="scroll-mt-28 space-y-4 md:space-y-5">
-            <h3 className="border-b border-white/[0.08] pb-3 text-sm font-medium uppercase tracking-[0.28em] text-white md:pb-4 md:text-base">
+            <h3 className={CATALOG_SECTION_HEADING_CLASS}>
               {section.label}
             </h3>
             {section.products.length === 0 ? (

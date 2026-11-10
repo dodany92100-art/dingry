@@ -23,6 +23,7 @@ type CartDrawerProps = {
   onRemove: (index: number) => void;
   onCheckout: () => void;
   checkoutDisabled: boolean;
+  onDiscoverCollection: () => void;
 };
 
 export function CartDrawer({
@@ -39,7 +40,23 @@ export function CartDrawer({
   onRemove,
   onCheckout,
   checkoutDisabled,
+  onDiscoverCollection,
 }: CartDrawerProps) {
+
+  function discoverCollectionCta(className?: string) {
+    return (
+      <button
+        type="button"
+        onClick={onDiscoverCollection}
+        className={
+          className ??
+          "dingry-gold-pill-btn mt-6 h-10 w-full max-w-xs rounded-full px-5 text-[10px] uppercase tracking-[0.14em]"
+        }
+      >
+        <span className="gold-text">Découvrir la collection</span>
+      </button>
+    );
+  }
   return (
     <AnimatePresence onExitComplete={onExitComplete}>
       {open ? (
@@ -85,7 +102,7 @@ export function CartDrawer({
             exit={{ x: "100%" }}
             transition={DRAWER_PANEL_SPRING}
           >
-            <div className="flex items-center justify-between p-8 border-b border-white/[0.06]">
+            <div className="dingry-gold-rule-bottom relative flex items-center justify-between p-8">
               <div>
                 <h2 className="text-sm font-bold tracking-[0.3em] uppercase">
                   {confirmation ? "Commande confirmée" : "Panier"}
@@ -120,14 +137,14 @@ export function CartDrawer({
                     <p className="mt-4 text-[10px] tracking-[0.22em] text-white/40 uppercase">
                       Réf. {confirmation.orderId}
                     </p>
-                    <ul className="mt-4 space-y-2 border-t border-white/[0.08] pt-4 text-sm text-white/75">
+                    <ul className="dingry-gold-rule-top relative mt-4 space-y-2 pt-4 text-sm text-white/75">
                       {confirmation.items.map((line) => (
                         <li key={line}>{line}</li>
                       ))}
                     </ul>
                     <p className="dingry-product-price dingry-product-price--lg dingry-product-price--on-dark mt-4">{confirmation.total}€</p>
                     {confirmation.shippingAddress ? (
-                      <div className="mt-4 border-t border-white/[0.08] pt-4 text-xs leading-relaxed text-white/55">
+                      <div className="dingry-gold-rule-top relative mt-4 pt-4 text-xs leading-relaxed text-white/55">
                         <p className="text-[10px] tracking-[0.22em] text-white/35 uppercase mb-1">Livraison</p>
                         <p>{confirmation.shippingName}</p>
                         <p>{confirmation.shippingAddress}</p>
@@ -143,12 +160,13 @@ export function CartDrawer({
                     </button>
                   </div>
                 ) : (
-                  <div className="text-center">
-                    <p className="text-sm tracking-[0.3em] text-white/20 uppercase mb-2">Votre panier est vide.</p>
+                  <div className="flex w-full flex-col items-center text-center">
+                    <p className="mb-2 text-sm uppercase tracking-[0.3em] text-white/20">Votre panier est vide.</p>
+                    {discoverCollectionCta()}
                     <button
                       type="button"
                       onClick={onClose}
-                      className="mt-6 text-[10px] uppercase tracking-[0.22em] text-white/50 hover:text-white"
+                      className="mt-4 text-[10px] uppercase tracking-[0.22em] text-white/50 hover:text-white"
                     >
                       Continuer vos achats
                     </button>
@@ -191,7 +209,7 @@ export function CartDrawer({
                               aria-pressed={item.size === s}
                               className={`min-w-[2.25rem] px-2 py-1 text-[10px] font-medium tracking-widest border transition-colors duration-150 ${
                                 item.size === s
-                                  ? "bg-[#FF3D00] border-[#FF3D00] text-white"
+                                  ? "border-white bg-white text-[#050505]"
                                   : "border-white/10 text-white/50 hover:border-white/30 hover:text-white"
                               }`}
                             >
@@ -246,7 +264,7 @@ export function CartDrawer({
             )}
 
             {items.length > 0 && (
-              <div className="sticky bottom-0 shrink-0 border-t border-white/[0.06] bg-[#0a0a0a] p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <div className="dingry-gold-rule-top relative sticky bottom-0 shrink-0 bg-[#0a0a0a] p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
                 <p className="mb-4 text-[10px] tracking-[0.22em] text-white/35 uppercase">Récapitulatif</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-baseline gap-4 text-white/55">
@@ -261,7 +279,7 @@ export function CartDrawer({
                       0 €
                     </span>
                   </div>
-                  <div className="flex justify-between items-baseline gap-4 border-t border-white/[0.06] pt-3">
+                  <div className="dingry-gold-rule-top relative flex justify-between items-baseline gap-4 pt-3">
                     <span className="text-xs tracking-[0.22em] uppercase text-white/40">Total TTC</span>
                     <span className="dingry-product-price dingry-product-price--lg dingry-product-price--on-dark">
                       {total} €
@@ -273,7 +291,7 @@ export function CartDrawer({
                   type="button"
                   onClick={onCheckout}
                   disabled={checkoutDisabled}
-                  className="mt-5 w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#FF3D00] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
+                  className="mt-5 w-full border border-white/20 bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-white/10 disabled:text-white/25"
                 >
                   Passer au paiement
                 </button>

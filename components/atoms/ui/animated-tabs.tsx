@@ -142,7 +142,7 @@ export function AnimatedTabs({
               )}
             >
               {isActive && isUnderline ? (
-                <span className="absolute inset-x-2 bottom-1 h-[2px] rounded-full bg-[#FF3D00] shadow-[0_0_12px_rgba(255, 61, 0,0.55)]" />
+                <span className="dingry-tab-underline-gold absolute inset-x-2 bottom-1 h-[2px] rounded-full" />
               ) : null}
               {isActive && !isUnderline ? (
                 <span className="absolute inset-0 border border-[#FF3D00] bg-[#FF3D00]" />

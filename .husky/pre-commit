@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
 set -e
+echo "→ invariants métier (verify:anti-regression)"
+npm run verify:anti-regression
 echo "→ tsc --noEmit (imports / types)"
 npx tsc --noEmit

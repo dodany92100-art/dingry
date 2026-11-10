@@ -53,7 +53,7 @@ const STORY_BY_RECTO: Partial<Record<number, ProductStoryBlock>> = {
       "Hoodie streetwear oversize en coton lourd : chaleur, tenue impeccable et logo DINGRY visible de jour comme de nuit. Le noir profond qui s’accorde avec tout votre vestiaire urbain.",
     materials: "Coton 480 g/m², intérieur gratté, capuche doublée, bords-côtes renforcés.",
     fabrication: "Broderies et sérigraphies contrôlées, assemblage suivi, contrôle qualité avant expédition.",
-    limitedEdition: "Séries limitées par coloris — quantités restantes affichées en temps réel sur la fiche.",
+    limitedEdition: "Séries limitées par coloris.",
     sizeGuide: DEFAULT_SIZE_GUIDE,
   },
   2: {
@@ -93,7 +93,7 @@ const STORY_BY_RECTO: Partial<Record<number, ProductStoryBlock>> = {
       "Blanc éclatant pour contraster en lookbook ou en scène : hoodie Original DINGRY, même coupe iconique, finitions propres.",
     materials: "Coton épais, capuche doublée, bords-côtes premium.",
     fabrication: "Encres résistantes au lavage, assemblage renforcé aux points de tension.",
-    limitedEdition: "Quantités limitées — stock live sur la fiche.",
+    limitedEdition: "Quantités limitées.",
     sizeGuide: DEFAULT_SIZE_GUIDE,
   },
   4: {
@@ -191,7 +191,7 @@ const CATEGORY_FALLBACK: ProductStoryBlock = {
     "Pièce DINGRY en édition limitée : design affirmé, finitions soignées et stock contrôlé pour un streetwear premium accessible.",
   materials: "Matières sélectionnées pour tenue, confort et durabilité au quotidien.",
   fabrication: "Impression, broderie et assemblage suivis avant expédition.",
-  limitedEdition: "Quantités limitées — disponibilité en temps réel sur la fiche.",
+  limitedEdition: "",
   sizeGuide: DEFAULT_SIZE_GUIDE,
 };
 

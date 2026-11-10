@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import { formatCrmBuildLabel } from "@/lib/admin/crm-build-label";
 import { adminCrmVersion } from "@/lib/admin/crm-version";
 
@@ -49,9 +50,15 @@ export function AdminHeader({
             href="/websitedx"
             target="_blank"
             rel="noreferrer"
-            className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[13px] text-white/85 backdrop-blur-md transition hover:bg-white/10 hover:text-white"
+            className="dingry-admin-preview-link dingry-shimmer-logo-img dingry-gpu-layer relative inline-flex h-9 items-center gap-1.5 overflow-hidden rounded-full border border-white/12 bg-white/[0.04] px-3.5 text-[12px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] ring-1 ring-white/10 backdrop-blur-md"
           >
-            Aperçu du site
+            <span className="dingry-shimmer-logo relative z-[1]">Aperçu du site</span>
+            <ExternalLink
+              size={13}
+              strokeWidth={1.75}
+              className="dingry-admin-preview-link__icon relative z-[1] shrink-0 text-white/55 transition-colors duration-300"
+              aria-hidden
+            />
           </a>
           <button
             type="button"

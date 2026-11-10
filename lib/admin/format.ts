@@ -1,5 +1,14 @@
 import type { OrderStatus } from "@/lib/admin/types";
 
+/** Immatriculation fiche stock liste (#05, #35…). */
+export function adminStockIdLabel(id: string | number): string {
+  const raw = String(id).trim();
+  if (!raw) return "";
+  const n = Number(raw);
+  if (Number.isInteger(n) && n >= 0) return `#${String(n).padStart(2, "0")}`;
+  return `#${raw}`;
+}
+
 export function formatPrice(value: number): string {
   return `${value.toLocaleString("fr-FR")}€`;
 }

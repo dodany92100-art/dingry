@@ -1,5 +1,6 @@
 "use client";
 
+import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
@@ -167,31 +168,30 @@ export function StockTab({
   return (
     <div>
       <div className="mb-5 space-y-3">
-        <div className="flex w-full flex-wrap items-center justify-end gap-2">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2.5">
           <AdminStockPreviewToggle active={storefrontPreview} onChange={setStorefrontPreview} />
-          {!storefrontPreview ? <AdminStockViewToggle mode={viewMode} onChange={setViewMode} /> : null}
+          {!storefrontPreview ? (
+            <AdminStockViewToggle mode={viewMode} onChange={setViewMode} />
+          ) : null}
         </div>
         <div className="min-w-0 space-y-3">
           <AdminCategoryFilterNav selected={categoryFilter} onChange={onCategoryFilterChange} />
-          <div>
+          <div className="dingry-admin-glass flex h-9 w-full max-w-[17.5rem] items-center gap-2 rounded-full px-3 py-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 transition-[box-shadow] duration-200 focus-within:shadow-[0_0_0_1px_rgba(167,139,250,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] focus-within:ring-violet-400/30 sm:max-w-xs">
             <label htmlFor="dingry-admin-stock-search" className="sr-only">
               Rechercher un produit
             </label>
+            <Search size={14} strokeWidth={1.75} className="shrink-0 text-white/38" aria-hidden />
             <input
               id="dingry-admin-stock-search"
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Rechercher (nom, SKU, id, variante…)"
+              placeholder="Rechercher…"
+              title="Nom, SKU, id, variante…"
               autoComplete="off"
-              className="w-full max-w-md border border-white/15 bg-black/40 px-3 py-2 text-[11px] tracking-[0.06em] text-white placeholder:text-white/35 focus:border-white/35 focus:outline-none"
+              className="min-w-0 flex-1 border-0 bg-transparent py-0 text-[10px] tracking-[0.08em] text-white placeholder:text-white/35 focus:outline-none"
             />
           </div>
-          <p className="text-[9px] uppercase tracking-[0.16em] text-white/35">
-            {categoryFilter === "Collection"
-              ? "Familles · même ordre que le menu boutique (Hoodies → Caps)"
-              : "Ordre boutique · Sélection (épinglé → displayOrder → date)"}
-          </p>
         </div>
       </div>
 
@@ -233,9 +233,9 @@ export function StockTab({
         <button
           type="button"
           onClick={onNew}
-          className="h-9 shrink-0 border border-[#FF3D00] bg-[#FF3D00] px-3 text-[11px] uppercase tracking-[0.18em] text-white transition hover:border-[#e03500] hover:bg-[#e03500]"
+          className="dingry-gold-pill-btn dingry-admin-new-product-btn h-9 shrink-0 rounded-full px-4 text-[11px] uppercase tracking-[0.12em]"
         >
-          Nouveau
+          <span className="gold-text">Nouveau</span>
         </button>
       </div>
       {error ? <p className="mb-3 text-sm text-red-400">{error}</p> : null}

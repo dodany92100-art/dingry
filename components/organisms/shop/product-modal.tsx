@@ -11,7 +11,7 @@ import {
   ProductCaptchaTest,
 } from "@/components/molecules/product-captcha-test";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
-import { DINGRY_MANIFESTO_EN } from "@/lib/dingry-brand-voice";
+import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
 import {
   catalogRectoId,
   completeLookForProduct,
@@ -40,7 +40,7 @@ type ShopProductModalProps = {
   modal: ProductModalState;
   products: ShopProduct[];
   flipPairs: FlipPair[];
-  wishlistIds: number[];
+  wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
   onAddToCart: () => void;
   purchaseDisabled?: boolean;
@@ -126,11 +126,17 @@ function ProductModalContent({
   const rectoId = catalogRectoId(product.id);
   const detail = productDetailCopy(product, products);
   const completeLook = completeLookForProduct(product.id, products);
+  const lineVariantProducts =
+    productLine && productLine.variants.length > 1
+      ? productLine.variants.flatMap((variant) => {
+          const target = products.find((item) => catalogRectoId(item.id) === variant.rectoId);
+          return target ? [{ product: target, variant, isActive: variant.rectoId === rectoId }] : [];
+        })
+      : [];
   const wishlistActive = wishlistIds.includes(rectoId);
 
   const sizes = modalSizesFor(product);
   const sizeCols = sizeGridColumns(sizes);
-  const productById = (id: number) => products.find((item) => item.id === id);
   const shopCategory = resolveShopCategory(product.id, product.category);
   const showTurnstileProductTest =
     isTurnstileProductTestEnabled() && isShopTeeCategory(String(shopCategory));
@@ -217,7 +223,7 @@ function ProductModalContent({
                 </button>
               </div>
             </div>
-            <p className={`dingry-typo-manifesto-en ${styles.manifesto}`}>{DINGRY_MANIFESTO_EN}</p>
+            <p className={`dingry-typo-manifesto ${styles.manifesto}`}>{DINGRY_MANIFESTO_FR}</p>
             <h2 className={styles.title}>{data.title}</h2>
             {detail.description ? (
               <p className={styles.description}>{detail.description}</p>
@@ -254,61 +260,32 @@ function ProductModalContent({
                   })}
                 </div>
               </div>
-            ) : productLine && productLine.variants.length > 1 ? (
-              <div className={styles.section}>
-                <p className={styles.sectionLabel}>Variantes</p>
-                <div className={styles.chipRow}>
-                  {productLine.variants.map((variant) => {
-                    const isActive = variant.rectoId === rectoId;
-                    const target = productById(variant.rectoId);
-                    const disabled = variant.comingSoon || !target;
-                    return (
-                      <button
-                        key={variant.rectoId}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => {
-                          if (!target || isActive) return;
-                          modal.switchProductVariant(target);
-                        }}
-                        className={`${styles.chip} ${isActive ? styles.chipActive : ""} ${disabled ? styles.chipDisabled : ""}`}
-                        aria-pressed={isActive}
-                      >
-                        {variant.colorLabel}
-                        {variant.comingSoon ? " · bientôt" : ""}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             ) : null}
             <div className={styles.qtyRow}>
-              <span className={styles.qtyLabel}>Quantité</span>
-              <div className={styles.qtyCluster}>
-                <div className={styles.qtyControl}>
-                  <button
-                    type="button"
-                    onClick={() => modal.setSelectedQuantity((quantity) => Math.max(1, quantity - 1))}
-                    aria-label="Diminuer la quantité"
-                    className={styles.qtyBtn}
-                  >
-                    −
-                  </button>
-                  <span className={styles.qtyValue} aria-live="polite">
-                    {selectedQuantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => modal.setSelectedQuantity((quantity) => Math.min(99, quantity + 1))}
-                    aria-label="Augmenter la quantité"
-                    className={styles.qtyBtn}
-                  >
-                    +
-                  </button>
-                </div>
-                <p className="dingry-product-price dingry-product-price--lg dingry-product-price--accent dingry-product-price--on-light">
+              <div className={styles.qtyLead}>
+                <span className={styles.qtyLabel}>Quantité</span>
+                <p className={styles.qtyPrice} aria-live="polite">
                   {saleProduct.price * selectedQuantity}€
                 </p>
+              </div>
+              <div className={styles.qtyControl}>
+                <button
+                  type="button"
+                  onClick={() => modal.setSelectedQuantity((quantity) => Math.max(1, quantity - 1))}
+                  aria-label="Diminuer la quantité"
+                  className={styles.qtyBtn}
+                >
+                  −
+                </button>
+                <span className={styles.qtyValue}>{selectedQuantity}</span>
+                <button
+                  type="button"
+                  onClick={() => modal.setSelectedQuantity((quantity) => Math.min(99, quantity + 1))}
+                  aria-label="Augmenter la quantité"
+                  className={styles.qtyBtn}
+                >
+                  +
+                </button>
               </div>
             </div>
             {effectiveShowSideToggle ? (
@@ -355,31 +332,70 @@ function ProductModalContent({
               ))}
             </div>
           </div>
-          {completeLook.length > 0 ? (
+          {lineVariantProducts.length > 0 || completeLook.length > 0 ? (
             <div className={styles.lookSection}>
-              <p className={styles.lookLabel}>Complète le look</p>
-              <div className={styles.lookRow}>
-                {completeLook.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => modal.openProductModal(item)}
-                    className={styles.lookCard}
+              {lineVariantProducts.length > 0 ? (
+                <>
+                  <p className={`${styles.sectionLabel} ${styles.lookLabel}`}>Coloris du modèle</p>
+                  <div className={styles.lookRow}>
+                    {lineVariantProducts.map(({ product: variantProduct, variant, isActive }) => (
+                      <button
+                        key={variant.rectoId}
+                        type="button"
+                        disabled={variant.comingSoon}
+                        onClick={() => {
+                          if (isActive) return;
+                          modal.switchProductVariant(variantProduct);
+                        }}
+                        className={`${styles.lookCard} ${isActive ? styles.lookCardActive : ""} ${variant.comingSoon ? styles.lookCardDisabled : ""}`}
+                        aria-pressed={isActive}
+                      >
+                        <DingryCloudinaryImage
+                          src={variantProduct.image}
+                          alt=""
+                          width={96}
+                          height={128}
+                          deliveryWidth={192}
+                          className={styles.lookThumb}
+                        />
+                        <span className={styles.lookCaption}>
+                          {variant.colorLabel}
+                          {variant.comingSoon ? " · bientôt" : ""}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+              {completeLook.length > 0 ? (
+                <>
+                  <p
+                    className={`${styles.sectionLabel} ${styles.lookLabel} ${lineVariantProducts.length > 0 ? styles.lookLabelSpaced : ""}`}
                   >
-                    <DingryCloudinaryImage
-                      src={item.image}
-                      alt=""
-                      width={96}
-                      height={128}
-                      deliveryWidth={192}
-                      className={styles.lookThumb}
-                    />
-                    <span className={styles.lookCaption}>
-                      {storefrontProductTitle(item)}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                    Complète le look
+                  </p>
+                  <div className={styles.lookRow}>
+                    {completeLook.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => modal.openProductModal(item)}
+                        className={styles.lookCard}
+                      >
+                        <DingryCloudinaryImage
+                          src={item.image}
+                          alt=""
+                          width={96}
+                          height={128}
+                          deliveryWidth={192}
+                          className={styles.lookThumb}
+                        />
+                        <span className={styles.lookCaption}>{storefrontProductTitle(item, products)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
             </div>
           ) : null}
           <div className={styles.ctaRow}>

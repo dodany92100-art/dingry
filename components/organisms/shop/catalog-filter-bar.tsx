@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatedTabs } from "@/components/atoms/ui/animated-tabs";
-import { HoverBorderGradient } from "@/components/atoms/ui/hover-border-gradient";
 import {
   CATALOG_MENU_TAB_CUSTOM,
   CATALOG_MENU_TABS,
@@ -33,24 +32,19 @@ export function CatalogFilterBar({ value, onChange }: CatalogFilterBarProps) {
         variant="underline"
         labelForTab={catalogMenuTabLabel}
         endAction={
-          <HoverBorderGradient
-            as="button"
+          <button
             type="button"
             role="tab"
             aria-selected={customActive}
             tabIndex={customActive ? 0 : -1}
             onClick={() => onChange(CATALOG_MENU_TAB_CUSTOM)}
-            containerClassName={cn(
-              "shrink-0 snap-center rounded-sm",
-              customActive && "shadow-[0_0_18px_rgba(255, 61, 0,0.4)]",
-            )}
             className={cn(
-              "px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.26em] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]",
-              customActive ? "text-white" : "text-white/75",
+              "dingry-catalog-custom-tab shrink-0 snap-center px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.26em] transition-[border-color,box-shadow,background] duration-200 active:scale-[0.97] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]",
+              customActive && "dingry-catalog-custom-tab--active",
             )}
           >
-            {catalogMenuTabLabel(CATALOG_MENU_TAB_CUSTOM)}
-          </HoverBorderGradient>
+            <span className="gold-text">{catalogMenuTabLabel(CATALOG_MENU_TAB_CUSTOM)}</span>
+          </button>
         }
       />
     </div>

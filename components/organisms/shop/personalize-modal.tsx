@@ -81,7 +81,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <div className="p-8 md:p-10 border-b border-white/[0.06]">
+            <div className="dingry-gold-rule-bottom relative p-8 md:p-10">
               <p className="text-[10px] tracking-[0.35em] text-[#FF3D00] uppercase mb-2">Custom · Studio</p>
               <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight pr-12">
                 Configurateur tee personnalisé
@@ -181,7 +181,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                     ))}
                   </div>
                 </div>
-                <div className="flex items-center justify-between border-y border-white/[0.08] py-4">
+                <div className="dingry-gold-rule-top dingry-gold-rule-bottom relative flex items-center justify-between py-4">
                   <span className="text-[10px] tracking-[0.3em] text-white/40 uppercase">Quantité</span>
                   <div className="flex items-center border border-white/15">
                     <button

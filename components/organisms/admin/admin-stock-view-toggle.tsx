@@ -1,5 +1,8 @@
 "use client";
 
+import { LayoutGrid, List } from "lucide-react";
+import { motion } from "motion/react";
+
 export type AdminStockViewMode = "grid" | "list";
 
 type AdminStockViewToggleProps = {
@@ -7,41 +10,12 @@ type AdminStockViewToggleProps = {
   onChange: (mode: AdminStockViewMode) => void;
 };
 
-function GridIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 20 20"
-      className={`h-4 w-4 ${active ? "text-white" : "text-white/45"}`}
-      fill="currentColor"
-    >
-      <rect x="2" y="2" width="7" height="7" rx="1" />
-      <rect x="11" y="2" width="7" height="7" rx="1" />
-      <rect x="2" y="11" width="7" height="7" rx="1" />
-      <rect x="11" y="11" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
-
-function ListIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 20 20"
-      className={`h-4 w-4 ${active ? "text-white" : "text-white/45"}`}
-      fill="currentColor"
-    >
-      <rect x="2" y="3" width="16" height="2.5" rx="0.5" />
-      <rect x="2" y="8.75" width="16" height="2.5" rx="0.5" />
-      <rect x="2" y="14.5" width="16" height="2.5" rx="0.5" />
-    </svg>
-  );
-}
+const LAYOUT_ID = "dingry-admin-stock-view-indicator";
 
 export function AdminStockViewToggle({ mode, onChange }: AdminStockViewToggleProps) {
   return (
     <div
-      className="flex shrink-0 items-center gap-0.5 rounded-sm border border-zinc-800 bg-zinc-950 p-0.5"
+      className="dingry-admin-glass inline-flex shrink-0 items-center gap-0.5 rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15"
       role="group"
       aria-label="Mode d’affichage stock"
     >
@@ -50,22 +24,44 @@ export function AdminStockViewToggle({ mode, onChange }: AdminStockViewTogglePro
         onClick={() => onChange("grid")}
         aria-pressed={mode === "grid"}
         title="Grille visuelle"
-        className={`flex h-8 w-9 items-center justify-center transition ${
-          mode === "grid" ? "bg-zinc-800" : "hover:bg-zinc-900"
-        }`}
+        className="relative z-0 flex h-9 w-10 items-center justify-center rounded-full transition-colors duration-200 sm:w-11"
       >
-        <GridIcon active={mode === "grid"} />
+        {mode === "grid" ? (
+          <motion.span
+            layoutId={LAYOUT_ID}
+            className="absolute inset-0 rounded-full bg-gradient-to-br from-white via-white to-violet-100/90 shadow-[0_4px_20px_rgba(167,139,250,0.3),0_0_0_1px_rgba(255,255,255,0.2)_inset]"
+            transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.85 }}
+            aria-hidden
+          />
+        ) : null}
+        <LayoutGrid
+          size={16}
+          strokeWidth={1.75}
+          className={`relative z-10 ${mode === "grid" ? "text-[#0a0f18]" : "text-white/45"}`}
+          aria-hidden
+        />
       </button>
       <button
         type="button"
         onClick={() => onChange("list")}
         aria-pressed={mode === "list"}
         title="Tableau compact"
-        className={`flex h-8 w-9 items-center justify-center transition ${
-          mode === "list" ? "bg-zinc-800" : "hover:bg-zinc-900"
-        }`}
+        className="relative z-0 flex h-9 w-10 items-center justify-center rounded-full transition-colors duration-200 sm:w-11"
       >
-        <ListIcon active={mode === "list"} />
+        {mode === "list" ? (
+          <motion.span
+            layoutId={LAYOUT_ID}
+            className="absolute inset-0 rounded-full bg-gradient-to-br from-white via-white to-violet-100/90 shadow-[0_4px_20px_rgba(167,139,250,0.3),0_0_0_1px_rgba(255,255,255,0.2)_inset]"
+            transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.85 }}
+            aria-hidden
+          />
+        ) : null}
+        <List
+          size={16}
+          strokeWidth={1.75}
+          className={`relative z-10 ${mode === "list" ? "text-[#0a0f18]" : "text-white/45"}`}
+          aria-hidden
+        />
       </button>
     </div>
   );

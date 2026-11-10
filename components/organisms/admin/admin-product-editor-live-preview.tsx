@@ -70,7 +70,7 @@ export function AdminProductEditorLivePreview({ model, productId }: AdminProduct
           Vue catalogue
         </h2>
         <div className="dingry-shop mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#f6f6f4] px-4 py-6 shadow-[inset_0_1px_0_rgb(255_255_255/0.6)] md:px-8 md:py-8">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#FF3D00]">Collection</p>
+          <p className="dingry-section-eyebrow">Collection</p>
           <div className="mt-6 flex justify-center">
             <div className="w-full max-w-[17rem] sm:max-w-[19rem]">
               <ProductCard

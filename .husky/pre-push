@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -e
+echo "→ verify:anti-regression + vitest (garde-fou push)"
+npm run verify:anti-regression
+npx vitest run

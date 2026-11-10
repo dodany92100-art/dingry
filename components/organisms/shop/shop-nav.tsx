@@ -1,5 +1,6 @@
 "use client";
 
+import { Heart } from "lucide-react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
@@ -12,6 +13,8 @@ const SECTIONS = [
 
 type ShopNavProps = {
   cartCount: number;
+  favoriteCount?: number;
+  onOpenFavorites?: () => void;
   onOpenCart: () => void;
   onScrollToSection: (id: string) => void;
   /** Aperçu CRM : même chrome, sans `position: fixed` sur la page admin. */
@@ -22,6 +25,8 @@ type ShopNavProps = {
 
 export function ShopNav({
   cartCount,
+  favoriteCount = 0,
+  onOpenFavorites,
   onOpenCart,
   onScrollToSection,
   embedded = false,
@@ -31,8 +36,8 @@ export function ShopNav({
     <nav
       className={
         embedded
-          ? "relative z-10 border-b border-white/[0.08] bg-[#12151c]/95 backdrop-blur-md"
-          : "fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] bg-[#12151c]/95 backdrop-blur-md"
+          ? "dingry-gold-rule-bottom relative z-10 bg-[#12151c]/95 backdrop-blur-md"
+          : "dingry-gold-rule-bottom fixed top-0 left-0 right-0 z-50 bg-[#12151c]/95 backdrop-blur-md"
       }
     >
       <div className="relative flex items-center justify-between px-4 py-2.5 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:px-12 md:py-5">
@@ -61,7 +66,32 @@ export function ShopNav({
             </button>
           ))}
         </div>
-        <div className="relative z-10 flex shrink-0 items-center justify-self-end md:justify-self-end">
+        <div className="relative z-10 flex shrink-0 items-center gap-2 justify-self-end md:gap-3 md:justify-self-end">
+          {onOpenFavorites ? (
+            <button
+              type="button"
+              onClick={onOpenFavorites}
+              aria-label={
+                favoriteCount > 0
+                  ? `Favoris, ${favoriteCount} article${favoriteCount > 1 ? "s" : ""}`
+                  : "Voir le catalogue — favoris"
+              }
+              className="dingry-interactive-luxe relative flex h-11 w-11 items-center justify-center rounded-sm border border-white/20 bg-white/[0.06] text-white/75 hover:border-[#FF5F00]/45 hover:bg-white/[0.1] hover:text-white md:h-11 md:w-auto md:gap-2 md:px-3.5"
+            >
+              <Heart
+                size={20}
+                strokeWidth={1.75}
+                className={favoriteCount > 0 ? "fill-[#FF5F00] text-[#FF5F00]" : "fill-none"}
+                aria-hidden
+              />
+              <span className="hidden text-[10px] font-medium tracking-[0.22em] uppercase md:inline">Favoris</span>
+              {favoriteCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center bg-[#FF5F00] px-1 text-[10px] font-bold leading-none text-white md:static md:ml-0.5">
+                  {favoriteCount}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onOpenCart}

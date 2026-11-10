@@ -308,7 +308,7 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={backToShop}
-              className="mt-8 w-full bg-[#FF3D00] py-4 text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#e03500]"
+              className="dingry-checkout-pay-primary mt-8"
             >
               Retour à la boutique
             </button>
@@ -321,7 +321,7 @@ export default function CheckoutPage() {
             </p>
             <Link
               href="/"
-              className="mt-8 block w-full bg-[#FF3D00] py-4 text-center text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#e03500]"
+              className="dingry-checkout-pay-primary mt-8 block text-center"
             >
               Continuer vos achats
             </Link>
@@ -331,7 +331,10 @@ export default function CheckoutPage() {
             <section className="dingry-checkout-pay-surface border p-4 md:p-8">
               <div className="flex items-center justify-between gap-3">
                 <h1 className="dingry-checkout-pay-eyebrow">Votre commande</h1>
-                <Link href="/?panier=1" className="text-[10px] tracking-[0.18em] text-[#FF3D00] uppercase hover:text-[#4b5563]">
+                <Link
+                  href="/?panier=1"
+                  className="dingry-checkout-pay-link text-[#6b7280] hover:text-[#4b5563]"
+                >
                   Modifier le panier
                 </Link>
               </div>
@@ -358,7 +361,7 @@ export default function CheckoutPage() {
                           <p className="mt-1 text-xs tracking-wider text-[#9ca3af] uppercase">{item.product.variant}</p>
                         ) : null}
                         {item?.personalization ? (
-                          <p className="mt-1 text-xs tracking-wider text-[#FF3D00] uppercase">« {item.personalization} »</p>
+                          <p className="mt-1 text-xs tracking-wider text-[#6b7280] uppercase">« {item.personalization} »</p>
                         ) : null}
                         <p className="mt-1 text-xs text-[#9ca3af]">Taille {line.size} · {line.qty}</p>
                       </div>
@@ -389,7 +392,6 @@ export default function CheckoutPage() {
 
             <section className="dingry-checkout-pay-surface border p-4 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto md:p-8">
               <p className="dingry-checkout-pay-eyebrow">Sécurisé</p>
-              <h2 className="dingry-checkout-pay-title mt-2">Paiement</h2>
               <p className="dingry-checkout-pay-lead mt-3">
                 Après validation du contrôle, vous serez redirigé vers PayPal puis renvoyé ici pour confirmer la commande.
               </p>
@@ -402,7 +404,7 @@ export default function CheckoutPage() {
                   </p>
                 ) : pendingOrderId ? (
                   <>
-                    <p className="mb-4 text-center text-xs leading-relaxed text-[#e03500]">
+                    <p className="mb-4 text-center text-xs leading-relaxed text-[#6b7280]">
                       Réf. PayPal {pendingOrderId}. Finalisez l’enregistrement de la commande (sans repayer).
                     </p>
                     <button
@@ -411,7 +413,7 @@ export default function CheckoutPage() {
                       onClick={() => {
                         if (pendingOrderId) void registerOrder(pendingOrderId);
                       }}
-                      className="w-full bg-[#FF3D00] py-4 text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#e03500] disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:text-[#9ca3af]"
+                      className="dingry-checkout-pay-primary"
                     >
                       {saving ? "Enregistrement…" : "Confirmer la commande"}
                     </button>

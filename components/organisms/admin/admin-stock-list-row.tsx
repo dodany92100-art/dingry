@@ -1,5 +1,6 @@
 "use client";
 
+import { adminStockIdLabel } from "@/lib/admin/format";
 import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
 import type { StockAutosavePhase } from "@/lib/admin/stock-autosave-types";
@@ -77,6 +78,12 @@ export function AdminStockListRow({
 
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
+            <span
+              className="font-mono text-[10px] font-bold leading-none tracking-[0.08em] text-white/90 ring-1 ring-white/15 bg-zinc-950/90 px-1.5 py-1 rounded-sm"
+              title={`Id catalogue ${product.id}`}
+            >
+              {adminStockIdLabel(product.id)}
+            </span>
             <AdminStockStatusBadge product={product} />
             <span className="text-[9px] uppercase tracking-[0.16em] text-zinc-500">{product.category}</span>
           </div>

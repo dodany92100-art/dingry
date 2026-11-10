@@ -15,4 +15,4 @@ export const CATALOG_SECTION_SURFACE_CLASS =
 export const ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS = "-mx-6 md:-mx-10";
 
 export const CATALOG_SECTION_HEADING_CLASS =
-  "border-b border-white/[0.08] pb-3 text-sm font-medium uppercase tracking-[0.28em] text-white md:pb-4 md:text-base";
+  "dingry-gold-rule-bottom pb-3 text-sm font-medium uppercase tracking-[0.28em] text-white md:pb-4 md:text-base";

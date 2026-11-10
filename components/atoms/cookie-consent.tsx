@@ -48,7 +48,7 @@ export function CookieConsent() {
             role="dialog"
             aria-labelledby="dingry-cookie-title"
             aria-describedby="dingry-cookie-desc"
-            className="fixed inset-x-0 bottom-0 z-[100] border-t border-white/10 bg-[#0a0a0a]/92 px-4 py-4 md:px-8 md:py-5"
+            className="dingry-gold-rule-top fixed inset-x-0 bottom-0 z-[100] bg-[#0a0a0a]/92 px-4 py-4 md:px-8 md:py-5"
           >
             <div className="mx-auto flex max-w-5xl flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8">
               <div className="min-w-0">

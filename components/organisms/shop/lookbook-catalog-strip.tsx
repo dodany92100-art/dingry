@@ -44,10 +44,8 @@ export function LookbookCatalogStrip() {
   }, []);
 
   return (
-    <section className="scroll-mt-28 border-t border-white/[0.08] px-4 py-16 md:px-12 md:py-20">
-      <p className="mb-5 text-[10px] font-semibold tracking-[0.35em] text-[#FF3D00] uppercase md:mb-6">
-        Lookbook
-      </p>
+    <section className="dingry-gold-rule-top scroll-mt-28 px-4 py-16 md:px-12 md:py-20">
+      <p className="dingry-section-eyebrow mb-5 md:mb-6">Lookbook</p>
 
       <div className="relative -mx-1 md:-mx-0">
         <div
