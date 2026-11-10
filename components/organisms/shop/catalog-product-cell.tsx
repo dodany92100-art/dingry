@@ -32,7 +32,7 @@ export const CatalogProductCell = memo(function CatalogProductCell({
   return (
     <ProductCard
       className="h-full"
-      productId={rectoId}
+      productId={product.id}
       name={storefrontProductTitle(product, catalog)}
       variant={storefrontProductSubtitle(product, catalog)}
       image={product.image}

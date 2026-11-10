@@ -16,7 +16,7 @@ type ProductCardData = {
 };
 
 type ProductCardProps = ProductCardData & {
-  /** Id fiche CRM / catalogue (badge #ID sur le visuel). */
+  /** Id fiche CRM / catalogue (badge #ID = product.id, jamais l’index de liste). */
   productId?: string | number;
   onClick?: (side: ProductFlipSide) => void;
   className?: string;

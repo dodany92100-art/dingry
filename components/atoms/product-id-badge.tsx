@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { productCatalogBadgeId } from "@/lib/product-catalog-badge-id";
 import { cn } from "@/lib/utils";
 
 type ProductIdBadgeProps = {
@@ -7,7 +8,7 @@ type ProductIdBadgeProps = {
 };
 
 function ProductIdBadgeInner({ id, className }: ProductIdBadgeProps) {
-  const raw = String(id).trim();
+  const raw = productCatalogBadgeId(id);
   if (!raw) return null;
   const label = `#${raw}`;
 
