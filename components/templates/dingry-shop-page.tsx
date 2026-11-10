@@ -51,28 +51,35 @@ const PaymentToast = dynamic(
   { ssr: false },
 );
 
+const prefetchLookbookStrip = () =>
+  import("@/components/organisms/shop/lookbook-catalog-strip");
+
+const prefetchHeritageSection = () => import("@/components/organisms/shop/heritage-section");
+
+const prefetchShopFooter = () => import("@/components/organisms/shop-footer");
+
 const LookbookCatalogStrip = dynamic(
   () =>
-    import("@/components/organisms/shop/lookbook-catalog-strip").then((m) => ({
+    prefetchLookbookStrip().then((m) => ({
       default: m.LookbookCatalogStrip,
     })),
-  { loading: () => <div className="dingry-gold-rule-top min-h-[18rem]" aria-hidden /> },
+  { ssr: false },
 );
 
 const HeritageSection = dynamic(
   () =>
-    import("@/components/organisms/shop/heritage-section").then((m) => ({
+    prefetchHeritageSection().then((m) => ({
       default: m.HeritageSection,
     })),
-  { loading: () => <div className="dingry-gold-rule-top min-h-[50vh]" aria-hidden /> },
+  { ssr: false },
 );
 
 const ShopFooter = dynamic(
   () =>
-    import("@/components/organisms/shop-footer").then((m) => ({
+    prefetchShopFooter().then((m) => ({
       default: m.ShopFooter,
     })),
-  { loading: () => <div className="dingry-gold-rule-top min-h-32" aria-hidden /> },
+  { ssr: false },
 );
 
 /** Boutique : orchestre hooks + organisms/shop. */
@@ -228,18 +235,27 @@ function DingryShopPageInner() {
           <LazyWhenVisible
             scrollRootRef={pageScrollRef}
             id="lookbook"
-            placeholderClassName="dingry-gold-rule-top min-h-[18rem]"
+            prefetch={prefetchLookbookStrip}
+            rootMargin="min(70vh, 520px) 0px 48px 0px"
+            placeholderClassName="dingry-gold-rule-top min-h-[18rem] [contain-intrinsic-size:auto_18rem]"
           >
             <LookbookCatalogStrip />
           </LazyWhenVisible>
           <LazyWhenVisible
             scrollRootRef={pageScrollRef}
             id="heritage"
-            placeholderClassName="dingry-gold-rule-top min-h-[50vh]"
+            prefetch={prefetchHeritageSection}
+            rootMargin="min(55vh, 420px) 0px 48px 0px"
+            placeholderClassName="dingry-gold-rule-top min-h-[50vh] [contain-intrinsic-size:auto_50vh]"
           >
             <HeritageSection scrollContainerRef={pageScrollRef} />
           </LazyWhenVisible>
-          <LazyWhenVisible scrollRootRef={pageScrollRef} placeholderClassName="min-h-32">
+          <LazyWhenVisible
+            scrollRootRef={pageScrollRef}
+            prefetch={prefetchShopFooter}
+            rootMargin="min(40vh, 320px) 0px 32px 0px"
+            placeholderClassName="min-h-32 [contain-intrinsic-size:auto_8rem]"
+          >
             <ShopFooter
               shopBasePath={shopBasePath}
               onScrollToCatalogue={() => scrollToSection("catalogue")}

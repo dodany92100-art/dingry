@@ -716,6 +716,18 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   touch-action: pan-y;
 }
 
+/** Sections sous le fold : pas de layout/paint hors écran (scroll fluide). */
+.dingry-lazy-section-placeholder {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 12rem;
+  contain: layout style paint;
+}
+
+.dingry-lazy-section-mounted {
+  content-visibility: visible;
+  contain: none;
+}
+
 /** Couche composée GPU (scroll / flip / drawers). */
 .dingry-gpu-layer {
   transform: translateZ(0);

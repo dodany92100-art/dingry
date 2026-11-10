@@ -55,10 +55,14 @@ export function usePageScroll() {
     if (!scroller) return;
 
     let rafId = 0;
+    let lastWriteAt = 0;
     const onScroll = () => {
       if (rafId !== 0) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = 0;
+        const now = performance.now();
+        if (now - lastWriteAt < 400) return;
+        lastWriteAt = now;
         writePersistedShopScroll(scroller.scrollTop);
       });
     };

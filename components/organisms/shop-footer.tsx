@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_CONTACT_EMAIL, DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
-import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
+import type { ShopBasePath } from "@/lib/shop-base-path";
 
 const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 
@@ -85,7 +85,7 @@ type ShopFooterProps = {
 export function ShopFooter({
   onScrollToCatalogue,
   onScrollToSection,
-  shopBasePath = "/",
+  shopBasePath: _shopBasePath = "/",
 }: ShopFooterProps) {
   const [legalDoc, setLegalDoc] = useState<LegalDocId | null>(null);
   const activeLegal = legalDoc ? LEGAL_DOCUMENTS[legalDoc] : null;
@@ -127,14 +127,6 @@ export function ShopFooter({
                   </button>
                 </li>
                 <li>
-                  <a
-                    href={shopHref(shopBasePath, "/checkout")}
-                    className="dingry-footer-link text-[11px] tracking-[0.12em]"
-                  >
-                    Paiement
-                  </a>
-                </li>
-                <li>
                   <button
                     type="button"
                     onClick={() => scrollToSection("lookbook")}
@@ -146,10 +138,10 @@ export function ShopFooter({
                 <li>
                   <button
                     type="button"
-                    onClick={() => scrollToSection("catalogue-landing")}
+                    onClick={() => scrollToSection("heritage")}
                     className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
                   >
-                    Collection CIC
+                    Heritage
                   </button>
                 </li>
               </ul>
