@@ -262,6 +262,13 @@ export type AdminLookbookSlide = {
   createdAt: string;
 };
 
+export type AdminLookbookSlideSource = "stored" | "seed";
+
+/** Slide telle qu’affichée sur la vitrine + origine (snapshot ou défaut code). */
+export type AdminLookbookSlideView = AdminLookbookSlide & {
+  source: AdminLookbookSlideSource;
+};
+
 /** Bannière catalogue · tee personnalisé (singleton CRM). */
 export type AdminCatalogPersoBanner = {
   enabled: boolean;

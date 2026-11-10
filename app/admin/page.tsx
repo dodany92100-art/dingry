@@ -35,7 +35,7 @@ import {
   readAdminScrollSnapshot,
   saveAdminScrollSnapshot,
 } from "@/lib/admin/crm-navigation-state";
-import type { AdminLookbookSlide, AdminProduct } from "@/lib/admin/types";
+import type { AdminLookbookSlideView, AdminProduct } from "@/lib/admin/types";
 import type { AdminProductCategoryFilter } from "@/lib/shop-data";
 
 const ProductEditorModal = dynamic(
@@ -56,7 +56,7 @@ const LookbookEditorModal = dynamic(
 
 /** null = fermé ; { product: null } = création ; { product } = modification. */
 type EditorState = { product: AdminProduct | null } | null;
-type LookbookEditorState = { slide: AdminLookbookSlide | null } | null;
+type LookbookEditorState = { slide: AdminLookbookSlideView | null } | null;
 
 function parseTabParam(value: string | null): TabId {
   if (
@@ -340,7 +340,7 @@ function AdminDashboard() {
     setLookbookEditor(null);
   }
 
-  async function handleDeleteLookbookSlide(slide: AdminLookbookSlide): Promise<boolean> {
+  async function handleDeleteLookbookSlide(slide: AdminLookbookSlideView): Promise<boolean> {
     const confirmed = window.confirm(`Supprimer la slide « ${slide.title} » ?`);
     if (!confirmed) return false;
     const error = await lookbookApi.remove(slide);

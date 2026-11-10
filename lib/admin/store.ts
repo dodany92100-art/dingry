@@ -72,6 +72,7 @@ import {
   STORE_VERSION,
   type AdminCatalogPersoBanner,
   type AdminLookbookSlide,
+  type AdminLookbookSlideView,
   type AdminOrder,
   type AdminProduct,
   type AdminStore,
@@ -451,6 +452,15 @@ function removedLookbookSlideIdSet(raw: AdminStore): Set<string> {
 /** Lookbook boutique : seed + CRM, hors tombstones (y compris défauts code). */
 export function publicLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
   return mergeLookbookSlides(raw);
+}
+
+/** Admin lookbook : même liste que la vitrine, avec origine stockée vs seed. */
+export function adminLookbookSlideViews(raw: AdminStore): AdminLookbookSlideView[] {
+  const storedIds = new Set(raw.lookbook.map((slide) => slide.id));
+  return publicLookbookSlides(raw).map((slide) => ({
+    ...slide,
+    source: storedIds.has(slide.id) ? "stored" : "seed",
+  }));
 }
 
 function normalizeCatalogPersoBannerRecord(value: unknown): AdminCatalogPersoBanner | undefined {
@@ -1719,12 +1729,33 @@ export async function removeLookbookSlide(id: string): Promise<boolean> {
   const removed = await withStoreOptimistic(
     (store) => {
       const slide = store.lookbook.find((item) => item.id === id);
+      const tombstone = new Set(store.removedLookbookSlideIds ?? []);
       if (!slide) {
-        return { store, result: null, skipWrite: true };
+        if (tombstone.has(id)) {
+          return { store, result: null, skipWrite: true };
+        }
+        const visibleOnStorefront = mergeLookbookSlides(store).some((item) => item.id === id);
+        if (!visibleOnStorefront) {
+          return { store, result: null, skipWrite: true };
+        }
+        tombstone.add(id);
+        store.removedLookbookSlideIds = [...tombstone];
+        return {
+          store,
+          result: {
+            id,
+            title: "",
+            caption: "",
+            imageUrl: "",
+            blobUrl: null,
+            blobPathname: null,
+            sortOrder: 0,
+            createdAt: "",
+          },
+        };
       }
       const copy = { ...slide };
       store.lookbook = store.lookbook.filter((item) => item.id !== id);
-      const tombstone = new Set(store.removedLookbookSlideIds ?? []);
       tombstone.add(id);
       store.removedLookbookSlideIds = [...tombstone];
       return { store, result: copy };
@@ -1733,7 +1764,10 @@ export async function removeLookbookSlide(id: string): Promise<boolean> {
   );
 
   if (!removed) return false;
-  if (removed.blobUrl || removed.blobPathname || removed.imageUrl.startsWith("/admin-uploads/")) {
+  if (
+    removed.imageUrl &&
+    (removed.blobUrl || removed.blobPathname || removed.imageUrl.startsWith("/admin-uploads/"))
+  ) {
     await deleteLookbookImage(removed);
   }
   return true;

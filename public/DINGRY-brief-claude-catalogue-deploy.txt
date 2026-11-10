@@ -1,0 +1,63 @@
+================================================================================
+DINGRY (rts-sepia) — BRIEF POUR CLAUDE — Catalogue / images / mise en ligne
+================================================================================
+Date : 2026-11-09
+Projet : Next.js 16, App Router, boutique DINGRY (streetwear), pas RAP2K.
+
+PROBLÈME UTILISATEUR
+--------------------
+- Une « mise en ligne » a échoué (préciser : déploiement Vercel OU passage produit « live » admin).
+- Soupçon : anciennes images / dépendances stockage (R2, Blob, Cloudinary) qui perturbent le catalogue.
+- Souhait initial : supprimer toutes les images catalogue SAUF celles visibles sur la boutique, puis repartir propre.
+- Question pour Claude : faut-il nettoyer ciblé (Supabase + R2 par produit) ou tout retirer et remettre en ligne ? Quelle procédure minimale pour corriger l’échec sans casser la vitrine ?
+
+ERREUR EXACTE (À REMPLIR PAR L’UTILISATEUR)
+------------------------------------------
+[Non fournie lors de la génération — compléter avant analyse si possible]
+
+ARCHITECTURE CATALOGUE (RÉSUMÉ FACTUEL)
+-------------------------------------
+1) Vitrine fallback : lib/shop-data.ts (PRODUCTS) — URLs Cloudinary en dur dans le code.
+2) CRM : Supabase (+ snapshot store) — lib/admin/store.ts
+3) API publique : app/api/catalog/route.ts → getCachedCatalogProductRows
+4) Fusion vitrine : lib/catalog/index.ts → overlayShopCatalog(fallback, live, removedCatalogIds)
+5) Seuls produits publishStatus !== "draft" exposés : lib/admin/types.ts → toCatalogProduct()
+6) Client boutique : components/organisms/shop/hooks/use-shop-catalog.ts fetch /api/catalog
+7) Images uploadées admin : R2 (lib/r2/storage.ts) ou legacy Vercel Blob ; delete via deleteProductImage dans store.ts
+8) removeProduct : supprime fiche Supabase + médias ; seed IDs → removedCatalogIds (tombstones)
+9) NE PAS utiliser npm run purge:r2 en prod si des produits live pointent encore vers R2.
+10) Scripts utiles : check:prod-env, migrate:r2-images, import:supabase — package.json scripts
+
+FICHIERS INCLUS DANS L’EXPORT (annexe ci-dessous)
+-------------------------------------------------
+lib/shop-data.ts
+lib/catalog/index.ts
+lib/shop-catalog.ts
+lib/shop-catalog-snapshot.ts
+lib/server/shop-catalog-cache.ts
+app/api/catalog/route.ts
+lib/admin/types.ts (extraits toCatalogProduct / types produit)
+lib/admin/seed.ts (début — structure seed)
+lib/r2/storage.ts
+lib/r2/config.ts
+components/organisms/shop/hooks/use-shop-catalog.ts
+scripts/check-prod-env.ts
+package.json
+lib/admin/store.ts (extraits : lecture Supabase, upload/delete image, removeProduct)
+
+CONTRAINTES PROJET
+------------------
+- Modifications minimales, TypeScript strict, pas inventer URLs Cloudinary produits.
+- Prod : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY + R2 pour uploads images (voir store errors).
+- Boutique : DINGRY_PUBLIC_HOME=shop|teaser ; catalogue = overlay seed + live CRM.
+
+QUESTIONS EXPLICITES POUR CLAUDE
+--------------------------------
+1) L’échec de mise en ligne est-il plutôt lié aux env/build ou au stockage images ? Comment trancher avec les logs fournis ?
+2) Procédure recommandée : nettoyage admin (supprimer brouillons/doublons) vs reset Supabase vs purge R2 — risques pour la vitrine actuelle.
+3) Liste d’actions concrètes ordonnées (checklist) pour l’utilisateur ou pour un agent Cursor.
+4) Y a-t-il des incohérences connues dans le code (Blob+R2, draft avec placeholder, cache unstable_cache SHOP_CATALOG_CACHE_TAG) à corriger en code ?
+
+MESSAGE D’ENTRÉE SUGGÉRÉ POUR CLAUDE
+------------------------------------
+Tu analyses ce fichier pour DINGRY : échec de mise en ligne catalogue/images. Réponds aux 4 questions du brief, propose une checklist sans purge R2 globale sauf si justifié, et indique les diffs de code minimaux si nécessaire.

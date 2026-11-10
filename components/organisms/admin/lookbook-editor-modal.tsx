@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import type { AdminLookbookSlide } from "@/lib/admin/types";
+import type { AdminLookbookSlide, AdminLookbookSlideView } from "@/lib/admin/types";
 import {
   appendPreuploadedImageFields,
   R2_LOOKBOOK_FOLDER,
@@ -12,11 +12,11 @@ import { prepareAndUploadAdminImage } from "@/lib/client/admin-media-upload";
 import type { SaveLookbookResult } from "./hooks/use-admin-lookbook";
 
 type LookbookEditorModalProps = {
-  initial: AdminLookbookSlide | null;
+  initial: AdminLookbookSlideView | null;
   busySlideId: string | null;
   onClose: () => void;
   onSubmit: (editingId: string | null, formData: FormData) => Promise<SaveLookbookResult>;
-  onDelete: (slide: AdminLookbookSlide) => Promise<boolean>;
+  onDelete: (slide: AdminLookbookSlideView) => Promise<boolean>;
 };
 
 export function LookbookEditorModal({

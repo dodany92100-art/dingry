@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { isR2ImageStorageEnabled, requireAdmin } from "@/lib/admin/auth";
 import { parseLookbookFields } from "@/lib/admin/parse-lookbook";
 import {
+  adminLookbookSlideViews,
   createLookbookSlide,
   loadStoreReadOnly,
   StoreConflictError,
@@ -24,7 +25,7 @@ export async function GET() {
 
   try {
     const store = await loadStoreReadOnly();
-    const slides = [...store.lookbook].sort((a, b) => a.sortOrder - b.sortOrder);
+    const slides = adminLookbookSlideViews(store);
     return jsonNoStore({ slides, r2ImageStorage: isR2ImageStorageEnabled() });
   } catch (error) {
     if (error instanceof StoreUnavailableError) {

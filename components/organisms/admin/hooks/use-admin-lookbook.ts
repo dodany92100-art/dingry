@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { AdminLookbookSlide } from "@/lib/admin/types";
+import type { AdminLookbookSlide, AdminLookbookSlideView } from "@/lib/admin/types";
 
 export type LoadResult = "ok" | "unauthorized" | "error";
 export type SaveLookbookResult = { slide: AdminLookbookSlide } | { error: string };
+export type { AdminLookbookSlideView };
 
 type Options = { onUnauthorized: () => void };
 
@@ -16,7 +17,7 @@ function isConflictMessage(message: string | undefined): boolean {
 }
 
 export function useAdminLookbook({ onUnauthorized }: Options) {
-  const [slides, setSlides] = useState<AdminLookbookSlide[]>([]);
+  const [slides, setSlides] = useState<AdminLookbookSlideView[]>([]);
   const [busySlideId, setBusySlideId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -25,7 +26,7 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
       const response = await fetch("/api/admin/lookbook", { cache: "no-store" });
       if (response.status === 401) return "unauthorized";
       if (!response.ok) return "error";
-      const data = (await response.json()) as { slides: AdminLookbookSlide[] };
+      const data = (await response.json()) as { slides: AdminLookbookSlideView[] };
       setSlides(data.slides);
       return "ok";
     } catch {
@@ -58,10 +59,11 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
           const err = data.error || "Impossible d'enregistrer la slide.";
           return { error: isConflictMessage(err) ? CONFLICT_HINT : err };
         }
+        const savedView: AdminLookbookSlideView = { ...saved, source: "stored" };
         setSlides((current) => {
           const next = editingId
-            ? current.map((item) => (item.id === editingId ? saved : item))
-            : [...current, saved];
+            ? current.map((item) => (item.id === editingId ? savedView : item))
+            : [...current, savedView];
           return [...next].sort((a, b) => a.sortOrder - b.sortOrder);
         });
         return { slide: saved };
@@ -73,7 +75,7 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
   );
 
   const remove = useCallback(
-    async (slide: AdminLookbookSlide): Promise<string | null> => {
+    async (slide: AdminLookbookSlideView): Promise<string | null> => {
       setError("");
       setBusySlideId(slide.id);
 
@@ -111,7 +113,7 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
   );
 
   const reorder = useCallback(
-    async (slide: AdminLookbookSlide, direction: "up" | "down"): Promise<string | null> => {
+    async (slide: AdminLookbookSlideView, direction: "up" | "down"): Promise<string | null> => {
       setError("");
       setBusySlideId(slide.id);
       try {
@@ -131,7 +133,12 @@ export function useAdminLookbook({ onUnauthorized }: Options) {
         if (!response.ok || !data.slides) {
           return data.error || "Impossible de réordonner.";
         }
-        setSlides(data.slides);
+        setSlides(
+          data.slides.map((item) => ({
+            ...item,
+            source: "stored" as const,
+          })),
+        );
         return null;
       } catch {
         return "Impossible de réordonner.";
