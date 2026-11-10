@@ -9,8 +9,10 @@ import { cn } from "@/lib/utils";
 import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import {
   buildCatalogMenuSections,
+  CATALOG_MENU_TAB_CUSTOM,
   filterByCategory,
   parseCatalogFilter,
+  type CatalogCategory,
 } from "@/lib/shop-catalog";
 import {
   ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS,
@@ -24,8 +26,30 @@ import type { AdminProductCategoryFilter } from "@/lib/shop-data";
 
 type AdminStockStorefrontPreviewProps = {
   categoryFilter: AdminProductCategoryFilter;
+  onCategoryFilterChange: (filter: AdminProductCategoryFilter) => void;
   onUnauthorized?: () => void;
 };
+
+const ADMIN_CATEGORY_FROM_CATALOG: Record<
+  CatalogCategory,
+  Exclude<AdminProductCategoryFilter, "Collection">
+> = {
+  hoodies: "Hoodies",
+  "hoodie-zip": "Hoodies zippés",
+  sweats: "Crewnecks",
+  "t-shirts": "T-shirts",
+  jersey: "Jerseys",
+  pants: "Pants",
+  "crop-top": "Crop tops",
+  caps: "Caps",
+};
+
+function catalogTabToAdminCategory(tab: CatalogTabValue): AdminProductCategoryFilter | null {
+  if (tab === CATALOG_MENU_TAB_CUSTOM) return null;
+  const parsed = parseCatalogFilter(tab);
+  if (parsed === "all") return "Collection";
+  return ADMIN_CATEGORY_FROM_CATALOG[parsed] ?? null;
+}
 
 function adminCategoryToCatalogTab(filter: AdminProductCategoryFilter): CatalogTabValue {
   if (filter === "Collection") return "all";
@@ -173,9 +197,26 @@ function PreviewCatalogBody({
 
 export function AdminStockStorefrontPreview({
   categoryFilter,
+  onCategoryFilterChange,
   onUnauthorized,
 }: AdminStockStorefrontPreviewProps) {
   const catalogTab = adminCategoryToCatalogTab(categoryFilter);
+
+  const handleCatalogTabChange = useCallback(
+    (tab: string) => {
+      if (tab === CATALOG_MENU_TAB_CUSTOM) {
+        window.open("/websitedx#atelier-custom", "_blank", "noopener,noreferrer");
+        return;
+      }
+      const next = catalogTabToAdminCategory(tab as CatalogTabValue);
+      if (next) onCategoryFilterChange(next);
+    },
+    [onCategoryFilterChange],
+  );
+
+  const openShopSection = useCallback((id: string) => {
+    window.open(`/websitedx#${id}`, "_blank", "noopener,noreferrer");
+  }, []);
   const [onlineProducts, setOnlineProducts] = useState<StorefrontOnlineProduct[]>([]);
   const [ghostCount, setGhostCount] = useState(0);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
@@ -269,15 +310,17 @@ export function AdminStockStorefrontPreview({
 
   return (
     <div className={`dingry-shop text-white ${ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS}`}>
-      <ShopNav embedded cartCount={0} onOpenCart={() => {}} onScrollToSection={() => {}} />
+      <ShopNav
+        embedded
+        shopBasePath="/websitedx"
+        cartCount={0}
+        onOpenCart={() => window.open("/websitedx/checkout", "_blank", "noopener,noreferrer")}
+        onScrollToSection={openShopSection}
+      />
       <section className={`${CATALOG_SECTION_SURFACE_CLASS} pt-4 md:pt-6`}>
         <div className="mb-5 space-y-2">
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">
             Catalogue en ligne (réel) · même fusion que la boutique publique
-          </p>
-          <p className="max-w-2xl text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
-            Badge « Hors CRM » = visible sur le site via le catalogue de secours, sans fiche modifiable.
-            « Masquer » ajoute un tombstone (id par id). Ne pas tout masquer d&apos;un coup sans tri.
           </p>
           {loadState === "ready" ? (
             <p className="text-[10px] uppercase tracking-[0.16em] text-white/45">
@@ -289,9 +332,7 @@ export function AdminStockStorefrontPreview({
             </p>
           ) : null}
         </div>
-        <div className="pointer-events-none select-none" aria-hidden>
-          <CatalogFilterBar value={catalogTab} onChange={() => {}} />
-        </div>
+        <CatalogFilterBar value={catalogTab} onChange={handleCatalogTabChange} />
         {loadState === "loading" ? (
           <p className="py-16 text-center text-sm text-white/40">Chargement du catalogue en ligne…</p>
         ) : loadState === "error" ? (
