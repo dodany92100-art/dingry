@@ -50,7 +50,11 @@ import {
 } from "@/lib/admin/seed";
 import { PRODUCTS } from "@/lib/shop-data";
 import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
-import { RETIRED_LOOKBOOK_SEED_TITLES, seededLookbookSlides } from "@/lib/admin/lookbook-seed";
+import {
+  DEFAULT_REMOVED_LOOKBOOK_SLIDE_IDS,
+  RETIRED_LOOKBOOK_SEED_TITLES,
+  seededLookbookSlides,
+} from "@/lib/admin/lookbook-seed";
 import {
   isVersoCatalogId,
   resolveRectoCatalogId,
@@ -435,10 +439,18 @@ function normalizeLookbookSlide(value: unknown): AdminLookbookSlide | null {
 
 function removedLookbookSlideIdSet(raw: AdminStore): Set<string> {
   return new Set(
-    (Array.isArray(raw.removedLookbookSlideIds) ? raw.removedLookbookSlideIds : [])
+    [
+      ...DEFAULT_REMOVED_LOOKBOOK_SLIDE_IDS,
+      ...(Array.isArray(raw.removedLookbookSlideIds) ? raw.removedLookbookSlideIds : []),
+    ]
       .map((id) => String(id).trim())
       .filter(Boolean),
   );
+}
+
+/** Lookbook boutique : seed + CRM, hors tombstones (y compris défauts code). */
+export function publicLookbookSlides(raw: AdminStore): AdminLookbookSlide[] {
+  return mergeLookbookSlides(raw);
 }
 
 function normalizeCatalogPersoBannerRecord(value: unknown): AdminCatalogPersoBanner | undefined {
