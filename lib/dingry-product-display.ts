@@ -231,6 +231,10 @@ function isRectoVersoOnlyLabel(value: string): boolean {
   return trimmed.length === 0 || /^(RECTO|VERSO)$/i.test(trimmed);
 }
 
+function normalizedStorefrontLabel(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
 /** Sous-titre carte : vide si le titre porte déjà le coloris (évite « RECTO » sous les imports lot 2). */
 export function storefrontProductSubtitle(
   product: ShopProduct,
@@ -242,13 +246,24 @@ export function storefrontProductSubtitle(
   if (line) return "";
 
   const title = storefrontProductTitle(product, catalog);
+  const titleKey = normalizedStorefrontLabel(title);
+  if (normalizedStorefrontLabel(product.name) === titleKey) {
+    const variantOnly = product.variant
+      .replace(/\s*—\s*(RECTO|VERSO)\s*/gi, "")
+      .replace(/\s*-\s*(RECTO|VERSO)\s*/gi, "")
+      .trim();
+    if (!variantOnly || isRectoVersoOnlyLabel(variantOnly)) return "";
+  }
   const raw = product.variant
     .replace(/\s*—\s*(RECTO|VERSO)\s*/gi, " ")
     .replace(/\s*-\s*(RECTO|VERSO)\s*/gi, " ")
     .trim();
 
   if (raw && !isRectoVersoOnlyLabel(raw)) {
-    if (title.toUpperCase().includes(raw.toUpperCase())) return "";
+    const rawKey = normalizedStorefrontLabel(raw);
+    if (titleKey.includes(rawKey) || rawKey === titleKey || rawKey === normalizedStorefrontLabel(product.name)) {
+      return "";
+    }
     return raw;
   }
 
@@ -257,8 +272,9 @@ export function storefrontProductSubtitle(
     color &&
     color !== "STANDARD" &&
     !isRectoVersoOnlyLabel(color) &&
-    !title.toUpperCase().includes(color.toUpperCase())
+    !normalizedStorefrontLabel(title).includes(normalizedStorefrontLabel(color))
   ) {
+    if (normalizedStorefrontLabel(color) === titleKey) return "";
     return color;
   }
   return "";

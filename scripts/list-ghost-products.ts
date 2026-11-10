@@ -12,7 +12,7 @@ config({ path: path.join(process.cwd(), ".env.local"), override: true });
 async function main(): Promise<void> {
   const { PRODUCTS } = await import("../lib/shop-data");
   const { isVersoCatalogId } = await import("../lib/catalog-verso-recto");
-  const { addRemovedCatalogIds } = await import("../lib/supabase/admin-products");
+  const { maskStorefrontGhostProduct } = await import("../lib/admin/store");
 
   const { loadStoreReadOnly } = await import("../lib/admin/store");
   const { buildShopCatalogSnapshot } = await import("../lib/shop-catalog-snapshot");
@@ -55,9 +55,15 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  await addRemovedCatalogIds(ids.map(String));
-  console.log(`Tombstones ajoutés : ${ids.join(", ")}`);
-  console.log("Puis : redéployer (clé de cache v2) ou revalider le catalogue depuis l'admin.");
+  for (const id of ids) {
+    const result = await maskStorefrontGhostProduct(String(id));
+    if ("error" in result) {
+      console.error(`#${id} : ${result.error}`);
+      process.exit(1);
+    }
+    console.log(`✓ tombstone #${id} (snapshot + Supabase si dispo)`);
+  }
+  console.log("Puis : revalider le catalogue depuis l'admin ou redéployer (cache v2).");
 }
 
 void main().catch((error: unknown) => {

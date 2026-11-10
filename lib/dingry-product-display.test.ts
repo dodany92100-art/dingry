@@ -50,4 +50,18 @@ describe("storefrontProductSubtitle", () => {
     };
     expect(storefrontProductSubtitle(paris)).toBe("NOIR PARIS");
   });
+
+  it("n’affiche pas « RECTO » en doublon quand le nom CRM contient déjà l’intitulé", () => {
+    const hoodie: ShopProduct = {
+      id: 99,
+      name: "HOODIE DINGRY SIGNATURE RECTO",
+      variant: "RECTO",
+      price: 80,
+      image: "https://example.com/h.webp",
+      description: "",
+      category: "Hoodies",
+    };
+    expect(storefrontProductTitle(hoodie)).toBe("HOODIE DINGRY SIGNATURE RECTO");
+    expect(storefrontProductSubtitle(hoodie)).toBe("");
+  });
 });

@@ -87,7 +87,13 @@ export async function addRemovedCatalogIds(ids: string[]): Promise<void> {
   const { error } = await supabaseAdmin()
     .from("catalog_removed_ids")
     .upsert(ids.map((id) => ({ id })), { onConflict: "id" });
-  if (error && error.code !== "PGRST205") throw new Error(error.message);
+  if (error) {
+    if (error.code === "PGRST205" || error.message.includes("schema cache")) {
+      console.warn("[supabase] catalog_removed_ids absent — tombstone conservé côté snapshot.");
+      return;
+    }
+    throw new Error(error.message);
+  }
 }
 
 export async function reorderSupabaseProducts(orderedIds: string[]): Promise<AdminProduct[]> {

@@ -695,6 +695,15 @@ function normalizeStore(value: AdminStore): AdminStore {
   });
 }
 
+function mergeRemovedCatalogIds(
+  storeRemoved: string[] | undefined,
+  supabaseRemoved: string[],
+): string[] {
+  return [
+    ...new Set([...(storeRemoved ?? []).map(String), ...supabaseRemoved.map(String)]),
+  ].filter((id) => id.trim().length > 0);
+}
+
 async function overlaySupabaseProducts(store: AdminStore): Promise<AdminStore> {
   if (!isSupabaseStoreEnabled()) return store;
   try {
@@ -703,7 +712,7 @@ async function overlaySupabaseProducts(store: AdminStore): Promise<AdminStore> {
     return {
       ...store,
       products,
-      removedCatalogIds: removed.length > 0 ? removed : store.removedCatalogIds,
+      removedCatalogIds: mergeRemovedCatalogIds(store.removedCatalogIds, removed),
     };
   } catch (error) {
     console.error("[store] lecture Supabase produits", error instanceof Error ? error.message : "erreur");
@@ -724,7 +733,7 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
           products,
           orders: [],
           lookbook: [],
-          removedCatalogIds: removed,
+          removedCatalogIds: mergeRemovedCatalogIds(undefined, removed),
         };
       }
       if (!allowCatalogSeedFallback()) {
@@ -1463,8 +1472,14 @@ export async function maskStorefrontGhostProduct(id: string): Promise<{ ok: true
   tombstoneCatalogPair(tombstone, id);
 
   if (isSupabaseStoreEnabled()) {
-    await addRemovedCatalogIds([...tombstone]);
-    return { ok: true };
+    try {
+      await addRemovedCatalogIds([...tombstone]);
+    } catch (error) {
+      console.error(
+        "[store] tombstone Supabase",
+        error instanceof Error ? error.message : "erreur",
+      );
+    }
   }
 
   const wrote = await withStoreOptimistic(
