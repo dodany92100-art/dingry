@@ -1218,7 +1218,7 @@ export function ProductEditorModal({
                   type="button"
                   onClick={requestNewProduct}
                   disabled={saving}
-                  className="text-sm text-[#7EB3FF] transition hover:text-white disabled:opacity-40"
+                  className="text-sm text-[#ffab73] transition hover:text-white disabled:opacity-40"
                 >
                   + Nouvelle fiche
                 </button>

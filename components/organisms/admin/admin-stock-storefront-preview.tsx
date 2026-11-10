@@ -135,7 +135,7 @@ function PreviewCatalogBody({
     return (
       <div className="space-y-12 md:space-y-16">
         <div className="border-b border-white/[0.08] pb-4 md:pb-5">
-          <p className="text-[10px] font-semibold tracking-[0.35em] text-[#0066FF] uppercase">Collection</p>
+          <p className="text-[10px] font-semibold tracking-[0.35em] text-[#FF3D00] uppercase">Collection</p>
           <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{DINGRY_STREET_LINE}</p>
         </div>
         {sections.map((section) => {

@@ -90,7 +90,7 @@ export function StickyScroll({
                 <p className="dingry-typo-manifesto mt-4 text-[10px] text-white/75">{DINGRY_MANIFESTO_FR}</p>
               </div>
             ) : item.kicker ? (
-              <p className="mb-4 max-w-md text-[10px] font-semibold uppercase tracking-[0.28em] text-[#0066FF] md:mb-5">
+              <p className="mb-4 max-w-md text-[10px] font-semibold uppercase tracking-[0.28em] text-[#FF3D00] md:mb-5">
                 {item.kicker}
               </p>
             ) : null}

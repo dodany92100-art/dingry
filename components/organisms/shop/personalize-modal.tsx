@@ -82,7 +82,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
               </svg>
             </button>
             <div className="p-8 md:p-10 border-b border-white/[0.06]">
-              <p className="text-[10px] tracking-[0.35em] text-[#0066FF] uppercase mb-2">Custom · Studio</p>
+              <p className="text-[10px] tracking-[0.35em] text-[#FF3D00] uppercase mb-2">Custom · Studio</p>
               <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight pr-12">
                 Configurateur tee personnalisé
               </h2>
@@ -131,7 +131,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                   </p>
                 </div>
                 <div>
-                  <p className="mb-3 text-[10px] tracking-[0.3em] text-[#0066FF] uppercase">Étape 1 · Couleur du tee</p>
+                  <p className="mb-3 text-[10px] tracking-[0.3em] text-[#FF3D00] uppercase">Étape 1 · Couleur du tee</p>
                   <div className="flex flex-wrap gap-2">
                     {PERSONALIZATION_SHIRTS.map((option) => (
                       <button
@@ -140,7 +140,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                         onClick={() => setShirtId(option.id)}
                         className={`px-4 py-2 text-[11px] tracking-[0.2em] uppercase border transition-colors ${
                           shirtId === option.id
-                            ? "bg-[#0066FF] border-[#0066FF] text-white"
+                            ? "bg-[#FF3D00] border-[#FF3D00] text-white"
                             : "border-white/15 text-white/50 hover:border-white/40 hover:text-white"
                         }`}
                       >
@@ -150,7 +150,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                   </div>
                 </div>
                 <label className="block">
-                  <span className="mb-2 block text-[10px] tracking-[0.3em] text-[#0066FF] uppercase">
+                  <span className="mb-2 block text-[10px] tracking-[0.3em] text-[#FF3D00] uppercase">
                     Étape 2 · Ville, pays ou texte
                   </span>
                   <input
@@ -158,12 +158,12 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                     value={label}
                     onChange={(e) => setLabel(clampPersonalizationLabel(e.target.value))}
                     placeholder="Ville, Pays"
-                    className="w-full rounded-full border border-white/20 bg-[#080808] px-5 py-3.5 text-sm text-white placeholder:text-white/30 focus:border-[#0066FF] focus:outline-none"
+                    className="w-full rounded-full border border-white/20 bg-[#080808] px-5 py-3.5 text-sm text-white placeholder:text-white/30 focus:border-[#FF3D00] focus:outline-none"
                     maxLength={PERSONALIZATION_MAX_LABEL_LENGTH}
                   />
                 </label>
                 <div>
-                  <p className="mb-3 text-[10px] tracking-[0.3em] text-[#0066FF] uppercase">Étape 3 · Taille</p>
+                  <p className="mb-3 text-[10px] tracking-[0.3em] text-[#FF3D00] uppercase">Étape 3 · Taille</p>
                   <div className="grid grid-cols-6 gap-2">
                     {SIZES.map((s) => (
                       <button
@@ -172,7 +172,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                         onClick={() => setSize(s)}
                         className={`py-2.5 text-xs font-medium tracking-widest border transition-all duration-200 ${
                           size === s
-                            ? "bg-[#0066FF] border-[#0066FF] text-white"
+                            ? "bg-[#FF3D00] border-[#FF3D00] text-white"
                             : "border-white/10 text-white/50 hover:border-white/30 hover:text-white"
                         }`}
                       >
@@ -221,7 +221,7 @@ export function PersonalizeModal({ open, product, onClose, onSubmit }: Personali
                   disabled={!canSubmit}
                   className={`dingry-add-to-cart-btn w-full py-4 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${
                     canSubmit
-                      ? "bg-[#0066FF] text-white hover:bg-[#0052cc]"
+                      ? "bg-[#FF3D00] text-white hover:bg-[#e03500]"
                       : "bg-white/10 text-white/20 cursor-not-allowed"
                   }`}
                 >

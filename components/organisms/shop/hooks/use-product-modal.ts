@@ -182,8 +182,8 @@ export function useProductModal({ products, catalogState }: Options) {
   );
 
   const closeProductModal = useCallback(() => {
+    syncProductInUrl(null);
     setSelectedProduct(null);
-    window.requestAnimationFrame(() => syncProductInUrl(null));
   }, [syncProductInUrl]);
 
   useEffect(() => {

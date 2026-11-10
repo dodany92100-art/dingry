@@ -16,7 +16,7 @@ type AdminStockControlsProps = {
 };
 
 const BTN =
-  "flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-sm text-white/80 shadow-none transition hover:border-[#0066FF]/50 hover:bg-[#0066FF]/15 hover:text-white disabled:opacity-30";
+  "flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-sm text-white/80 shadow-none transition hover:border-[#FF3D00]/50 hover:bg-[#FF3D00]/15 hover:text-white disabled:opacity-30";
 const BTN_COMPACT = `${BTN} h-7 w-7 text-xs`;
 const BTN_ROW = `${BTN} h-8 w-8`;
 /** Même libellé et style que la vue liste (layout row). */

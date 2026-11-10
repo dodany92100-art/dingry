@@ -107,7 +107,7 @@ export function LookbookEditorModal({
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.35em] text-[#0066FF]">Lookbook</p>
+            <p className="text-[10px] uppercase tracking-[0.35em] text-[#FF3D00]">Lookbook</p>
             <h2 className="mt-2 text-lg font-bold uppercase tracking-wide">
               {editingId ? "Modifier la slide" : "Nouvelle slide"}
             </h2>

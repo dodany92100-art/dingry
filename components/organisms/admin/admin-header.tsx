@@ -44,7 +44,7 @@ export function AdminHeader({
           {stockPendingCount > 0 ? (
             <span className="text-amber-400/90">{stockPendingCount} stock en attente</span>
           ) : null}
-          {lowStockCount > 0 ? <span className="text-[#7EB3FF]">{lowStockCount} stock bas</span> : null}
+          {lowStockCount > 0 ? <span className="text-[#ffab73]">{lowStockCount} stock bas</span> : null}
           <a
             href="/websitedx"
             target="_blank"

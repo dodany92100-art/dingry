@@ -24,7 +24,7 @@ export function ReleaseBanner() {
   const deployedAt = formatCrmBuildLabel();
 
   return (
-    <div className="border-b border-[#0066FF]/35 bg-[#0c1830]/90 px-6 py-5 md:px-10">
+    <div className="border-b border-[#FF3D00]/35 bg-[#0c1830]/90 px-6 py-5 md:px-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-3xl">
           <p className="text-sm font-medium text-[#8ec0ff]">

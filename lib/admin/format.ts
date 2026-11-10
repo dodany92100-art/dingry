@@ -16,7 +16,7 @@ export function formatDate(value: string): string {
 
 export function statusClass(status: OrderStatus): string {
   if (status === "À vérifier") return "border-amber-500/40 bg-amber-500/10 text-amber-200";
-  if (status === "Expédié") return "border-[#0066FF]/40 bg-[#0066FF]/15 text-[#7EB3FF]";
+  if (status === "Expédié") return "border-[#FF3D00]/40 bg-[#FF3D00]/15 text-[#ff8a4d]";
   if (status === "Livré") return "border-white/20 bg-white/10 text-white";
   return "border-white/10 bg-white/[0.04] text-white/55";
 }

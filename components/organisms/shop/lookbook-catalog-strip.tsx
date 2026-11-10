@@ -45,7 +45,7 @@ export function LookbookCatalogStrip() {
 
   return (
     <section className="scroll-mt-28 border-t border-white/[0.08] px-4 py-16 md:px-12 md:py-20">
-      <p className="mb-5 text-[10px] font-semibold tracking-[0.35em] text-[#0066FF] uppercase md:mb-6">
+      <p className="mb-5 text-[10px] font-semibold tracking-[0.35em] text-[#FF3D00] uppercase md:mb-6">
         Lookbook
       </p>
 

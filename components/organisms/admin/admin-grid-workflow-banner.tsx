@@ -42,7 +42,7 @@ export function AdminGridWorkflowBanner({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={panelSpring}
-          className="pointer-events-auto flex w-full max-w-2xl flex-col gap-3 border border-zinc-800 bg-zinc-900 px-4 py-3 shadow-[0_0_40px_rgba(0,102,255,0.14)] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5"
+          className="pointer-events-auto flex w-full max-w-2xl flex-col gap-3 border border-zinc-800 bg-zinc-900 px-4 py-3 shadow-[0_0_40px_rgba(255, 61, 0,0.14)] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5"
         >
           {phase === "ordering" ? (
             <>

@@ -60,12 +60,12 @@ export function AdminProductOrderControls({
   const pinClass = compact
     ? `flex h-7 w-7 items-center justify-center border transition disabled:opacity-40 ${
         pinActive
-          ? "border-[#0066FF] bg-[#0066FF]/20 text-[#0066FF]"
+          ? "border-[#FF3D00] bg-[#FF3D00]/20 text-[#FF3D00]"
           : "border-zinc-600/80 text-zinc-400 hover:text-white"
       }`
     : `flex h-8 w-8 items-center justify-center border transition disabled:opacity-40 ${
         pinActive
-          ? "border-[#0066FF] bg-[#0066FF]/15 text-[#0066FF]"
+          ? "border-[#FF3D00] bg-[#FF3D00]/15 text-[#FF3D00]"
           : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-white"
       }`;
 
@@ -139,7 +139,7 @@ export function AdminProductOrderControls({
         aria-label={pinActive ? `Retirer l'épinglage de ${product.name}` : `Épingler ${product.name} en tête`}
         className={`flex h-8 w-8 items-center justify-center border transition disabled:opacity-40 ${
           pinActive
-            ? "border-[#0066FF] bg-[#0066FF]/15 text-[#0066FF]"
+            ? "border-[#FF3D00] bg-[#FF3D00]/15 text-[#FF3D00]"
             : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-white"
         }`}
       >

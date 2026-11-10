@@ -42,7 +42,7 @@ export function CatalogFilterBar({ value, onChange }: CatalogFilterBarProps) {
             onClick={() => onChange(CATALOG_MENU_TAB_CUSTOM)}
             containerClassName={cn(
               "shrink-0 snap-center rounded-sm",
-              customActive && "shadow-[0_0_18px_rgba(0,102,255,0.4)]",
+              customActive && "shadow-[0_0_18px_rgba(255, 61, 0,0.4)]",
             )}
             className={cn(
               "px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.26em] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]",

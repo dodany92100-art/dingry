@@ -214,7 +214,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
             >
               <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] p-6 md:p-8">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.35em] text-[#0066FF]">Légal</p>
+                  <p className="text-[10px] uppercase tracking-[0.35em] text-[#FF3D00]">Légal</p>
                   <h2 id="legal-modal-title" className="mt-2 text-xl font-bold uppercase tracking-wide md:text-2xl">
                     {activeLegal.title}
                   </h2>

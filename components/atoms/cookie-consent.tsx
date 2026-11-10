@@ -54,7 +54,7 @@ export function CookieConsent() {
               <div className="min-w-0">
                 <p
                   id="dingry-cookie-title"
-                  className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#0066FF]"
+                  className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#FF3D00]"
                 >
                   Cookies DINGRY
                 </p>
@@ -65,7 +65,7 @@ export function CookieConsent() {
                 </p>
                 <Link
                   href="/#mentions-legales"
-                  className="mt-2 inline-block text-[10px] uppercase tracking-[0.2em] text-white/45 underline-offset-4 transition-colors hover:text-[#7EB3FF] hover:underline"
+                  className="mt-2 inline-block text-[10px] uppercase tracking-[0.2em] text-white/45 underline-offset-4 transition-colors hover:text-[#ff8a4d] hover:underline"
                   onClick={() => setVisible(false)}
                 >
                   Politique de confidentialité
@@ -82,7 +82,7 @@ export function CookieConsent() {
                 <button
                   type="button"
                   onClick={() => choose("accepted")}
-                  className="h-10 bg-[#0066FF] px-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-[#0052cc]"
+                  className="h-10 bg-[#FF3D00] px-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-[#e03500]"
                 >
                   Accepter
                 </button>

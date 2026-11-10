@@ -194,7 +194,7 @@ export function AdminReorderSurface({
       onPointerMove={onPointerMove}
       onPointerUp={finishPointer}
       onPointerCancel={finishPointer}
-      className={`${className}${reorderDisabled ? "" : " touch-pan-y"}${touchDragging ? " cursor-grabbing" : reorderDisabled ? "" : " cursor-grab"}${isDropTarget ? " ring-2 ring-[#0066FF]/50" : ""}`}
+      className={`${className}${reorderDisabled ? "" : " touch-pan-y"}${touchDragging ? " cursor-grabbing" : reorderDisabled ? "" : " cursor-grab"}${isDropTarget ? " ring-2 ring-[#FF3D00]/50" : ""}`}
       aria-grabbed={touchDragging || undefined}
       aria-label={reorderDisabled ? undefined : `Glisser ${dragIndex + 1} pour réordonner`}
     >

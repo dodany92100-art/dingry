@@ -46,7 +46,7 @@ export function AdminStockInput({ product, disabled, onSetStock, className }: Ad
       }}
       aria-label={`Stock ${product.name}`}
       className={`h-8 w-16 border border-white/15 bg-black px-1 text-center text-sm tabular-nums text-white outline-none focus:border-white/40 disabled:opacity-40 ${
-        product.stock <= LOW_STOCK_THRESHOLD ? "text-[#7EB3FF]" : ""
+        product.stock <= LOW_STOCK_THRESHOLD ? "text-[#ffab73]" : ""
       } ${className ?? ""}`}
     />
   );

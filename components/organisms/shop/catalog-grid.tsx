@@ -25,7 +25,7 @@ type CatalogGridProps = {
 function EmptyCategory() {
   return (
     <div className="col-span-full border border-white/[0.06] py-20 text-center">
-      <p className="mb-4 text-[10px] tracking-[0.35em] text-[#0066FF] uppercase">Aucun article ici</p>
+      <p className="mb-4 text-[10px] tracking-[0.35em] text-[#FF3D00] uppercase">Aucun article ici</p>
       <p className="text-sm tracking-wider text-white/40">
         Aucune pièce en ligne dans cette vue pour le moment · vérifie que la fiche est{' '}
         <span className="text-white/55">mise en ligne</span> avec la bonne catégorie.
@@ -52,7 +52,7 @@ export function CatalogGrid({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-6 border border-white/20 px-6 py-3 text-[10px] tracking-[0.22em] text-white uppercase transition-colors hover:border-[#0066FF] hover:text-[#7EB3FF]"
+          className="mt-6 border border-white/20 px-6 py-3 text-[10px] tracking-[0.22em] text-white uppercase transition-colors hover:border-[#FF3D00] hover:text-[#ff8a4d]"
         >
           Réessayer
         </button>

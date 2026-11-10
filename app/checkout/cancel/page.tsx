@@ -17,7 +17,7 @@ export default function CheckoutCancelPage() {
           </p>
           <Link
             href="/checkout"
-            className="mt-8 block w-full bg-[#0066FF] py-4 text-center text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#0052cc]"
+            className="mt-8 block w-full bg-[#FF3D00] py-4 text-center text-[11px] font-medium tracking-[0.28em] text-white uppercase transition-colors hover:bg-[#e03500]"
           >
             Reprendre le paiement
           </Link>

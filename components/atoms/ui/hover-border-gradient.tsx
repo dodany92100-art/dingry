@@ -26,15 +26,15 @@ type HoverBorderGradientProps = HTMLAttributes<HTMLElement> &
 const DIRECTIONS: Direction[] = ["TOP", "LEFT", "BOTTOM", "RIGHT"];
 
 const movingMap: Record<Direction, string> = {
-  TOP: "radial-gradient(20.7% 50% at 50% 0%, rgba(0, 102, 255, 0.85) 0%, rgba(0, 102, 255, 0) 100%)",
-  LEFT: "radial-gradient(16.6% 43.1% at 0% 50%, rgba(0, 102, 255, 0.85) 0%, rgba(0, 102, 255, 0) 100%)",
-  BOTTOM: "radial-gradient(20.7% 50% at 50% 100%, rgba(0, 102, 255, 0.85) 0%, rgba(0, 102, 255, 0) 100%)",
+  TOP: "radial-gradient(20.7% 50% at 50% 0%, rgba(255, 61, 0, 0.85) 0%, rgba(255, 61, 0, 0) 100%)",
+  LEFT: "radial-gradient(16.6% 43.1% at 0% 50%, rgba(255, 61, 0, 0.85) 0%, rgba(255, 61, 0, 0) 100%)",
+  BOTTOM: "radial-gradient(20.7% 50% at 50% 100%, rgba(255, 61, 0, 0.85) 0%, rgba(255, 61, 0, 0) 100%)",
   RIGHT:
-    "radial-gradient(16.2% 41.2% at 100% 50%, rgba(0, 102, 255, 0.85) 0%, rgba(0, 102, 255, 0) 100%)",
+    "radial-gradient(16.2% 41.2% at 100% 50%, rgba(255, 61, 0, 0.85) 0%, rgba(255, 61, 0, 0) 100%)",
 };
 
 const highlight =
-  "radial-gradient(75% 160% at 50% 50%, rgba(0, 102, 255, 0.95) 0%, rgba(255, 255, 255, 0) 100%)";
+  "radial-gradient(75% 160% at 50% 50%, rgba(255, 61, 0, 0.95) 0%, rgba(255, 255, 255, 0) 100%)";
 
 export function HoverBorderGradient({
   children,

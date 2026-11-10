@@ -233,7 +233,7 @@ export function StockTab({
         <button
           type="button"
           onClick={onNew}
-          className="h-9 shrink-0 border border-[#0066FF] bg-[#0066FF] px-3 text-[11px] uppercase tracking-[0.18em] text-white transition hover:border-[#0052cc] hover:bg-[#0052cc]"
+          className="h-9 shrink-0 border border-[#FF3D00] bg-[#FF3D00] px-3 text-[11px] uppercase tracking-[0.18em] text-white transition hover:border-[#e03500] hover:bg-[#e03500]"
         >
           Nouveau
         </button>
@@ -345,7 +345,7 @@ export function StockTab({
             <p className="mt-3 text-sm leading-relaxed text-white/70">
               <span className="text-white">{pendingDelete.name}</span>
               <span className="text-white/40"> · </span>
-              <span className="uppercase tracking-[0.12em] text-[#7EB3FF]">
+              <span className="uppercase tracking-[0.12em] text-[#ff8a4d]">
                 {pendingDelete.category}
               </span>
               {pendingDelete.variant ? (

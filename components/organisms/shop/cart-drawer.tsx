@@ -60,7 +60,7 @@ export function CartDrawer({
             <img src={IMAGES.editorial} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/75 to-[#050505]/40" />
             <div className="pointer-events-none relative z-10 flex h-full max-w-lg flex-col justify-end p-10 lg:p-14">
-              <p className="dingry-typo-eyebrow text-[#0066FF]">DINGRY Paris</p>
+              <p className="dingry-typo-eyebrow text-[#FF3D00]">DINGRY Paris</p>
               <p className="dingry-typo-manifesto mt-4 text-white/75">{DINGRY_MANIFESTO_FR}</p>
               <p className="dingry-typo-street dingry-typo-street--lg mt-3">{DINGRY_STREET_LINE}</p>
               <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/60">{DINGRY_DELIVERY_ESTIMATE}</p>
@@ -112,8 +112,8 @@ export function CartDrawer({
             {items.length === 0 ? (
               <div className="flex-1 flex items-center justify-center px-8 overflow-y-auto">
                 {confirmation ? (
-                  <div data-cart-confirm className="w-full border border-[#0066FF]/40 bg-[#0066FF]/10 p-6">
-                    <p className="text-[10px] tracking-[0.35em] text-[#0066FF] uppercase">Commande validée</p>
+                  <div data-cart-confirm className="w-full border border-[#FF3D00]/40 bg-[#FF3D00]/10 p-6">
+                    <p className="text-[10px] tracking-[0.35em] text-[#FF3D00] uppercase">Commande validée</p>
                     <p className="mt-4 text-sm leading-relaxed text-white">
                       Merci {confirmation.payerName}. Un reçu e-mail vous a été envoyé par PayPal.
                     </p>
@@ -137,7 +137,7 @@ export function CartDrawer({
                     <button
                       type="button"
                       onClick={onDismissConfirmation}
-                      className="mt-6 w-full py-4 bg-white text-[#050505] text-xs font-bold tracking-[0.3em] uppercase hover:bg-[#0066FF] hover:text-white transition-colors"
+                      className="mt-6 w-full py-4 bg-white text-[#050505] text-xs font-bold tracking-[0.3em] uppercase hover:bg-[#FF3D00] hover:text-white transition-colors"
                     >
                       Continuer
                     </button>
@@ -178,7 +178,7 @@ export function CartDrawer({
                       <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase">{item.product.name}</p>
                       <p className="text-sm font-medium tracking-widest uppercase truncate">{item.product.variant}</p>
                       {item.personalization && (
-                        <p className="text-xs text-[#0066FF] mt-1 tracking-wider uppercase">« {item.personalization} »</p>
+                        <p className="text-xs text-[#FF3D00] mt-1 tracking-wider uppercase">« {item.personalization} »</p>
                       )}
                       <div className="mt-2">
                         <p className="text-[9px] tracking-[0.25em] text-white/35 uppercase mb-1.5">Taille</p>
@@ -191,7 +191,7 @@ export function CartDrawer({
                               aria-pressed={item.size === s}
                               className={`min-w-[2.25rem] px-2 py-1 text-[10px] font-medium tracking-widest border transition-colors duration-150 ${
                                 item.size === s
-                                  ? "bg-[#0066FF] border-[#0066FF] text-white"
+                                  ? "bg-[#FF3D00] border-[#FF3D00] text-white"
                                   : "border-white/10 text-white/50 hover:border-white/30 hover:text-white"
                               }`}
                             >
@@ -273,7 +273,7 @@ export function CartDrawer({
                   type="button"
                   onClick={onCheckout}
                   disabled={checkoutDisabled}
-                  className="mt-5 w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#0066FF] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
+                  className="mt-5 w-full bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-[#FF3D00] hover:text-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
                 >
                   Passer au paiement
                 </button>

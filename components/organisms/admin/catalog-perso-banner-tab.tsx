@@ -128,7 +128,7 @@ export function CatalogPersoBannerTab({
             type="checkbox"
             checked={enabled}
             onChange={(event) => setEnabled(event.target.checked)}
-            className="size-4 accent-[#0066FF]"
+            className="size-4 accent-[#FF3D00]"
           />
           <span className="text-[11px] uppercase tracking-[0.16em] text-white/80">Afficher sur la boutique</span>
         </label>
@@ -191,7 +191,7 @@ export function CatalogPersoBannerTab({
         <button
           type="submit"
           disabled={busy}
-          className="h-10 w-full bg-[#0066FF] text-[11px] font-medium uppercase tracking-[0.2em] text-white disabled:opacity-40"
+          className="h-10 w-full bg-[#FF3D00] text-[11px] font-medium uppercase tracking-[0.2em] text-white disabled:opacity-40"
         >
           {busy ? "Enregistrement…" : "Enregistrer la bannière"}
         </button>

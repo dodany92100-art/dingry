@@ -1,7 +1,7 @@
 "use client";
 
 import { DingryLogo } from "@/components/atoms/dingry-logo";
-import { DINGRY_MANIFESTO_EN, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
+import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
 const SECTIONS = [
@@ -45,7 +45,7 @@ export function ShopNav({
             <DingryLogo interactive shimmer animate={false} />
           </a>
           <div className="dingry-nav-tagline hidden md:block" aria-hidden="true">
-            <span className="dingry-typo-manifesto-en">{DINGRY_MANIFESTO_EN}</span>
+            <span className="dingry-typo-manifesto">{DINGRY_MANIFESTO_FR}</span>
             <span className="dingry-typo-street dingry-nav-tagline__street">{DINGRY_STREET_LINE}</span>
           </div>
         </div>
@@ -66,7 +66,7 @@ export function ShopNav({
             type="button"
             onClick={onOpenCart}
             aria-label={cartCount > 0 ? `Panier, ${cartCount} article${cartCount > 1 ? "s" : ""}` : "Ouvrir le panier"}
-            className="dingry-interactive-luxe relative flex h-11 items-center gap-2.5 rounded-sm border border-white/20 bg-white/[0.06] px-3.5 text-white/90 hover:border-[#0066FF]/50 hover:bg-white/[0.1] hover:text-white md:px-4"
+            className="dingry-interactive-luxe relative flex h-11 items-center gap-2.5 rounded-sm border border-white/20 bg-white/[0.06] px-3.5 text-white/90 hover:border-[#FF3D00]/50 hover:bg-white/[0.1] hover:text-white md:px-4"
           >
             <svg
               width="22"
@@ -85,7 +85,7 @@ export function ShopNav({
             </svg>
             <span className="text-[10px] font-medium tracking-[0.22em] uppercase">Panier</span>
             {cartCount > 0 ? (
-              <span className="flex h-5 min-w-5 items-center justify-center bg-[#0066FF] px-1.5 text-[10px] font-bold leading-none text-white">
+              <span className="flex h-5 min-w-5 items-center justify-center bg-[#FF3D00] px-1.5 text-[10px] font-bold leading-none text-white">
                 {cartCount}
               </span>
             ) : null}

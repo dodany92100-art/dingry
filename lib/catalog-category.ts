@@ -24,6 +24,7 @@ const ALIASES: Record<string, CatalogCategory> = {
   "hoodies zippes": "hoodie-zip",
   "hoodie zippé": "hoodie-zip",
   "hoodie zippe": "hoodie-zip",
+  hoodzip: "hoodie-zip",
   crewnecks: "sweats",
   crewneck: "sweats",
   jerseys: "jersey",
@@ -105,7 +106,7 @@ export function catalogMenuTabLabel(tab: string): string {
 export const CATALOG_FILTER_LABEL: Record<CatalogFilter, string> = {
   all: "Collection",
   hoodies: "Hoodies",
-  "hoodie-zip": "Hoodies zippés",
+  "hoodie-zip": "Hoodzip",
   sweats: "Crewnecks",
   "t-shirts": "T-shirts",
   jersey: "Jerseys",

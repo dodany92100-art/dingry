@@ -41,7 +41,7 @@ export function WishlistIconButton({
         "dingry-interactive-luxe flex items-center justify-center rounded-md transition-[color,opacity,transform] duration-200",
         hit,
         active
-          ? "text-[#7EB3FF]/95 drop-shadow-[0_0_12px_rgba(0,102,255,0.35)]"
+          ? "text-[#ff8a4d]/95 drop-shadow-[0_0_12px_rgba(255, 61, 0,0.35)]"
           : "text-white/40 hover:text-white/75",
         className,
       )}

@@ -13,7 +13,7 @@ function EyeIcon({ active }: { active: boolean }) {
       fill="none"
       stroke="currentColor"
       strokeWidth="1.5"
-      className={`h-4 w-4 ${active ? "text-[#7EB3FF]" : "text-white/45"}`}
+      className={`h-4 w-4 ${active ? "text-[#ff8a4d]" : "text-white/45"}`}
     >
       <path
         strokeLinecap="round"
@@ -34,7 +34,7 @@ export function AdminStockPreviewToggle({ active, onChange }: AdminStockPreviewT
       title={active ? "Revenir au mode édition CRM" : "Aperçu temps réel boutique"}
       className={`flex h-9 max-w-full shrink-0 items-center gap-2 border px-2.5 text-[10px] uppercase tracking-[0.12em] transition sm:px-3 sm:tracking-[0.16em] ${
         active
-          ? "border-[#0066FF]/60 bg-[#0066FF]/10 text-[#7EB3FF]"
+          ? "border-[#FF3D00]/60 bg-[#FF3D00]/10 text-[#ff8a4d]"
           : "border-zinc-800 bg-zinc-950 text-white/55 hover:border-zinc-600 hover:text-white/80"
       }`}
     >
