@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 
 export const SECTION_CARD =
-  "dingry-admin-glass relative rounded-3xl px-5 py-6 sm:px-7 sm:py-7";
+  "dingry-admin-glass relative rounded-2xl px-4 py-4 sm:rounded-3xl sm:px-6 sm:py-5";
 export const SECTION_DIRTY =
   "border-l border-l-white/50 pl-[1.125rem] sm:pl-[1.25rem] before:pointer-events-none before:absolute before:left-2 before:top-5 before:h-1.5 before:w-1.5 before:rounded-full before:bg-white before:content-['']";
 
@@ -113,7 +113,7 @@ export function AdminEditorAccordion({
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-zinc-300">{title}</span>
           {subtitle ? (
-            <span className="mt-0.5 block text-[12px] font-normal leading-relaxed text-white/45">
+            <span className="mt-0.5 block text-[10px] font-normal leading-snug text-white/40 sm:text-[11px]">
               {subtitle}
             </span>
           ) : null}
@@ -125,7 +125,7 @@ export function AdminEditorAccordion({
           {open ? "▾" : "▸"}
         </span>
       </button>
-      {open ? <div className="mt-4 min-w-0 space-y-5">{children}</div> : null}
+      {open ? <div className="mt-3 min-w-0 space-y-3 sm:space-y-4">{children}</div> : null}
     </section>
   );
 }

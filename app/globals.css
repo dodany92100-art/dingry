@@ -1131,7 +1131,7 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
   --dingry-admin-bg: #070b14;
   --dingry-admin-surface: rgba(255, 255, 255, 0.06);
   --dingry-admin-border: rgba(255, 255, 255, 0.12);
-  --dingry-admin-header-offset: 4.25rem;
+  --dingry-admin-header-offset: 3.35rem;
   font-family:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
   font-size: 1rem;
@@ -1149,12 +1149,21 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
 
 @media (min-width: 768px) {
   .dingry-admin {
-    --dingry-admin-header-offset: 5.25rem;
+    --dingry-admin-header-offset: 4.75rem;
   }
 }
 
 .dingry-admin-stock-sticky[data-compact] .dingry-admin-glass {
   border-radius: 1rem;
+}
+
+.dingry-product-editor-footer {
+  box-shadow: 0 -10px 28px rgb(0 0 0 / 0.38);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.dingry-product-editor-scroll {
+  scrollbar-gutter: stable;
 }
 
 .dingry-admin h1,
