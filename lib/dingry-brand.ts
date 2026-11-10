@@ -1,18 +1,23 @@
-/** Visuel plein écran accueil teasing + hero boutique (`public/dingry-teasing.jpg`). */
-export const DINGRY_TEASING_HERO_SRC = "/dingry-teasing.jpg";
+/** Visuels marque — CDN R2 (migrés depuis Cloudinary). */
 
-/** Logo navbar / teasing — local (`public/dingry-favicon.jpg`). */
-export const DINGRY_LOGO_URL = "/dingry-favicon.jpg";
+export const DINGRY_TEASING_HERO_SRC =
+  "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/hero/1794331137770-kfid58-teasing-hero.webp";
 
-/** Wordmark Heritage — local (même socle que favicon). */
-export const DINGRY_STREET_WORDMARK_URL = "/dingry-favicon.jpg";
+export const DINGRY_LOGO_URL =
+  "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/logo/1794331149733-i49txc-wordmark-navbar.webp";
 
+/** Wordmark ROCK THE STREET (Heritage). */
+export const DINGRY_STREET_WORDMARK_URL =
+  "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/wordmark/1794331150553-kfhl5x-rock-the-street-title.webp";
+
+/** Symbole favicon local (400×400). */
 export const DINGRY_FAVICON_SRC = "/dingry-favicon.jpg";
 
 export const DINGRY_FAVICON_URL = DINGRY_FAVICON_SRC;
 export const DINGRY_APPLE_ICON_URL = DINGRY_FAVICON_SRC;
 
-export const DINGRY_OG_IMAGE_URL = DINGRY_TEASING_HERO_SRC;
+export const DINGRY_OG_IMAGE_URL =
+  "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/og/1794331151301-3dx70v-open-graph.webp";
 
 export const DINGRY_OPEN_GRAPH_IMAGE = {
   url: DINGRY_OG_IMAGE_URL,
@@ -20,3 +25,7 @@ export const DINGRY_OPEN_GRAPH_IMAGE = {
   height: 630,
   alt: "DINGRY Paris",
 } as const;
+
+/** Panneau éditorial Heritage + lookbook seed. */
+export const DINGRY_EDITORIAL_IMAGE_URL =
+  "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/editorial/1794331147762-gsg88p-rock-the-street.webp";

@@ -1,4 +1,5 @@
 import type { ShopProduct } from "@/lib/catalog";
+import { DINGRY_EDITORIAL_IMAGE_URL, DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
 import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 
 /** Taxonomie officielle marque — source {@link ./dingry-product-taxonomy.ts} */
@@ -11,8 +12,8 @@ export {
 } from "@/lib/dingry-product-taxonomy";
 
 export const IMAGES = {
-  hero1: "",
-  editorial: "",
+  hero1: DINGRY_TEASING_HERO_SRC,
+  editorial: DINGRY_EDITORIAL_IMAGE_URL,
   hoodie1: "",
   hoodie2: "",
   hoodie3: "",

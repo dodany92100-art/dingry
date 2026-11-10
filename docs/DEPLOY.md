@@ -58,6 +58,8 @@ npm run migrate:r2-images
 
 Les hoodies Cloudinary canoniques restent inchangés sauf `--include-cloudinary`.
 
+Visuels marque (hero, éditorial, logos, lookbook CRM) : `npx tsx scripts/migrate-static-brand-to-r2.ts`
+
 ## 5. Redémarrage
 
 ```bash
