@@ -7,6 +7,7 @@ import {
   type CatalogFilter,
 } from "@/lib/catalog-category";
 import { sortCatalogProducts } from "@/lib/catalog-sort";
+import { isVersoCatalogId } from "@/lib/catalog-verso-recto";
 import {
   DINGRY_JERSEY_PRODUCT_IDS,
   DINGRY_SWEAT_PRODUCT_IDS,
@@ -52,8 +53,12 @@ export const SHOP_CATALOG_TABS = ["Collection", ...SHOP_CATEGORY_TABS] as const;
 
 export type ShopCatalogTab = (typeof SHOP_CATALOG_TABS)[number];
 
-/** Retirés boutique (doublons Collection 05 — même photo que 09). */
-export const DINGRY_RETIRED_PRODUCT_IDS = new Set([12, 13, 14, 15, 16]);
+/** Retirés boutique (verso fantômes tees + fiche perso #24 doublon du tee noir #21). */
+export const DINGRY_RETIRED_PRODUCT_IDS = new Set([12, 13, 14, 15, 16, 24]);
+
+/** Hoodie Original BLACK #6 masqué seulement si Paris #25 est dans le catalogue live. */
+export const DINGRY_HOODIE_BLACK_ORIGINAL_ID = 6;
+export const DINGRY_HOODIE_BLACK_PARIS_ID = 25;
 
 export function isActiveShopProduct(product: { id: number }): boolean {
   return !DINGRY_RETIRED_PRODUCT_IDS.has(product.id);
@@ -90,11 +95,22 @@ export function normalizeAdminCategory(value: string): ProductCategory {
   return normalizeProductCategory(value);
 }
 
-/** Cartes grille : hors doublons retirés et hors vues verso. La catégorie ne filtre pas ici. */
+/** Cartes grille : hors verso, ids retirés, doublon #6 si #25 présent, une carte par id. */
 export function toCatalogCards<T extends { id: number; variant?: string }>(products: readonly T[]): T[] {
-  return products.filter(
-    (product) => isActiveShopProduct(product) && !/\bVERSO\b/i.test(product.variant ?? ""),
+  const eligible = products.filter(
+    (product) =>
+      isActiveShopProduct(product) &&
+      !/\bVERSO\b/i.test(product.variant ?? "") &&
+      !isVersoCatalogId(product.id),
   );
+  const hasParisBlack = eligible.some((product) => product.id === DINGRY_HOODIE_BLACK_PARIS_ID);
+  const seenIds = new Set<number>();
+  return eligible.filter((product) => {
+    if (seenIds.has(product.id)) return false;
+    if (product.id === DINGRY_HOODIE_BLACK_ORIGINAL_ID && hasParisBlack) return false;
+    seenIds.add(product.id);
+    return true;
+  });
 }
 
 /** Grille : catégorie stricte, puis cartes recto. `all` garde aussi les catégories inconnues. */

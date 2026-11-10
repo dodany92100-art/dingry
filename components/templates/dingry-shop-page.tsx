@@ -30,6 +30,7 @@ import {
 } from "@/lib/atelier-custom-config";
 import { PERSONALIZABLE_PRODUCT_ID, PRODUCTS } from "@/lib/shop-data";
 import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
+import { bannerConfiguratorInitialLabel } from "@/lib/custom-city-banner";
 import {
   buildFlipPairs,
   resolveSaleProduct,
@@ -230,7 +231,16 @@ function DingryShopPageInner() {
     [selectFilter],
   );
 
-  const openCustom = useCallback(() => setPersonalizeOpen(true), []);
+  const [bannerSeedLabel, setBannerSeedLabel] = useState<string | null>(null);
+  const consumeBannerSeed = useCallback(() => setBannerSeedLabel(null), []);
+
+  const openCustom = useCallback((options?: { initialLabel?: string }) => {
+    const raw = options?.initialLabel?.trim();
+    if (raw) {
+      setBannerSeedLabel(bannerConfiguratorInitialLabel(raw));
+    }
+    setPersonalizeOpen(true);
+  }, []);
 
   function addToCart(from: HTMLElement) {
     const { selectedProduct, selectedSize, selectedQuantity, jerseyColor } = modal;
@@ -352,6 +362,8 @@ function DingryShopPageInner() {
         products={products}
         atelierConfig={atelierConfig}
         fallbackProduct={personalizationProduct}
+        bannerSeedLabel={bannerSeedLabel}
+        onBannerSeedConsumed={consumeBannerSeed}
         onClose={() => setPersonalizeOpen(false)}
         onSubmit={addPersonalized}
       />

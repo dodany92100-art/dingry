@@ -18,16 +18,21 @@ const INDICATOR_LAYOUT_ID = "dingry-admin-main-tab-indicator";
 type TabNavProps = {
   tab: TabId;
   onChange: (tab: TabId) => void;
+  className?: string;
+  /** Sur &lt; 450px, masquer Stock/Brouillons (sélecteur contextuel à la place). */
+  hideStockTabsOnNarrow?: boolean;
 };
 
-export function TabNav({ tab, onChange }: TabNavProps) {
+export function TabNav({ tab, onChange, className = "", hideStockTabsOnNarrow = false }: TabNavProps) {
   return (
     <div
-      className="dingry-admin-glass mb-8 inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15"
+      className={`dingry-admin-glass mb-8 inline-flex max-w-full items-center gap-0.5 overflow-x-auto overscroll-x-contain scroll-smooth rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
       role="tablist"
       aria-label="Sections administration"
     >
       {TABS.map(([id, label]) => {
+        const narrowHidden =
+          hideStockTabsOnNarrow && (id === "produits" || id === "brouillons") ? "max-[449px]:hidden" : "";
         const active = tab === id;
         return (
           <button
@@ -36,7 +41,7 @@ export function TabNav({ tab, onChange }: TabNavProps) {
             role="tab"
             aria-selected={active}
             onClick={() => onChange(id)}
-            className="relative z-0 shrink-0 rounded-full px-3.5 py-2 transition-colors duration-200 md:px-4 md:py-2.5"
+            className={`relative z-0 shrink-0 rounded-full px-3 py-1.5 transition-colors duration-200 md:px-4 md:py-2.5 ${narrowHidden}`}
           >
             {active ? (
               <motion.span

@@ -1,17 +1,14 @@
 "use client";
 
 import { DingryLogo } from "@/components/atoms/dingry-logo";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
 import { normalizeProductCategory } from "@/lib/admin/types";
-import { AdminCategoryFilterNav } from "@/components/organisms/admin/admin-category-filter-nav";
+import { AdminStockStickyFilters } from "@/components/organisms/admin/admin-stock-sticky-filters";
 import { AdminStockListRow } from "@/components/organisms/admin/admin-stock-list-row";
 import { AdminStockProductCard } from "@/components/organisms/admin/admin-stock-product-card";
-import {
-  AdminStockViewToggle,
-  type AdminStockViewMode,
-} from "@/components/organisms/admin/admin-stock-view-toggle";
+import type { AdminStockViewMode } from "@/components/organisms/admin/admin-stock-view-toggle";
 import {
   catalogSlugForAdminProduct,
   sortAdminProductsLikeShop,
@@ -21,7 +18,6 @@ import {
   buildAdminStockMenuSections,
 } from "@/lib/admin/stock-menu-sections";
 import { AdminStockSectionsGrid } from "@/components/organisms/admin/admin-stock-sections-grid";
-import { AdminStockPreviewToggle } from "@/components/organisms/admin/admin-stock-preview-toggle";
 import { AdminStockStorefrontPreview } from "@/components/organisms/admin/admin-stock-storefront-preview";
 import { ADMIN_STOCK_PRODUCT_GRID_CLASS } from "@/components/organisms/shop/catalog-layout";
 import type { StockAutosaveStatusMap } from "@/lib/admin/stock-autosave-types";
@@ -48,6 +44,14 @@ type StockTabProps = {
   categoryFilter: AdminProductCategoryFilter;
   onCategoryFilterChange: (filter: AdminProductCategoryFilter) => void;
   onUnauthorized?: () => void;
+  viewMode: AdminStockViewMode;
+  onViewModeChange: (mode: AdminStockViewMode) => void;
+  storefrontPreview: boolean;
+  onStorefrontPreviewChange: (active: boolean) => void;
+  /** Sélecteur Stock/Brouillons + catégorie (&lt; 450px). */
+  mobileContextSlot?: ReactNode;
+  /** Aperçu + grille/liste dans la barre sticky (md+). */
+  desktopToolbarSlot?: ReactNode;
 };
 
 function filterByAdminCategory(
@@ -103,10 +107,13 @@ export function StockTab({
   categoryFilter,
   onCategoryFilterChange,
   onUnauthorized,
+  viewMode,
+  storefrontPreview,
+  onStorefrontPreviewChange,
+  mobileContextSlot,
+  desktopToolbarSlot,
 }: StockTabProps) {
   const stockControlsBusy = productEditorOpen;
-  const [viewMode, setViewMode] = useState<AdminStockViewMode>("grid");
-  const [storefrontPreview, setStorefrontPreview] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<AdminProduct | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -176,16 +183,13 @@ export function StockTab({
 
   return (
     <div>
-      <div className="mb-5 space-y-3">
-        <div className="flex w-full flex-wrap items-center justify-end gap-2.5">
-          <AdminStockPreviewToggle active={storefrontPreview} onChange={setStorefrontPreview} />
-          {!storefrontPreview ? (
-            <AdminStockViewToggle mode={viewMode} onChange={setViewMode} />
-          ) : null}
-        </div>
-        <div className="min-w-0 space-y-3">
-          <AdminCategoryFilterNav selected={categoryFilter} onChange={onCategoryFilterChange} />
-          <div className="dingry-admin-glass flex h-9 w-full max-w-[17.5rem] items-center gap-2 rounded-full px-3 py-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 transition-[box-shadow] duration-200 focus-within:shadow-[0_0_0_1px_rgba(167,139,250,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] focus-within:ring-violet-400/30 sm:max-w-xs">
+      <AdminStockStickyFilters
+        categoryFilter={categoryFilter}
+        onCategoryChange={onCategoryFilterChange}
+        mobileContextSlot={mobileContextSlot}
+      >
+        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
+          <div className="dingry-admin-glass flex h-9 w-full min-w-0 flex-1 items-center gap-2 rounded-full px-3 py-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 transition-[box-shadow] duration-200 focus-within:shadow-[0_0_0_1px_rgba(167,139,250,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] focus-within:ring-violet-400/30 md:max-w-md">
             <label htmlFor="dingry-admin-stock-search" className="sr-only">
               Rechercher un produit
             </label>
@@ -201,19 +205,20 @@ export function StockTab({
               className="min-w-0 flex-1 border-0 bg-transparent py-0 text-[10px] tracking-[0.08em] text-white placeholder:text-white/35 focus:outline-none"
             />
           </div>
-        </div>
-      </div>
-
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">
-            {publishFilter === "draft" ? "Brouillons" : "Stock"}
-          </p>
-          {categoryFilter !== "Collection" ? (
-            <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/45">
-              Catégorie · {categoryFilter}
-            </p>
+          {desktopToolbarSlot ? (
+            <div className="hidden shrink-0 items-center justify-end gap-2.5 md:flex">{desktopToolbarSlot}</div>
           ) : null}
+        </div>
+      </AdminStockStickyFilters>
+
+      <div className="mb-4 mt-3 flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="hidden text-[10px] uppercase tracking-[0.22em] text-white/40 sm:block">
+            {publishFilter === "draft" ? "Brouillons" : "Stock"}
+            {categoryFilter !== "Collection" ? (
+              <span className="text-white/30"> · {categoryFilter}</span>
+            ) : null}
+          </p>
           {visibleProducts.length > 0 ? (
             <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/55">
               Total pièces · <span className="tabular-nums text-white">{totalStock}</span>

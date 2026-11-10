@@ -1131,6 +1131,7 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
   --dingry-admin-bg: #070b14;
   --dingry-admin-surface: rgba(255, 255, 255, 0.06);
   --dingry-admin-border: rgba(255, 255, 255, 0.12);
+  --dingry-admin-header-offset: 4.25rem;
   font-family:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
   font-size: 1rem;
@@ -1144,6 +1145,16 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
     radial-gradient(900px 500px at 90% 0%, rgba(120, 80, 255, 0.12), transparent 50%),
     linear-gradient(180deg, #0b1020 0%, #070b14 45%, #050810 100%);
   color: rgba(255, 255, 255, 0.92);
+}
+
+@media (min-width: 768px) {
+  .dingry-admin {
+    --dingry-admin-header-offset: 5.25rem;
+  }
+}
+
+.dingry-admin-stock-sticky[data-compact] .dingry-admin-glass {
+  border-radius: 1rem;
 }
 
 .dingry-admin h1,
@@ -1749,6 +1760,48 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
     0 14px 40px rgb(0 0 0 / 0.42),
     0 0 28px rgb(191 149 63 / 0.35);
   transform: translateY(-1px);
+}
+
+.dingry-custom-banner--configurator.dingry-custom-banner--bandeau {
+  max-height: min(18rem, 46vh);
+}
+
+.dingry-custom-banner--configurator .dingry-custom-banner-veil {
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.12) 0%,
+    rgb(0 0 0 / 0.45) 58%,
+    rgb(0 0 0 / 0.78) 100%
+  );
+  opacity: 1;
+}
+
+.dingry-custom-banner-dock {
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 2px;
+  background: rgb(8 10 14 / 0.55);
+  padding: 0.5rem 0.55rem 0.55rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+@media (min-width: 640px) {
+  .dingry-custom-banner-dock {
+    padding: 0.45rem 0.55rem;
+  }
+}
+
+.dingry-custom-banner-dock__cta {
+  width: 100%;
+  justify-content: center;
+  min-height: 2.65rem;
+}
+
+@media (min-width: 640px) {
+  .dingry-custom-banner-dock__cta {
+    width: auto;
+  }
 }
 
 .dingry-custom-banner--gift {

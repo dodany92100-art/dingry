@@ -35,6 +35,8 @@ type PersonalizeModalProps = {
   products: readonly ShopProduct[];
   atelierConfig: ShopAtelierCustomConfig;
   fallbackProduct?: ShopProduct;
+  bannerSeedLabel?: string | null;
+  onBannerSeedConsumed?: () => void;
   onClose: () => void;
   onSubmit: (line: PersonalizedLineInput) => void;
 };
@@ -45,6 +47,8 @@ export function PersonalizeModal({
   products,
   atelierConfig,
   fallbackProduct,
+  bannerSeedLabel,
+  onBannerSeedConsumed,
   onClose,
   onSubmit,
 }: PersonalizeModalProps) {
@@ -59,6 +63,12 @@ export function PersonalizeModal({
     if (models.length === 0) return;
     setModelId((prev) => (models.some((m) => m.id === prev) ? prev : models[0]!.id));
   }, [open, models]);
+
+  useEffect(() => {
+    if (!open || !bannerSeedLabel?.trim()) return;
+    setLabel(clampPersonalizationLabel(bannerSeedLabel));
+    onBannerSeedConsumed?.();
+  }, [bannerSeedLabel, onBannerSeedConsumed, open]);
 
   const model = models.find((m) => m.id === modelId) ?? models[0];
   const saleProduct = useMemo(() => {

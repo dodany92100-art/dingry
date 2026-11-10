@@ -8,11 +8,19 @@ import { ADMIN_PRODUCT_CATEGORY_NAV } from "@/lib/shop-data";
 type AdminCategoryFilterNavProps = {
   selected: AdminProductCategoryFilter;
   onChange: (category: AdminProductCategoryFilter) => void;
+  className?: string;
+  /** Intégré au panneau filtre (sans marges négatives). */
+  embedded?: boolean;
 };
 
 const INDICATOR_LAYOUT_ID = "dingry-admin-category-filter-indicator";
 
-export function AdminCategoryFilterNav({ selected, onChange }: AdminCategoryFilterNavProps) {
+export function AdminCategoryFilterNav({
+  selected,
+  onChange,
+  className = "",
+  embedded = false,
+}: AdminCategoryFilterNavProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<AdminProductCategoryFilter, HTMLButtonElement>());
 
@@ -34,20 +42,22 @@ export function AdminCategoryFilterNav({ selected, onChange }: AdminCategoryFilt
     scroller.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
   }, [selected]);
 
+  const outerClass = embedded ? "min-w-0" : "-mx-6 px-6 md:-mx-10 md:px-10";
+
   return (
-    <div className="-mx-6 px-6 md:-mx-10 md:px-10">
+    <div className={`${outerClass} ${className}`}>
       <div className="relative max-w-full">
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-[#070b14] via-[#070b14]/80 to-transparent md:w-12"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[rgba(7,11,20,0.95)] to-transparent md:w-8"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[#070b14] via-[#070b14]/80 to-transparent md:w-12"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-[rgba(7,11,20,0.95)] via-[rgba(7,11,20,0.55)] to-transparent md:w-14"
           aria-hidden
         />
         <div
           ref={scrollRef}
-          className="overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="overflow-x-auto overscroll-x-contain scroll-smooth pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <div
             className="dingry-admin-glass inline-flex min-w-max items-center gap-0.5 rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15"

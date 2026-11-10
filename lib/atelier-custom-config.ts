@@ -1,5 +1,6 @@
 import type { ShopProduct } from "@/lib/catalog";
-import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
+import { CUSTOM_BANNER_SUGGESTED_CITIES } from "@/lib/custom-city-banner";
+import { DINGRY_PRODUCT_MEDIA, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
 import { IMAGES, PRODUCTS, SIZES } from "@/lib/shop-data";
 
 export type AtelierPreviewTextStyle = "light" | "gold" | "dark";
@@ -34,7 +35,7 @@ export type AdminAtelierCustomConfig = ShopAtelierCustomConfig & {
 export const SHOP_ATELIER_CUSTOM_DEFAULT: AdminAtelierCustomConfig = {
   enabled: true,
   updatedAt: "",
-  suggestedCities: ["PARIS", "LYON", "MARSEILLE", "MILAN"],
+  suggestedCities: [...CUSTOM_BANNER_SUGGESTED_CITIES],
   models: [
     {
       id: "tee-blanc",
@@ -69,9 +70,19 @@ export const SHOP_ATELIER_CUSTOM_DEFAULT: AdminAtelierCustomConfig = {
   ],
 };
 
+/** Tees personnalisables vitrine (#11 blanc, #21 noir — pas hoodie / fiche #24). */
+export const SHOP_ATELIER_ALLOWED_PRODUCT_IDS = new Set<number>([11, 21]);
+
+export function isShopAtelierModel(model: AtelierCustomModel): boolean {
+  return (
+    SHOP_ATELIER_ALLOWED_PRODUCT_IDS.has(model.productId) ||
+    (DINGRY_TEE_PRODUCT_IDS.has(model.productId) && model.productId !== 24)
+  );
+}
+
 export function enabledAtelierModels(config: ShopAtelierCustomConfig): AtelierCustomModel[] {
   if (!config.enabled) return [];
-  return config.models.filter((model) => model.enabled);
+  return config.models.filter((model) => model.enabled && isShopAtelierModel(model));
 }
 
 export function personalizationProductIds(config: ShopAtelierCustomConfig): number[] {
@@ -101,6 +112,18 @@ export function resolvePersonalizationShopProduct(
   };
 }
 
+function mergeAtelierSuggestedCities(stored: readonly string[]): readonly string[] {
+  const ordered = [...CUSTOM_BANNER_SUGGESTED_CITIES];
+  const seen = new Set(ordered);
+  for (const raw of stored) {
+    const city = raw.trim().toUpperCase();
+    if (!city || seen.has(city)) continue;
+    seen.add(city);
+    ordered.push(city);
+  }
+  return ordered;
+}
+
 export function resolveShopAtelierCustomConfig(
   stored: AdminAtelierCustomConfig | ShopAtelierCustomConfig | null | undefined,
 ): ShopAtelierCustomConfig {
@@ -113,10 +136,12 @@ export function resolveShopAtelierCustomConfig(
   }
   return {
     enabled: stored.enabled,
-    models: stored.models.length > 0 ? stored.models : SHOP_ATELIER_CUSTOM_DEFAULT.models,
-    suggestedCities:
-      stored.suggestedCities.length > 0
-        ? stored.suggestedCities
-        : SHOP_ATELIER_CUSTOM_DEFAULT.suggestedCities,
+    models: (() => {
+      const fromStore =
+        stored.models.length > 0 ? stored.models : SHOP_ATELIER_CUSTOM_DEFAULT.models;
+      const tees = fromStore.filter((model) => isShopAtelierModel(model));
+      return tees.length > 0 ? tees : [...SHOP_ATELIER_CUSTOM_DEFAULT.models];
+    })(),
+    suggestedCities: mergeAtelierSuggestedCities(stored.suggestedCities),
   };
 }

@@ -1,12 +1,13 @@
 import type { AdminCatalogPersoBanner, ShopCatalogPersoBanner } from "@/lib/admin/types";
+import { CUSTOM_BANNER_COPY } from "@/lib/custom-city-banner";
 
 /** Textes formulaire admin — pas d’URL image (uniquement R2 + Supabase). */
 export const CATALOG_PERSO_BANNER_COPY: Omit<ShopCatalogPersoBanner, "imageUrl"> = {
   enabled: true,
-  eyebrow: "Custom · Configurateur",
-  title: "Ville, texte sous le logo",
-  subtitle: "Tee personnalisable · aperçu en direct",
-  ctaLabel: "CUSTOM",
+  eyebrow: CUSTOM_BANNER_COPY.eyebrow,
+  title: CUSTOM_BANNER_COPY.title,
+  subtitle: CUSTOM_BANNER_COPY.subtitle,
+  ctaLabel: CUSTOM_BANNER_COPY.cta,
 };
 
 /** @deprecated Préférer CATALOG_PERSO_BANNER_COPY ; imageUrl toujours vide hors CRM. */

@@ -22,7 +22,7 @@ export function AdminHeader({
   const deployedAt = formatCrmBuildLabel();
 
   return (
-    <header className="dingry-admin-glass sticky top-0 z-30 border-b-0 border-white/10 px-6 py-5 md:px-10">
+    <header className="dingry-admin-glass sticky top-0 z-30 border-b-0 border-white/10 px-6 py-4 md:px-10 md:py-5 [--dingry-admin-header-offset:4.25rem] md:[--dingry-admin-header-offset:5.25rem]">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">DINGRY</h1>

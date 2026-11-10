@@ -18,8 +18,13 @@ import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
 import { ReleaseBanner } from "@/components/organisms/admin/release-banner";
 import { AdminActionToast } from "@/components/organisms/admin/admin-action-toast";
+import { AdminCrmTabRow } from "@/components/organisms/admin/admin-crm-tab-row";
+import { AdminStockMobileContextSelect } from "@/components/organisms/admin/admin-stock-mobile-context-select";
+import { AdminStockPreviewToggle } from "@/components/organisms/admin/admin-stock-preview-toggle";
+import { AdminStockViewToggle } from "@/components/organisms/admin/admin-stock-view-toggle";
+import { useAdminStockViewPrefs } from "@/components/organisms/admin/hooks/use-admin-stock-view-prefs";
 import { StockTab } from "@/components/organisms/admin/stock-tab";
-import { TabNav, type TabId } from "@/components/organisms/admin/tab-nav";
+import { type TabId } from "@/components/organisms/admin/tab-nav";
 import {
   countLowStock,
   countPendingShipments,
@@ -92,6 +97,7 @@ function AdminDashboard() {
   const searchParams = useSearchParams();
   const session = useAdminSession();
   const { authenticated, expire } = session;
+  const stockViewPrefs = useAdminStockViewPrefs();
   const productsApi = useAdminProducts({ onUnauthorized: expire });
   const ordersApi = useAdminOrders({ onUnauthorized: expire });
   const lookbookApi = useAdminLookbook({ onUnauthorized: expire });
@@ -412,7 +418,7 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="dingry-admin min-h-screen bg-[#070b14]">
       {session.backupCodes ? (
         <BackupCodesBanner codes={session.backupCodes} onDismiss={session.dismissBackupCodes} />
       ) : null}
@@ -425,8 +431,28 @@ function AdminDashboard() {
       />
       <ReleaseBanner />
 
-      <div className={`px-6 py-6 md:px-10${showWorkflowBanner ? " pb-28" : ""}`}>
-        <TabNav tab={tab} onChange={selectTab} />
+      <div className={`dingry-admin px-6 py-4 md:px-10 md:py-6${showWorkflowBanner ? " pb-28" : ""}`}>
+        <AdminCrmTabRow
+          tab={tab}
+          onChange={selectTab}
+          hideStockTabsOnNarrow={tab === "produits" || tab === "brouillons"}
+          trailing={
+            tab === "produits" || tab === "brouillons" ? (
+              <div className="flex w-full items-center justify-end gap-2.5 md:hidden">
+                <AdminStockPreviewToggle
+                  active={stockViewPrefs.storefrontPreview}
+                  onChange={stockViewPrefs.setStorefrontPreview}
+                />
+                {!stockViewPrefs.storefrontPreview ? (
+                  <AdminStockViewToggle
+                    mode={stockViewPrefs.viewMode}
+                    onChange={stockViewPrefs.setViewMode}
+                  />
+                ) : null}
+              </div>
+            ) : undefined
+          }
+        />
 
         {loadError ? <p className="mb-6 text-sm text-red-400">{loadError}</p> : null}
 
@@ -467,6 +493,32 @@ function AdminDashboard() {
             categoryFilter={categoryFilter}
             onCategoryFilterChange={selectCategory}
             onUnauthorized={expire}
+            viewMode={stockViewPrefs.viewMode}
+            onViewModeChange={stockViewPrefs.setViewMode}
+            storefrontPreview={stockViewPrefs.storefrontPreview}
+            onStorefrontPreviewChange={stockViewPrefs.setStorefrontPreview}
+            mobileContextSlot={
+              <AdminStockMobileContextSelect
+                tab={tab}
+                categoryFilter={categoryFilter}
+                onTabChange={selectTab}
+                onCategoryChange={selectCategory}
+              />
+            }
+            desktopToolbarSlot={
+              <>
+                <AdminStockPreviewToggle
+                  active={stockViewPrefs.storefrontPreview}
+                  onChange={stockViewPrefs.setStorefrontPreview}
+                />
+                {!stockViewPrefs.storefrontPreview ? (
+                  <AdminStockViewToggle
+                    mode={stockViewPrefs.viewMode}
+                    onChange={stockViewPrefs.setViewMode}
+                  />
+                ) : null}
+              </>
+            }
           />
           </>
         ) : tab === "banniere" ? (

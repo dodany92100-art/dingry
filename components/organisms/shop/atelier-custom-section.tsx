@@ -1,15 +1,21 @@
 "use client";
 
 import { DingryLogo } from "@/components/atoms/dingry-logo";
-import { CustomConfiguratorBanner } from "@/components/molecules/custom-configurator-banner";
+import {
+  CustomConfiguratorBanner,
+  type OpenCustomOptions,
+} from "@/components/molecules/custom-configurator-banner";
 import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
 
 type AtelierCustomSectionProps = {
-  onOpenCustom: () => void;
+  onOpenCustom: (options?: OpenCustomOptions) => void;
   persoBanner: ShopCatalogPersoBanner;
 };
 
-export function AtelierCustomSection({ onOpenCustom, persoBanner }: AtelierCustomSectionProps) {
+export function AtelierCustomSection({
+  onOpenCustom,
+  persoBanner,
+}: AtelierCustomSectionProps) {
   return (
     <section className="dingry-gold-rule-top scroll-mt-28 pb-12 pt-10 md:pb-16 md:pt-14">
       <div className="mb-5 flex flex-col gap-4 md:mb-6 md:flex-row md:items-end md:justify-between">
@@ -21,7 +27,7 @@ export function AtelierCustomSection({ onOpenCustom, persoBanner }: AtelierCusto
           </h2>
         </div>
       </div>
-      <CustomConfiguratorBanner onOpen={onOpenCustom} content={persoBanner} />
+      <CustomConfiguratorBanner content={persoBanner} onOpenCustom={onOpenCustom} />
     </section>
   );
 }
