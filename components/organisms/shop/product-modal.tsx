@@ -42,7 +42,7 @@ type ShopProductModalProps = {
   flipPairs: FlipPair[];
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
-  onAddToCart: () => void;
+  onAddToCart: (from: HTMLElement) => void;
   purchaseDisabled?: boolean;
 };
 
@@ -401,7 +401,7 @@ function ProductModalContent({
           <div className={styles.ctaRow}>
             <button
               type="button"
-              onClick={onAddToCart}
+              onClick={(event) => onAddToCart(event.currentTarget)}
               disabled={!selectedSize || cannotPurchase}
               className={`dingry-add-to-cart-btn ${styles.addBtn} ${selectedSize && !cannotPurchase ? styles.addBtnOn : styles.addBtnOff}`}
             >

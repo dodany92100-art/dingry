@@ -3,6 +3,9 @@ import { STORE_VERSION } from "@/lib/admin/types";
 import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
 import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 
+/** Fiches seed retirées — masquées boutique après migration magasin. */
+export const DEFAULT_REMOVED_CATALOG_IDS = ["23"] as const;
+
 const DEFAULT_SIZES = ["S", "M", "L", "XL"] as const;
 
 function product(
@@ -156,17 +159,6 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     "",
     "T-shirts",
     16,
-  ),
-  product(
-    "23",
-    "DINGRY-TF02",
-    "DINGRY CROP TOP",
-    "SIGNATURE — RECTO",
-    35,
-    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_21.13.25_ypgmnf.jpg",
-    "",
-    "Crop tops",
-    13,
   ),
   product(
     "24",
@@ -420,6 +412,7 @@ export function createSeededStore(): AdminStore {
     products: SEEDED_PRODUCTS.map((item) => ({ ...item, sizes: [...item.sizes] })),
     orders: SEEDED_ORDERS.map((item) => ({ ...item, items: [...item.items] })),
     lookbook: seededLookbookSlides(),
+    removedCatalogIds: [...DEFAULT_REMOVED_CATALOG_IDS],
     removedLookbookSlideIds: [],
     priceFamilies: [],
     makerTemplates: [],

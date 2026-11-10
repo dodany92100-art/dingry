@@ -6,7 +6,7 @@ import {
   DINGRY_LEGAL_SUBTITLE,
   DINGRY_SITE_DOMAIN,
 } from "@/lib/dingry-legal";
-export type LegalDocId = "cgv" | "rgpd" | "mentions" | "retours";
+export type LegalDocId = "cgv" | "rgpd" | "mentions" | "retours" | "livraison";
 
 const vendorBlock = `${DINGRY_COMPANY.legalName}, ${DINGRY_COMPANY.legalForm}, au capital de ${DINGRY_COMPANY.shareCapitalEur} €, immatriculée sous le SIREN ${DINGRY_COMPANY.siren} (${DINGRY_COMPANY.rcs}), dont le siège social est situé ${DINGRY_COMPANY.registeredOffice}, exploite la marque ${DINGRY_BRAND_NAME} sur le site ${DINGRY_SITE_DOMAIN}.`;
 
@@ -45,12 +45,12 @@ export const LEGAL_DOCUMENTS: Record<
   },
   cgv: {
     title: "Conditions générales de vente (CGV)",
-    subtitle: "DINGRY — dingry.com · Dernière mise à jour : 06/11/2026",
+    subtitle: "DINGRY — dingry.fr · Dernière mise à jour : 06/11/2026",
     sections: [
       {
         heading: "1. Objet",
         body:
-          "Les présentes Conditions Générales de Vente (CGV) régissent les ventes de vêtements et accessoires proposés par DINGRY sur le site dingry.com. Toute commande passée sur le site implique l'acceptation pleine et entière des présentes CGV par le client.",
+          "Les présentes Conditions Générales de Vente (CGV) régissent les ventes de vêtements et accessoires proposés par DINGRY sur le site dingry.fr. Toute commande passée sur le site implique l'acceptation pleine et entière des présentes CGV par le client.",
       },
       {
         heading: "2. Produits et prix",
@@ -60,17 +60,15 @@ export const LEGAL_DOCUMENTS: Record<
       {
         heading: "3. Commande et paiement",
         body:
-          "Les commandes sont effectuées directement sur le site dingry.com. Le paiement est exigible immédiatement et s'effectue via PayPal, avec un compte PayPal ou par carte bancaire lorsque cette option est proposée par PayPal. La commande est considérée comme définitive après validation du paiement et réception d'un e-mail de confirmation. En raison du caractère parfois limité des collections, les stocks disponibles peuvent être restreints. Une commande ne peut être confirmée au-delà des quantités réellement disponibles.",
+          "Les commandes sont effectuées directement sur le site dingry.fr. Le paiement est exigible immédiatement et s'effectue via PayPal, avec un compte PayPal ou par carte bancaire lorsque cette option est proposée par PayPal. La commande est considérée comme définitive après validation du paiement et réception d'un e-mail de confirmation. En raison du caractère parfois limité des collections, les stocks disponibles peuvent être restreints. Une commande ne peut être confirmée au-delà des quantités réellement disponibles.",
       },
       {
         heading: "4. Livraison",
-        body:
-          "Les commandes sont expédiées à l'adresse renseignée par le client lors de son achat. Les délais de livraison annoncés sont généralement de 3 à 7 jours ouvrés en France métropolitaine, sauf indication contraire au moment de la commande. Les frais de livraison sont indiqués avant le paiement. En cas de retard, de perte ou de détérioration du colis, le client est invité à contacter DINGRY à l'adresse : dingry@gmail.com. La responsabilité des risques liés au transport est transférée au client uniquement au moment où celui-ci, ou un tiers désigné par lui, prend physiquement possession du colis.",
+        body: `Les commandes sont expédiées à l'adresse renseignée par le client lors de son achat. Les délais de livraison annoncés sont généralement de 3 à 7 jours ouvrés en France métropolitaine, sauf indication contraire au moment de la commande. Les frais de livraison sont à la charge du client, déterminés selon la destination et le transporteur choisi, et sont indiqués avant la validation définitive de la commande (voir la Politique tarifaire — frais de livraison sur le site). En cas de retard, de perte ou de détérioration du colis, le client est invité à contacter DINGRY à l'adresse : ${DINGRY_CONTACT_EMAIL}. La responsabilité des risques liés au transport est transférée au client uniquement au moment où celui-ci, ou un tiers désigné par lui, prend physiquement possession du colis.`,
       },
       {
         heading: "5. Droit de rétractation et retours",
-        body:
-          "Conformément au Code de la consommation, le client dispose d'un délai légal de 14 jours à compter de la réception de sa commande pour exercer son droit de rétractation, sans avoir à justifier sa décision. Pour exercer ce droit, le client doit informer DINGRY par e-mail à : dingry@gmail.com ou utiliser la fonctionnalité de rétractation disponible sur le site. Les articles doivent être retournés dans un état permettant leur remise en vente, sans avoir été portés ni lavés, au-delà des manipulations nécessaires pour les essayer. Les frais de retour sont à la charge du client, sauf en cas d'article défectueux ou d'erreur imputable à DINGRY. Le remboursement sera effectué dans les délais légaux, via le moyen de paiement initial. Les articles soldés ou issus de collections limitées restent soumis au droit légal de rétractation.",
+        body: `Conformément au Code de la consommation, le client dispose d'un délai légal de 14 jours à compter de la réception de sa commande pour exercer son droit de rétractation, sans avoir à justifier sa décision. Pour exercer ce droit, le client doit informer DINGRY par e-mail à : ${DINGRY_CONTACT_EMAIL} ou utiliser la fonctionnalité de rétractation disponible sur le site. Les articles doivent être retournés dans un état permettant leur remise en vente, sans avoir été portés ni lavés, au-delà des manipulations nécessaires pour les essayer. Les frais de retour sont à la charge du client, sauf en cas d'article défectueux ou d'erreur imputable à DINGRY. Le remboursement sera effectué dans les délais légaux, via le moyen de paiement initial. Les articles soldés ou issus de collections limitées restent soumis au droit légal de rétractation.`,
       },
       {
         heading: "6. Garanties légales",
@@ -84,19 +82,18 @@ export const LEGAL_DOCUMENTS: Record<
       },
       {
         heading: "8. Service client et litiges",
-        body:
-          "Pour toute question, réclamation ou demande concernant une commande, le client peut contacter DINGRY : dingry@gmail.com. En cas de désaccord, le client est invité à contacter DINGRY afin de rechercher une solution amiable. À défaut de résolution amiable, le client peut recourir gratuitement au médiateur de la consommation dont relève DINGRY, dont les coordonnées seront communiquées sur le site. Les présentes CGV sont soumises au droit français. Les dispositions légales protectrices du consommateur restent applicables. DINGRY — Des pièces, pas des compromis.",
+        body: `Pour toute question, réclamation ou demande concernant une commande, le client peut contacter DINGRY : ${DINGRY_CONTACT_EMAIL}. En cas de désaccord, le client est invité à contacter DINGRY afin de rechercher une solution amiable. À défaut de résolution amiable, le client peut recourir gratuitement au médiateur de la consommation dont relève DINGRY, dont les coordonnées seront communiquées sur le site. Les présentes CGV sont soumises au droit français. Les dispositions légales protectrices du consommateur restent applicables. DINGRY — Des pièces, pas des compromis.`,
       },
     ],
   },
   rgpd: {
     title: "Politique de confidentialité",
-    subtitle: "DINGRY — dingry.com · Dernière mise à jour : 06/11/2026",
+    subtitle: "DINGRY — dingry.fr · Dernière mise à jour : 06/11/2026",
     sections: [
       {
         heading: "1. Introduction",
         body:
-          "DINGRY accorde une importance particulière à la protection des données personnelles de ses clients et visiteurs. La présente politique explique quelles données sont collectées sur dingry.com, pourquoi elles sont utilisées et quels sont vos droits conformément au Règlement Général sur la Protection des Données (RGPD).",
+          "DINGRY accorde une importance particulière à la protection des données personnelles de ses clients et visiteurs. La présente politique explique quelles données sont collectées sur dingry.fr, pourquoi elles sont utilisées et quels sont vos droits conformément au Règlement Général sur la Protection des Données (RGPD).",
       },
       {
         heading: "2. Données collectées",
@@ -121,12 +118,11 @@ export const LEGAL_DOCUMENTS: Record<
       {
         heading: "6. Cookies",
         body:
-          "Le site dingry.com peut utiliser des cookies nécessaires à son fonctionnement ainsi que, sous réserve du consentement du visiteur, des cookies destinés à mesurer l'audience ou à améliorer l'expérience de navigation. Chaque visiteur peut accepter, refuser ou personnaliser les cookies non essentiels via le bandeau de gestion des cookies du site.",
+          "Le site dingry.fr peut utiliser des cookies nécessaires à son fonctionnement ainsi que, sous réserve du consentement du visiteur, des cookies destinés à mesurer l'audience ou à améliorer l'expérience de navigation. Chaque visiteur peut accepter, refuser ou personnaliser les cookies non essentiels via le bandeau de gestion des cookies du site.",
       },
       {
         heading: "7. Vos droits",
-        body:
-          "Conformément au RGPD, chaque utilisateur dispose notamment des droits suivants : droit d'accès à ses données ; droit de rectification ; droit à l'effacement, dans les limites légales ; droit d'opposition ; droit à la limitation du traitement ; droit à la portabilité lorsque celui-ci est applicable. Pour exercer vos droits, vous pouvez contacter DINGRY à l'adresse suivante : dingry@gmail.com. Vous pouvez également adresser une réclamation à la CNIL : www.cnil.fr.",
+        body: `Conformément au RGPD, chaque utilisateur dispose notamment des droits suivants : droit d'accès à ses données ; droit de rectification ; droit à l'effacement, dans les limites légales ; droit d'opposition ; droit à la limitation du traitement ; droit à la portabilité lorsque celui-ci est applicable. Pour exercer vos droits, vous pouvez contacter DINGRY à l'adresse suivante : ${DINGRY_CONTACT_EMAIL}. Vous pouvez également adresser une réclamation à la CNIL : www.cnil.fr.`,
       },
       {
         heading: "8. Sécurité",
@@ -136,13 +132,13 @@ export const LEGAL_DOCUMENTS: Record<
       {
         heading: "9. Modification de la politique",
         body:
-          "DINGRY se réserve le droit de modifier la présente politique afin de tenir compte des évolutions légales ou techniques. La version actualisée sera publiée sur dingry.com. DINGRY — dingry.fr. Des pièces, pas des compromis.",
+          "DINGRY se réserve le droit de modifier la présente politique afin de tenir compte des évolutions légales ou techniques. La version actualisée sera publiée sur dingry.fr. DINGRY — dingry.fr. Des pièces, pas des compromis.",
       },
     ],
   },
   retours: {
     title: "Politique de retours et remboursements",
-    subtitle: "DINGRY — dingry.com · Dernière mise à jour : 06/11/2026",
+    subtitle: "DINGRY — dingry.fr · Dernière mise à jour : 06/11/2026",
     sections: [
       {
         heading: "1. Notre politique",
@@ -151,8 +147,7 @@ export const LEGAL_DOCUMENTS: Record<
       },
       {
         heading: "2. Droit de rétractation — 14 jours",
-        body:
-          "Conformément à la législation française, vous disposez d'un délai de 14 jours calendaires à compter de la réception de votre commande pour exercer votre droit de rétractation, sans avoir à fournir de justification. Ce droit s'applique également aux articles soldés et aux collections en édition limitée. Pour effectuer une demande, contactez-nous à : dingry@gmail.com. Indiquez votre numéro de commande et les articles concernés.",
+        body: `Conformément à la législation française, vous disposez d'un délai de 14 jours calendaires à compter de la réception de votre commande pour exercer votre droit de rétractation, sans avoir à fournir de justification. Ce droit s'applique également aux articles soldés et aux collections en édition limitée. Pour effectuer une demande, contactez-nous à : ${DINGRY_CONTACT_EMAIL}. Indiquez votre numéro de commande et les articles concernés.`,
       },
       {
         heading: "3. Conditions de retour",
@@ -171,8 +166,7 @@ export const LEGAL_DOCUMENTS: Record<
       },
       {
         heading: "6. Articles défectueux ou erreurs de commande",
-        body:
-          "Si vous recevez un article défectueux, endommagé ou différent de celui commandé, contactez-nous rapidement à dingry@gmail.com en précisant votre numéro de commande et en joignant, si possible, des photographies. DINGRY étudiera votre demande et proposera une solution adaptée : remplacement, remboursement ou autre solution prévue par les garanties légales applicables. Les frais de retour seront pris en charge par DINGRY lorsque le problème lui est imputable.",
+        body: `Si vous recevez un article défectueux, endommagé ou différent de celui commandé, contactez-nous rapidement à ${DINGRY_CONTACT_EMAIL} en précisant votre numéro de commande et en joignant, si possible, des photographies. DINGRY étudiera votre demande et proposera une solution adaptée : remplacement, remboursement ou autre solution prévue par les garanties légales applicables. Les frais de retour seront pris en charge par DINGRY lorsque le problème lui est imputable.`,
       },
       {
         heading: "7. Articles non retournables",
@@ -181,8 +175,47 @@ export const LEGAL_DOCUMENTS: Record<
       },
       {
         heading: "8. Contact",
+        body: `Pour toute question concernant un retour ou un remboursement, notre service client est disponible à l'adresse suivante : e-mail ${DINGRY_CONTACT_EMAIL} · site ${DINGRY_SITE_DOMAIN}. Nous nous engageons à traiter chaque demande dans les meilleurs délais. DINGRY — ${DINGRY_SITE_DOMAIN}. Des pièces, pas des compromis.`,
+      },
+    ],
+  },
+  livraison: {
+    title: "Politique tarifaire — frais de livraison",
+    subtitle: "DINGRY Paris — dingry.fr · Dernière mise à jour : 10 novembre 2026",
+    sections: [
+      {
+        heading: "1. Principes généraux",
         body:
-          "Pour toute question concernant un retour ou un remboursement, notre service client est disponible à l'adresse suivante : e-mail dingry@gmail.com · site dingry.com. Nous nous engageons à traiter chaque demande dans les meilleurs délais. DINGRY — dingry.com. Des pièces, pas des compromis.",
+          "DINGRY propose différents modes de livraison afin de permettre à ses clients de choisir la solution la plus adaptée à leurs besoins, en fonction de leur destination, du prix et des modalités de transport disponibles. Les frais de livraison sont à la charge du client et s'ajoutent au prix des articles commandés. Aucune livraison n'est systématiquement offerte par DINGRY, sauf mention contraire dans le cadre d'une offre commerciale ponctuelle.",
+      },
+      {
+        heading: "2. Modes de livraison et choix du transporteur",
+        body:
+          "Lors du passage de sa commande, le client peut consulter les différentes solutions de livraison proposées pour sa destination. Lorsque plusieurs transporteurs ou modes de livraison sont disponibles, les options sont présentées afin de permettre au client de comparer les frais correspondants et de sélectionner la solution de son choix. Les solutions proposées peuvent notamment concerner : la livraison à domicile ; la livraison en point relais ou en point de retrait. Les transporteurs susceptibles d'être proposés dépendent des destinations desservies et des services effectivement disponibles au moment de la commande. La présence d'un transporteur ou d'un mode de livraison sur le site ne constitue pas une garantie de disponibilité pour toutes les destinations.",
+      },
+      {
+        heading: "3. Calcul et affichage des frais",
+        body:
+          "Les frais de livraison sont déterminés en fonction des solutions de transport disponibles pour la destination renseignée par le client. Le montant correspondant à chaque option disponible est communiqué avant la validation définitive de la commande. Le client peut ainsi comparer les tarifs proposés et sélectionner son mode de livraison avant de procéder au paiement. Le montant des frais de livraison est ajouté au prix des produits et apparaît dans le récapitulatif final de la commande. Aucun frais de livraison supplémentaire ne peut être ajouté après la validation de la commande sans accord du client.",
+      },
+      {
+        heading: "4. Zones géographiques",
+        body:
+          "DINGRY a vocation à proposer la livraison dans les zones suivantes : France métropolitaine ; pays européens desservis ; destinations internationales desservies. Les possibilités de livraison et les tarifs associés varient selon le pays de destination et les services de transport disponibles. La liste des destinations effectivement accessibles est déterminée lors du passage de la commande. Si aucune solution de livraison n'est disponible pour une destination donnée, la commande ne pourra pas être finalisée pour cette destination.",
+      },
+      {
+        heading: "5. Absence de livraison offerte",
+        body:
+          "Les frais de livraison restent à la charge du client, quel que soit le montant de sa commande. Toutefois, DINGRY se réserve la possibilité de proposer ponctuellement des offres promotionnelles portant sur les frais de livraison. Les conditions de ces offres seront alors précisées sur le site.",
+      },
+      {
+        heading: "6. Modification des tarifs",
+        body:
+          "DINGRY se réserve le droit de modifier les frais de livraison en fonction de l'évolution des tarifs et des conditions appliqués par les transporteurs. Les tarifs applicables à une commande sont ceux affichés au moment de sa validation. Toute modification ultérieure ne s'applique pas rétroactivement aux commandes déjà confirmées.",
+      },
+      {
+        heading: "7. Informations complémentaires",
+        body: `Les modalités d'expédition, les délais estimés, le suivi des colis et les conditions de réception sont détaillés dans la section Livraison des Conditions générales de vente. Pour toute question concernant les frais de livraison, le client peut contacter le service client à l'adresse suivante : ${DINGRY_CONTACT_EMAIL}. DINGRY — Des pièces, pas des compromis.`,
       },
     ],
   },

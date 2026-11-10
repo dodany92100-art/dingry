@@ -15,7 +15,11 @@ import {
   type CheckoutConfirmation,
   type StoredCartItem,
 } from "@/lib/checkout-draft";
-import { DINGRY_DELIVERY_ESTIMATE, DINGRY_SHIPPING_LABEL } from "@/lib/dingry-checkout-copy";
+import {
+  DINGRY_DELIVERY_ESTIMATE,
+  DINGRY_SHIPPING_AMOUNT_HINT,
+  DINGRY_SHIPPING_LABEL,
+} from "@/lib/dingry-checkout-copy";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
 
@@ -375,7 +379,7 @@ export default function CheckoutPage() {
               <div className="mt-4 space-y-2 border-t border-[#e5e7eb] pt-5 text-sm text-[#6b7280]">
                 <div className="flex justify-between items-baseline gap-4">
                   <span>{DINGRY_SHIPPING_LABEL}</span>
-                  <span className="dingry-product-price dingry-product-price--sm dingry-product-price--on-light">0 €</span>
+                  <span className="text-xs tracking-wide text-[#9ca3af] uppercase">{DINGRY_SHIPPING_AMOUNT_HINT}</span>
                 </div>
                 <p className="text-[10px] leading-relaxed tracking-wide text-[#9ca3af]">{DINGRY_DELIVERY_ESTIMATE}</p>
               </div>

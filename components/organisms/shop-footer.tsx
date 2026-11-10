@@ -11,17 +11,18 @@ const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 const LEGAL_LINKS: { id: LegalDocId; label: string }[] = [
   { id: "mentions", label: "Mentions légales" },
   { id: "cgv", label: "CGV" },
+  { id: "livraison", label: "Frais de livraison" },
   { id: "rgpd", label: "Confidentialité" },
   { id: "retours", label: "Retours" },
 ];
 
 const SERVICE_LINES = [
-  "Livraison offerte en France",
-  "Retours gratuits sous 14 jours",
+  "Frais de livraison selon destination",
+  "Droit de rétractation 14 jours",
   "Paiement sécurisé · PayPal",
 ] as const;
 
-const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours"]);
+const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison"]);
 
 function PaymentMarks() {
   return (
@@ -67,7 +68,7 @@ function PaymentMarks() {
 
 function InstagramIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
       <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="12" cy="12" r="4.25" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" />
@@ -98,7 +99,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
         <div className="w-full">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-12">
             <div className="lg:col-span-4">
-              <DingryLogo animate={false} className="h-8 md:h-10" />
+              <DingryLogo animate={false} className="h-11 max-md:max-h-none w-auto md:h-14" />
               <p className="mt-4 text-xs leading-relaxed tracking-[0.06em] text-[#161616]/75">{DINGRY_REASSURANCE_LINE}</p>
             </div>
 
@@ -145,15 +146,16 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
                     {DINGRY_CONTACT_EMAIL}
                   </a>
                 </li>
-                <li>
+                <li className="pt-1">
                   <a
                     href={DINGRY_INSTAGRAM_URL}
                     target="_blank"
                     rel="noreferrer"
-                    className="dingry-footer-link inline-flex items-center gap-2 text-[#161616]"
+                    className="dingry-footer-instagram-cta"
                   >
                     <InstagramIcon />
-                    @dingry_officiel
+                    <span className="dingry-footer-instagram-cta__label">Suivre sur Instagram</span>
+                    <span className="dingry-footer-instagram-cta__handle">@DINGRY_OFFICIEL</span>
                   </a>
                 </li>
               </ul>

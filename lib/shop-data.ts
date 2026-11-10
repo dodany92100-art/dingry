@@ -238,15 +238,6 @@ export const PRODUCTS: ShopProduct[] = [
     category: "T-shirts",
   },
   {
-    id: 23,
-    name: "DINGRY CROP TOP",
-    variant: "SIGNATURE — RECTO",
-    price: 35,
-    image: IMAGES.tee13,
-    description: "",
-    category: "Crop tops",
-  },
-  {
     id: 24,
     name: "DINGRY TEE",
     variant: "PERSONNALISÉ — RECTO",

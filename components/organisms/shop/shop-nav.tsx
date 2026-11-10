@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { Heart } from "lucide-react";
+import { motion, useAnimation, useReducedMotion } from "motion/react";
+import { useFlyAnimationOptional } from "@/hooks/use-fly-animation";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
@@ -33,6 +36,20 @@ export function ShopNav({
   embedded = false,
   shopBasePath = "/",
 }: ShopNavProps) {
+  const fly = useFlyAnimationOptional();
+  const reduceMotion = useReducedMotion();
+  const favorisControls = useAnimation();
+  const cartControls = useAnimation();
+
+  useEffect(() => {
+    if (!fly?.pulse || reduceMotion) return;
+    const controls = fly.pulse.target === "cart" ? cartControls : favorisControls;
+    void controls.start({
+      scale: [1, 1.25, 1],
+      transition: { duration: 0.35, ease: "easeOut" },
+    });
+  }, [fly?.pulse, cartControls, favorisControls, reduceMotion]);
+
   return (
     <nav
       className={
@@ -41,6 +58,17 @@ export function ShopNav({
           : "dingry-gold-rule-bottom fixed top-0 left-0 right-0 z-50 bg-[#12151c]/95 backdrop-blur-md"
       }
     >
+      <svg className="pointer-events-none absolute h-0 w-0" aria-hidden focusable="false">
+        <defs>
+          <linearGradient id="dingry-gold-gradient-nav" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#bf953f" />
+            <stop offset="38%" stopColor="#fcf6ba" />
+            <stop offset="50%" stopColor="#fbf5b7" />
+            <stop offset="62%" stopColor="#fcf6ba" />
+            <stop offset="100%" stopColor="#b38728" />
+          </linearGradient>
+        </defs>
+      </svg>
       <div
         className={`${DINGRY_SHOP_SHELL_CLASS} relative flex items-center justify-between py-2.5 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:py-5`}
       >
@@ -73,23 +101,28 @@ export function ShopNav({
           {onOpenFavorites ? (
             <button
               type="button"
+              data-fly-target="favorites"
               onClick={onOpenFavorites}
               aria-label={
                 favoriteCount > 0
                   ? `Favoris, ${favoriteCount} article${favoriteCount > 1 ? "s" : ""}`
                   : "Voir le catalogue — favoris"
               }
-              className="dingry-interactive-luxe relative flex h-11 w-11 items-center justify-center rounded-sm border border-white/20 bg-white/[0.06] text-white/75 hover:border-[#FF5F00]/45 hover:bg-white/[0.1] hover:text-white md:h-11 md:w-auto md:gap-2 md:px-3.5"
+              className="dingry-nav-favoris-btn dingry-interactive-luxe relative flex h-11 w-11 items-center justify-center rounded-sm border border-white/20 bg-white/[0.06] text-white/75 hover:bg-white/[0.1] hover:text-white md:h-11 md:w-auto md:gap-2 md:px-3.5"
             >
-              <Heart
-                size={20}
-                strokeWidth={1.75}
-                className={favoriteCount > 0 ? "fill-[#FF5F00] text-[#FF5F00]" : "fill-none"}
-                aria-hidden
-              />
+              <motion.span animate={favorisControls} className="inline-flex">
+                <Heart
+                  size={20}
+                  strokeWidth={1.75}
+                  className={
+                    favoriteCount > 0 ? "dingry-nav-favoris-heart--on" : "fill-none stroke-current text-white/75"
+                  }
+                  aria-hidden
+                />
+              </motion.span>
               <span className="hidden text-[10px] font-medium tracking-[0.22em] uppercase md:inline">Favoris</span>
               {favoriteCount > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center bg-[#FF5F00] px-1 text-[10px] font-bold leading-none text-white md:static md:ml-0.5">
+                <span className="dingry-nav-favoris-badge absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center px-1 text-[10px] font-bold leading-none md:static md:ml-0.5">
                   {favoriteCount}
                 </span>
               ) : null}
@@ -97,10 +130,12 @@ export function ShopNav({
           ) : null}
           <button
             type="button"
+            data-fly-target="cart"
             onClick={onOpenCart}
             aria-label={cartCount > 0 ? `Panier, ${cartCount} article${cartCount > 1 ? "s" : ""}` : "Ouvrir le panier"}
             className="dingry-interactive-luxe relative flex h-11 items-center gap-2.5 rounded-sm border border-white/20 bg-white/[0.06] px-3.5 text-white/90 hover:border-[#FF3D00]/50 hover:bg-white/[0.1] hover:text-white md:px-4"
           >
+            <motion.span animate={cartControls} className="inline-flex">
             <svg
               width="22"
               height="22"
@@ -116,6 +151,7 @@ export function ShopNav({
               <circle cx="17" cy="20" r="1.25" fill="currentColor" stroke="none" />
               <path d="M2 3h2.2l2.4 12.4a1.5 1.5 0 0 0 1.48 1.22h9.56a1.5 1.5 0 0 0 1.47-1.18L21 7H6" />
             </svg>
+            </motion.span>
             <span className="text-[10px] font-medium tracking-[0.22em] uppercase">Panier</span>
             {cartCount > 0 ? (
               <span className="flex h-5 min-w-5 items-center justify-center bg-[#FF3D00] px-1.5 text-[10px] font-bold leading-none text-white">

@@ -42,7 +42,7 @@ import {
 import { getSharedRedis } from "@/lib/ratelimit";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { buildStorefrontOnlineProducts } from "@/lib/admin/storefront-online-catalog";
-import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
+import { createSeededStore, DEFAULT_REMOVED_CATALOG_IDS, SEEDED_PRODUCTS } from "@/lib/admin/seed";
 import { PRODUCTS } from "@/lib/shop-data";
 import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
 import { RETIRED_LOOKBOOK_SEED_TITLES, seededLookbookSlides } from "@/lib/admin/lookbook-seed";
@@ -618,7 +618,10 @@ function migrateStore(raw: AdminStore): AdminStore {
     .filter((item): item is AdminProduct => item !== null);
   const byId = new Map(existing.map((item) => [item.id, item]));
   const removed = new Set(
-    (Array.isArray(raw.removedCatalogIds) ? raw.removedCatalogIds : [])
+    [
+      ...(Array.isArray(raw.removedCatalogIds) ? raw.removedCatalogIds : []),
+      ...DEFAULT_REMOVED_CATALOG_IDS,
+    ]
       .map((id) => String(id).trim())
       .filter(Boolean),
   );

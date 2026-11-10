@@ -86,8 +86,11 @@ export function StickyScroll({
           >
             {item.kickerLogo ? (
               <div className="mb-4 max-w-md md:mb-5">
-                <DingryLogo animate={false} className="dingry-editorial-logo h-9 w-auto md:h-11" />
-                <p className="dingry-typo-manifesto mt-4 text-[10px] text-white/75">{DINGRY_MANIFESTO_FR}</p>
+                <DingryLogo
+                  animate={false}
+                  className="dingry-editorial-logo h-9 max-md:max-h-none w-auto md:h-14"
+                />
+                <p className="dingry-typo-manifesto gold-text mt-4 text-[10px]">{DINGRY_MANIFESTO_FR}</p>
               </div>
             ) : item.kicker ? (
               <p className="mb-4 max-w-md text-[10px] font-semibold uppercase tracking-[0.28em] text-[#FF3D00] md:mb-5">

@@ -1195,6 +1195,24 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
   pointer-events: none;
 }
 
+.dingry-nav-favoris-btn:hover {
+  border-color: rgb(191 149 63 / 0.55) !important;
+  box-shadow: 0 0 14px rgb(191 149 63 / 0.22);
+}
+
+.dingry-nav-favoris-heart--on {
+  fill: url(#dingry-gold-gradient-nav);
+  stroke: url(#dingry-gold-gradient-nav);
+  filter: drop-shadow(0 0 6px rgb(252 246 186 / 0.4));
+}
+
+.dingry-nav-favoris-badge {
+  background: var(--dingry-gold-rule-gradient);
+  box-shadow: 0 0 12px rgb(252 246 186 / 0.28);
+  color: #fff;
+  text-shadow: 0 0 1px rgb(252 246 186 / 0.55);
+}
+
 .dingry-catalog-custom-tab {
   border: 1px solid rgb(191 149 63 / 0.55);
   background: linear-gradient(
@@ -2133,6 +2151,59 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
 
 .dingry-footer-classic .dingry-typo-street {
   letter-spacing: 0.03em;
+}
+
+.dingry-footer-instagram-cta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-height: 2.875rem;
+  max-width: 100%;
+  padding: 0.65rem 1.1rem;
+  border: 1px solid rgb(22 22 22 / 0.88);
+  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 10px 28px rgb(0 0 0 / 0.22);
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.dingry-footer-instagram-cta__label {
+  color: rgb(255 255 255 / 0.92);
+}
+
+.dingry-footer-instagram-cta__handle {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: rgb(255 255 255 / 0.08);
+  color: #fcf6ba;
+  letter-spacing: 0.12em;
+}
+
+.dingry-footer-instagram-cta:hover {
+  border-color: #b38728;
+  background: linear-gradient(180deg, #222 0%, #121212 100%);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 12px 32px rgb(0 0 0 / 0.28),
+    0 0 0 1px rgb(179 135 40 / 0.35);
+  transform: translateY(-1px);
+}
+
+.dingry-footer-instagram-cta:hover .dingry-footer-instagram-cta__handle {
+  border-color: rgb(252 246 186 / 0.45);
+  color: #fcf6ba;
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-classic .dingry-footer-eyebrow {

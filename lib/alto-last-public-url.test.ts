@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { DINGRY_TEASER_OPENING_AT } from "@/lib/dingry-teaser-opening";
 import {
   ALTO_LAST_PUBLIC_URL_KEY,
   ALTO_PUBLIC_FALLBACK_PATH,
   buildRelativeUrl,
   isAdminAppPath,
+  normalizeAltoPublicUrl,
   readAltoLastPublicUrl,
   saveAltoLastPublicUrl,
 } from "./alto-last-public-url";
@@ -45,5 +47,13 @@ describe("alto-last-public-url", () => {
   it("utilise la clé sessionStorage attendue", () => {
     saveAltoLastPublicUrl("/websitedx");
     expect(sessionStorage.getItem(ALTO_LAST_PUBLIC_URL_KEY)).toBe("/websitedx");
+  });
+
+  it("redirige Alto / teaser vers /websitedx avant ouverture", () => {
+    const beforeOpen = DINGRY_TEASER_OPENING_AT - 60_000;
+    expect(normalizeAltoPublicUrl("/", beforeOpen)).toBe("/websitedx");
+    expect(normalizeAltoPublicUrl("/?foo=1", beforeOpen)).toBe("/websitedx?foo=1");
+    saveAltoLastPublicUrl("/");
+    expect(readAltoLastPublicUrl()).toBe("/websitedx");
   });
 });

@@ -15,6 +15,7 @@ import { useProductModal } from "@/components/organisms/shop/hooks/use-product-m
 import { useShopCart } from "@/components/organisms/shop/hooks/use-shop-cart";
 import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catalog";
 import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-perso-banner";
+import { FlyAnimationProvider, useFlyAnimation } from "@/hooks/use-fly-animation";
 import { useWishlist } from "@/hooks/use-wishlist";
 import type { PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
@@ -75,7 +76,7 @@ const ShopFooter = dynamic(
 );
 
 /** Boutique : orchestre hooks + organisms/shop. */
-export default function DingryShopPage() {
+function DingryShopPageInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -88,6 +89,7 @@ export default function DingryShopPage() {
   const cart = useShopCart();
   const modal = useProductModal({ products, catalogState });
   const wishlist = useWishlist();
+  const { launchFromElement } = useFlyAnimation();
   const { activeFilter, selectFilter } = useCatalogFilter(scrollToSection);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
 
@@ -163,14 +165,15 @@ export default function DingryShopPage() {
 
   const openCustom = useCallback(() => setPersonalizeOpen(true), []);
 
-  function addToCart() {
-    const { selectedProduct, selectedSize, selectedQuantity, jerseyColor, selectedOptionKey } = modal;
+  function addToCart(from: HTMLElement) {
+    const { selectedProduct, selectedSize, selectedQuantity, jerseyColor } = modal;
     if (catalogState === "error") return;
     if (!selectedProduct || !selectedSize) return;
     if (!isShopProductInStock(selectedProduct)) return;
     const saleProduct = resolveSaleProduct(selectedProduct, products, jerseyColor);
     cart.addLine(saleProduct, selectedSize, selectedQuantity);
     modal.clearSelectionAfterAdd();
+    launchFromElement(from, "cart", "cart");
   }
 
   function addPersonalized(line: PersonalizedLineInput) {
@@ -281,5 +284,13 @@ export default function DingryShopPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function DingryShopPage() {
+  return (
+    <FlyAnimationProvider>
+      <DingryShopPageInner />
+    </FlyAnimationProvider>
   );
 }

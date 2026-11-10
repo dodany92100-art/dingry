@@ -1,6 +1,7 @@
 "use client";
 
 import { Heart } from "lucide-react";
+import { useFlyAnimationOptional } from "@/hooks/use-fly-animation";
 import { cn } from "@/lib/utils";
 
 type WishlistIconButtonProps = {
@@ -25,6 +26,7 @@ export function WishlistIconButton({
   tone = "on-light",
   className,
 }: WishlistIconButtonProps) {
+  const fly = useFlyAnimationOptional();
   const iconSize = size === "md" ? 22 : 18;
   const hit = size === "md" ? "h-11 w-11" : "h-9 w-9";
 
@@ -39,7 +41,11 @@ export function WishlistIconButton({
           event.stopPropagation();
           event.preventDefault();
         }
+        const adding = !active;
         onClick();
+        if (adding && fly) {
+          fly.launchFromElement(event.currentTarget, "favorites", "heart");
+        }
       }}
       className={cn(
         "dingry-interactive-luxe flex items-center justify-center rounded-md transition-[color,opacity,transform] duration-200",

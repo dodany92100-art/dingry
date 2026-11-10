@@ -3,7 +3,11 @@
 import { AnimatePresence, motion } from "motion/react";
 import { cldOpt } from "@/components/molecules/product-card";
 import type { CheckoutConfirmation } from "@/lib/checkout-draft";
-import { DINGRY_DELIVERY_ESTIMATE, DINGRY_SHIPPING_LABEL } from "@/lib/dingry-checkout-copy";
+import {
+  DINGRY_DELIVERY_ESTIMATE,
+  DINGRY_SHIPPING_AMOUNT_HINT,
+  DINGRY_SHIPPING_LABEL,
+} from "@/lib/dingry-checkout-copy";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { IMAGES } from "@/lib/shop-data";
 import { lineUnitPrice, cartLineKey, modalSizesFor, type CartLine } from "@/lib/shop-view";
@@ -275,9 +279,7 @@ export function CartDrawer({
                   </div>
                   <div className="flex justify-between items-baseline gap-4 text-white/55">
                     <span>{DINGRY_SHIPPING_LABEL}</span>
-                    <span className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark">
-                      0 €
-                    </span>
+                    <span className="text-xs tracking-wide text-white/45 uppercase">{DINGRY_SHIPPING_AMOUNT_HINT}</span>
                   </div>
                   <div className="dingry-gold-rule-top relative flex justify-between items-baseline gap-4 pt-3">
                     <span className="text-xs tracking-[0.22em] uppercase text-white/40">Total TTC</span>

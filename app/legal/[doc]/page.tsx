@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 
-const CLOSING_DOCS = new Set<LegalDocId>(["cgv", "rgpd", "retours"]);
+const CLOSING_DOCS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison"]);
 
-const DOCS: LegalDocId[] = ["mentions", "cgv", "rgpd", "retours"];
+const DOCS: LegalDocId[] = ["mentions", "cgv", "livraison", "rgpd", "retours"];
 
 type PageProps = { params: Promise<{ doc: string }> };
 

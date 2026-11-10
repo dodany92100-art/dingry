@@ -40,7 +40,6 @@ export function HeritageSection({ scrollContainerRef }: HeritageSectionProps) {
       <p className="dingry-sticky-copy mt-6 max-w-xl text-sm leading-relaxed text-white/70">
         DINGRY est une attitude. Une vision du luxe qui ne demande pas la permission.
       </p>
-      <p className="mt-6 text-[10px] uppercase tracking-[0.28em] text-white/45">DINGRY — Rock the Street</p>
       <StickyScroll
         scrollContainerRef={scrollContainerRef}
         items={EDITORIAL_SCROLL_ITEMS}
