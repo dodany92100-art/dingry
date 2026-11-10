@@ -3,6 +3,7 @@
 import { Heart } from "lucide-react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
+import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
 const SECTIONS = [
@@ -40,7 +41,9 @@ export function ShopNav({
           : "dingry-gold-rule-bottom fixed top-0 left-0 right-0 z-50 bg-[#12151c]/95 backdrop-blur-md"
       }
     >
-      <div className="relative flex items-center justify-between px-4 py-2.5 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:px-12 md:py-5">
+      <div
+        className={`${DINGRY_SHOP_SHELL_CLASS} relative flex items-center justify-between py-2.5 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:py-5`}
+      >
         <div className="flex min-w-0 items-center gap-4 md:gap-6">
           <a
             href={shopHref(shopBasePath, "/")}

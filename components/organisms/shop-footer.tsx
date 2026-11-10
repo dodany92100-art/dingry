@@ -95,7 +95,7 @@ export function ShopFooter({ onScrollToCatalogue, shopBasePath = "/" }: ShopFoot
   return (
     <>
       <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-14 md:py-16">
-        <div className="mx-auto max-w-6xl px-6 md:px-10">
+        <div className="w-full">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-12">
             <div className="lg:col-span-4">
               <DingryLogo animate={false} className="h-8 md:h-10" />

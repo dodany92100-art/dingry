@@ -44,7 +44,7 @@ export function LookbookCatalogStrip() {
   }, []);
 
   return (
-    <section className="dingry-gold-rule-top scroll-mt-28 px-4 py-16 md:px-12 md:py-20">
+    <section className="dingry-gold-rule-top scroll-mt-28 py-16 md:py-20">
       <p className="dingry-section-eyebrow mb-5 md:mb-6">Lookbook</p>
 
       <div className="relative -mx-1 md:-mx-0">

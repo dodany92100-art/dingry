@@ -8,6 +8,7 @@ import { shopProductCanonicalPath, shopProductDocumentTitle } from "@/lib/seo/sh
 import { LazyWhenVisible } from "@/components/molecules/lazy-when-visible";
 import { BackgroundGradientAnimation } from "@/components/atoms/ui/background-gradient-animation";
 import { CatalogSection } from "@/components/organisms/shop/catalog-section";
+import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
 import { useCatalogFilter } from "@/components/organisms/shop/hooks/use-catalog-filter";
 import { usePageScroll } from "@/components/organisms/shop/hooks/use-page-scroll";
 import { useProductModal } from "@/components/organisms/shop/hooks/use-product-modal";
@@ -187,7 +188,7 @@ export default function DingryShopPage() {
   }
 
   return (
-    <div className="dingry-shop relative h-dvh overflow-x-hidden overflow-hidden text-white">
+    <div className="dingry-shop relative h-dvh w-full overflow-x-hidden overflow-hidden bg-black text-white">
       <BackgroundGradientAnimation
         interactive={false}
         paused={Boolean(modal.selectedProduct) || cart.open || personalizeOpen}
@@ -205,41 +206,43 @@ export default function DingryShopPage() {
         className="dingry-page relative z-10 h-full overflow-x-hidden overflow-y-auto overscroll-y-contain bg-transparent [overflow-anchor:none]"
       >
         <ShopHero />
-        <div id="catalogue-landing" />
-        <CatalogSection
-          tabValue={tabValue}
-          onTabChange={handleTabChange}
-          onOpenCustom={openCustom}
-          catalogState={catalogState}
-          onRetry={retry}
-          filterKey={activeFilter}
-          products={filtered}
-          flipPairs={flipPairs}
-          onOpenProduct={modal.openProductModal}
-          wishlistIds={wishlist.ids}
-          onToggleWishlist={wishlist.toggle}
-          persoBanner={persoBanner}
-        />
-        <LazyWhenVisible
-          scrollRootRef={pageScrollRef}
-          id="lookbook"
-          placeholderClassName="dingry-gold-rule-top min-h-[18rem]"
-        >
-          <LookbookCatalogStrip />
-        </LazyWhenVisible>
-        <LazyWhenVisible
-          scrollRootRef={pageScrollRef}
-          id="heritage"
-          placeholderClassName="dingry-gold-rule-top min-h-[50vh]"
-        >
-          <HeritageSection scrollContainerRef={pageScrollRef} />
-        </LazyWhenVisible>
-        <LazyWhenVisible scrollRootRef={pageScrollRef} placeholderClassName="min-h-32">
-          <ShopFooter
-            shopBasePath={shopBasePath}
-            onScrollToCatalogue={() => scrollToSection("catalogue")}
+        <div className={DINGRY_SHOP_SHELL_CLASS}>
+          <div id="catalogue-landing" />
+          <CatalogSection
+            tabValue={tabValue}
+            onTabChange={handleTabChange}
+            onOpenCustom={openCustom}
+            catalogState={catalogState}
+            onRetry={retry}
+            filterKey={activeFilter}
+            products={filtered}
+            flipPairs={flipPairs}
+            onOpenProduct={modal.openProductModal}
+            wishlistIds={wishlist.ids}
+            onToggleWishlist={wishlist.toggle}
+            persoBanner={persoBanner}
           />
-        </LazyWhenVisible>
+          <LazyWhenVisible
+            scrollRootRef={pageScrollRef}
+            id="lookbook"
+            placeholderClassName="dingry-gold-rule-top min-h-[18rem]"
+          >
+            <LookbookCatalogStrip />
+          </LazyWhenVisible>
+          <LazyWhenVisible
+            scrollRootRef={pageScrollRef}
+            id="heritage"
+            placeholderClassName="dingry-gold-rule-top min-h-[50vh]"
+          >
+            <HeritageSection scrollContainerRef={pageScrollRef} />
+          </LazyWhenVisible>
+          <LazyWhenVisible scrollRootRef={pageScrollRef} placeholderClassName="min-h-32">
+            <ShopFooter
+              shopBasePath={shopBasePath}
+              onScrollToCatalogue={() => scrollToSection("catalogue")}
+            />
+          </LazyWhenVisible>
+        </div>
       </div>
 
       <PersonalizeModal
