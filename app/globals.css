@@ -859,25 +859,61 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
 }
 
 .dingry-catalog-bar--silver .dingry-catalog-custom-tab {
-  border-color: rgb(179 135 40 / 0.55);
-  background: linear-gradient(165deg, rgb(255 255 255 / 0.65) 0%, rgb(204 204 204 / 0.35) 100%);
+  position: relative;
+  z-index: 3;
+  border-color: rgb(154 115 32 / 0.82);
+  background: linear-gradient(
+    168deg,
+    #cfc098 0%,
+    #b8a06e 42%,
+    #a18d58 100%
+  );
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9),
-    0 0 0 1px rgb(0 0 0 / 0.06);
+    inset 0 1px 0 rgb(212 188 130 / 0.4),
+    0 1px 2px rgb(48 38 22 / 0.28);
+}
+
+.dingry-catalog-bar--silver .dingry-catalog-custom-tab .gold-text {
+  background: linear-gradient(135deg, #4a3810 0%, #6b5218 42%, #3d2e0c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .dingry-catalog-bar--silver .dingry-catalog-custom-tab:hover {
-  border-color: rgb(179 135 40 / 0.7);
+  border-color: rgb(179 135 40 / 0.92);
+  background: linear-gradient(
+    168deg,
+    #d9c9a2 0%,
+    #c0aa78 45%,
+    #ab9660 100%
+  );
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9),
-    0 0 14px rgb(179 135 40 / 0.18);
+    inset 0 1px 0 rgb(220 198 140 / 0.45),
+    0 1px 3px rgb(48 38 22 / 0.32);
 }
 
 .dingry-catalog-bar--silver .dingry-catalog-custom-tab--active {
-  background: linear-gradient(165deg, rgb(255 255 255 / 0.72) 0%, rgb(210 218 228 / 0.98) 100%);
+  border-color: rgb(191 149 63 / 0.95);
+  background: linear-gradient(
+    168deg,
+    #b8a06e 0%,
+    #9a8558 55%,
+    #8a784c 100%
+  );
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.95),
-    0 0 18px rgb(179 135 40 / 0.28);
+    inset 0 1px 0 rgb(184 152 88 / 0.35),
+    inset 0 -1px 0 rgb(60 48 28 / 0.18),
+    0 1px 2px rgb(40 32 18 / 0.35);
+}
+
+.dingry-catalog-bar--silver .dingry-catalog-custom-tab--active .gold-text {
+  background: linear-gradient(135deg, #2e2308 0%, #4d3a10 50%, #2a2008 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .dingry-shop .dingry-catalog-surface {
@@ -1385,35 +1421,20 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
 
 .dingry-catalog-custom-tab {
   border: 1px solid rgb(191 149 63 / 0.55);
-  background: linear-gradient(
-    165deg,
-    rgb(18 21 28 / 0.95) 0%,
-    rgb(26 22 14 / 0.92) 55%,
-    rgb(14 18 28 / 0.95) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 rgb(252 246 186 / 0.12),
-    0 0 0 1px rgb(191 149 63 / 0.08);
+  background: rgb(16 18 24 / 0.96);
+  box-shadow: none;
 }
 
 .dingry-catalog-custom-tab:hover {
   border-color: rgb(252 246 186 / 0.65);
-  box-shadow:
-    inset 0 1px 0 rgb(252 246 186 / 0.16),
-    0 0 16px rgb(191 149 63 / 0.22);
+  background: rgb(20 22 30 / 0.98);
+  box-shadow: none;
 }
 
 .dingry-catalog-custom-tab--active {
   border-color: rgb(252 246 186 / 0.75);
-  background: linear-gradient(
-    165deg,
-    rgb(22 26 36 / 0.98) 0%,
-    rgb(34 28 16 / 0.95) 50%,
-    rgb(18 22 32 / 0.98) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 rgb(252 246 186 / 0.2),
-    0 0 22px rgb(191 149 63 / 0.38);
+  background: rgb(14 16 22 / 0.98);
+  box-shadow: none;
 }
 
 .dingry-gold-pill-btn,
