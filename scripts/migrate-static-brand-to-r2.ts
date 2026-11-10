@@ -17,8 +17,8 @@ const BRAND_ASSETS = [
   {
     id: "hero-shop",
     folder: "dingry/brand/hero",
-    label: "teasing-hero",
-    source: `${CLOUD}/f_auto,q_auto,w_1920,c_crop,g_north,h_1430,w_1960/v1793310395/014c39fa-7191-491e-a893-a58b934498dd_no55a0.jpg`,
+    label: "dingry-home",
+    source: `${CLOUD}/v1787869217/dingry-home_agf2gc.jpg`,
   },
   {
     id: "editorial",

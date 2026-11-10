@@ -1,7 +1,7 @@
 /** Visuels marque — CDN R2 (migrés depuis Cloudinary). */
 
 export const DINGRY_TEASING_HERO_SRC =
-  "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/hero/1794331137770-kfid58-teasing-hero.webp";
+  "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/hero/1794332419220-sbgopx-dingry-home.webp";
 
 export const DINGRY_LOGO_URL =
   "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/logo/1794331149733-i49txc-wordmark-navbar.webp";
