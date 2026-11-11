@@ -18,7 +18,6 @@ const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livrai
 const COLLECTION_SEO_LINKS: { label: string; filter: CatalogFilter }[] = [
   { label: "Hoodies & sweats oversize", filter: "hoodies" },
   { label: "T-shirts streetwear", filter: "t-shirts" },
-  { label: "Ensembles & pants", filter: "pants" },
   { label: "Nouveautés & exclusivités", filter: "all" },
 ];
 
@@ -32,7 +31,7 @@ function FooterNavColumn({
   className?: string;
 }) {
   return (
-    <div className={`flex flex-col items-center text-center sm:items-start sm:text-left ${className}`}>
+    <div className={`flex flex-col items-start text-left ${className}`}>
       <p className="dingry-footer-eyebrow mb-3">{title}</p>
       <ul className="space-y-2">{children}</ul>
     </div>
@@ -128,7 +127,8 @@ export function ShopFooter({
     scrollToSection("catalogue");
   }
 
-  const boutiqueLinkClass = "dingry-footer-link text-[11px] tracking-[0.12em] transition-colors";
+  const boutiqueLinkClass =
+    "dingry-footer-link block w-full text-left text-[11px] tracking-[0.12em] transition-colors";
 
   function goCatalogFilter(filter: CatalogFilter) {
     if (onSelectCatalogFilter) {
@@ -142,8 +142,8 @@ export function ShopFooter({
     <>
       <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-8 md:py-10">
         <div className="w-full">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:items-start lg:gap-8 xl:gap-10">
-            <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 sm:gap-y-10 lg:grid-cols-4 lg:items-start lg:gap-8 xl:gap-10">
+            <div className="col-span-2 flex flex-col items-start text-left sm:col-span-1">
               <DingryLogo animate={false} tone="on-light" className="h-10 w-auto max-md:max-h-none md:h-12" />
               <p className={`dingry-typo-manifesto mt-3 max-w-[14rem] text-[10px] text-[#161616]/52`}>
                 {DINGRY_MANIFESTO_FR}
@@ -157,11 +157,8 @@ export function ShopFooter({
                 <InstagramIcon />
                 <span>@dingry_officiel</span>
               </a>
-              <div className="mt-6 flex flex-col items-center sm:items-start">
-                <p className="dingry-footer-eyebrow mb-2 text-[#161616]/50">Contact</p>
-                <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
-                  Nous écrire
-                </button>
+              <div className="mt-6 w-full sm:max-w-[20rem]">
+                <DingryNewsletterForm />
               </div>
             </div>
 
@@ -175,7 +172,7 @@ export function ShopFooter({
               ))}
             </FooterNavColumn>
 
-            <FooterNavColumn title="L'atelier & concept">
+            <FooterNavColumn title="L'atelier" className="max-sm:col-span-2">
               <li>
                 <button
                   type="button"
@@ -185,7 +182,7 @@ export function ShopFooter({
                   }}
                   className={boutiqueLinkClass}
                 >
-                  Personnalisation villes / custom
+                  Personnalisation custom
                 </button>
               </li>
               <li>
@@ -211,7 +208,7 @@ export function ShopFooter({
               </li>
             </FooterNavColumn>
 
-            <div id="mentions-legales" className="flex flex-col items-center text-center sm:items-start sm:text-left">
+            <div id="mentions-legales" className="flex flex-col items-start text-left">
               <p className="dingry-footer-eyebrow mb-3">Informations & accès</p>
               <ul className="space-y-2">
                 <li>
@@ -221,12 +218,17 @@ export function ShopFooter({
                 </li>
                 <li>
                   <button type="button" onClick={() => setLegalDoc("livraison")} className={boutiqueLinkClass}>
-                    Livraisons & retours
+                    Livraison & tarifs
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => setLegalDoc("retours")} className={boutiqueLinkClass}>
+                    Retours & remboursements
                   </button>
                 </li>
                 <li>
                   <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
-                    FAQ & contact
+                    Contact
                   </button>
                 </li>
                 <li>
@@ -242,21 +244,20 @@ export function ShopFooter({
           </div>
 
           <section
-            className="mx-auto mt-10 flex w-full flex-col items-center gap-6 text-center md:mt-12"
-            aria-label="Newsletter et paiement"
+            className="dingry-gold-rule-top mt-10 flex w-full flex-col gap-6 pt-8 md:mt-12"
+            aria-label="Paiement"
           >
-            <DingryNewsletterForm />
-
-            <div className="dingry-gold-rule-top flex w-full max-w-sm flex-col items-center pt-8">
-              <p className="dingry-footer-eyebrow m-0 text-[#161616]/60">Paiement</p>
-              <div className="mt-3 flex justify-center">
-                <PaymentMarks />
+            <div className="flex w-full flex-col items-center gap-6 text-center">
+              <div className="flex w-full flex-col items-center">
+                <p className="dingry-footer-eyebrow m-0 text-[#161616]/60">Paiement</p>
+                <div className="mt-3 flex w-full justify-center">
+                  <PaymentMarks />
+                </div>
               </div>
+              <p className="pb-1 text-[10px] tracking-[0.08em] text-[#161616]/55">
+                © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY · Tous droits réservés
+              </p>
             </div>
-
-            <p className="pb-1 text-[10px] tracking-[0.08em] text-[#161616]/55">
-              © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY · Tous droits réservés
-            </p>
           </section>
         </div>
       </footer>

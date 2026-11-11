@@ -23,7 +23,7 @@ export function DingryNewsletterForm() {
 
   return (
     <div
-      className="dingry-newsletter flex w-full max-w-[18rem] flex-col items-center text-center"
+      className="dingry-newsletter flex w-full max-w-[20rem] flex-col items-start text-left"
       aria-labelledby="dingry-newsletter-title"
     >
       <p id="dingry-newsletter-title" className="dingry-footer-eyebrow m-0 text-[#161616]/50">
@@ -39,9 +39,9 @@ export function DingryNewsletterForm() {
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="mt-3 flex w-full flex-col items-center justify-center gap-2 sm:flex-row sm:items-center sm:justify-center"
+          className="mt-3 flex w-full flex-col items-stretch justify-start gap-2 sm:flex-row sm:items-center sm:justify-start"
         >
-          <label className="flex w-full justify-center sm:w-auto">
+          <label className="flex w-full sm:w-auto">
             <span className="sr-only">E-mail newsletter</span>
             <input
               type="email"

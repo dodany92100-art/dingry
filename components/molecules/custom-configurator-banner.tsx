@@ -1,12 +1,20 @@
 "use client";
 
+import { AnimatedTabs } from "@/components/atoms/ui/animated-tabs";
 import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
 import {
   CUSTOM_BANNER_CITIES,
   CUSTOM_BANNER_COPY,
   resolveCustomBannerBackground,
 } from "@/lib/custom-city-banner";
-import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
+import { useCallback, useMemo, useState } from "react";
+
+const CUSTOM_BANNER_CITY_IDS = CUSTOM_BANNER_CITIES.map((city) => city.id);
+
+function customBannerCityLabel(id: string): string {
+  return CUSTOM_BANNER_CITIES.find((city) => city.id === id)?.label ?? id;
+}
 
 export type OpenCustomOptions = {
   initialLabel?: string;
@@ -31,6 +39,10 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
   const title = content.title.trim() || CUSTOM_BANNER_COPY.title;
   const subtitle = content.subtitle.trim() || CUSTOM_BANNER_COPY.subtitle;
   const ctaLabel = content.ctaLabel.trim() || CUSTOM_BANNER_COPY.cta;
+
+  const onCityChange = useCallback((tab: string) => {
+    setCityId(tab);
+  }, []);
 
   if (!content.enabled) return null;
 
@@ -61,42 +73,29 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
           <p className="dingry-typo-body-alt mt-2 hidden text-sm sm:block">{subtitle}</p>
         </header>
 
-        <div className="dingry-custom-banner-dock flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
-          <span className="dingry-custom-banner-dock__tab inline-flex shrink-0 items-center self-start rounded-sm bg-[rgb(191_149_63/0.92)] px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.22em] text-black">
-            Custom
-          </span>
-
-          <div
-            className="dingry-custom-banner-dock__cities flex min-w-0 flex-1 gap-1 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            role="group"
-            aria-label={CUSTOM_BANNER_COPY.cityField}
-          >
-            {CUSTOM_BANNER_CITIES.map((city) => {
-              const active = city.id === cityId;
-              return (
+        <div className="dingry-catalog-bar dingry-catalog-bar--silver dingry-custom-banner-dock dingry-custom-banner-dock--catalog w-full">
+          <div className="dingry-catalog-bar__chrome py-2 sm:py-2.5">
+            <AnimatedTabs
+              tabs={[...CUSTOM_BANNER_CITY_IDS]}
+              value={cityId}
+              onValueChange={onCityChange}
+              layoutId="dingry-custom-banner-cities"
+              aria-label={CUSTOM_BANNER_COPY.cityField}
+              variant="underline"
+              labelForTab={customBannerCityLabel}
+              endAction={
                 <button
-                  key={city.id}
                   type="button"
-                  onClick={() => setCityId(city.id)}
-                  className={`shrink-0 rounded-sm border px-2.5 py-2 text-[10px] uppercase tracking-[0.14em] backdrop-blur-md transition ${
-                    active
-                      ? "border-white/55 bg-white/22 text-white"
-                      : "border-white/18 bg-black/30 text-white/80 hover:border-white/35"
-                  }`}
+                  onClick={() => onOpenCustom({ initialLabel: previewCity.label })}
+                  className={cn(
+                    "dingry-catalog-custom-tab dingry-custom-banner-dock__open shrink-0 snap-center px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.26em] transition-[border-color,box-shadow,background] duration-200 active:scale-[0.97] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]",
+                  )}
                 >
-                  {city.label}
+                  <span className="gold-text">{ctaLabel}</span>
                 </button>
-              );
-            })}
+              }
+            />
           </div>
-
-          <button
-            type="button"
-            onClick={() => onOpenCustom({ initialLabel: previewCity.label })}
-            className="dingry-custom-banner-cta dingry-custom-banner-dock__cta dingry-gold-pill-btn dingry-hover-border-fill shrink-0 sm:min-w-[10.5rem]"
-          >
-            <span className="gold-text">{ctaLabel}</span>
-          </button>
         </div>
       </div>
     </article>

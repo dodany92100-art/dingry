@@ -2,7 +2,7 @@
 
 export const DINGRY_BRAND_NAME = "DINGRY Paris";
 export const DINGRY_SITE_DOMAIN = "dingry.fr";
-export const DINGRY_CONTACT_EMAIL = "contact@dingry.fr";
+export const DINGRY_CONTACT_EMAIL = "contact@dingry.com";
 export const DINGRY_CONTACT_PHONE = "+33 1 42 00 00 00";
 
 export const DINGRY_COMPANY = {

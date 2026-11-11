@@ -1887,32 +1887,26 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
   opacity: 1;
 }
 
-.dingry-custom-banner-dock {
-  border: 1px solid rgb(255 255 255 / 0.14);
+/* Dock bandeau atelier = même chrome que la barre catalogue */
+.dingry-custom-banner-dock--catalog.dingry-catalog-bar {
+  position: relative;
+  top: auto;
+  z-index: 2;
+  margin: 0;
+  border-bottom: none;
   border-radius: 2px;
-  background: rgb(8 10 14 / 0.55);
-  padding: 0.5rem 0.55rem 0.55rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  overflow: hidden;
+  box-shadow:
+    0 10px 28px rgb(0 0 0 / 0.32),
+    inset 0 0 0 1px rgb(255 255 255 / 0.12);
 }
 
-@media (min-width: 640px) {
-  .dingry-custom-banner-dock {
-    padding: 0.45rem 0.55rem;
-  }
+.dingry-custom-banner-dock--catalog .dingry-catalog-bar__chrome {
+  border-radius: 2px;
 }
 
-.dingry-custom-banner-dock__cta {
-  width: 100%;
-  justify-content: center;
-  min-height: 2.65rem;
-}
-
-@media (min-width: 640px) {
-  .dingry-custom-banner-dock__cta {
-    width: auto;
-  }
+.dingry-custom-banner-dock__open.dingry-catalog-custom-tab {
+  min-height: 2.35rem;
 }
 
 .dingry-custom-banner--gift {
@@ -2094,7 +2088,19 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-custom-banne
 }
 
 html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-gold-pill-btn .gold-text,
-html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-custom-banner-cta .gold-text {
+html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-custom-banner-cta:not(.dingry-custom-banner-cta-pill) .gold-text {
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+html[data-theme="light"]
+  .dingry-shop
+  .dingry-custom-banner-dock--catalog
+  .dingry-catalog-custom-tab
+  .gold-text {
+  background: linear-gradient(135deg, #4a3810 0%, #6b5218 42%, #3d2e0c 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
 }

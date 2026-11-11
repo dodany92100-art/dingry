@@ -138,7 +138,7 @@ export const LEGAL_DOCUMENTS: Record<
   },
   retours: {
     title: "Politique de retours et remboursements",
-    subtitle: "DINGRY — dingry.fr · Dernière mise à jour : 06/11/2026",
+    subtitle: `DINGRY — ${DINGRY_SITE_DOMAIN} · Dernière mise à jour : 05/11/2026`,
     sections: [
       {
         heading: "1. Notre politique",

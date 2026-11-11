@@ -21,11 +21,8 @@ export function HeritageSection({ onOpenHeritage }: HeritageSectionProps) {
           src={DINGRY_HERITAGE_EDITORIAL_SRC}
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
-          style={{ filter: "brightness(0.55) contrast(1.08)" }}
+          className="absolute inset-0 h-full w-full object-cover object-center"
         />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25" aria-hidden />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" aria-hidden />
 
         <div className="relative z-10 flex min-h-[12.5rem] flex-col justify-end gap-4 px-5 py-8 sm:min-h-[14rem] md:min-h-[16.5rem] md:px-10 md:py-11 lg:max-w-[48rem]">
           <h2 className="dingry-sticky-editorial-title text-2xl uppercase leading-tight text-white md:text-4xl">
