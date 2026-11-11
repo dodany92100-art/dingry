@@ -152,12 +152,14 @@ export function ShopFooter({
                 href={DINGRY_INSTAGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="dingry-footer-instagram-inline mt-4 inline-flex items-center gap-2 text-sm tracking-[0.14em]"
+                className="dingry-footer-instagram-cta dingry-footer-instagram-plaque mt-4"
               >
                 <InstagramIcon />
-                <span>@dingry_officiel</span>
+                <span className="dingry-footer-instagram-cta__handle dingry-footer-instagram-plaque__handle">
+                  <span className="gold-text">@dingry_officiel</span>
+                </span>
               </a>
-              <div className="mt-6 w-full sm:max-w-[20rem]">
+              <div className="mt-6 w-full sm:max-w-[26rem]">
                 <DingryNewsletterForm />
               </div>
             </div>

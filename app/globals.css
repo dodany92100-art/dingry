@@ -1887,26 +1887,116 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
   opacity: 1;
 }
 
-/* Dock bandeau atelier = même chrome que la barre catalogue */
-.dingry-custom-banner-dock--catalog.dingry-catalog-bar {
+/* Dock bandeau atelier : largeur au contenu, dégradé jusqu’au bouton Custom */
+.dingry-custom-banner-dock--catalog {
   position: relative;
-  top: auto;
   z-index: 2;
-  margin: 0;
-  border-bottom: none;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.dingry-custom-banner-dock__chrome {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.35rem 0.45rem 0.4rem;
   border-radius: 2px;
   overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    rgb(236 236 236 / 0.97) 0%,
+    rgb(255 255 255 / 0.92) 38%,
+    rgb(228 228 228 / 0.62) 72%,
+    rgb(255 255 255 / 0) 100%
+  );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow:
-    0 10px 28px rgb(0 0 0 / 0.32),
-    inset 0 0 0 1px rgb(255 255 255 / 0.12);
+    0 8px 22px rgb(0 0 0 / 0.28),
+    inset 0 1px 0 rgb(255 255 255 / 0.65);
 }
 
-.dingry-custom-banner-dock--catalog .dingry-catalog-bar__chrome {
-  border-radius: 2px;
+.dingry-custom-banner-dock--catalog .relative.min-w-0 > .absolute {
+  display: none;
 }
 
-.dingry-custom-banner-dock__open.dingry-catalog-custom-tab {
+.dingry-custom-banner-dock--catalog [role="tablist"] button[role="tab"] {
+  color: #3a3a3a !important;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.55);
+}
+
+.dingry-custom-banner-dock--catalog [role="tablist"] button[role="tab"]:hover {
+  color: #141414 !important;
+}
+
+.dingry-custom-banner-dock--catalog [role="tablist"] button[role="tab"][aria-selected="true"] {
+  color: #0a0a0a !important;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+/* Onglet Custom = même rendu que la barre catalogue (silver) */
+.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab {
+  position: relative;
+  z-index: 3;
   min-height: 2.35rem;
+  border-color: rgb(154 115 32 / 0.82);
+  background: linear-gradient(168deg, #cfc098 0%, #b8a06e 42%, #a18d58 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(212 188 130 / 0.4),
+    0 1px 2px rgb(48 38 22 / 0.28);
+}
+
+.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab .gold-text {
+  background: linear-gradient(135deg, #4a3810 0%, #6b5218 42%, #3d2e0c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab:hover {
+  border-color: rgb(179 135 40 / 0.92);
+  background: linear-gradient(168deg, #d9c9a2 0%, #c0aa78 45%, #ab9660 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(220 198 140 / 0.45),
+    0 1px 3px rgb(48 38 22 / 0.32);
+}
+
+.dingry-footer-instagram-plaque {
+  font-size: 0.6875rem;
+  padding: 0.8rem 1.2rem;
+  gap: 0.65rem;
+}
+
+.dingry-footer-instagram-plaque svg {
+  width: 24px;
+  height: 24px;
+  stroke: #bf953f;
+  color: #bf953f;
+}
+
+.dingry-footer-instagram-plaque__handle {
+  font-size: 0.8125rem;
+  padding: 0.3rem 0.65rem;
+  letter-spacing: 0.1em;
+  border-color: rgb(191 149 63 / 0.65);
+  background: rgb(179 135 40 / 0.14);
+  color: inherit;
+}
+
+.dingry-footer-instagram-plaque__handle .gold-text {
+  display: inline-block;
+  text-transform: lowercase;
+}
+
+.dingry-footer-instagram-cta.dingry-footer-instagram-plaque:hover svg {
+  stroke: #fcf6ba;
+  color: #fcf6ba;
+}
+
+.dingry-footer-instagram-cta.dingry-footer-instagram-plaque:hover .dingry-footer-instagram-cta__handle {
+  border-color: rgb(252 246 186 / 0.55);
+  background: rgb(191 149 63 / 0.22);
 }
 
 .dingry-custom-banner--gift {
@@ -2508,6 +2598,10 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
   letter-spacing: 0.12em;
 }
 
+.dingry-footer-instagram-plaque .dingry-footer-instagram-cta__handle {
+  color: inherit;
+}
+
 .dingry-footer-instagram-cta:hover {
   border-color: #b38728;
   background: linear-gradient(180deg, #222 0%, #121212 100%);
@@ -2519,7 +2613,7 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
   transform: translateY(-1px);
 }
 
-.dingry-footer-instagram-cta:hover .dingry-footer-instagram-cta__handle {
+.dingry-footer-instagram-cta:hover .dingry-footer-instagram-cta__handle:not(.dingry-footer-instagram-plaque__handle) {
   border-color: rgb(252 246 186 / 0.45);
   color: #fcf6ba;
 }

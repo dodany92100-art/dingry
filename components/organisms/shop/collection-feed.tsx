@@ -51,7 +51,7 @@ export function CollectionFeed({
         return (
           <div key={section.category} className="scroll-mt-28 space-y-4 md:space-y-5">
             {section.category === "hoodies" ? (
-              <div className="dingry-gold-rule-bottom pb-4 md:pb-5">
+              <div className="pb-4 md:pb-5">
                 <p className="dingry-section-eyebrow">Collection</p>
                 <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{DINGRY_STREET_LINE}</p>
               </div>

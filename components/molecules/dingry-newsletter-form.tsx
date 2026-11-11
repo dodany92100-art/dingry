@@ -23,7 +23,7 @@ export function DingryNewsletterForm() {
 
   return (
     <div
-      className="dingry-newsletter flex w-full max-w-[20rem] flex-col items-start text-left"
+      className="dingry-newsletter flex w-full max-w-full flex-col items-start text-left"
       aria-labelledby="dingry-newsletter-title"
     >
       <p id="dingry-newsletter-title" className="dingry-footer-eyebrow m-0 text-[#161616]/50">

@@ -7,6 +7,7 @@ import {
   CUSTOM_BANNER_COPY,
   resolveCustomBannerBackground,
 } from "@/lib/custom-city-banner";
+import { CATALOG_MENU_TAB_CUSTOM, catalogMenuTabLabel } from "@/lib/shop-catalog";
 import { cn } from "@/lib/utils";
 import { useCallback, useMemo, useState } from "react";
 
@@ -36,10 +37,6 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
   const backgroundUrl = resolveCustomBannerBackground(previewCity.background, content.imageUrl);
 
   const eyebrow = content.eyebrow.trim() || CUSTOM_BANNER_COPY.eyebrow;
-  const title = content.title.trim() || CUSTOM_BANNER_COPY.title;
-  const subtitle = content.subtitle.trim() || CUSTOM_BANNER_COPY.subtitle;
-  const ctaLabel = content.ctaLabel.trim() || CUSTOM_BANNER_COPY.cta;
-
   const onCityChange = useCallback((tab: string) => {
     setCityId(tab);
   }, []);
@@ -68,14 +65,16 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
         <header className="mb-4 max-w-lg text-white [text-shadow:0_1px_10px_rgb(0_0_0/0.65)]">
           <p className="dingry-typo-eyebrow text-[0.62rem]">{eyebrow}</p>
           <h3 id="dingry-custom-banner-title" className="dingry-custom-banner-title mt-2 uppercase">
-            {title}
+            {previewCity.label}
+            <span className="text-white/55"> / </span>
+            <span className="text-white/90">texte</span>
           </h3>
-          <p className="dingry-typo-body-alt mt-2 hidden text-sm sm:block">{subtitle}</p>
         </header>
 
-        <div className="dingry-catalog-bar dingry-catalog-bar--silver dingry-custom-banner-dock dingry-custom-banner-dock--catalog w-full">
-          <div className="dingry-catalog-bar__chrome py-2 sm:py-2.5">
+        <div className="dingry-custom-banner-dock dingry-custom-banner-dock--catalog self-start">
+          <div className="dingry-custom-banner-dock__chrome">
             <AnimatedTabs
+              className="w-fit max-w-full"
               tabs={[...CUSTOM_BANNER_CITY_IDS]}
               value={cityId}
               onValueChange={onCityChange}
@@ -91,7 +90,7 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
                     "dingry-catalog-custom-tab dingry-custom-banner-dock__open shrink-0 snap-center px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.26em] transition-[border-color,box-shadow,background] duration-200 active:scale-[0.97] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]",
                   )}
                 >
-                  <span className="gold-text">{ctaLabel}</span>
+                  <span className="gold-text">{catalogMenuTabLabel(CATALOG_MENU_TAB_CUSTOM)}</span>
                 </button>
               }
             />
