@@ -22,6 +22,8 @@ export const PROXY_MATCHER = [
   "/api/lookbook",
   "/api/banners",
   "/api/catalog-perso-banner",
+  "/api/teaser",
+  "/api/upload",
 ] as const;
 
 const GATE_DENY_HEADERS = {
