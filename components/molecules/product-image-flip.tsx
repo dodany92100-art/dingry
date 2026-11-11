@@ -46,6 +46,8 @@ type ProductImageFlipProps = {
   onTap?: (side: ProductFlipSide) => void;
   /** Double tap rapide : bascule recto ↔ verso (produits avec verso uniquement). */
   onDoubleTapFlip?: () => void;
+  /** Modale : bascule recto / verso (flèches au pointeur souris). */
+  onRequestSide?: (side: ProductFlipSide) => void;
 };
 
 export function ProductImageFlip({
@@ -63,6 +65,7 @@ export function ProductImageFlip({
   imgClassName,
   onTap,
   onDoubleTapFlip,
+  onRequestSide,
 }: ProductImageFlipProps) {
   const flippable = Boolean(backImage);
   const finePointer = useFinePointer();
@@ -157,7 +160,10 @@ export function ProductImageFlip({
   );
 
   if (presentation === "modal") {
+    const modalFlippable = Boolean(backImage?.trim());
     const src = side === "verso" && backImage?.trim() ? backImage : frontImage;
+    const showModalNav = modalFlippable && Boolean(onRequestSide);
+
     return (
       <div className={cn("relative", className)}>
         <DingryProductImage
@@ -170,6 +176,36 @@ export function ProductImageFlip({
           className={imgClassName}
           sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
         />
+        {showModalNav ? (
+          <>
+            <button
+              type="button"
+              aria-label="Afficher le recto"
+              aria-current={side === "recto"}
+              className={cn(
+                "absolute inset-y-0 left-0 z-10 w-1/2 border-0 bg-transparent p-0",
+                side === "recto" ? "cursor-default" : "cursor-pointer",
+              )}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (side !== "recto") onRequestSide?.("recto");
+              }}
+            />
+            <button
+              type="button"
+              aria-label="Afficher le verso"
+              aria-current={side === "verso"}
+              className={cn(
+                "absolute inset-y-0 right-0 z-10 w-1/2 border-0 bg-transparent p-0",
+                side === "verso" ? "cursor-default" : "cursor-pointer",
+              )}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (side !== "verso") onRequestSide?.("verso");
+              }}
+            />
+          </>
+        ) : null}
       </div>
     );
   }

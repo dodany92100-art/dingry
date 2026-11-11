@@ -56,7 +56,7 @@ export function ProductModal(props: ShopProductModalProps) {
   return (
     <AnimatePresence>
       {product && data ? (
-        <ProductModalContent key={product.id} product={product} shell={shell} {...props} />
+        <ProductModalContent product={product} shell={shell} {...props} />
       ) : null}
     </AnimatePresence>
   );
@@ -81,12 +81,14 @@ function ProductModalContent({
   const { modalSide, jerseyColor, selectedSize, selectedQuantity, selectedOptionKey, switchParentOption, modalHeroImage } =
     modal;
   const parentOptions = product.options ?? [];
-  const useParentOptions = parentOptions.length > 1;
+  const isJersey = isJerseyShopProduct(product);
+  const catalogColorVariants = shopProductColorVariants(product.id, products);
+  const showCatalogColorGrid = catalogColorVariants.length > 1 && !isJersey;
+  const useParentOptions = parentOptions.length > 1 && !showCatalogColorGrid;
 
   const activeFlipPair = findActiveFlipPair(product, flipPairs);
   const teeVersoMeta = TEE_VERSO_BY_RECTO_ID[product.id];
   const showSideToggle = Boolean(activeFlipPair || teeVersoMeta);
-  const isJersey = isJerseyShopProduct(product);
   const saleProduct = resolveSaleProduct(product, products, jerseyColor);
   const outOfStock = !isShopProductInStock(saleProduct);
   const cannotPurchase = purchaseDisabled || outOfStock;
@@ -129,6 +131,7 @@ function ProductModalContent({
 
   const sizes = modalSizesFor(product);
   const sizeCols = sizeGridColumns(sizes);
+
   const shopCategory = resolveShopCategory(product.id, product.category);
   const showTurnstileProductTest =
     isTurnstileProductTestEnabled() && isShopTeeCategory(String(shopCategory));
@@ -174,6 +177,7 @@ function ProductModalContent({
                 alt={storefrontProductTitle(product, products)}
                 className={styles.photoFallback}
                 imgClassName={styles.photoCover}
+                onRequestSide={modal.showProductSide}
               />
             ) : useParentOptions ? (
               <DingryVariantProductImage
@@ -216,7 +220,7 @@ function ProductModalContent({
                   className={styles.viewThumbImg}
                   decoding="async"
                 />
-                <span className={styles.viewThumbLabel}>Face</span>
+                <span className={styles.viewThumbLabel}>Recto</span>
               </button>
               <button
                 type="button"
@@ -231,7 +235,7 @@ function ProductModalContent({
                   className={styles.viewThumbImg}
                   decoding="async"
                 />
-                <span className={styles.viewThumbLabel}>Dos</span>
+                <span className={styles.viewThumbLabel}>Verso</span>
               </button>
             </div>
           ) : null}
@@ -271,7 +275,39 @@ function ProductModalContent({
                 <p className={styles.metaText}>{detail.limitedEdition}</p>
               </div>
             ) : null}
-            {useParentOptions ? (
+            <div className={styles.qtyRow}>
+              <p className={styles.qtyPrice} aria-live="polite">
+                {saleProduct.price * selectedQuantity}€
+              </p>
+              <div className={styles.qtyControlColumn}>
+                <span className={styles.qtyLabel}>Quantité</span>
+                <div className={styles.qtyControl}>
+                  <button
+                    type="button"
+                    onClick={() => modal.setSelectedQuantity((quantity) => Math.max(1, quantity - 1))}
+                    aria-label="Diminuer la quantité"
+                    className={styles.qtyBtn}
+                  >
+                    −
+                  </button>
+                  <span className={styles.qtyValue}>{selectedQuantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => modal.setSelectedQuantity((quantity) => Math.min(99, quantity + 1))}
+                    aria-label="Augmenter la quantité"
+                    className={styles.qtyBtn}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+            {showCatalogColorGrid ? (
+              <ProductColorVariantGrid
+                variants={catalogColorVariants}
+                onPickVariant={modal.switchProductVariant}
+              />
+            ) : useParentOptions ? (
               <div className={styles.section}>
                 <p className={styles.sectionLabel}>Couleur</p>
                 <div className={styles.chipRow}>
@@ -293,33 +329,6 @@ function ProductModalContent({
                 </div>
               </div>
             ) : null}
-            <div className={styles.qtyRow}>
-              <div className={styles.qtyLead}>
-                <span className={styles.qtyLabel}>Quantité</span>
-                <p className={styles.qtyPrice} aria-live="polite">
-                  {saleProduct.price * selectedQuantity}€
-                </p>
-              </div>
-              <div className={styles.qtyControl}>
-                <button
-                  type="button"
-                  onClick={() => modal.setSelectedQuantity((quantity) => Math.max(1, quantity - 1))}
-                  aria-label="Diminuer la quantité"
-                  className={styles.qtyBtn}
-                >
-                  −
-                </button>
-                <span className={styles.qtyValue}>{selectedQuantity}</span>
-                <button
-                  type="button"
-                  onClick={() => modal.setSelectedQuantity((quantity) => Math.min(99, quantity + 1))}
-                  aria-label="Augmenter la quantité"
-                  className={styles.qtyBtn}
-                >
-                  +
-                </button>
-              </div>
-            </div>
             {isJersey ? (
               <div className={styles.section}>
                 <p className={styles.sectionLabel}>Couleur</p>
@@ -342,50 +351,54 @@ function ProductModalContent({
                 </div>
               </div>
             ) : null}
-            <p className={styles.sizeLabel}>Sélectionnez une taille</p>
-            <div className={styles.sizeGrid} style={sizeGridVars}>
-              {sizes.map((s) => (
+            <div className={styles.purchaseStack}>
+              <p className={styles.sizeLabel}>Sélectionnez une taille</p>
+              <div className={styles.sizeGrid} style={sizeGridVars}>
+                {sizes.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    aria-pressed={selectedSize === s}
+                    onClick={() => modal.setSelectedSize(s)}
+                    onPointerDown={(event) => {
+                      if (event.pointerType === "touch") modal.setSelectedSize(s);
+                    }}
+                    className={`${styles.sizeBtn} ${selectedSize === s ? styles.sizeOn : ""}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.ctaRow}>
                 <button
-                  key={s}
                   type="button"
-                  aria-pressed={selectedSize === s}
-                  onClick={() => modal.setSelectedSize(s)}
-                  onPointerDown={(event) => {
-                    if (event.pointerType === "touch") modal.setSelectedSize(s);
-                  }}
-                  className={`${styles.sizeBtn} ${selectedSize === s ? styles.sizeOn : ""}`}
+                  onClick={(event) => onAddToCart(event.currentTarget)}
+                  disabled={!selectedSize || cannotPurchase}
+                  className={`dingry-add-to-cart-btn ${styles.addBtn} ${selectedSize && !cannotPurchase ? styles.addBtnOn : styles.addBtnOff}`}
                 >
-                  {s}
+                  {purchaseDisabled
+                    ? "Catalogue indisponible"
+                    : outOfStock
+                      ? "Épuisé"
+                      : "Ajouter au panier"}
                 </button>
-              ))}
+                <WishlistIconButton
+                  size="md"
+                  active={wishlistActive}
+                  label={wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
+                  onClick={() => onToggleWishlist(rectoId)}
+                  className={styles.wishlist}
+                />
+              </div>
             </div>
           </div>
-          <SimilarProductsStrip
-            variants={similar.variants}
-            crossSell={similar.crossSell}
-            catalog={products}
-            onPickVariant={modal.switchProductVariant}
-            onPickCrossSell={modal.openProductModal}
-          />
-          <div className={styles.ctaRow}>
-            <button
-              type="button"
-              onClick={(event) => onAddToCart(event.currentTarget)}
-              disabled={!selectedSize || cannotPurchase}
-              className={`dingry-add-to-cart-btn ${styles.addBtn} ${selectedSize && !cannotPurchase ? styles.addBtnOn : styles.addBtnOff}`}
-            >
-              {purchaseDisabled
-                ? "Catalogue indisponible"
-                : outOfStock
-                  ? "Épuisé"
-                  : "Ajouter au panier"}
-            </button>
-            <WishlistIconButton
-              size="md"
-              active={wishlistActive}
-              label={wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
-              onClick={() => onToggleWishlist(rectoId)}
-              className={styles.wishlist}
+          <div className={styles.similarStripWrap}>
+            <SimilarProductsStrip
+              variants={similar.variants}
+              crossSell={similar.crossSell}
+              catalog={products}
+              onPickVariant={modal.switchProductVariant}
+              onPickCrossSell={modal.openProductModal}
             />
           </div>
           {showTurnstileProductTest ? <ProductCaptchaTest /> : null}

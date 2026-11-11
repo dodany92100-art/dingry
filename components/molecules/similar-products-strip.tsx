@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { DingryProductImage } from "@/components/atoms/dingry-product-image";
+import { ProductColorVariantGrid } from "@/components/molecules/product-color-variant-grid";
 import type { ShopProduct } from "@/lib/catalog";
 import {
   SIMILAR_PRODUCTS_SECTION_LABEL,
@@ -53,6 +54,15 @@ function SimilarProductsStripInner({
   const showRightFade = scrollState.right;
   const showLeftFade = scrollState.left;
 
+  if (variants.length > 0) {
+    return (
+      <div className={styles.root}>
+        <p className={styles.label}>{SIMILAR_PRODUCTS_SECTION_LABEL}</p>
+        <ProductColorVariantGrid variants={variants} onPickVariant={onPickVariant} showLabel={false} />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.root}>
       <p className={styles.label}>{SIMILAR_PRODUCTS_SECTION_LABEL}</p>
@@ -67,30 +77,7 @@ function SimilarProductsStripInner({
           </span>
         ) : null}
         <div ref={rowRef} className={styles.row} onScroll={refreshScrollHints}>
-          {variants.length > 0
-            ? variants.map((item) => (
-                <button
-                  key={item.product.id}
-                  type="button"
-                  disabled={item.comingSoon}
-                  onClick={() => onPickVariant(item.product)}
-                  className={`${styles.card} ${item.comingSoon ? styles.cardDisabled : ""}`}
-                >
-                  <DingryProductImage
-                    src={item.product.image}
-                    alt=""
-                    width={96}
-                    height={128}
-                    deliveryWidth={192}
-                    className={styles.thumb}
-                  />
-                  <span className={styles.caption}>
-                    {item.label}
-                    {item.comingSoon ? " · bientôt" : ""}
-                  </span>
-                </button>
-              ))
-            : crossSell.map((product) => (
+          {crossSell.map((product) => (
                 <button
                   key={product.id}
                   type="button"

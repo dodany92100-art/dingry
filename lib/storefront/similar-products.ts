@@ -1,9 +1,14 @@
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import {
+  DINGRY_HOODIE_BLACK_ORIGINAL_ID,
+  DINGRY_HOODIE_BLACK_PARIS_ID,
+} from "@/lib/shop-catalog";
+import {
   catalogRectoId,
   colorLabelFromShopProduct,
   completeLookForProduct,
   productLineForShop,
+  shopProductForRectoId,
   staticProductLineForCatalogId,
   storefrontProductTitle,
   type ProductLine,
@@ -27,6 +32,9 @@ function shopProductFamilyKey(product: Pick<ShopProduct, "name" | "category">): 
     /\s+(NOIR|BLACK|BLANC|WHITE|CHARCOAL|GRIS CHINÉ|GRIS CHINE|GREY|GRAY|VERT|ROUGE|KING BLUE|PINK|CHOCOLAT|BLEU ROI|ROYAL BLUE|JAUNE FLUO|PURPLE|ZENITH)\s*$/i;
   const category = String(product.category).trim().toUpperCase();
   let family = product.name.trim().replace(/\s+/g, " ").toUpperCase();
+  family = family
+    .replace(/\s+[A-Z0-9][A-Z0-9\s]*(?:\s*\/\s*[A-Z0-9][A-Z0-9\s]*)+\s*$/i, "")
+    .trim();
   family = family.replace(TRAILING_COLOR, "").replace(/\s*\/\s*[^/]+$/i, "").trim();
   return `${category}::${family}`;
 }
@@ -51,6 +59,24 @@ export function resolveProductLineForSimilar(
   return lineFromCatalog;
 }
 
+function colorVariantIsActive(
+  openRectoId: number,
+  cardProduct: ShopProduct,
+  staticVariantRectoId: number,
+): boolean {
+  const cardRecto = catalogRectoId(cardProduct.id);
+  if (cardRecto === openRectoId) return true;
+  if (
+    staticVariantRectoId === DINGRY_HOODIE_BLACK_ORIGINAL_ID &&
+    (openRectoId === DINGRY_HOODIE_BLACK_ORIGINAL_ID ||
+      openRectoId === DINGRY_HOODIE_BLACK_PARIS_ID) &&
+    (cardRecto === DINGRY_HOODIE_BLACK_ORIGINAL_ID || cardRecto === DINGRY_HOODIE_BLACK_PARIS_ID)
+  ) {
+    return true;
+  }
+  return staticVariantRectoId === openRectoId;
+}
+
 function familySiblingCards(productId: number, catalog: readonly ShopProduct[]): SimilarProductCard[] {
   const rectoId = catalogRectoId(productId);
   const anchor = catalog.find((item) => catalogRectoId(item.id) === rectoId);
@@ -71,16 +97,18 @@ function lineVariantCards(productId: number, catalog: readonly ShopProduct[]): S
   const rectoId = catalogRectoId(productId);
   const line = resolveProductLineForSimilar(productId, catalog);
   if (!line || line.variants.length <= 1) return [];
-  const byRecto = new Map(catalog.map((item) => [catalogRectoId(item.id), item]));
   return line.variants.flatMap((variant) => {
-    const product = byRecto.get(variant.rectoId);
-    if (!product) return [];
+    const resolved = shopProductForRectoId(variant.rectoId, catalog);
+    if (!resolved) return [];
+    const { product, fromLive } = resolved;
+    const variantRectoId = catalogRectoId(product.id);
     return [
       {
         product,
         label: variant.colorLabel,
-        isActive: variant.rectoId === rectoId,
-        comingSoon: variant.comingSoon ?? !isShopProductInStock(product),
+        isActive: colorVariantIsActive(rectoId, product, variant.rectoId),
+        comingSoon:
+          variant.comingSoon ?? (!fromLive || !isShopProductInStock(product)),
       },
     ];
   });
@@ -97,8 +125,7 @@ export function shopProductColorVariants(
 ): SimilarProductCard[] {
   const fromLine = lineVariantCards(productId, catalog);
   if (fromLine.length > 1) return fromLine;
-  const fromFamily = familySiblingCards(productId, catalog);
-  return fromFamily;
+  return familySiblingCards(productId, catalog);
 }
 
 /** Déclinaisons même ligne / famille (hors fiche ouverte), sinon pièces complémentaires. */

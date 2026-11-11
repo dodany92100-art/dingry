@@ -9,14 +9,19 @@ import styles from "./product-color-variant-grid.module.css";
 type ProductColorVariantGridProps = {
   variants: SimilarProductCard[];
   onPickVariant: (product: ShopProduct) => void;
+  showLabel?: boolean;
 };
 
-function ProductColorVariantGridInner({ variants, onPickVariant }: ProductColorVariantGridProps) {
+function ProductColorVariantGridInner({
+  variants,
+  onPickVariant,
+  showLabel = true,
+}: ProductColorVariantGridProps) {
   if (variants.length <= 1) return null;
 
   return (
     <div className={styles.root}>
-      <p className={styles.label}>Couleur</p>
+      {showLabel ? <p className={styles.label}>Couleur</p> : null}
       <div className={styles.grid} role="listbox" aria-label="Couleurs disponibles">
         {variants.map((item) => {
           const disabled = item.comingSoon && !item.isActive;

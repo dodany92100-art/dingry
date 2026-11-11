@@ -12,7 +12,9 @@ import {
 } from "@/lib/jersey-shop";
 import { normalizeOptionKey, resolveOptionVisual } from "@/lib/catalog/product-options";
 import { assertShopProductModalReady } from "@/lib/shop-product-integrity";
+import { catalogRectoId } from "@/lib/dingry-product-display";
 import { shopBasePathFromPathname } from "@/lib/shop-base-path";
+import { shopProductColorVariants } from "@/lib/storefront/similar-products";
 import type { CatalogState } from "./use-shop-catalog";
 
 type Options = { products: ShopProduct[]; catalogState: CatalogState };
@@ -67,13 +69,16 @@ export function useProductModal({ products, catalogState }: Options) {
     if (!rectoId) return;
     const product = products.find((item) => item.id === rectoId);
     if (!product) return;
-    if (selectedProduct?.id === product.id) return;
 
-    setSelectedProduct(product);
+    const live = resolveCatalogProduct(product);
+    if (selectedProduct?.id === live.id) return;
+    setSelectedProduct(live);
     setSelectedSize("");
+    setSelectedQuantity(1);
     setModalSide("recto");
-    if (isJerseyShopProduct(product)) {
-      setJerseyColor(jerseyColorKeyFromProduct(product));
+    setSelectedOptionKey(optionKeyForSelection(live));
+    if (isJerseyShopProduct(live)) {
+      setJerseyColor(jerseyColorKeyFromProduct(live));
     }
   }, [catalogState, searchParams, products, selectedProduct?.id]);
 
@@ -109,13 +114,29 @@ export function useProductModal({ products, catalogState }: Options) {
     return def?.optionKey ?? "";
   }
 
+  function usesCatalogColorGrid(product: ShopProduct): boolean {
+    return shopProductColorVariants(product.id, products).length > 1 && !isJerseyShopProduct(product);
+  }
+
+  function optionKeyForSelection(product: ShopProduct): string {
+    if (usesCatalogColorGrid(product)) return "";
+    return defaultOptionKey(product);
+  }
+
+  function resolveCatalogProduct(product: ShopProduct): ShopProduct {
+    const rectoId = catalogRectoId(product.id);
+    return products.find((item) => catalogRectoId(item.id) === rectoId) ?? product;
+  }
+
   function applyProductSelection(product: ShopProduct, side: ProductFlipSide) {
-    setSelectedProduct(product);
+    const live = resolveCatalogProduct(product);
+    setSelectedProduct(live);
     setSelectedSize("");
+    setSelectedQuantity(1);
     setModalSide(side);
-    setSelectedOptionKey(defaultOptionKey(product));
-    if (isJerseyShopProduct(product)) {
-      setJerseyColor(jerseyColorKeyFromProduct(product));
+    setSelectedOptionKey(optionKeyForSelection(live));
+    if (isJerseyShopProduct(live)) {
+      setJerseyColor(jerseyColorKeyFromProduct(live));
     }
   }
 
@@ -130,12 +151,6 @@ export function useProductModal({ products, catalogState }: Options) {
     const options = product.options ?? [];
     if (options.length === 0) return product.image;
     return resolveOptionVisual(product.image, options, selectedOptionKey).image;
-  }
-
-  function scrollProductModalToTop() {
-    window.requestAnimationFrame(() => {
-      productModalRef.current?.scrollTo({ top: 0, behavior: "instant" });
-    });
   }
 
   function warnModalBlocked(product: ShopProduct, reason: string) {
@@ -154,13 +169,8 @@ export function useProductModal({ products, catalogState }: Options) {
       if (selectedIdRef.current === product.id && modalSideRef.current === side) {
         return;
       }
-      const switchingVariant =
-        selectedIdRef.current !== null && selectedIdRef.current !== product.id;
       applyProductSelection(product, side);
       window.requestAnimationFrame(() => syncProductInUrl(product));
-      if (switchingVariant) {
-        scrollProductModalToTop();
-      }
     },
     [syncProductInUrl],
   );
@@ -176,7 +186,6 @@ export function useProductModal({ products, catalogState }: Options) {
       if (selectedIdRef.current === product.id) return;
       applyProductSelection(product, "recto");
       window.requestAnimationFrame(() => syncProductInUrl(product));
-      scrollProductModalToTop();
     },
     [syncProductInUrl],
   );

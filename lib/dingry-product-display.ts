@@ -2,6 +2,8 @@ import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { printPlacementDisplayLabel } from "@/lib/admin/types";
 import { productStoryForShopProduct, type ProductStoryBlock } from "@/lib/dingry-product-copy";
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
+import { DINGRY_HOODIE_BLACK_ORIGINAL_ID, DINGRY_HOODIE_BLACK_PARIS_ID } from "@/lib/shop-catalog";
+import { PRODUCTS } from "@/lib/shop-data";
 
 export const DINGRY_SIZE_GUIDE =
   "Coupe oversize unisexe. Prenez votre taille habituelle pour un fit relaxed ; une taille en dessous pour un porté plus près du corps.";
@@ -56,7 +58,57 @@ const ZIP_OUTLINE_LINE: ProductLine = {
   completeLookRectoIds: [37, 21],
 };
 
-export const DINGRY_PRODUCT_LINES: readonly ProductLine[] = [ORIGINAL_HOODIE_LINE, ZIP_OUTLINE_LINE];
+const CREWNECK_ORIGINAL_LINE: ProductLine = {
+  lineId: "crewneck-original",
+  familyLabel: "Crewneck DINGRY Original",
+  price: 50,
+  materials: "Coton gratté premium, col rond renforcé, finitions soignées.",
+  sizeGuide: DINGRY_SIZE_GUIDE,
+  description: "Crewneck signature DINGRY : col rond, logo poitrine, plusieurs coloris.",
+  variants: [
+    { rectoId: 31, colorLabel: "YELLOW FLUO" },
+    { rectoId: 33, colorLabel: "BLUE / YELLOW" },
+    { rectoId: 39, colorLabel: "PURPLE / PINK" },
+  ],
+  completeLookRectoIds: [37, 6, 21],
+};
+
+const CAP_ORIGINAL_LINE: ProductLine = {
+  lineId: "cap-original",
+  familyLabel: "Cap DINGRY Original",
+  price: 40,
+  materials: "Coton sergé, visière structurée, bride réglable.",
+  sizeGuide: "Taille unique TU — bride réglable.",
+  description: "Casquette DINGRY Original : broderie logo, plusieurs coloris.",
+  variants: [
+    { rectoId: 37, colorLabel: "BLACK" },
+    { rectoId: 38, colorLabel: "RED" },
+  ],
+  completeLookRectoIds: [6, 21, 31],
+};
+
+/** T-shirts collection 07 ↔ 09 (catalogue #17 et #19 uniquement). */
+const DINGRY_TEE_07_09_LINE: ProductLine = {
+  lineId: "dingry-tee-07-09",
+  familyLabel: "DINGRY TEE",
+  price: 119,
+  materials: "Coton jersey premium, col rib.",
+  sizeGuide: "Coupe regular unisexe. Prenez votre taille pour un porté standard.",
+  description: "T-shirts DINGRY collection 07 et 09.",
+  variants: [
+    { rectoId: 17, colorLabel: "COLLECTION 07" },
+    { rectoId: 19, colorLabel: "COLLECTION 09" },
+  ],
+  completeLookRectoIds: [6, 37, 21],
+};
+
+export const DINGRY_PRODUCT_LINES: readonly ProductLine[] = [
+  ORIGINAL_HOODIE_LINE,
+  ZIP_OUTLINE_LINE,
+  CREWNECK_ORIGINAL_LINE,
+  CAP_ORIGINAL_LINE,
+  DINGRY_TEE_07_09_LINE,
+];
 
 const LINE_BY_RECTO = new Map<number, ProductLine>();
 for (const line of DINGRY_PRODUCT_LINES) {
@@ -98,6 +150,9 @@ export function colorLabelFromShopProduct(product: ShopProduct): string {
 function shopProductFamilyKey(product: Pick<ShopProduct, "name" | "category">): string {
   const category = String(product.category).trim().toUpperCase();
   let family = product.name.trim().replace(/\s+/g, " ").toUpperCase();
+  family = family
+    .replace(/\s+[A-Z0-9][A-Z0-9\s]*(?:\s*\/\s*[A-Z0-9][A-Z0-9\s]*)+\s*$/i, "")
+    .trim();
   family = family.replace(TRAILING_COLOR, "").replace(/\s*\/\s*[^/]+$/i, "").trim();
   return `${category}::${family}`;
 }
@@ -114,6 +169,30 @@ function normalizeColorKey(value: string): string {
   return value.trim().toUpperCase().replace(/\s+/g, " ");
 }
 
+/** Recto live CRM, sinon fiche seed — noir original #6 → #25 Paris si besoin. */
+export function shopProductForRectoId(
+  rectoId: number,
+  catalog: readonly ShopProduct[],
+): { product: ShopProduct; fromLive: boolean } | null {
+  const candidateIds =
+    rectoId === DINGRY_HOODIE_BLACK_ORIGINAL_ID
+      ? [DINGRY_HOODIE_BLACK_ORIGINAL_ID, DINGRY_HOODIE_BLACK_PARIS_ID]
+      : [rectoId];
+  for (const id of candidateIds) {
+    const live = catalog.find(
+      (item) => catalogRectoId(item.id) === id && isRectoFacingProduct(item),
+    );
+    if (live) return { product: live, fromLive: true };
+  }
+  for (const id of candidateIds) {
+    const seed = PRODUCTS.find(
+      (item) => catalogRectoId(item.id) === id && isRectoFacingProduct(item),
+    );
+    if (seed) return { product: seed, fromLive: false };
+  }
+  return null;
+}
+
 function filterStaticLineToCatalog(
   staticLine: ProductLine | null,
   catalog: readonly ShopProduct[],
@@ -128,6 +207,38 @@ function filterStaticLineToCatalog(
   });
   if (variants.length === 0) return null;
   return { ...staticLine, variants };
+}
+
+function productLineFromStaticCatalog(
+  staticLine: ProductLine,
+  catalog: readonly ShopProduct[],
+  anchor: ShopProduct | undefined,
+): ProductLine | null {
+  const variants = staticLine.variants.flatMap((variant) => {
+    const resolved = shopProductForRectoId(variant.rectoId, catalog);
+    if (!resolved) return [];
+    const { product, fromLive } = resolved;
+    return [
+      {
+        rectoId: catalogRectoId(product.id),
+        colorLabel: variant.colorLabel,
+        comingSoon:
+          variant.comingSoon ?? (!fromLive || !isShopProductInStock(product)),
+      },
+    ];
+  });
+  const deduped = dedupeVariantsByColor(variants);
+  if (deduped.length === 0) return null;
+  return {
+    lineId: staticLine.lineId,
+    familyLabel: staticLine.familyLabel,
+    price: anchor?.price ?? staticLine.price,
+    materials: anchor?.materials?.trim() || staticLine.materials,
+    sizeGuide: anchor?.sizeGuide?.trim() || staticLine.sizeGuide,
+    description: anchor?.description?.trim() || staticLine.description,
+    variants: deduped,
+    completeLookRectoIds: staticLine.completeLookRectoIds,
+  };
 }
 
 function dedupeVariantsByColor(variants: ProductLineVariant[]): ProductLineVariant[] {
@@ -153,6 +264,14 @@ export function productLineForShop(
   const staticLine = staticProductLineForCatalogId(productId);
   const rectoId = catalogRectoId(productId);
   const anchor = catalog.find((item) => catalogRectoId(item.id) === rectoId);
+
+  if (staticLine) {
+    const fromStatic = productLineFromStaticCatalog(staticLine, catalog, anchor);
+    if (fromStatic && fromStatic.variants.length > 1) {
+      return fromStatic;
+    }
+  }
+
   if (!anchor || !isRectoFacingProduct(anchor)) {
     return filterStaticLineToCatalog(staticLine, catalog);
   }
