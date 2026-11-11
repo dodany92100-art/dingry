@@ -319,7 +319,6 @@ export function PersonalizeModal({
         {cityChipRow}
       </div>
       {labelField}
-      <div className={styles.desktopAdvancedTune}>{advancedTuneBlock}</div>
     </div>
   );
 
@@ -448,7 +447,7 @@ export function PersonalizeModal({
                     centered={mobileStepMount}
                     className={styles.cityColorControl}
                   />
-                  {mobileStepMount ? advancedTuneBlock : null}
+                  <div className={styles.photoAdvancedTune}>{advancedTuneBlock}</div>
                 </div>
               ) : null}
                 </div>
