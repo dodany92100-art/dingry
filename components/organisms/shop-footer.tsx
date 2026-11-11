@@ -176,7 +176,7 @@ export function ShopFooter({
               ))}
             </FooterNavColumn>
 
-            <FooterNavColumn title="L'atelier" className="max-sm:col-span-2">
+            <FooterNavColumn title="Le site" className="max-sm:col-span-2">
               <li>
                 <button type="button" onClick={() => scrollToSection("catalogue")} className={boutiqueLinkClass}>
                   {DINGRY_STREET_LINE}
