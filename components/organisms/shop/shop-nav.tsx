@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { Heart } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Heart, Menu, X } from "lucide-react";
 import { motion, useAnimation, useReducedMotion } from "motion/react";
 import { useFlyAnimationOptional } from "@/hooks/use-fly-animation";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
@@ -15,6 +15,13 @@ const SECTIONS = [
   ["heritage", "Héritage"],
   ["lookbook", "Lookbook"],
 ] as const;
+
+type ShopNavSectionId = (typeof SECTIONS)[number][0];
+
+const MOBILE_MENU_ITEMS: { id: ShopNavSectionId; label: string }[] = [
+  { id: "catalogue", label: DINGRY_STREET_LINE },
+  ...SECTIONS.map(([id, label]) => ({ id, label })),
+];
 
 function ShopNavActions({
   cartCount,
@@ -124,6 +131,16 @@ export function ShopNav({
   const reduceMotion = useReducedMotion();
   const favorisControls = useAnimation();
   const cartControls = useAnimation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (!fly?.pulse || reduceMotion) return;
@@ -134,16 +151,18 @@ export function ShopNav({
     });
   }, [fly?.pulse, cartControls, favorisControls, reduceMotion]);
 
-  function goSection(id: (typeof SECTIONS)[number][0]) {
+  function goSection(id: ShopNavSectionId) {
     if (id === "heritage") {
       if (onOpenHeritage) {
         onOpenHeritage();
-        return;
+      } else {
+        onScrollToSection("heritage");
       }
-      onScrollToSection("heritage");
+      setMobileMenuOpen(false);
       return;
     }
     onScrollToSection(id);
+    setMobileMenuOpen(false);
   }
 
   return (
@@ -177,6 +196,20 @@ export function ShopNav({
             >
               <DingryLogo interactive shimmer animate={false} />
             </a>
+            <button
+              type="button"
+              className="dingry-nav-burger dingry-interactive-luxe flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-white/20 bg-white/[0.06] text-white/90 hover:bg-white/[0.1] hover:text-white md:hidden"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="dingry-nav-mobile-menu"
+              aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+            >
+              {mobileMenuOpen ? (
+                <X size={20} strokeWidth={1.75} aria-hidden />
+              ) : (
+                <Menu size={20} strokeWidth={1.75} aria-hidden />
+              )}
+            </button>
             <div className="dingry-nav-tagline hidden md:block" aria-hidden="true">
               <span className="dingry-typo-manifesto">{DINGRY_MANIFESTO_FR}</span>
               <span className="dingry-typo-street dingry-nav-tagline__street">{DINGRY_STREET_LINE}</span>
@@ -205,6 +238,32 @@ export function ShopNav({
             />
           </div>
         </div>
+        {mobileMenuOpen ? (
+          <motion.div
+            id="dingry-nav-mobile-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation boutique"
+            initial={reduceMotion ? false : { opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="dingry-nav-mobile-menu absolute inset-x-0 top-full z-50 border-t border-white/10 bg-[#12151c]/98 px-4 py-3 shadow-[0_16px_40px_rgb(0_0_0/0.45)] backdrop-blur-md md:hidden"
+          >
+            <p className="dingry-typo-manifesto mb-1 text-[10px] text-white/55">{DINGRY_MANIFESTO_FR}</p>
+            <ul className="mt-2 flex flex-col gap-0.5">
+              {MOBILE_MENU_ITEMS.map(({ id, label }) => (
+                <li key={`${id}-${label}`}>
+                  <button
+                    type="button"
+                    onClick={() => goSection(id)}
+                    className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
+                  >
+                    {label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        ) : null}
       </div>
     </nav>
   );

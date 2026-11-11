@@ -30,16 +30,6 @@ export type HeritageEditorialArticle = {
   blocks: readonly HeritageReaderBlock[];
 };
 
-/** Cartes « À lire aussi » — extensible pour futurs articles. */
-export type HeritageRelatedStory = {
-  id: string;
-  category: string;
-  title: string;
-  excerpt: string;
-  /** Si absent : teaser « bientôt ». */
-  articleId?: string;
-};
-
 export type HeritageReaderTabId = "manifeste" | "philosophie" | "fondateur";
 
 export const DINGRY_HERITAGE_READER_TABS: readonly {
@@ -141,28 +131,6 @@ export function heritageArticleForTab(tabId: HeritageReaderTabId): HeritageEdito
 }
 
 export const DINGRY_HERITAGE_BASELINE_ACCENT = DINGRY_HERITAGE_BASELINE;
-
-export const DINGRY_HERITAGE_RELATED_STORIES: readonly HeritageRelatedStory[] = [
-  {
-    id: "collab-drop",
-    category: "Collab",
-    title: "Prochain drop",
-    excerpt: "Capsule et visuels — bientôt sur le blog.",
-  },
-  {
-    id: "atelier",
-    category: "Atelier",
-    title: "T-shirt personnalisé",
-    excerpt: "Couleur, texte, attitude — l'atelier custom en détail.",
-    articleId: "philosophie",
-  },
-  {
-    id: "lookbook",
-    category: "Lookbook",
-    title: "Scènes urbaines",
-    excerpt: "Séries photo et silhouettes — publication à venir.",
-  },
-];
 
 export function heritageArticleById(id: string): HeritageEditorialArticle | undefined {
   return DINGRY_HERITAGE_ARTICLES.find((article) => article.id === id);

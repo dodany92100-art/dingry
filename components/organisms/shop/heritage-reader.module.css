@@ -55,13 +55,13 @@
   max-height: inherit;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgb(0 0 0 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.12);
   border-radius: 1.125rem 1.125rem 0.75rem 0.75rem;
-  background: #f6f6f4;
+  background: #0a0a0a;
   box-shadow:
-    0 24px 80px rgb(0 0 0 / 0.28),
-    0 0 0 1px rgb(255 255 255 / 0.7) inset;
-  color: #161616;
+    0 24px 80px rgb(0 0 0 / 0.55),
+    0 0 0 1px rgb(255 255 255 / 0.06) inset;
+  color: rgb(255 255 255 / 0.92);
 }
 
 @media (min-width: 768px) {
@@ -78,8 +78,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border-bottom: 1px solid rgb(0 0 0 / 0.08);
-  background: rgb(255 255 255 / 0.94);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(10 10 10 / 0.96);
   padding: 0.875rem 1.25rem;
   backdrop-filter: blur(10px);
 }
@@ -97,10 +97,10 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgb(0 0 0 / 0.14);
+  border: 1px solid rgb(255 255 255 / 0.2);
   border-radius: 9999px;
-  color: #161616;
-  background: #fff;
+  color: rgb(255 255 255 / 0.88);
+  background: rgb(255 255 255 / 0.06);
   transition:
     border-color 0.2s ease,
     background 0.2s ease;
@@ -108,7 +108,7 @@
 
 .closeBtn:hover {
   border-color: rgb(179 135 40 / 0.55);
-  background: #fff;
+  background: rgb(255 255 255 / 0.1);
 }
 
 .closeBtn:focus-visible {
@@ -122,7 +122,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  background: #f6f6f4;
+  background: #0a0a0a;
 }
 
 .inner {
@@ -141,9 +141,9 @@
   margin-bottom: 2rem;
   border: 1px solid rgb(179 135 40 / 0.35);
   border-radius: 0.75rem;
-  background: #fff;
+  background: rgb(255 255 255 / 0.04);
   padding: 1.35rem 1.4rem;
-  box-shadow: 0 8px 28px rgb(0 0 0 / 0.06);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.35);
   text-align: center;
 }
 
@@ -155,7 +155,7 @@
   line-height: 1.05;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #161616;
+  color: rgb(255 255 255 / 0.95);
   text-align: center;
 }
 
@@ -165,21 +165,21 @@
   gap: 0.5rem;
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgb(0 0 0 / 0.08);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
 }
 
 .tab {
   flex: 1 1 auto;
   min-width: min(100%, 7.5rem);
-  border: 1px solid rgb(0 0 0 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.14);
   border-radius: 9999px;
-  background: #fff;
+  background: rgb(255 255 255 / 0.04);
   padding: 0.55rem 0.85rem;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgb(22 22 22 / 0.55);
+  color: rgb(255 255 255 / 0.45);
   transition:
     border-color 0.2s ease,
     color 0.2s ease,
@@ -189,14 +189,14 @@
 
 .tab:hover {
   border-color: rgb(179 135 40 / 0.45);
-  color: #161616;
+  color: rgb(255 255 255 / 0.88);
 }
 
 .tabOn {
-  border-color: rgb(179 135 40 / 0.55);
-  background: linear-gradient(180deg, #fff 0%, #faf8f2 100%);
-  color: #161616;
-  box-shadow: 0 4px 14px rgb(179 135 40 / 0.12);
+  border-color: rgb(179 135 40 / 0.65);
+  background: linear-gradient(180deg, rgb(179 135 40 / 0.22) 0%, rgb(179 135 40 / 0.08) 100%);
+  color: rgb(255 255 255 / 0.95);
+  box-shadow: 0 4px 14px rgb(179 135 40 / 0.18);
 }
 
 .tabPanel {
@@ -206,31 +206,28 @@
 .articleCard {
   margin-top: 1.5rem;
   overflow: hidden;
-  border: 1px solid rgb(0 0 0 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 0.875rem;
-  background: #fff;
-  box-shadow: 0 6px 24px rgb(0 0 0 / 0.05);
+  background: rgb(255 255 255 / 0.03);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
 }
 
 .articleCover {
   margin: 0;
-  border-bottom: 1px solid rgb(0 0 0 / 0.06);
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  background: #000;
 }
 
 .articleCoverMedia {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  object-position: center 35%;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
   filter: brightness(0.92) contrast(1.04);
 }
 
 .articleCoverMediaPortrait {
-  aspect-ratio: 4 / 5;
-  max-height: min(72vh, 38rem);
-  object-fit: cover;
-  object-position: center 18%;
   filter: brightness(0.96) contrast(1.02);
 }
 
@@ -268,7 +265,7 @@
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgb(22 22 22 / 0.42);
+  color: rgb(255 255 255 / 0.4);
 }
 
 .articleTitle {
@@ -278,16 +275,16 @@
   line-height: 1.25;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #161616;
+  color: rgb(255 255 255 / 0.94);
 }
 
 .articleSubtitle {
   margin: 0 0 1.15rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgb(0 0 0 / 0.06);
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
   font-size: 0.875rem;
   line-height: 1.6;
-  color: rgb(22 22 22 / 0.58);
+  color: rgb(255 255 255 / 0.58);
 }
 
 .blockHeading {
@@ -296,7 +293,7 @@
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgb(22 22 22 / 0.82);
+  color: rgb(255 255 255 / 0.82);
 }
 
 .prose {
@@ -309,20 +306,23 @@
   margin: 0;
   font-size: 0.9375rem;
   line-height: 1.78;
-  color: rgb(22 22 22 / 0.78);
+  color: rgb(255 255 255 / 0.78);
 }
 
 .visual {
   margin: 1.35rem 0;
   overflow: hidden;
   border-radius: 0.65rem;
-  border: 1px solid rgb(0 0 0 / 0.08);
-  background: #fafafa;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.03);
 }
 
 .visualMedia {
+  display: block;
   width: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
 }
 
 .ratio169 {
@@ -340,7 +340,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: #f0f0ee;
+  background: rgb(255 255 255 / 0.04);
   padding: 1.5rem;
   text-align: center;
 }
@@ -349,7 +349,7 @@
   font-size: 9px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgb(22 22 22 / 0.38);
+  color: rgb(255 255 255 / 0.38);
 }
 
 .caption {
@@ -358,81 +358,83 @@
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgb(22 22 22 / 0.48);
-  border-top: 1px solid rgb(0 0 0 / 0.06);
-  background: #fff;
+  color: rgb(255 255 255 / 0.48);
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.03);
 }
 
-.related {
+.chronology {
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgb(0 0 0 / 0.08);
+  border-top: 1px solid rgb(255 255 255 / 0.1);
 }
 
-.relatedTitle {
-  margin: 0 0 0.85rem;
+.chronologyTitle {
+  margin: 0 0 1rem;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: rgb(22 22 22 / 0.48);
+  color: rgb(255 255 255 / 0.48);
 }
 
-.relatedRail {
-  display: flex;
-  gap: 0.75rem;
-  overflow-x: auto;
-  padding-bottom: 0.25rem;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+.chronologyTrack {
+  position: relative;
+  padding: 0 0.25rem 0.25rem;
 }
 
-.relatedCard {
-  flex: 0 0 min(14.5rem, 78vw);
-  scroll-snap-align: start;
-  border: 1px solid rgb(0 0 0 / 0.1);
-  border-radius: 0.75rem;
-  background: #fff;
-  padding: 1rem 1.1rem;
-  text-align: left;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.04);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+.chronologyLine {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0.4375rem;
+  height: 1px;
+  background: rgb(179 135 40 / 0.7);
+  pointer-events: none;
 }
 
-.relatedCard:hover:not(:disabled) {
-  border-color: rgb(179 135 40 / 0.45);
-  box-shadow: 0 8px 22px rgb(0 0 0 / 0.08);
-}
-
-.relatedCard:disabled {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.relatedCardCategory {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #b38728;
-}
-
-.relatedCardTitle {
-  margin: 0.5rem 0 0.35rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #161616;
-}
-
-.relatedCardExcerpt {
+.chronologyList {
+  position: relative;
+  list-style: none;
   margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.55;
-  color: rgb(22 22 22 / 0.55);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.chronologyItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.chronologyMarker {
+  position: relative;
+  z-index: 1;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #b38728;
+  box-shadow: 0 0 0 3px #0a0a0a;
+}
+
+.chronologyYear {
+  margin: 0;
+  font-size: clamp(0.625rem, 2.4vw, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgb(255 255 255 / 0.92);
+}
+
+.chronologyLabel {
+  margin: 0;
+  font-size: clamp(0.5625rem, 2.1vw, 0.6875rem);
+  line-height: 1.35;
+  color: rgb(255 255 255 / 0.5);
 }
 
 .dragHandle {
@@ -440,7 +442,7 @@
   justify-content: center;
   padding-top: 0.5rem;
   padding-bottom: 0.25rem;
-  background: #f6f6f4;
+  background: #0a0a0a;
   border-radius: 1.125rem 1.125rem 0 0;
 }
 
@@ -454,5 +456,5 @@
   height: 0.25rem;
   width: 2.75rem;
   border-radius: 9999px;
-  background: rgb(0 0 0 / 0.16);
+  background: rgb(255 255 255 / 0.22);
 }

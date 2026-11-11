@@ -2832,14 +2832,10 @@ html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-heritage-mag
   color: rgb(255 255 255 / 0.78);
 }
 
-/* Lecteur Héritage : reste clair même dans .dingry-shop (pas d'inversion text-white). */
+/* Lecteur Héritage : fond noir (indépendant du thème boutique). */
 html[data-theme="light"] .dingry-shop.dingry-heritage-reader-panel {
-  background: #f6f6f4 !important;
-  color: #161616;
-}
-
-html[data-theme="light"] .dingry-shop.dingry-heritage-reader-panel [class*="text-white"] {
-  color: inherit;
+  background: #0a0a0a !important;
+  color: rgb(255 255 255 / 0.92);
 }
 
 html[data-theme="light"] .dingry-shop .dingry-footer-classic .dingry-footer-eyebrow {

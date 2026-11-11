@@ -6,19 +6,19 @@ import { DingryLogo } from "@/components/atoms/dingry-logo";
 import {
   DINGRY_HERITAGE_BASELINE_ACCENT,
   DINGRY_HERITAGE_READER_TABS,
-  DINGRY_HERITAGE_RELATED_STORIES,
   heritageArticleForTab,
   type HeritageEditorialArticle,
   type HeritageReaderBlock,
   type HeritageReaderTabId,
 } from "@/lib/dingry-heritage-articles";
+import { DINGRY_HERITAGE_CHRONOLOGY } from "@/lib/dingry-heritage-content";
 import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
 import styles from "./heritage-reader.module.css";
 
 type HeritageReaderProps = {
   open: boolean;
   onClose: () => void;
-  /** Scroll initial vers un article (ex. depuis « À lire aussi »). */
+  /** Onglet initial à l’ouverture (manifeste, philosophie, fondateur). */
   initialArticleId?: string;
 };
 
@@ -42,12 +42,7 @@ function ReaderBlock({ block, blockKey }: { block: HeritageReaderBlock; blockKey
   return (
     <figure className={styles.visual}>
       {block.src ? (
-        <img
-          src={block.src}
-          alt={block.alt}
-          className={`${styles.visualMedia} ${ratioClass}`}
-          loading="lazy"
-        />
+        <img src={block.src} alt={block.alt} className={styles.visualMedia} loading="lazy" />
       ) : (
         <div className={`${styles.visualPlaceholder} ${ratioClass}`} role="img" aria-label={block.alt}>
           <span className={styles.visualPlaceholderLabel}>Visuel</span>
@@ -107,7 +102,6 @@ export function HeritageReader({ open, onClose, initialArticleId }: HeritageRead
       ? initialArticleId
       : "manifeste";
   const [activeTab, setActiveTab] = useState<HeritageReaderTabId>(initialTab);
-  const [activeArticleId, setActiveArticleId] = useState<string | undefined>(initialArticleId);
   const activeArticle = heritageArticleForTab(activeTab);
 
   useEffect(() => {
@@ -159,25 +153,12 @@ export function HeritageReader({ open, onClose, initialArticleId }: HeritageRead
     ) {
       setActiveTab(initialArticleId);
     }
-    setActiveArticleId(initialArticleId);
   }, [open, initialArticleId]);
 
   const selectTab = useCallback((tabId: HeritageReaderTabId) => {
     setActiveTab(tabId);
-    setActiveArticleId(tabId);
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
-
-  const scrollToArticle = useCallback(
-    (articleId: string) => {
-      if (articleId === "manifeste" || articleId === "philosophie" || articleId === "fondateur") {
-        selectTab(articleId);
-        return;
-      }
-      setActiveArticleId(articleId);
-    },
-    [selectTab],
-  );
 
   function handleTouchStart(clientY: number) {
     touchStartY.current = clientY;
@@ -232,7 +213,7 @@ export function HeritageReader({ open, onClose, initialArticleId }: HeritageRead
               <span className={styles.dragHandleBar} />
             </div>
             <header className={styles.header}>
-              <DingryLogo animate={false} tone="on-light" className="h-8 w-auto md:h-9" />
+              <DingryLogo animate={false} tone="on-dark" className="h-8 w-auto md:h-9" />
               <button
                 ref={closeBtnRef}
                 type="button"
@@ -285,27 +266,21 @@ export function HeritageReader({ open, onClose, initialArticleId }: HeritageRead
                   <ArticleCard key={activeArticle.id} article={activeArticle} />
                 </div>
 
-                <section className={styles.related} aria-labelledby="heritage-related-title">
-                  <h2 id="heritage-related-title" className={styles.relatedTitle}>
-                    À lire aussi
+                <section className={styles.chronology} aria-labelledby="heritage-chronology-title">
+                  <h2 id="heritage-chronology-title" className={styles.chronologyTitle}>
+                    Chronologie
                   </h2>
-                  <div className={styles.relatedRail}>
-                    {DINGRY_HERITAGE_RELATED_STORIES.map((story) => (
-                      <button
-                        key={story.id}
-                        type="button"
-                        className={styles.relatedCard}
-                        disabled={!story.articleId}
-                        onClick={() => {
-                          if (story.articleId) scrollToArticle(story.articleId);
-                        }}
-                        aria-current={activeArticleId === story.articleId ? "true" : undefined}
-                      >
-                        <span className={styles.relatedCardCategory}>{story.category}</span>
-                        <p className={styles.relatedCardTitle}>{story.title}</p>
-                        <p className={styles.relatedCardExcerpt}>{story.excerpt}</p>
-                      </button>
-                    ))}
+                  <div className={styles.chronologyTrack}>
+                    <div className={styles.chronologyLine} aria-hidden />
+                    <ol className={styles.chronologyList}>
+                      {DINGRY_HERITAGE_CHRONOLOGY.map((milestone) => (
+                        <li key={milestone.year} className={styles.chronologyItem}>
+                          <span className={styles.chronologyMarker} aria-hidden />
+                          <p className={styles.chronologyYear}>{milestone.year}</p>
+                          <p className={styles.chronologyLabel}>{milestone.label}</p>
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 </section>
               </div>

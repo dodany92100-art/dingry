@@ -5,6 +5,19 @@ export const DINGRY_HERITAGE_BASELINE = "LE LUXE EST DANS L'ATTITUDE";
 export const DINGRY_HERITAGE_HOMEPAGE_HOOK =
   "DINGRY redéfinit le luxe : le caractère, l'indépendance et l'attitude avant le statut.";
 
+export type HeritageChronologyMilestone = {
+  year: string;
+  label: string;
+};
+
+/** Frise chronologique (lecteur Héritage + vitrine). */
+export const DINGRY_HERITAGE_CHRONOLOGY: readonly HeritageChronologyMilestone[] = [
+  { year: "1998", label: "Royal Wear" },
+  { year: "2001", label: "J'voulais" },
+  { year: "2020s", label: "Le retour" },
+  { year: "Aujourd'hui", label: "DINGRY" },
+];
+
 export type HeritagePhilosophyPillar = {
   title: string;
   paragraphs: readonly string[];
