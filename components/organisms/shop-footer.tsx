@@ -1,15 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryContactModal } from "@/components/molecules/dingry-contact-modal";
 import { DingryNewsletterForm } from "@/components/molecules/dingry-newsletter-form";
 import { DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
-import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
+import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 import type { CatalogFilter } from "@/lib/catalog-category";
-import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
+import type { ShopBasePath } from "@/lib/shop-base-path";
 
 const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 
@@ -18,6 +17,9 @@ const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livrai
 const COLLECTION_SEO_LINKS: { label: string; filter: CatalogFilter }[] = [
   { label: "Hoodies & sweats oversize", filter: "hoodies" },
   { label: "T-shirts streetwear", filter: "t-shirts" },
+  { label: "Caps", filter: "caps" },
+  { label: "Crop tops", filter: "crop-top" },
+  { label: "Pants", filter: "pants" },
   { label: "Nouveautés & exclusivités", filter: "all" },
 ];
 
@@ -176,36 +178,35 @@ export function ShopFooter({
 
             <FooterNavColumn title="L'atelier" className="max-sm:col-span-2">
               <li>
+                <button type="button" onClick={() => scrollToSection("catalogue")} className={boutiqueLinkClass}>
+                  {DINGRY_STREET_LINE}
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => goCatalogue()} className={boutiqueLinkClass}>
+                  Collection
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => scrollToSection("atelier-custom")} className={boutiqueLinkClass}>
+                  Atelier
+                </button>
+              </li>
+              <li>
                 <button
                   type="button"
                   onClick={() => {
-                    if (onOpenAtelierCustom) onOpenAtelierCustom();
-                    else scrollToSection("atelier-custom");
+                    if (onOpenHeritage) onOpenHeritage();
+                    else scrollToSection("heritage");
                   }}
                   className={boutiqueLinkClass}
                 >
-                  Personnalisation custom
+                  Héritage
                 </button>
               </li>
               <li>
                 <button type="button" onClick={() => scrollToSection("lookbook")} className={boutiqueLinkClass}>
-                  Lookbook & inspirations
-                </button>
-              </li>
-              <li>
-                {onOpenHeritage ? (
-                  <button type="button" onClick={onOpenHeritage} className={boutiqueLinkClass}>
-                    Notre histoire
-                  </button>
-                ) : (
-                  <Link href={shopHref(_shopBasePath, "/?heritage=1")} className={boutiqueLinkClass}>
-                    Notre histoire
-                  </Link>
-                )}
-              </li>
-              <li>
-                <button type="button" onClick={() => scrollToSection("heritage")} className={boutiqueLinkClass}>
-                  Concept DINGRY
+                  Lookbook
                 </button>
               </li>
             </FooterNavColumn>
@@ -232,14 +233,6 @@ export function ShopFooter({
                   <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
                     Contact
                   </button>
-                </li>
-                <li>
-                  <Link
-                    href="/admin"
-                    className={`${boutiqueLinkClass} text-[#161616]/35 hover:text-[#161616]/65`}
-                  >
-                    Espace CRM
-                  </Link>
                 </li>
               </ul>
             </div>
