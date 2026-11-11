@@ -144,6 +144,7 @@
   background: #fff;
   padding: 1.35rem 1.4rem;
   box-shadow: 0 8px 28px rgb(0 0 0 / 0.06);
+  text-align: center;
 }
 
 .baselineText {
@@ -155,6 +156,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #161616;
+  text-align: center;
 }
 
 .tabs {

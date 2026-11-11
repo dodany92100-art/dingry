@@ -1,10 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { cldOpt } from "@/components/molecules/product-card";
+import { Share2 } from "lucide-react";
+import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
+import { DingryCopyToast } from "@/components/molecules/dingry-copy-toast";
+import { WishlistGridItem } from "@/components/molecules/wishlist-grid-item";
 import type { ShopProduct } from "@/lib/catalog";
-import { catalogRectoId, storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
+import { catalogRectoId } from "@/lib/dingry-product-display";
+import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
+import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "./motion";
 
 type WishlistDrawerProps = {
@@ -12,20 +17,33 @@ type WishlistDrawerProps = {
   onClose: () => void;
   wishlistIds: readonly number[];
   products: readonly ShopProduct[];
-  onOpenProduct: (product: ShopProduct) => void;
+  shopBasePath?: ShopBasePath;
+  purchaseDisabled?: boolean;
+  onOpenProduct: (product: ShopProduct, side?: ProductFlipSide) => void;
   onToggleWishlist: (rectoId: number) => void;
   onDiscoverCollection: () => void;
+  onAddToCart: (product: ShopProduct, size: string, from: HTMLElement) => void;
 };
+
+function boutiqueShareUrl(base: ShopBasePath): string {
+  if (typeof window === "undefined") return shopHref(base, "/");
+  return new URL(shopHref(base, "/"), window.location.origin).toString();
+}
 
 export function WishlistDrawer({
   open,
   onClose,
   wishlistIds,
   products,
+  shopBasePath = "/",
+  purchaseDisabled = false,
   onOpenProduct,
   onToggleWishlist,
   onDiscoverCollection,
+  onAddToCart,
 }: WishlistDrawerProps) {
+  const [copyToastVisible, setCopyToastVisible] = useState(false);
+
   const items = useMemo(() => {
     const byRecto = new Map<number, ShopProduct>();
     for (const product of products) {
@@ -36,130 +54,168 @@ export function WishlistDrawer({
       .filter((product): product is ShopProduct => product !== undefined);
   }, [products, wishlistIds]);
 
+  const openProductAndClose = useCallback(
+    (product: ShopProduct, side: ProductFlipSide = "recto") => {
+      onOpenProduct(product, side);
+      onClose();
+    },
+    [onClose, onOpenProduct],
+  );
+
+  const shareSelection = useCallback(async () => {
+    const url = boutiqueShareUrl(shopBasePath);
+    const payload = { title: "Ma sélection DINGRY", text: "Ma sélection DINGRY", url };
+    try {
+      if (typeof navigator.share === "function") {
+        if (typeof navigator.canShare === "function" && !navigator.canShare(payload)) {
+          throw new Error("share-unsupported");
+        }
+        await navigator.share(payload);
+        return;
+      }
+      throw new Error("share-unavailable");
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopyToastVisible(true);
+        window.setTimeout(() => setCopyToastVisible(false), 2800);
+      } catch {
+        // navigation privée
+      }
+    }
+  }, [shopBasePath]);
+
+  const handleAddToCart = useCallback(
+    (product: ShopProduct, size: string, from: HTMLElement) => {
+      onAddToCart(product, size, from);
+    },
+    [onAddToCart],
+  );
+
   return (
-    <AnimatePresence>
-      {open ? (
-        <div key="dingry-wishlist-drawer" className="fixed inset-0 z-[70] flex justify-end">
-          <motion.div
-            className="absolute inset-0 bg-[#050505]/85 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={MODAL_OVERLAY_TRANSITION}
-            onClick={onClose}
-            aria-hidden
-          />
-          <motion.aside
-            className="dingry-sale-ui relative z-10 flex h-full w-full max-w-lg flex-col border-l border-white/[0.08] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.5)]"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={DRAWER_PANEL_SPRING}
-            aria-labelledby="dingry-wishlist-title"
-          >
-            <div className="dingry-gold-rule-bottom flex items-start justify-between gap-4 p-6 md:p-8">
-              <div>
-                <p className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Liste de souhaits</p>
-                <h2 id="dingry-wishlist-title" className="mt-2 text-sm font-bold tracking-[0.22em] uppercase">
-                  Mes favoris
-                </h2>
-                {items.length > 0 ? (
-                  <p className="mt-1 text-xs text-white/45">
-                    {items.length} article{items.length > 1 ? "s" : ""}
+    <>
+      <DingryCopyToast visible={copyToastVisible} />
+      <AnimatePresence>
+        {open ? (
+          <div key="dingry-wishlist-drawer" className="fixed inset-0 z-[70] flex justify-end">
+            <motion.div
+              className="absolute inset-0 bg-[#050505]/85 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={MODAL_OVERLAY_TRANSITION}
+              onClick={onClose}
+              aria-hidden
+            />
+            <motion.aside
+              className="dingry-sale-ui relative z-10 flex h-full w-full max-w-xl flex-col border-l border-white/[0.08] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.5)]"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={DRAWER_PANEL_SPRING}
+              aria-labelledby="dingry-wishlist-title"
+            >
+              <div className="dingry-gold-rule-bottom flex items-start justify-between gap-4 p-6 md:p-8">
+                <div>
+                  <p className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Liste de souhaits</p>
+                  <h2 id="dingry-wishlist-title" className="mt-2 text-sm font-bold tracking-[0.22em] uppercase">
+                    Mes favoris
+                  </h2>
+                  {items.length > 0 ? (
+                    <p className="mt-1 text-xs text-white/45">
+                      {items.length} article{items.length > 1 ? "s" : ""}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  {items.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => void shareSelection()}
+                      className="flex h-10 items-center gap-2 px-2 text-[10px] tracking-[0.16em] text-white/45 uppercase transition-colors hover:text-white"
+                      aria-label="Partager ma sélection"
+                    >
+                      <Share2 size={16} strokeWidth={1.5} aria-hidden />
+                      <span className="hidden sm:inline">Partager</span>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Fermer la liste de favoris"
+                    className="flex h-10 w-10 items-center justify-center text-white/40 transition-colors hover:text-white"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {items.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
+                  <p className="text-sm tracking-[0.12em] text-white/35 uppercase">Aucun favori pour le moment.</p>
+                  <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/50">
+                    Touchez le cœur sur un article pour l&apos;enregistrer ici.
                   </p>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Fermer la liste de favoris"
-                className="flex h-10 w-10 items-center justify-center text-white/40 transition-colors hover:text-white"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    onClick={onDiscoverCollection}
+                    className="dingry-gold-pill-btn mt-8 h-11 w-full max-w-xs rounded-full px-6 text-[11px] uppercase tracking-[0.18em]"
+                  >
+                    <span className="gold-text">Découvrir la collection</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6">
+                  <div className={CATALOG_PRODUCT_GRID_CLASS}>
+                    {items.map((product) => {
+                      const rectoId = catalogRectoId(product.id);
+                      return (
+                        <WishlistGridItem
+                          key={rectoId}
+                          product={product}
+                          catalog={products}
+                          wishlistActive
+                          purchaseDisabled={purchaseDisabled}
+                          onOpenProduct={openProductAndClose}
+                          onToggleWishlist={onToggleWishlist}
+                          onAddToCart={handleAddToCart}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-            {items.length === 0 ? (
-              <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
-                <p className="text-sm tracking-[0.12em] text-white/35 uppercase">Aucun favori pour le moment.</p>
-                <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/50">
-                  Touchez le cœur sur un article pour l&apos;enregistrer ici.
-                </p>
-                <button
-                  type="button"
-                  onClick={onDiscoverCollection}
-                  className="dingry-gold-pill-btn mt-8 h-11 w-full max-w-xs rounded-full px-6 text-[11px] uppercase tracking-[0.18em]"
-                >
-                  <span className="gold-text">Découvrir la collection</span>
-                </button>
-              </div>
-            ) : (
-              <ul className="min-h-0 flex-1 divide-y divide-white/[0.08] overflow-y-auto overscroll-contain">
-                {items.map((product) => {
-                  const rectoId = catalogRectoId(product.id);
-                  const title = storefrontProductTitle(product, products);
-                  const variant = storefrontProductSubtitle(product, products);
-                  return (
-                    <li key={rectoId} className="flex gap-4 p-5 sm:gap-5 sm:p-6">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onOpenProduct(product);
-                          onClose();
-                        }}
-                        className="flex min-w-0 flex-1 gap-4 text-left sm:gap-5"
-                      >
-                        <div className="h-28 w-20 shrink-0 overflow-hidden bg-[#080808]">
-                          <img
-                            src={cldOpt(product.image, 240)}
-                            alt={title}
-                            className="h-full w-full object-contain object-center"
-                            decoding="async"
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-medium tracking-[0.08em] uppercase text-white/90">{title}</p>
-                          {variant ? (
-                            <p className="mt-1 text-[10px] tracking-[0.14em] text-white/45 uppercase">{variant}</p>
-                          ) : null}
-                          <p className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark mt-3">
-                            {product.price} €
-                          </p>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onToggleWishlist(rectoId)}
-                        className="self-start text-[10px] tracking-[0.16em] text-white/35 uppercase underline-offset-2 hover:text-white hover:underline"
-                      >
-                        Retirer
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-
-            {items.length > 0 ? (
-              <div className="dingry-gold-rule-top shrink-0 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onDiscoverCollection();
-                    onClose();
-                  }}
-                  className="w-full border border-white/20 py-3.5 text-[11px] tracking-[0.22em] text-white/70 uppercase transition-colors hover:border-white/40 hover:text-white"
-                >
-                  Continuer vos achats
-                </button>
-              </div>
-            ) : null}
-          </motion.aside>
-        </div>
-      ) : null}
-    </AnimatePresence>
+              {items.length > 0 ? (
+                <div className="dingry-gold-rule-top shrink-0 space-y-3 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+                  <button
+                    type="button"
+                    onClick={() => void shareSelection()}
+                    className="flex w-full items-center justify-center gap-2 border border-white/15 py-3 text-[10px] tracking-[0.2em] text-white/55 uppercase transition-colors hover:border-white/35 hover:text-white"
+                  >
+                    <Share2 size={14} strokeWidth={1.5} aria-hidden />
+                    Partager ma sélection
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onDiscoverCollection();
+                      onClose();
+                    }}
+                    className="w-full border border-white/20 py-3.5 text-[11px] tracking-[0.22em] text-white/70 uppercase transition-colors hover:border-white/40 hover:text-white"
+                  >
+                    Continuer vos achats
+                  </button>
+                </div>
+              ) : null}
+            </motion.aside>
+          </div>
+        ) : null}
+      </AnimatePresence>
+    </>
   );
 }

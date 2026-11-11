@@ -473,24 +473,41 @@
 }
 
 .sizeBtn {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
   border: 1px solid rgb(0 0 0 / 0.12);
+  background: #fff;
   padding: 0.625rem 0;
+  min-height: 2.75rem;
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   color: rgb(22 22 22 / 0.55);
-  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
+  transition:
+    color 45ms ease-out,
+    border-color 45ms ease-out,
+    background-color 45ms ease-out;
 }
 
-.sizeBtn:hover {
+.sizeBtn:hover:not(.sizeOn) {
   border-color: rgb(0 0 0 / 0.28);
   color: #161616;
+}
+
+.sizeBtn:active:not(.sizeOn) {
+  border-color: rgb(0 0 0 / 0.4);
+  background: rgb(22 22 22 / 0.06);
+  color: #161616;
+  transition-duration: 0ms;
 }
 
 .sizeOn {
   border-color: #161616;
   background: #161616;
   color: #fff;
+  transition: none;
 }
 
 .sideGrid {

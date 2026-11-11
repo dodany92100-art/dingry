@@ -29,12 +29,10 @@ export const DINGRY_PRODUCT_MEDIA = {
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/sweatPurpleRecto/1794331844251-t482sl-sweatPurpleRecto.webp",
   sweatPurpleVerso:
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/sweatPurpleVerso/1794331845632-vm58pk-sweatPurpleVerso.webp",
-  teeWhiteRecto:
-    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/teeWhiteRecto/1794331780641-x720d5-teeWhiteRecto.webp",
+  teeWhiteRecto: "/dingry/atelier/tee-white-recto-preview.jpg",
   teeWhiteVerso:
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/teeWhiteVerso/1794331782351-od10b6-teeWhiteVerso.webp",
-  teeBlackRecto:
-    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/teeBlackRecto/1794331777613-kf27km-teeBlackRecto.webp",
+  teeBlackRecto: "/dingry/atelier/tee-black-recto-preview.jpg",
   teeBlackVerso:
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/teeBlackVerso/1794331778974-wzglyv-teeBlackVerso.webp",
   customConfiguratorBanner:

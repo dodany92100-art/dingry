@@ -15,14 +15,12 @@ describe("custom-city-banner", () => {
     );
   });
 
-  it("suggestions incluent MADININA et MILAN", () => {
-    expect(CUSTOM_BANNER_SUGGESTED_CITIES).toContain("MADININA");
-    expect(CUSTOM_BANNER_SUGGESTED_CITIES).toContain("MILAN");
+  it("suggestions : Paris, Marseille, Lyon", () => {
+    expect(CUSTOM_BANNER_SUGGESTED_CITIES).toEqual(["PARIS", "MARSEILLE", "LYON"]);
   });
 
   it("match ville par label ou préfixe", () => {
     expect(matchBannerCityFromQuery("mar")?.id).toBe("marseille");
-    expect(matchBannerCityFromQuery("MADININA")?.suggestion).toBe("MADININA");
     expect(matchBannerCityFromQuery("zzz")).toBeNull();
   });
 

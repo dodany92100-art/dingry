@@ -1,6 +1,6 @@
 /** Contenus éditoriaux section Héritage (manifeste + histoire). */
 
-export const DINGRY_HERITAGE_BASELINE = "LE LUXE EST DANS L'ATTITUDE.";
+export const DINGRY_HERITAGE_BASELINE = "LE LUXE EST DANS L'ATTITUDE";
 
 export const DINGRY_HERITAGE_HOMEPAGE_HOOK =
   "DINGRY redéfinit le luxe : le caractère, l'indépendance et l'attitude avant le statut.";
@@ -49,7 +49,7 @@ export const DINGRY_HERITAGE_MANIFESTE_OUTRO: readonly string[] = [
   "Nous ne croyons pas au luxe comme démonstration de pouvoir. Nous croyons au luxe comme expression de personnalité.",
   "Le luxe n'est pas une question de prix. C'est une question de présence.",
   "DINGRY",
-  "LE LUXE EST DANS L'ATTITUDE.",
+  "LE LUXE EST DANS L'ATTITUDE",
 ];
 
 export const DINGRY_HERITAGE_STORY_CHAPTERS: readonly HeritageStoryChapter[] = [

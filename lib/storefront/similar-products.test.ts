@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ShopProduct } from "@/lib/catalog";
-import { similarProductsForShop } from "@/lib/storefront/similar-products";
+import { shopProductColorVariants, similarProductsForShop } from "@/lib/storefront/similar-products";
 
 function stub(id: number, name: string, variant: string, category = "Hoodies"): ShopProduct {
   return {

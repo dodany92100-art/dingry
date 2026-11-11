@@ -90,12 +90,29 @@ function excludeActiveVariant(cards: SimilarProductCard[]): SimilarProductCard[]
   return cards.filter((card) => !card.isActive);
 }
 
+/** Déclinaisons couleur du même modèle (y compris la fiche ouverte). */
+export function shopProductColorVariants(
+  productId: number,
+  catalog: readonly ShopProduct[],
+): SimilarProductCard[] {
+  const fromLine = lineVariantCards(productId, catalog);
+  if (fromLine.length > 1) return fromLine;
+  const fromFamily = familySiblingCards(productId, catalog);
+  return fromFamily;
+}
+
 /** Déclinaisons même ligne / famille (hors fiche ouverte), sinon pièces complémentaires. */
 export function similarProductsForShop(
   productId: number,
   catalog: readonly ShopProduct[],
 ): { variants: SimilarProductCard[]; crossSell: ShopProduct[] } {
   const rectoId = catalogRectoId(productId);
+  if (shopProductColorVariants(productId, catalog).length > 1) {
+    const crossSell = completeLookForProduct(productId, catalog).filter(
+      (item) => catalogRectoId(item.id) !== rectoId,
+    );
+    return { variants: [], crossSell };
+  }
   let variants = excludeActiveVariant(lineVariantCards(productId, catalog));
   if (variants.length === 0) {
     variants = excludeActiveVariant(familySiblingCards(productId, catalog));

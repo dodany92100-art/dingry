@@ -121,10 +121,38 @@ export function personalizationPreviewLabel(label: string): string {
   return label.trim().slice(0, PERSONALIZATION_MAX_LABEL_LENGTH).toUpperCase();
 }
 
+const PERSONALIZATION_CART_MAX = 80;
+
 /** Ligne stockée dans le panier, ou null si le texte est vide. */
 export function personalizationLine(label: string, shirtLabel: string): string | null {
   const text = label.trim().slice(0, PERSONALIZATION_MAX_LABEL_LENGTH);
   return text ? `${text} — ${shirtLabel} (recto)` : null;
+}
+
+export type PersonalizationCartMeta = {
+  cityColor?: string;
+  /** Taille max du libellé ville (ex. 0.5 → `0.5rem` dans la commande CRM). */
+  citySizeRem?: number;
+};
+
+/** Ajoute couleur / taille pour le CRM (`… · #d4af37 · 0.50rem`). */
+export function formatPersonalizationForCart(
+  label: string,
+  shirtLabel: string,
+  meta?: PersonalizationCartMeta,
+): string | null {
+  const base = personalizationLine(label, shirtLabel);
+  if (!base) return null;
+  let out = base;
+  const color = meta?.cityColor?.trim().toLowerCase();
+  if (color && /^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(color)) {
+    out += ` · ${color}`;
+  }
+  const sizeRem = meta?.citySizeRem;
+  if (sizeRem !== undefined && Number.isFinite(sizeRem) && sizeRem > 0) {
+    out += ` · ${sizeRem.toFixed(2)}rem`;
+  }
+  return out.length <= PERSONALIZATION_CART_MAX ? out : out.slice(0, PERSONALIZATION_CART_MAX).trim();
 }
 
 /* ---------- Catalogue ---------- */

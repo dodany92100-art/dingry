@@ -1,6 +1,9 @@
 import type { AdminAtelierCustomConfig, AtelierCustomModel } from "@/lib/atelier-custom-config";
-import { SHOP_ATELIER_CUSTOM_DEFAULT } from "@/lib/atelier-custom-config";
-import { SIZES } from "@/lib/shop-data";
+import {
+  ATELIER_CUSTOM_SIZES,
+  normalizeAtelierCityColor,
+  SHOP_ATELIER_CUSTOM_DEFAULT,
+} from "@/lib/atelier-custom-config";
 
 function parseModel(raw: unknown, fallback: AtelierCustomModel): AtelierCustomModel {
   if (!raw || typeof raw !== "object") return fallback;
@@ -26,7 +29,7 @@ function parseModel(raw: unknown, fallback: AtelierCustomModel): AtelierCustomMo
     enabled: row.enabled === undefined ? fallback.enabled : Boolean(row.enabled),
     basePriceEur:
       Number.isFinite(basePriceEur) && basePriceEur >= 0 ? Math.round(basePriceEur) : fallback.basePriceEur,
-    sizes: sizes.length > 0 ? sizes : [...SIZES],
+    sizes: sizes.length > 0 ? sizes : [...ATELIER_CUSTOM_SIZES],
     previewImageUrl:
       typeof row.previewImageUrl === "string" && row.previewImageUrl.trim()
         ? row.previewImageUrl.trim()
@@ -37,6 +40,10 @@ function parseModel(raw: unknown, fallback: AtelierCustomModel): AtelierCustomMo
     cityTop: typeof row.cityTop === "string" && row.cityTop.trim() ? row.cityTop.trim() : fallback.cityTop,
     citySize: typeof row.citySize === "string" && row.citySize.trim() ? row.citySize.trim() : fallback.citySize,
     previewTextStyle: styleOk,
+    previewCityColor:
+      typeof row.previewCityColor === "string" && normalizeAtelierCityColor(row.previewCityColor)
+        ? normalizeAtelierCityColor(row.previewCityColor)
+        : fallback.previewCityColor,
   };
 }
 

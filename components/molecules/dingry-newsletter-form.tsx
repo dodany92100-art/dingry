@@ -22,33 +22,40 @@ export function DingryNewsletterForm() {
   }
 
   return (
-    <div className="dingry-newsletter" aria-labelledby="dingry-newsletter-title">
-      <p id="dingry-newsletter-title" className="dingry-footer-eyebrow m-0">
+    <div
+      className="dingry-newsletter flex w-full max-w-[18rem] flex-col items-center text-center"
+      aria-labelledby="dingry-newsletter-title"
+    >
+      <p id="dingry-newsletter-title" className="dingry-footer-eyebrow m-0 text-[#161616]/50">
         Newsletter
       </p>
-      <p className="mt-2 max-w-sm text-[11px] leading-relaxed tracking-[0.08em] text-[#161616]/65">
-        Drops, atelier custom et pièces exclusives — inscris-toi.
+      <p className="mt-1.5 text-[10px] leading-relaxed tracking-[0.06em] text-[#161616]/48">
+        Drops & exclus — inscris-toi.
       </p>
       {status === "sent" ? (
-        <p className="mt-4 text-[11px] tracking-[0.12em] text-[#161616]/75" role="status">
+        <p className="mt-3 text-[10px] tracking-[0.1em] text-[#161616]/65" role="status">
           Merci. Confirme l’envoi dans ton client mail.
         </p>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-stretch">
-          <label className="block min-w-0 flex-1">
+        <form
+          onSubmit={handleSubmit}
+          className="mt-3 flex w-full flex-col items-center justify-center gap-2 sm:flex-row sm:items-center sm:justify-center"
+        >
+          <label className="flex w-full justify-center sm:w-auto">
             <span className="sr-only">E-mail newsletter</span>
             <input
               type="email"
               name="newsletter-email"
               autoComplete="email"
+              inputMode="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Ton e-mail"
-              className="dingry-contact-field w-full"
+              placeholder="E-mail"
+              className="dingry-contact-field dingry-newsletter-email w-full sm:max-w-[11.25rem]"
             />
           </label>
-          <button type="submit" className="dingry-contact-submit shrink-0 sm:px-6">
+          <button type="submit" className="dingry-contact-submit dingry-newsletter-submit w-full sm:w-auto">
             S’inscrire
           </button>
         </form>

@@ -1,0 +1,107 @@
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 20rem;
+  margin-inline: auto;
+  aspect-ratio: 3 / 4;
+}
+
+.stageFlatTee {
+  aspect-ratio: 638 / 1024;
+  overflow: hidden;
+  background: #12100e;
+}
+
+.stageZoomable {
+  cursor: zoom-in;
+}
+
+.backdrop {
+  position: absolute;
+  inset: -15%;
+  z-index: 0;
+  display: block;
+  height: 130%;
+  width: 130%;
+  object-fit: cover;
+  object-position: center center;
+  filter: blur(22px) saturate(1.2) brightness(0.72);
+  transform: scale(1.08);
+  pointer-events: none;
+}
+
+.photo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  object-position: center center;
+}
+
+.photoCover {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.cityOverlay {
+  position: absolute;
+  z-index: 2;
+}
+
+.captionTop {
+  position: absolute;
+  z-index: 2;
+  top: 0.75rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.75);
+  text-shadow: 0 1px 4px rgb(0 0 0 / 0.45);
+  pointer-events: none;
+}
+
+.captionBottom {
+  position: absolute;
+  z-index: 2;
+  bottom: 0.55rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.55);
+  pointer-events: none;
+}
+
+.expandBtn {
+  position: absolute;
+  z-index: 4;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  background: rgb(0 0 0 / 0.42);
+  color: rgb(255 255 255 / 0.92);
+  backdrop-filter: blur(8px);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.expandBtn:hover {
+  border-color: rgb(255 255 255 / 0.5);
+  background: rgb(0 0 0 / 0.58);
+}

@@ -29,11 +29,6 @@ export function CollectionFeed({
 
   return (
     <div className="space-y-12 md:space-y-16">
-      <div className="dingry-gold-rule-bottom pb-4 md:pb-5">
-        <p className="dingry-section-eyebrow">Collection</p>
-        <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{DINGRY_STREET_LINE}</p>
-      </div>
-
       {sections.map((section) => {
         const cells = section.products.map((product, localIndex) => {
           const globalIndex = indexOffset + localIndex;
@@ -55,6 +50,12 @@ export function CollectionFeed({
 
         return (
           <div key={section.category} className="scroll-mt-28 space-y-4 md:space-y-5">
+            {section.category === "hoodies" ? (
+              <div className="dingry-gold-rule-bottom pb-4 md:pb-5">
+                <p className="dingry-section-eyebrow">Collection</p>
+                <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{DINGRY_STREET_LINE}</p>
+              </div>
+            ) : null}
             <h3 className={CATALOG_SECTION_HEADING_CLASS}>
               {section.label}
             </h3>

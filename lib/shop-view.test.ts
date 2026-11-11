@@ -7,6 +7,7 @@ import {
   cartItemCount,
   cartSubtotal,
   modalSizesFor,
+  formatPersonalizationForCart,
   personalizationLine,
   personalizationPreviewLabel,
   removeCartLine,
@@ -83,6 +84,12 @@ describe("personnalisation", () => {
   it("construit la ligne et refuse un texte vide", () => {
     expect(personalizationLine("  paris ", "Noir")).toBe("paris — Noir (recto)");
     expect(personalizationLine("   ", "Noir")).toBeNull();
+    expect(
+      formatPersonalizationForCart("lyon", "T-shirt blanc #11", {
+        cityColor: "#d4af37",
+        citySizeRem: 0.5,
+      }),
+    ).toBe("lyon — T-shirt blanc #11 (recto) · #d4af37 · 0.50rem");
   });
 
   it("aperçu : défaut PARIS, majuscules, 28 caractères max", () => {

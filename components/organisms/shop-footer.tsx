@@ -1,28 +1,47 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
-import { DingryContactForm } from "@/components/molecules/dingry-contact-form";
+import { DingryContactModal } from "@/components/molecules/dingry-contact-modal";
 import { DingryNewsletterForm } from "@/components/molecules/dingry-newsletter-form";
 import { DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
+import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
 import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
+import type { CatalogFilter } from "@/lib/catalog-category";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 
 const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 
-const MENTIONS_LEGALES_LINKS: { id: LegalDocId; label: string }[] = [
-  { id: "cgv", label: "CGV" },
-  { id: "livraison", label: "Frais de livraison" },
-  { id: "rgpd", label: "Confidentialité" },
-  { id: "retours", label: "Retours" },
+const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison"]);
+
+const COLLECTION_SEO_LINKS: { label: string; filter: CatalogFilter }[] = [
+  { label: "Hoodies & sweats oversize", filter: "hoodies" },
+  { label: "T-shirts streetwear", filter: "t-shirts" },
+  { label: "Ensembles & pants", filter: "pants" },
+  { label: "Nouveautés & exclusivités", filter: "all" },
 ];
 
-const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison"]);
+function FooterNavColumn({
+  title,
+  children,
+  className = "",
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col items-center text-center sm:items-start sm:text-left ${className}`}>
+      <p className="dingry-footer-eyebrow mb-3">{title}</p>
+      <ul className="space-y-2">{children}</ul>
+    </div>
+  );
+}
 
 function PaymentMarks() {
   return (
-            <ul className="mt-0 flex flex-wrap items-center justify-center gap-2 sm:justify-start" aria-label="Moyens de paiement acceptés">
+    <ul className="mt-0 flex flex-wrap items-center justify-center gap-2" aria-label="Moyens de paiement acceptés">
       <li className="dingry-pay-badge" title="PayPal">
         <svg viewBox="0 0 88 24" width="72" height="20" role="img" aria-label="PayPal">
           <text x="0" y="18" fill="#003087" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="700" fontStyle="italic">
@@ -76,6 +95,8 @@ type ShopFooterProps = {
   onScrollToCatalogue?: () => void;
   onScrollToSection?: (sectionId: string) => void;
   onOpenHeritage?: () => void;
+  onSelectCatalogFilter?: (filter: CatalogFilter) => void;
+  onOpenAtelierCustom?: () => void;
   shopBasePath?: ShopBasePath;
 };
 
@@ -83,9 +104,12 @@ export function ShopFooter({
   onScrollToCatalogue,
   onScrollToSection,
   onOpenHeritage,
+  onSelectCatalogFilter,
+  onOpenAtelierCustom,
   shopBasePath: _shopBasePath = "/",
 }: ShopFooterProps) {
   const [legalDoc, setLegalDoc] = useState<LegalDocId | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
   const activeLegal = legalDoc ? LEGAL_DOCUMENTS[legalDoc] : null;
 
   function scrollToSection(sectionId: string) {
@@ -104,96 +128,140 @@ export function ShopFooter({
     scrollToSection("catalogue");
   }
 
+  const boutiqueLinkClass = "dingry-footer-link text-[11px] tracking-[0.12em] transition-colors";
+
+  function goCatalogFilter(filter: CatalogFilter) {
+    if (onSelectCatalogFilter) {
+      onSelectCatalogFilter(filter);
+      return;
+    }
+    goCatalogue();
+  }
+
   return (
     <>
-      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-10 md:py-12">
+      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-8 md:py-10">
         <div className="w-full">
-          <div className="grid gap-10 lg:grid-cols-12 lg:items-start lg:gap-x-10">
-            <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between lg:col-span-5 lg:flex-col lg:justify-start">
-              <div>
-                <DingryLogo animate={false} tone="on-light" className="h-10 w-auto max-md:max-h-none md:h-12" />
-                <a
-                  href={DINGRY_INSTAGRAM_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="dingry-footer-instagram-inline mt-4 inline-flex items-center gap-2 text-sm tracking-[0.14em]"
-                >
-                  <InstagramIcon />
-                  <span>@dingry_officiel</span>
-                </a>
-              </div>
-              <nav aria-label="Navigation boutique">
-                <p className="dingry-footer-eyebrow mb-3">Boutique</p>
-                <ul className="space-y-2">
-                  <li>
-                    <button type="button" onClick={goCatalogue} className="dingry-footer-link text-left text-[11px] tracking-[0.12em]">
-                      Collection
-                    </button>
-                  </li>
-                  <li>
-                    {onOpenHeritage ? (
-                      <button
-                        type="button"
-                        onClick={onOpenHeritage}
-                        className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
-                      >
-                        Héritage
-                      </button>
-                    ) : (
-                      <Link
-                        href={shopHref(_shopBasePath, "/?heritage=1")}
-                        className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
-                      >
-                        Héritage
-                      </Link>
-                    )}
-                  </li>
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => scrollToSection("lookbook")}
-                      className="dingry-footer-link text-left text-[11px] tracking-[0.12em]"
-                    >
-                      Lookbook
-                    </button>
-                  </li>
-                </ul>
-              </nav>
-              <div id="mentions-legales">
-                <p className="dingry-footer-eyebrow">Mentions légales</p>
-                <ul className="mt-3 space-y-2">
-                  {MENTIONS_LEGALES_LINKS.map((link) => (
-                    <li key={link.id}>
-                      <button
-                        type="button"
-                        onClick={() => setLegalDoc(link.id)}
-                        className="dingry-footer-legal-link dingry-footer-legal-link--compact text-left"
-                      >
-                        {link.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:items-start lg:gap-8 xl:gap-10">
+            <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+              <DingryLogo animate={false} tone="on-light" className="h-10 w-auto max-md:max-h-none md:h-12" />
+              <p className={`dingry-typo-manifesto mt-3 max-w-[14rem] text-[10px] text-[#161616]/52`}>
+                {DINGRY_MANIFESTO_FR}
+              </p>
+              <a
+                href={DINGRY_INSTAGRAM_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="dingry-footer-instagram-inline mt-4 inline-flex items-center gap-2 text-sm tracking-[0.14em]"
+              >
+                <InstagramIcon />
+                <span>@dingry_officiel</span>
+              </a>
+              <div className="mt-6 flex flex-col items-center sm:items-start">
+                <p className="dingry-footer-eyebrow mb-2 text-[#161616]/50">Contact</p>
+                <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
+                  Nous écrire
+                </button>
               </div>
             </div>
 
-            <div className="flex flex-col gap-8 lg:col-span-7">
-              <DingryNewsletterForm />
-              <DingryContactForm />
+            <FooterNavColumn title="Nos collections">
+              {COLLECTION_SEO_LINKS.map(({ label, filter }) => (
+                <li key={label}>
+                  <button type="button" onClick={() => goCatalogFilter(filter)} className={boutiqueLinkClass}>
+                    {label}
+                  </button>
+                </li>
+              ))}
+            </FooterNavColumn>
+
+            <FooterNavColumn title="L'atelier & concept">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenAtelierCustom) onOpenAtelierCustom();
+                    else scrollToSection("atelier-custom");
+                  }}
+                  className={boutiqueLinkClass}
+                >
+                  Personnalisation villes / custom
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => scrollToSection("lookbook")} className={boutiqueLinkClass}>
+                  Lookbook & inspirations
+                </button>
+              </li>
+              <li>
+                {onOpenHeritage ? (
+                  <button type="button" onClick={onOpenHeritage} className={boutiqueLinkClass}>
+                    Notre histoire
+                  </button>
+                ) : (
+                  <Link href={shopHref(_shopBasePath, "/?heritage=1")} className={boutiqueLinkClass}>
+                    Notre histoire
+                  </Link>
+                )}
+              </li>
+              <li>
+                <button type="button" onClick={() => scrollToSection("heritage")} className={boutiqueLinkClass}>
+                  Concept DINGRY
+                </button>
+              </li>
+            </FooterNavColumn>
+
+            <div id="mentions-legales" className="flex flex-col items-center text-center sm:items-start sm:text-left">
+              <p className="dingry-footer-eyebrow mb-3">Informations & accès</p>
+              <ul className="space-y-2">
+                <li>
+                  <button type="button" onClick={() => setLegalDoc("cgv")} className={boutiqueLinkClass}>
+                    CGV & mentions légales
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => setLegalDoc("livraison")} className={boutiqueLinkClass}>
+                    Livraisons & retours
+                  </button>
+                </li>
+                <li>
+                  <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
+                    FAQ & contact
+                  </button>
+                </li>
+                <li>
+                  <Link
+                    href="/admin"
+                    className={`${boutiqueLinkClass} text-[#161616]/35 hover:text-[#161616]/65`}
+                  >
+                    Espace CRM
+                  </Link>
+                </li>
+              </ul>
             </div>
           </div>
 
-          <div className="mt-10 flex flex-col items-center gap-3 border-t border-black/10 pt-6 sm:flex-row sm:justify-between">
-            <div className="flex flex-col items-center gap-2 sm:items-start">
+          <section
+            className="mx-auto mt-10 flex w-full flex-col items-center gap-6 text-center md:mt-12"
+            aria-label="Newsletter et paiement"
+          >
+            <DingryNewsletterForm />
+
+            <div className="dingry-gold-rule-top flex w-full max-w-sm flex-col items-center pt-8">
               <p className="dingry-footer-eyebrow m-0 text-[#161616]/60">Paiement</p>
-              <PaymentMarks />
+              <div className="mt-3 flex justify-center">
+                <PaymentMarks />
+              </div>
             </div>
-            <p className="text-center text-[10px] tracking-[0.08em] text-[#161616]/55 sm:text-right">
+
+            <p className="pb-1 text-[10px] tracking-[0.08em] text-[#161616]/55">
               © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY · Tous droits réservés
             </p>
-          </div>
+          </section>
         </div>
       </footer>
+
+      <DingryContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
 
       {activeLegal && legalDoc ? (
           <div

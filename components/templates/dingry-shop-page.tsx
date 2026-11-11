@@ -352,6 +352,14 @@ function DingryShopPageInner() {
               onScrollToCatalogue={() => scrollToSection("catalogue")}
               onScrollToSection={scrollToSection}
               onOpenHeritage={openHeritageReader}
+              onSelectCatalogFilter={(filter) => {
+                selectFilter(filter);
+                scrollToSection("catalogue");
+              }}
+              onOpenAtelierCustom={() => {
+                scrollToSection("atelier-custom");
+                openCustom();
+              }}
             />
           </LazyWhenVisible>
         </div>
@@ -394,6 +402,26 @@ function DingryShopPageInner() {
         onDiscoverCollection={() => {
           cart.setOpen(false);
           scrollToSection("catalogue");
+        }}
+      />
+      <WishlistDrawer
+        open={wishlistOpen}
+        onClose={() => setWishlistOpen(false)}
+        wishlistIds={wishlist.ids}
+        products={products}
+        shopBasePath={shopBasePath}
+        purchaseDisabled={catalogState === "error"}
+        onOpenProduct={modal.openProductModal}
+        onToggleWishlist={wishlist.toggle}
+        onDiscoverCollection={() => {
+          setWishlistOpen(false);
+          scrollToSection("catalogue");
+        }}
+        onAddToCart={(product, size, from) => {
+          if (catalogState === "error") return;
+          if (!isShopProductInStock(product)) return;
+          cart.addLine(product, size, 1);
+          launchFromElement(from, "cart", "cart");
         }}
       />
       <HeritageReader open={heritageReaderOpen} onClose={closeHeritageReader} />

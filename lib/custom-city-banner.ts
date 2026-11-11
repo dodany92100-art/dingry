@@ -11,17 +11,19 @@ export type CustomBannerCity = {
 };
 
 /** Villes bandeau atelier + suggestions modale (une seule source). */
+/** Ordre vitrine : Paris en tête, puis Marseille, Lyon, etc. */
 export const CUSTOM_BANNER_CITIES: readonly CustomBannerCity[] = [
-  { id: "marseille", label: "Marseille", background: null, suggestion: "MARSEILLE" },
   { id: "paris", label: "Paris", background: null, suggestion: "PARIS" },
+  { id: "marseille", label: "Marseille", background: null, suggestion: "MARSEILLE" },
   { id: "lyon", label: "Lyon", background: null, suggestion: "LYON" },
-  { id: "madinina", label: "Madinina", background: null, suggestion: "MADININA" },
-  { id: "milan", label: "Milan", background: null, suggestion: "MILAN" },
 ];
 
 export const CUSTOM_BANNER_SUGGESTED_CITIES: readonly string[] = CUSTOM_BANNER_CITIES.map(
   (city) => city.suggestion,
 );
+
+/** Libellé par défaut à l’ouverture du configurateur atelier (sans ville bandeau). */
+export const DEFAULT_ATELIER_CONFIGURATOR_LABEL = "MARSEILLE";
 
 export const CUSTOM_BANNER_COPY = {
   eyebrow: "CUSTOM • CONFIGURATEUR",

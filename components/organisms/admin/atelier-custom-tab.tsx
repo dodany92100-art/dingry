@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { SIZES } from "@/lib/shop-data";
+import { ATELIER_CUSTOM_SIZES } from "@/lib/atelier-custom-config";
 import type { AdminAtelierCustomConfig, AtelierCustomModel } from "@/lib/atelier-custom-config";
+import { AtelierModelPreviewTune } from "@/components/molecules/shop/atelier-model-preview-tune";
 import type { SaveAtelierCustomResult } from "./hooks/use-admin-atelier-custom";
 
 type Props = {
@@ -25,7 +26,7 @@ function parseSizesInput(raw: string): string[] {
     .split(/[,;\s]+/)
     .map((size) => size.trim().toUpperCase())
     .filter((size) => size.length > 0);
-  return parsed.length > 0 ? parsed : [...SIZES];
+  return parsed.length > 0 ? parsed : [...ATELIER_CUSTOM_SIZES];
 }
 
 export function AtelierCustomTab({ config, customized, saving, error, onSave }: Props) {
@@ -176,6 +177,13 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
                 className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
               />
             </label>
+
+            <AtelierModelPreviewTune
+              model={model}
+              onCityTopChange={(cityTop) => patchModel(model.id, { cityTop })}
+              onCityColorChange={(previewCityColor) => patchModel(model.id, { previewCityColor })}
+              onCitySizeChange={(citySize) => patchModel(model.id, { citySize })}
+            />
           </fieldset>
         ))}
       </div>

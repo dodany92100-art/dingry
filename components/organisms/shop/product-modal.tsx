@@ -15,7 +15,8 @@ import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { DINGRY_PRODUCT_MODAL_AMBIENCE_SRC } from "@/lib/dingry-brand";
 import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
 import { catalogRectoId, productDetailCopy, storefrontProductTitle } from "@/lib/dingry-product-display";
-import { similarProductsForShop } from "@/lib/storefront/similar-products";
+import { shopProductColorVariants, similarProductsForShop } from "@/lib/storefront/similar-products";
+import { ProductColorVariantGrid } from "@/components/molecules/product-color-variant-grid";
 import { SimilarProductsStrip } from "@/components/molecules/similar-products-strip";
 import { isJerseyShopProduct, JERSEY_COLOR_OPTIONS } from "@/lib/jersey-shop";
 import { colorSwatchChipStyle } from "@/lib/storefront/color-swatch-chip";
@@ -347,7 +348,11 @@ function ProductModalContent({
                 <button
                   key={s}
                   type="button"
+                  aria-pressed={selectedSize === s}
                   onClick={() => modal.setSelectedSize(s)}
+                  onPointerDown={(event) => {
+                    if (event.pointerType === "touch") modal.setSelectedSize(s);
+                  }}
                   className={`${styles.sizeBtn} ${selectedSize === s ? styles.sizeOn : ""}`}
                 >
                   {s}
