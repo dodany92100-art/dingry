@@ -3,14 +3,10 @@
 import { AnimatePresence, motion } from "motion/react";
 import { cldOpt } from "@/components/molecules/product-card";
 import type { CheckoutConfirmation } from "@/lib/checkout-draft";
-import {
-  DINGRY_DELIVERY_ESTIMATE,
-  DINGRY_SHIPPING_AMOUNT_HINT,
-  DINGRY_SHIPPING_LABEL,
-} from "@/lib/dingry-checkout-copy";
-import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
+import { DINGRY_SHIPPING_AMOUNT_HINT, DINGRY_SHIPPING_LABEL } from "@/lib/dingry-checkout-copy";
 import { DINGRY_PRODUCT_MODAL_AMBIENCE_SRC } from "@/lib/dingry-brand";
 import { lineUnitPrice, cartLineKey, modalSizesFor, type CartLine } from "@/lib/shop-view";
+import { CartReassurance } from "@/components/cart/cart-reassurance";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "./motion";
 
 type CartDrawerProps = {
@@ -87,15 +83,6 @@ export function CartDrawer({
               className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent"
               aria-hidden
             />
-            <div className="pointer-events-none relative z-10 flex h-full max-w-lg flex-col justify-end p-10 lg:p-14">
-              <p className="dingry-typo-eyebrow text-[#FF3D00]">DINGRY Paris</p>
-              <p className="dingry-typo-manifesto mt-4 text-white/75">{DINGRY_MANIFESTO_FR}</p>
-              <p className="dingry-typo-street dingry-typo-street--lg mt-3">{DINGRY_STREET_LINE}</p>
-              <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/60">{DINGRY_DELIVERY_ESTIMATE}</p>
-              <p className="mt-10 text-[10px] tracking-[0.24em] text-white/35 uppercase">
-                Cliquez pour continuer vos achats
-              </p>
-            </div>
           </motion.aside>
           <motion.div
             className="absolute inset-0 bg-[#050505]/80 backdrop-blur-sm md:hidden"
@@ -120,7 +107,11 @@ export function CartDrawer({
                 </h2>
                 {count > 0 && !confirmation ? (
                   <p className="mt-1 text-xs text-white/40">
-                    {count} article{count > 1 ? "s" : ""} · {DINGRY_SHIPPING_LABEL.toLowerCase()}
+                    {count} article{count > 1 ? "s" : ""} ·{" "}
+                    <span className="dingry-cart-recap-amount text-sm tabular-nums text-white/75">
+                      {total} €
+                    </span>{" "}
+                    TTC
                   </p>
                 ) : null}
               </div>
@@ -271,31 +262,39 @@ export function CartDrawer({
                   </div>
                   );
                 })}
+                <CartReassurance tone="dark" className="mt-2 border-white/10" />
               </div>
             )}
 
             {items.length > 0 && (
-              <div className="dingry-gold-rule-top relative sticky bottom-0 shrink-0 bg-[#0a0a0a] p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-                <p className="mb-4 text-[10px] tracking-[0.22em] text-white/35 uppercase">Récapitulatif</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-baseline gap-4 text-white/55">
+              <div className="dingry-gold-rule-top relative z-10 shrink-0 bg-[#0a0a0a] p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.55)]">
+                <div className="mb-4 flex items-end justify-between gap-4">
+                  <p className="text-[10px] tracking-[0.22em] text-white/35 uppercase">Récapitulatif</p>
+                  <p
+                    className="dingry-cart-recap-total shrink-0 tabular-nums text-white/80"
+                    aria-label={`Total ${total} euros TTC`}
+                  >
+                    {total} €
+                  </p>
+                </div>
+                <div className="space-y-2 text-sm text-white/55">
+                  <div className="flex justify-between items-baseline gap-4">
                     <span>Sous-total</span>
-                    <span className="dingry-product-price dingry-product-price--sm dingry-product-price--on-dark">
-                      {total} €
+                    <span className="dingry-cart-recap-amount shrink-0 tabular-nums text-white/75">{total} €</span>
+                  </div>
+                  <div className="flex justify-between items-baseline gap-4">
+                    <span>{DINGRY_SHIPPING_LABEL}</span>
+                    <span className="shrink-0 text-xs tracking-wide text-white/45 uppercase">
+                      {DINGRY_SHIPPING_AMOUNT_HINT}
                     </span>
                   </div>
-                  <div className="flex justify-between items-baseline gap-4 text-white/55">
-                    <span>{DINGRY_SHIPPING_LABEL}</span>
-                    <span className="text-xs tracking-wide text-white/45 uppercase">{DINGRY_SHIPPING_AMOUNT_HINT}</span>
-                  </div>
-                  <div className="dingry-gold-rule-top relative flex justify-between items-baseline gap-4 pt-3">
-                    <span className="text-xs tracking-[0.22em] uppercase text-white/40">Total TTC</span>
-                    <span className="dingry-product-price dingry-product-price--lg dingry-product-price--on-dark">
+                  <div className="relative z-[1] flex justify-between items-baseline gap-4 border-t border-white/15 pt-3">
+                    <span className="text-xs font-medium tracking-[0.22em] uppercase text-white/70">Total TTC</span>
+                    <span className="dingry-cart-recap-amount dingry-cart-recap-amount--lg shrink-0 tabular-nums text-white/80">
                       {total} €
                     </span>
                   </div>
                 </div>
-                <p className="mt-3 text-[10px] leading-relaxed tracking-wide text-white/35">{DINGRY_DELIVERY_ESTIMATE}</p>
                 <button
                   type="button"
                   onClick={onCheckout}
@@ -311,9 +310,6 @@ export function CartDrawer({
                 >
                   Continuer mes achats
                 </button>
-                <p className="mt-3 text-center text-[10px] leading-relaxed tracking-wide text-white/25">
-                  Paiement sécurisé sur la page suivante (PayPal ou carte).
-                </p>
               </div>
             )}
           </motion.div>

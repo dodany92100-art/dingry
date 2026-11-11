@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart, Menu, X } from "lucide-react";
+import { CircleUser, Heart, Menu, X } from "lucide-react";
 import { motion, useAnimation, useReducedMotion } from "motion/react";
 import { useFlyAnimationOptional } from "@/hooks/use-fly-animation";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
@@ -28,6 +28,8 @@ const MOBILE_MENU_ITEMS: { id: ShopNavSectionId; label: string }[] = [
 function ShopNavActions({
   cartCount,
   favoriteCount,
+  accountActive,
+  onOpenAccount,
   onOpenFavorites,
   onOpenCart,
   favorisControls,
@@ -35,6 +37,8 @@ function ShopNavActions({
 }: {
   cartCount: number;
   favoriteCount: number;
+  accountActive?: boolean;
+  onOpenAccount?: () => void;
   onOpenFavorites?: () => void;
   onOpenCart: () => void;
   favorisControls: ReturnType<typeof useAnimation>;
@@ -42,6 +46,21 @@ function ShopNavActions({
 }) {
   return (
     <>
+      {onOpenAccount ? (
+        <button
+          type="button"
+          onClick={onOpenAccount}
+          aria-label={accountActive ? "Compte connecté" : "Se connecter"}
+          className="dingry-interactive-luxe flex h-11 w-11 items-center justify-center rounded-sm border border-white/20 bg-white/[0.06] text-white/75 hover:bg-white/[0.1] hover:text-white"
+        >
+          <CircleUser
+            size={20}
+            strokeWidth={1.75}
+            className={accountActive ? "text-[#fcf6ba]" : "stroke-current"}
+            aria-hidden
+          />
+        </button>
+      ) : null}
       {onOpenFavorites ? (
         <button
           type="button"
@@ -109,6 +128,8 @@ function ShopNavActions({
 type ShopNavProps = {
   cartCount: number;
   favoriteCount?: number;
+  accountActive?: boolean;
+  onOpenAccount?: () => void;
   onOpenFavorites?: () => void;
   onOpenCart: () => void;
   onScrollToSection: (id: string) => void;
@@ -124,6 +145,8 @@ type ShopNavProps = {
 export function ShopNav({
   cartCount,
   favoriteCount = 0,
+  accountActive = false,
+  onOpenAccount,
   onOpenFavorites,
   onOpenCart,
   onScrollToSection,
@@ -247,6 +270,8 @@ export function ShopNav({
             <ShopNavActions
               cartCount={cartCount}
               favoriteCount={favoriteCount}
+              accountActive={accountActive}
+              onOpenAccount={onOpenAccount}
               onOpenFavorites={onOpenFavorites}
               onOpenCart={onOpenCart}
               favorisControls={favorisControls}

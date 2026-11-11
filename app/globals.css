@@ -2450,6 +2450,27 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
 /** Panier + checkout + paiement — angles droits, pas d’arrondi vitrine. */
 .dingry-sale-ui .dingry-checkout-pay-surface,
 .dingry-sale-ui .dingry-checkout-pay-surface img,
+.dingry-cart-recap-total,
+.dingry-cart-recap-amount {
+  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.dingry-cart-recap-total {
+  font-size: clamp(1.35rem, 3.2vw, 1.75rem);
+}
+
+.dingry-cart-recap-amount {
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+}
+
+.dingry-cart-recap-amount--lg {
+  font-size: clamp(1.15rem, 2.8vw, 1.35rem);
+}
+
 .dingry-sale-ui.dingry-cart-drawer-panel [data-cart-line],
 .dingry-sale-ui.dingry-cart-drawer-panel [data-cart-confirm],
 .dingry-sale-ui.dingry-cart-drawer-panel button,

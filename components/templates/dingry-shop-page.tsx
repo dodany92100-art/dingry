@@ -19,6 +19,7 @@ import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-p
 import { FlyAnimationProvider, useFlyAnimation } from "@/hooks/use-fly-animation";
 import { useAdminSessionProbe } from "@/components/organisms/admin/hooks/use-admin-session";
 import { useWishlist } from "@/hooks/use-wishlist";
+import { useShopAuth } from "@/hooks/use-shop-auth";
 import type { PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
@@ -50,6 +51,11 @@ const PersonalizeModal = dynamic(
 
 const CartDrawer = dynamic(
   () => import("@/components/organisms/shop/cart-drawer").then((m) => ({ default: m.CartDrawer })),
+  { ssr: false },
+);
+
+const AuthModal = dynamic(
+  () => import("@/components/auth/auth-modal").then((m) => ({ default: m.AuthModal })),
   { ssr: false },
 );
 
@@ -126,12 +132,31 @@ function DingryShopPageInner() {
   const cart = useShopCart();
   const modal = useProductModal({ products, catalogState });
   const wishlist = useWishlist();
+  const shopAuth = useShopAuth();
   const { authenticated: adminSession } = useAdminSessionProbe();
   const { launchFromElement } = useFlyAnimation();
   const { activeFilter, selectFilter } = useCatalogFilter(scrollToSection);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authReason, setAuthReason] = useState<string | undefined>();
   const [heritageReaderOpen, setHeritageReaderOpen] = useState(false);
+
+  const openAuth = useCallback((reason?: string) => {
+    setAuthReason(reason);
+    setAuthOpen(true);
+  }, []);
+
+  const toggleWishlistWithAuth = useCallback(
+    (productId: number) => {
+      const adding = !wishlist.isFavorite(productId);
+      wishlist.toggleFavorite(productId);
+      if (adding && !shopAuth.user) {
+        openAuth("Connectez-vous pour retrouver votre sélection sur tous vos appareils.");
+      }
+    },
+    [openAuth, shopAuth.user, wishlist],
+  );
 
   const filtered = useMemo(() => visibleCatalogProducts(products, activeFilter), [products, activeFilter]);
   const flipPairs = useMemo(() => buildFlipPairs(products), [products]);
@@ -259,6 +284,9 @@ function DingryShopPageInner() {
     if (!product) return;
     cart.addPersonalizedLine(product, line.size, line.qty, line.personalization);
     setPersonalizeOpen(false);
+    if (!shopAuth.user) {
+      openAuth("Enregistrez votre personnalisation avec votre compte DINGRY.");
+    }
   }
 
   function goToCheckout() {
@@ -266,6 +294,14 @@ function DingryShopPageInner() {
     cart.persist();
     cart.setOpen(false);
     router.push("/checkout");
+  }
+
+  function openCart() {
+    if (cart.count > 0) {
+      goToCheckout();
+      return;
+    }
+    cart.setOpen(true);
   }
 
   return (
@@ -276,6 +312,7 @@ function DingryShopPageInner() {
           Boolean(modal.selectedProduct) ||
           cart.open ||
           wishlistOpen ||
+          authOpen ||
           personalizeOpen ||
           heritageReaderOpen
         }
@@ -284,8 +321,10 @@ function DingryShopPageInner() {
         shopBasePath={shopBasePath}
         cartCount={cart.count}
         favoriteCount={wishlist.favoriteCount}
+        accountActive={Boolean(shopAuth.user)}
+        onOpenAccount={() => openAuth()}
         onOpenFavorites={() => setWishlistOpen(true)}
-        onOpenCart={() => cart.setOpen(true)}
+        onOpenCart={openCart}
         onScrollToSection={scrollToSection}
         onOpenHeritage={openHeritageReader}
         onOpenCustom={() => openCustom()}
@@ -307,7 +346,7 @@ function DingryShopPageInner() {
             flipPairs={flipPairs}
             onOpenProduct={modal.openProductModal}
             wishlistIds={wishlist.ids}
-            onToggleWishlist={wishlist.toggle}
+            onToggleWishlist={toggleWishlistWithAuth}
             showAdminIdBadge={adminSession}
           />
           <LazyWhenVisible
@@ -376,7 +415,7 @@ function DingryShopPageInner() {
         products={products}
         flipPairs={flipPairs}
         wishlistIds={wishlist.ids}
-        onToggleWishlist={wishlist.toggle}
+        onToggleWishlist={toggleWishlistWithAuth}
         onAddToCart={addToCart}
         purchaseDisabled={catalogState === "error"}
       />
@@ -408,7 +447,7 @@ function DingryShopPageInner() {
         shopBasePath={shopBasePath}
         purchaseDisabled={catalogState === "error"}
         onOpenProduct={modal.openProductModal}
-        onToggleWishlist={wishlist.toggle}
+        onToggleWishlist={toggleWishlistWithAuth}
         onDiscoverCollection={() => {
           setWishlistOpen(false);
           scrollToSection("catalogue");
@@ -421,6 +460,14 @@ function DingryShopPageInner() {
         }}
       />
       <HeritageReader open={heritageReaderOpen} onClose={closeHeritageReader} />
+      <AuthModal
+        open={authOpen}
+        reason={authReason}
+        onClose={() => {
+          setAuthOpen(false);
+          setAuthReason(undefined);
+        }}
+      />
     </div>
   );
 }

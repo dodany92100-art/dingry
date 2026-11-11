@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { formatClientCheckoutError } from "@/lib/checkout-diagnostic";
-import { clientRateLimitMessage } from "@/lib/client/rate-limit-ui";
 
 export type PayPalCartLine = {
   productId: number;

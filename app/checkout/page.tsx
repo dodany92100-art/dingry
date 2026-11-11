@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
+import { CartReassurance } from "@/components/cart/cart-reassurance";
 import {
   clearPendingCheckoutOrder,
   readPendingCheckoutOrder,
