@@ -1,4 +1,5 @@
 import type { AdminCatalogPersoBanner } from "@/lib/admin/types";
+import { parsePersoBannerLinkMeta, encodePersoBannerLink } from "@/lib/catalog-perso-banner-cities";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const SHOP_BANNER_POSITION_CATALOG_PERSO = "catalog_perso" as const;
@@ -44,11 +45,15 @@ export function rowToPublicShopBanner(row: ShopBannerRow): PublicShopBanner {
 }
 
 export function rowToAdminCatalogPersoBanner(row: ShopBannerRow): AdminCatalogPersoBanner {
+  const meta = parsePersoBannerLinkMeta(row.link_url);
   return {
     enabled: row.is_active,
     imageUrl: row.image_url,
     blobUrl: row.image_url,
     blobPathname: row.image_blob_pathname,
+    imageFocusX: meta.imageFocusX,
+    imageFocusY: meta.imageFocusY,
+    cityVisuals: meta.cityVisuals,
     eyebrow: row.eyebrow,
     title: row.title,
     subtitle: row.subtitle,
@@ -134,7 +139,7 @@ export async function upsertSupabaseCatalogPersoBanner(
     eyebrow: banner.eyebrow,
     cta_label: banner.ctaLabel,
     image_url: banner.imageUrl,
-    link_url: "",
+    link_url: encodePersoBannerLink(banner.imageFocusX, banner.imageFocusY, banner.cityVisuals),
     image_blob_pathname: banner.blobPathname,
     position,
     is_active: banner.enabled,

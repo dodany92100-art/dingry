@@ -23,7 +23,7 @@ import type { PersonalizedLineInput } from "@/components/organisms/shop/personal
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
 import { isShopProductInStock } from "@/lib/catalog";
-import { CATALOG_MENU_TAB_CUSTOM, parseCatalogFilter } from "@/lib/shop-catalog";
+import { parseCatalogFilter } from "@/lib/shop-catalog";
 import {
   enabledAtelierModels,
   resolvePersonalizationShopProduct,
@@ -142,7 +142,7 @@ function DingryShopPageInner() {
     [products],
   );
 
-  const tabValue = personalizeOpen ? CATALOG_MENU_TAB_CUSTOM : activeFilter;
+  const tabValue = activeFilter;
   const [cartScrollLocked, setCartScrollLocked] = useState(false);
 
   const openHeritageReader = useCallback(() => {
@@ -221,11 +221,6 @@ function DingryShopPageInner() {
 
   const handleTabChange = useCallback(
     (tab: string) => {
-      if (tab === CATALOG_MENU_TAB_CUSTOM) {
-        setPersonalizeOpen(true);
-        return;
-      }
-      setPersonalizeOpen(false);
       selectFilter(parseCatalogFilter(tab));
     },
     [selectFilter],
@@ -293,6 +288,7 @@ function DingryShopPageInner() {
         onOpenCart={() => cart.setOpen(true)}
         onScrollToSection={scrollToSection}
         onOpenHeritage={openHeritageReader}
+        onOpenCustom={() => openCustom()}
       />
       <div
         ref={pageScrollRef}

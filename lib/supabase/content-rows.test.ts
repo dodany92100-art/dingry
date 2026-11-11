@@ -39,9 +39,15 @@ describe("shop_banners row mapping", () => {
   };
 
   it("admin bannière perso", () => {
-    const admin = rowToAdminCatalogPersoBanner(sample);
+    const admin = rowToAdminCatalogPersoBanner({
+      ...sample,
+      link_url: "dingry:image-focus:55,35",
+    });
     expect(admin.enabled).toBe(true);
     expect(admin.ctaLabel).toBe("CUSTOM");
+    expect(admin.imageFocusX).toBe(55);
+    expect(admin.imageFocusY).toBe(35);
+    expect(admin.cityVisuals).toEqual({});
   });
 
   it("payload public /api/banners", () => {

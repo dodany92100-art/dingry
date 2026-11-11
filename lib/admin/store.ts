@@ -52,6 +52,8 @@ import {
   SHOP_BANNER_POSITION_CATALOG_PERSO,
   upsertSupabaseCatalogPersoBanner,
 } from "@/lib/supabase/shop-banners";
+import { primaryPersoBannerFromCityVisuals } from "@/lib/catalog-perso-banner-cities";
+import { readBannerFocusFields } from "@/lib/catalog-perso-banner-focus";
 import { getSharedRedis } from "@/lib/ratelimit";
 import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { buildStorefrontOnlineProducts } from "@/lib/admin/storefront-online-catalog";
@@ -486,11 +488,19 @@ function normalizeCatalogPersoBannerRecord(value: unknown): AdminCatalogPersoBan
   const record = value as Record<string, unknown>;
   const imageUrl = typeof record.imageUrl === "string" ? record.imageUrl.trim() : "";
   if (!imageUrl) return undefined;
+  const focus = readBannerFocusFields(record);
+  const cityVisuals =
+    record.cityVisuals && typeof record.cityVisuals === "object" && !Array.isArray(record.cityVisuals)
+      ? (record.cityVisuals as AdminCatalogPersoBanner["cityVisuals"])
+      : {};
   return {
     enabled: record.enabled !== false,
     imageUrl,
     blobUrl: typeof record.blobUrl === "string" ? record.blobUrl : null,
     blobPathname: typeof record.blobPathname === "string" ? record.blobPathname : null,
+    imageFocusX: focus.imageFocusX,
+    imageFocusY: focus.imageFocusY,
+    cityVisuals,
     eyebrow: typeof record.eyebrow === "string" ? record.eyebrow.trim() : "",
     title: typeof record.title === "string" ? record.title.trim() : "",
     subtitle: typeof record.subtitle === "string" ? record.subtitle.trim() : "",
@@ -1960,6 +1970,18 @@ export async function uploadCatalogPersoBannerImage(file: File): Promise<Uploade
   });
 }
 
+export async function uploadCatalogPersoBannerCityImage(
+  cityId: string,
+  file: File,
+): Promise<UploadedAdminImage> {
+  const slug = cityId.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  return uploadAdminImageFile(file, {
+    supabaseFolder: `banner/${PERSO_BANNER_UPLOAD_ID}/cities/${slug}`,
+    blobPathPrefix: `banner/${PERSO_BANNER_UPLOAD_ID}/cities/${slug}`,
+    localFilePrefix: `banner-${PERSO_BANNER_UPLOAD_ID}-${slug}`,
+  });
+}
+
 async function deleteCatalogPersoBannerImage(banner: AdminCatalogPersoBanner): Promise<void> {
   await deleteBlobOrLocal(banner.blobUrl, banner.blobPathname, banner.imageUrl);
 }
@@ -1970,6 +1992,10 @@ export type CatalogPersoBannerInput = {
   title: string;
   subtitle: string;
   ctaLabel: string;
+  imageFocusX: number;
+  imageFocusY: number;
+  /** Retire le visuel principal CRM (ne garde pas l’ancien `image_url`). */
+  clearMainImage?: boolean;
 };
 
 const PERSO_BANNER_STORE_WRITE_OPTIONS: StoreOptimisticOptions = { adminRelaxedFinalize: true };
@@ -1979,6 +2005,7 @@ export async function upsertCatalogPersoBanner(
   file?: File,
   preuploadedImage?: UploadedAdminImage | null,
   persistedImage?: UploadedAdminImage | null,
+  cityVisuals: AdminCatalogPersoBanner["cityVisuals"] = {},
 ): Promise<AdminCatalogPersoBanner> {
   let uploaded: Awaited<ReturnType<typeof uploadCatalogPersoBannerImage>> | undefined;
   let previous: AdminCatalogPersoBanner | undefined;
@@ -1992,20 +2019,33 @@ export async function upsertCatalogPersoBanner(
   if (isSupabaseStoreEnabled()) {
     const existingRow = await getSupabaseShopBannerByPosition(SHOP_BANNER_POSITION_CATALOG_PERSO);
     previous = existingRow ? rowToAdminCatalogPersoBanner(existingRow) : undefined;
+    const marseilleUrl = cityVisuals.marseille?.imageUrl?.trim();
     const baseImage =
-      uploaded?.imageUrl ?? persistedImage?.imageUrl?.trim() ?? previous?.imageUrl?.trim();
+      uploaded?.imageUrl ??
+      persistedImage?.imageUrl?.trim() ??
+      marseilleUrl ??
+      (input.clearMainImage ? undefined : previous?.imageUrl?.trim());
     if (!baseImage) {
-      throw new StoreUnavailableError("Uploadez un visuel WebP sur R2 avant d'enregistrer.");
+      throw new StoreUnavailableError(
+        "Ajoutez un visuel WebP (principal ou atelier Marseille) sur R2 avant d'enregistrer.",
+      );
     }
-    const next: AdminCatalogPersoBanner = {
-      enabled: input.enabled,
+    const primary = primaryPersoBannerFromCityVisuals(cityVisuals, {
       imageUrl: baseImage,
-      blobUrl: uploaded
-        ? uploaded.blobUrl
-        : (persistedImage?.blobUrl ?? previous?.blobUrl ?? null),
       blobPathname: uploaded
         ? uploaded.blobPathname
         : (persistedImage?.blobPathname ?? previous?.blobPathname ?? null),
+      imageFocusX: input.imageFocusX,
+      imageFocusY: input.imageFocusY,
+    });
+    const next: AdminCatalogPersoBanner = {
+      enabled: input.enabled,
+      imageUrl: primary.imageUrl,
+      blobUrl: primary.imageUrl,
+      blobPathname: primary.blobPathname,
+      imageFocusX: primary.imageFocusX,
+      imageFocusY: primary.imageFocusY,
+      cityVisuals,
       eyebrow: input.eyebrow,
       title: input.title,
       subtitle: input.subtitle,
@@ -2026,15 +2066,30 @@ export async function upsertCatalogPersoBanner(
   const result = await withStoreOptimistic(
     (store) => {
       previous = store.catalogPersoBanner ? { ...store.catalogPersoBanner } : undefined;
-      const baseImage = uploaded?.imageUrl ?? previous?.imageUrl?.trim();
+      const marseilleUrl = cityVisuals.marseille?.imageUrl?.trim();
+      const baseImage =
+        uploaded?.imageUrl ??
+        marseilleUrl ??
+        (input.clearMainImage ? undefined : previous?.imageUrl?.trim());
       if (!baseImage) {
-        throw new StoreUnavailableError("Uploadez un visuel WebP sur R2 avant d'enregistrer.");
+        throw new StoreUnavailableError(
+          "Ajoutez un visuel WebP (principal ou atelier Marseille) sur R2 avant d'enregistrer.",
+        );
       }
+      const primary = primaryPersoBannerFromCityVisuals(cityVisuals, {
+        imageUrl: baseImage,
+        blobPathname: uploaded ? uploaded.blobPathname : (previous?.blobPathname ?? null),
+        imageFocusX: input.imageFocusX,
+        imageFocusY: input.imageFocusY,
+      });
       const next: AdminCatalogPersoBanner = {
         enabled: input.enabled,
-        imageUrl: baseImage,
-        blobUrl: uploaded ? uploaded.blobUrl : (previous?.blobUrl ?? null),
-        blobPathname: uploaded ? uploaded.blobPathname : (previous?.blobPathname ?? null),
+        imageUrl: primary.imageUrl,
+        blobUrl: primary.imageUrl,
+        blobPathname: primary.blobPathname,
+        imageFocusX: primary.imageFocusX,
+        imageFocusY: primary.imageFocusY,
+        cityVisuals,
         eyebrow: input.eyebrow,
         title: input.title,
         subtitle: input.subtitle,

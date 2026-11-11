@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isEdgeWriteRateLimitPath, limitEdgeApiWrite } from "@/lib/edge-api-rate-limit";
 import { jsonNoStore } from "@/lib/http";
 import { isTeaserGateActive, isTeaserGatedPath } from "@/lib/dingry-teaser-gate";
 import { ADMIN_COOKIE_NAME, sessionSecretFromEnv, verifyAdminSession } from "@/lib/admin/session-token";
+import { jsonRateLimited } from "@/lib/rate-limit-response";
+import { clientIp } from "@/lib/request-ip";
 
 const ADMIN_PUBLIC_API = new Set(["/api/admin/login", "/api/admin/logout", "/api/admin/totp"]);
 
@@ -79,6 +82,19 @@ export async function handleProxyRequest(request: NextRequest): Promise<NextResp
 
   if (pathname === "/admin" || pathname === "/admin/") return NextResponse.next();
   if (ADMIN_PUBLIC_API.has(pathname)) return NextResponse.next();
+  if (request.method === "POST" && isEdgeWriteRateLimitPath(pathname)) {
+    const gate = await limitEdgeApiWrite(pathname, clientIp(request));
+    if (!gate.ok) {
+      if (gate.status === 429) {
+        return jsonRateLimited(gate.error, gate.retryAfter, {
+          limit: gate.limit,
+          remaining: gate.remaining,
+        });
+      }
+      return jsonNoStore({ error: gate.error }, { status: gate.status, headers: GATE_DENY_HEADERS });
+    }
+  }
+
 
   const isAdminRoute = pathname.startsWith("/admin/") || pathname.startsWith("/api/admin/");
 

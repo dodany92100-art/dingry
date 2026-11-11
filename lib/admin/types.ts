@@ -270,11 +270,24 @@ export type AdminLookbookSlideView = AdminLookbookSlide & {
 };
 
 /** Bannière catalogue · tee personnalisé (singleton CRM). */
+export type {
+  PersoBannerCityId,
+  PersoBannerCityVisual,
+  PersoBannerCityVisuals,
+} from "@/lib/catalog-perso-banner-cities";
+import type { PersoBannerCityVisuals } from "@/lib/catalog-perso-banner-cities";
+
 export type AdminCatalogPersoBanner = {
   enabled: boolean;
   imageUrl: string;
   blobUrl: string | null;
   blobPathname: string | null;
+  /** Point focal horizontal (0–100, object-position). */
+  imageFocusX: number;
+  /** Point focal vertical (0–100, object-position). */
+  imageFocusY: number;
+  /** Visuels atelier par ville (Paris, Marseille, Lyon) — 1 Mo max chacun. */
+  cityVisuals: PersoBannerCityVisuals;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -284,7 +297,15 @@ export type AdminCatalogPersoBanner = {
 
 export type ShopCatalogPersoBanner = Pick<
   AdminCatalogPersoBanner,
-  "enabled" | "imageUrl" | "eyebrow" | "title" | "subtitle" | "ctaLabel"
+  | "enabled"
+  | "imageUrl"
+  | "imageFocusX"
+  | "imageFocusY"
+  | "cityVisuals"
+  | "eyebrow"
+  | "title"
+  | "subtitle"
+  | "ctaLabel"
 >;
 
 export type { PriceFamily } from "@/lib/validations/price-family";

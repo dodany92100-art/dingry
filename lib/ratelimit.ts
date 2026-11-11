@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { getSharedRedis } from "@/lib/upstash-redis";
+
+export { getSharedRedis } from "@/lib/upstash-redis";
 
 const COARSE_WINDOW_TOKENS = 60;
 const QUOTE_WINDOW_TOKENS = 20;
@@ -14,45 +16,12 @@ const REDIS_TIMEOUT_MS = 3000;
 const PAYPAL_ORDER_LOCK_TTL_SECONDS = 180;
 const PAYPAL_ORDER_DONE_TTL_SECONDS = 60 * 60 * 24 * 90;
 
-function stripEnv(value: string | undefined): string {
-  const trimmed = value?.trim() ?? "";
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1);
-  }
-  return trimmed;
-}
-
-let redisClient: Redis | null = null;
-
-function upstashCredentials(): { url: string; token: string } | null {
-  const url = stripEnv(process.env.UPSTASH_REDIS_REST_URL);
-  const token = stripEnv(process.env.UPSTASH_REDIS_REST_TOKEN);
-  if (!url || !token) return null;
-  return { url, token };
-}
-
-function getRedis(): Redis | null {
-  const creds = upstashCredentials();
-  if (!creds) {
-    return null;
-  }
-  redisClient ??= new Redis({ url: creds.url, token: creds.token });
-  return redisClient;
-}
-
-export function getSharedRedis(): Redis | null {
-  return getRedis();
-}
-
 function buildLimiter(
   prefix: string,
   tokens: number,
   window: typeof QUOTE_WINDOW | typeof PAYMENT_WINDOW | typeof COARSE_WINDOW,
 ): Ratelimit | null {
-  const redis = getRedis();
+  const redis = getSharedRedis();
   if (!redis) return null;
   return new Ratelimit({
     redis,
@@ -92,7 +61,7 @@ export type PayPalOrderClaim =
 export type PayPalOrderMarker = "absent" | "in_progress" | "done" | "unknown";
 
 export async function readPayPalOrderMarker(orderId: string): Promise<PayPalOrderMarker> {
-  const client = getRedis();
+  const client = getSharedRedis();
   if (!client) return "absent";
   try {
     const value = await client.get<string>(paypalOrderKey(orderId));
@@ -107,7 +76,7 @@ export async function readPayPalOrderMarker(orderId: string): Promise<PayPalOrde
 }
 
 export async function claimPayPalOrder(orderId: string): Promise<PayPalOrderClaim> {
-  const client = getRedis();
+  const client = getSharedRedis();
   if (!client) return { status: "unavailable" };
   const token = randomUUID();
   try {
@@ -124,7 +93,7 @@ export async function claimPayPalOrder(orderId: string): Promise<PayPalOrderClai
 
 /** Marque la commande PayPal comme enregistrée (TTL long). Ne remplace que notre verrou court. */
 export async function completePayPalOrder(orderId: string, token: string): Promise<boolean> {
-  const client = getRedis();
+  const client = getSharedRedis();
   if (!client) {
     console.error("PayPal complete sans Redis", orderId);
     return false;
@@ -153,7 +122,7 @@ export async function completePayPalOrder(orderId: string, token: string): Promi
 
 /** Libère le verrou court seulement s'il nous appartient encore. */
 export async function releasePayPalOrder(orderId: string, token: string): Promise<void> {
-  const client = getRedis();
+  const client = getSharedRedis();
   if (!client) return;
   const key = paypalOrderKey(orderId);
   const expected = lockValue(token);

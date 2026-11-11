@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";

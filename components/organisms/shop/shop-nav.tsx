@@ -8,6 +8,8 @@ import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
+import { CATALOG_MENU_TAB_CUSTOM, catalogMenuTabLabel } from "@/lib/shop-catalog";
+import { cn } from "@/lib/utils";
 
 const SECTIONS = [
   ["catalogue", "Collection"],
@@ -111,6 +113,8 @@ type ShopNavProps = {
   onOpenCart: () => void;
   onScrollToSection: (id: string) => void;
   onOpenHeritage?: () => void;
+  /** Ouvre le configurateur tee (bouton doré CUSTOM). */
+  onOpenCustom?: () => void;
   /** Aperçu CRM : même chrome, sans `position: fixed` sur la page admin. */
   embedded?: boolean;
   /** `/` ou `/websitedx` — logo renvoie au sommet de la boutique courante. */
@@ -124,6 +128,7 @@ export function ShopNav({
   onOpenCart,
   onScrollToSection,
   onOpenHeritage,
+  onOpenCustom,
   embedded = false,
   shopBasePath = "/",
 }: ShopNavProps) {
@@ -215,7 +220,7 @@ export function ShopNav({
               <span className="dingry-typo-street dingry-nav-tagline__street">{DINGRY_STREET_LINE}</span>
             </div>
           </div>
-          <div className="hidden items-center justify-center gap-6 md:flex">
+          <div className="hidden items-center justify-center gap-4 md:flex lg:gap-6">
             {SECTIONS.map(([id, label]) => (
               <button
                 key={id}
@@ -226,6 +231,17 @@ export function ShopNav({
                 {label}
               </button>
             ))}
+            {onOpenCustom ? (
+              <button
+                type="button"
+                onClick={() => onOpenCustom()}
+                className={cn(
+                  "dingry-catalog-custom-tab dingry-interactive-luxe min-h-11 shrink-0 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.26em] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]",
+                )}
+              >
+                <span className="gold-text">{catalogMenuTabLabel(CATALOG_MENU_TAB_CUSTOM)}</span>
+              </button>
+            ) : null}
           </div>
           <div className="relative z-10 flex shrink-0 items-center gap-2 justify-self-end md:gap-3">
             <ShopNavActions
@@ -261,6 +277,22 @@ export function ShopNav({
                   </button>
                 </li>
               ))}
+              {onOpenCustom ? (
+                <li className="mt-2 border-t border-white/10 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenCustom();
+                      setMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "dingry-catalog-custom-tab dingry-interactive-luxe w-full px-4 py-3 text-left text-[10px] font-medium uppercase tracking-[0.26em]",
+                    )}
+                  >
+                    <span className="gold-text">{catalogMenuTabLabel(CATALOG_MENU_TAB_CUSTOM)}</span>
+                  </button>
+                </li>
+              ) : null}
             </ul>
           </motion.div>
         ) : null}

@@ -18,6 +18,16 @@ export const CUSTOM_BANNER_CITIES: readonly CustomBannerCity[] = [
   { id: "lyon", label: "Lyon", background: null, suggestion: "LYON" },
 ];
 
+/** Onglet texte libre dans le bandeau atelier (state local, sans API). */
+export const CUSTOM_BANNER_TAB_CUSTOM = "custom" as const;
+
+export type CustomBannerTabId = CustomBannerCity["id"] | typeof CUSTOM_BANNER_TAB_CUSTOM;
+
+export const CUSTOM_BANNER_ATELIER_TABS: readonly CustomBannerTabId[] = [
+  ...CUSTOM_BANNER_CITIES.map((city) => city.id),
+  CUSTOM_BANNER_TAB_CUSTOM,
+];
+
 export const CUSTOM_BANNER_SUGGESTED_CITIES: readonly string[] = CUSTOM_BANNER_CITIES.map(
   (city) => city.suggestion,
 );

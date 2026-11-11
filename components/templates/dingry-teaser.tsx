@@ -1,5 +1,6 @@
 "use client";
 
+import { clientRateLimitMessage } from "@/lib/client/rate-limit-ui";
 import { useEffect, useState, type FormEvent } from "react";
 import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
 import {

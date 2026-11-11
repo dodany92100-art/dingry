@@ -8,10 +8,18 @@ import {
 } from "@/lib/admin/admin-crm-route";
 import { parseCatalogPersoBannerFields } from "@/lib/admin/parse-catalog-perso-banner";
 import {
+  DEFAULT_PERSO_BANNER_FOCUS_X,
+  DEFAULT_PERSO_BANNER_FOCUS_Y,
+} from "@/lib/catalog-perso-banner-focus";
+import { buildPersoBannerCityVisuals } from "@/lib/admin/build-perso-banner-city-visuals";
+import {
   loadStoreReadOnly,
+  uploadCatalogPersoBannerCityImage,
   upsertCatalogPersoBanner,
   validateCrmContentImageFile,
 } from "@/lib/admin/store";
+import { PERSO_BANNER_CITY_IDS } from "@/lib/catalog-perso-banner-cities";
+import { persoBannerCityFormPrefix } from "@/lib/catalog-perso-banner-cities";
 import { resolveAdminCatalogPersoBanner } from "@/lib/catalog-perso-banner";
 import { persoBannerImageFromForm, preuploadedRectoFromForm } from "@/lib/admin/preuploaded-image";
 import { jsonNoStore } from "@/lib/http";
@@ -63,7 +71,7 @@ export async function PATCH(request: Request) {
     return jsonNoStore({ error: parsed.error }, { status: 400 });
   }
 
-  const { enabled, eyebrow, title, subtitle, ctaLabel } = parsed.fields;
+  const { enabled, eyebrow, title, subtitle, ctaLabel, imageFocusX, imageFocusY } = parsed.fields;
   if (
     enabled === undefined ||
     !eyebrow ||
@@ -73,6 +81,9 @@ export async function PATCH(request: Request) {
   ) {
     return jsonNoStore({ error: "Champs incomplets." }, { status: 400 });
   }
+
+  const focusX = imageFocusX ?? DEFAULT_PERSO_BANNER_FOCUS_X;
+  const focusY = imageFocusY ?? DEFAULT_PERSO_BANNER_FOCUS_Y;
 
   const image = formData.get("image");
   const preuploadedImage = preuploadedRectoFromForm(formData);
@@ -85,12 +96,42 @@ export async function PATCH(request: Request) {
     }
   }
 
+  for (const cityId of PERSO_BANNER_CITY_IDS) {
+    const prefix = persoBannerCityFormPrefix(cityId);
+    const cityImage = formData.get(`${prefix}_image`);
+    if (cityImage instanceof File && cityImage.size > 0) {
+      const imageError = validateCrmContentImageFile(cityImage);
+      if (imageError) {
+        return jsonNoStore({ error: `${cityId.toUpperCase()} : ${imageError}` }, { status: 400 });
+      }
+    }
+  }
+
   try {
+    const store = await loadStoreReadOnly();
+    const cityVisuals = await buildPersoBannerCityVisuals({
+      formData,
+      previous: store.catalogPersoBanner?.cityVisuals,
+      uploadCity: (cityFile, cityId) => uploadCatalogPersoBannerCityImage(cityId, cityFile),
+    });
+
+    const clearMainImage = formData.get("imageClear") === "true";
+
     const banner = await upsertCatalogPersoBanner(
-      { enabled, eyebrow, title, subtitle, ctaLabel },
+      {
+        enabled,
+        eyebrow,
+        title,
+        subtitle,
+        ctaLabel,
+        imageFocusX: focusX,
+        imageFocusY: focusY,
+        clearMainImage,
+      },
       file,
       preuploadedImage,
       persistedImage,
+      cityVisuals,
     );
     revalidateCatalogPersoBanner();
     return jsonNoStore({ banner });

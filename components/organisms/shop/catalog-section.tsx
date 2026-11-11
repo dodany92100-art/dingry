@@ -4,7 +4,7 @@ import { memo } from "react";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import type { ShopProduct } from "@/lib/catalog";
 import type { FlipPair } from "@/lib/shop-view";
-import { CATALOG_SECTION_SURFACE_CLASS } from "./catalog-layout";
+import { CATALOG_VITRINE_SHELL_CLASS, CATALOG_SECTION_SURFACE_CLASS } from "./catalog-layout";
 import { CatalogFilterBar, type CatalogTabValue } from "./catalog-filter-bar";
 import { CatalogGrid } from "./catalog-grid";
 import type { CatalogState } from "./hooks/use-shop-catalog";
@@ -26,18 +26,20 @@ type CatalogSectionProps = {
 function CatalogSectionInner({ tabValue, onTabChange, ...grid }: CatalogSectionProps) {
   return (
     <section id="catalogue" className={CATALOG_SECTION_SURFACE_CLASS}>
-      <CatalogFilterBar value={tabValue} onChange={onTabChange} />
+      <div className={CATALOG_VITRINE_SHELL_CLASS}>
+        <CatalogFilterBar value={tabValue} onChange={onTabChange} />
 
-      {grid.catalogState === "error" ? (
-        <div
-          className="mb-6 border border-amber-500/35 bg-amber-950/30 px-4 py-3 text-sm leading-relaxed text-amber-100/90"
-          role="status"
-        >
-          Catalogue momentanément indisponible — achat désactivé. Réessayez dans un instant.
-        </div>
-      ) : null}
+        {grid.catalogState === "error" ? (
+          <div
+            className="mb-6 border border-amber-500/35 bg-amber-950/30 px-4 py-3 text-sm leading-relaxed text-amber-100/90"
+            role="status"
+          >
+            Catalogue momentanément indisponible — achat désactivé. Réessayez dans un instant.
+          </div>
+        ) : null}
 
-      <CatalogGrid {...grid} />
+        <CatalogGrid {...grid} />
+      </div>
     </section>
   );
 }

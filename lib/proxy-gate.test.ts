@@ -27,7 +27,7 @@ describe("pathMatchesProxyMatcher", () => {
   it("n'inclut pas webhook ni cron", () => {
     expect(pathMatchesProxyMatcher("/api/paypal/webhook")).toBe(false);
     expect(pathMatchesProxyMatcher("/api/cron/stock-reconcile")).toBe(false);
-    expect(pathMatchesProxyMatcher("/api/teaser")).toBe(false);
+    expect(pathMatchesProxyMatcher("/api/teaser")).toBe(true);
   });
 
   it("matcher exporté cohérent", () => {

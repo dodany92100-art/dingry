@@ -1,13 +1,24 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import {
+  PersoBannerCityVisualField,
+  type PersoBannerCityVisualFieldHandle,
+} from "@/components/molecules/admin/perso-banner-city-visual-field";
+import { PERSO_BANNER_CITY_IDS } from "@/lib/catalog-perso-banner-cities";
 import type { AdminCatalogPersoBanner } from "@/lib/admin/types";
 import {
   appendPreuploadedImageFields,
   R2_PERSO_BANNER_FOLDER,
   type AdminImageUploadResponse,
 } from "@/lib/client/admin-upload-image";
+import { AdminImageDropField } from "@/components/molecules/admin/admin-image-drop-field";
+import { ImageFocusControl } from "@/components/molecules/admin/image-focus-control";
 import { prepareAndUploadAdminImage } from "@/lib/client/admin-media-upload";
+import {
+  DEFAULT_PERSO_BANNER_FOCUS_X,
+  DEFAULT_PERSO_BANNER_FOCUS_Y,
+} from "@/lib/catalog-perso-banner-focus";
 import { isR2PublicUrl } from "@/lib/r2/config";
 import type { SavePersoBannerResult } from "./hooks/use-admin-catalog-perso-banner";
 import { useAdminUploadGuard } from "./hooks/use-admin-upload-guard";
@@ -37,6 +48,10 @@ export function CatalogPersoBannerTab({
   const [imagePreview, setImagePreview] = useState(banner.imageUrl);
   const [convertingImage, setConvertingImage] = useState(false);
   const [formError, setFormError] = useState("");
+  const [imageFocusX, setImageFocusX] = useState(banner.imageFocusX ?? DEFAULT_PERSO_BANNER_FOCUS_X);
+  const [imageFocusY, setImageFocusY] = useState(banner.imageFocusY ?? DEFAULT_PERSO_BANNER_FOCUS_Y);
+  const [mainVisualCleared, setMainVisualCleared] = useState(false);
+  const cityFieldRefs = useRef<Partial<Record<string, PersoBannerCityVisualFieldHandle | null>>>({});
 
   useEffect(() => {
     setEnabled(banner.enabled);
@@ -45,6 +60,8 @@ export function CatalogPersoBannerTab({
     setSubtitle(banner.subtitle);
     setCtaLabel(banner.ctaLabel);
     if (!imageFile) setImagePreview(banner.imageUrl);
+    setImageFocusX(banner.imageFocusX ?? DEFAULT_PERSO_BANNER_FOCUS_X);
+    setImageFocusY(banner.imageFocusY ?? DEFAULT_PERSO_BANNER_FOCUS_Y);
   }, [banner, imageFile]);
 
   useEffect(() => {
@@ -86,19 +103,32 @@ export function CatalogPersoBannerTab({
     }
     setPreuploaded(null);
     setImageFile(result.file);
+    setMainVisualCleared(false);
+  }
+
+  function removeMainVisual() {
+    if (busy) return;
+    setMainVisualCleared(true);
+    setImageFile(null);
+    setPreuploaded(null);
+    setImagePreview("");
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setFormError("");
-    if (convertingImage) {
+    if (convertingImage || PERSO_BANNER_CITY_IDS.some((id) => cityFieldRefs.current[id]?.isBusy())) {
       setFormError("Attendez la fin de l’upload R2 avant d’enregistrer.");
       return;
     }
     const hasNewImage = Boolean(imageFile || preuploaded?.url);
-    const hasCrmR2Image = isR2PublicUrl(banner.imageUrl) || isR2PublicUrl(imagePreview);
-    if (!hasNewImage && !hasCrmR2Image) {
-      setFormError("Ajoutez un visuel WebP — upload obligatoire (stockage R2, pas d’URL externe).");
+    const hasCrmR2Image =
+      !mainVisualCleared && (isR2PublicUrl(banner.imageUrl) || isR2PublicUrl(imagePreview));
+    const hasMarseilleR2 = isR2PublicUrl(banner.cityVisuals?.marseille?.imageUrl);
+    if (!hasNewImage && !hasCrmR2Image && !hasMarseilleR2) {
+      setFormError(
+        "Ajoutez un visuel WebP — visuel principal ou atelier Marseille (R2, 1 Mo max).",
+      );
       return;
     }
     const formData = new FormData();
@@ -107,13 +137,21 @@ export function CatalogPersoBannerTab({
     formData.set("title", title.trim());
     formData.set("subtitle", subtitle.trim());
     formData.set("ctaLabel", ctaLabel.trim());
-    if (imageFile) formData.set("image", imageFile);
-    else {
+    formData.set("imageFocusX", String(imageFocusX));
+    formData.set("imageFocusY", String(imageFocusY));
+    if (mainVisualCleared) {
+      formData.set("imageClear", "true");
+    } else if (imageFile) {
+      formData.set("image", imageFile);
+    } else {
       appendPreuploadedImageFields(formData, preuploaded);
       if (!preuploaded?.url && isR2PublicUrl(imagePreview)) {
         formData.set("imageUrl", imagePreview.trim());
         if (banner.blobPathname) formData.set("imageBlobPathname", banner.blobPathname);
       }
+    }
+    for (const cityId of PERSO_BANNER_CITY_IDS) {
+      cityFieldRefs.current[cityId]?.appendToFormData(formData);
     }
     const result = await onSave(formData);
     if ("error" in result) {
@@ -122,6 +160,7 @@ export function CatalogPersoBannerTab({
     }
     setImageFile(null);
     setPreuploaded(null);
+    setMainVisualCleared(false);
   }
 
   const busy = saving || convertingImage;
@@ -159,13 +198,42 @@ export function CatalogPersoBannerTab({
           <span className="text-[11px] uppercase tracking-[0.16em] text-white/80">Afficher sur la boutique</span>
         </label>
 
-        <div className="mb-5 overflow-hidden border border-white/10">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[9px] leading-relaxed tracking-[0.08em] text-white/40">
+            Visuel principal CRM : synchronisé sur <strong className="font-medium text-white/55">Marseille</strong>{" "}
+            à l&apos;enregistrement si le bloc atelier Marseille est renseigné.
+          </p>
           {imagePreview.trim() ? (
-            <img src={imagePreview} alt="" className="aspect-[21/9] w-full object-cover" loading="lazy" decoding="async" />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={removeMainVisual}
+              className="shrink-0 border border-red-400/35 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-red-200/90 transition hover:bg-red-950/40 disabled:opacity-40"
+            >
+              Supprimer
+            </button>
+          ) : null}
+        </div>
+        <div className="mb-5">
+          {imagePreview.trim() ? (
+            <ImageFocusControl
+              imageUrl={imagePreview}
+              focusX={imageFocusX}
+              focusY={imageFocusY}
+              disabled={busy}
+              onDropFile={(file) => void handleImageChange(file)}
+              onChange={({ focusX, focusY }) => {
+                setImageFocusX(focusX);
+                setImageFocusY(focusY);
+              }}
+            />
           ) : (
-            <p className="flex aspect-[21/9] w-full items-center justify-center bg-white/[0.04] text-[10px] uppercase tracking-[0.2em] text-white/35">
-              Visuel R2 requis
-            </p>
+            <AdminImageDropField
+              variant="empty"
+              disabled={busy}
+              converting={convertingImage}
+              onFile={(file) => void handleImageChange(file)}
+            />
           )}
         </div>
 
@@ -178,14 +246,30 @@ export function CatalogPersoBannerTab({
               Upload R2 en cours… ne rechargez pas la page.
             </p>
           ) : null}
-          <input
-            type="file"
-            accept="image/*"
+          <AdminImageDropField
+            variant="compact"
             disabled={busy}
-            onChange={(event) => void handleImageChange(event.target.files?.[0] ?? null)}
-            className="block w-full text-[11px] text-white/60 file:mr-3 file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-[10px] file:uppercase file:tracking-widest file:text-white disabled:opacity-40"
+            converting={convertingImage}
+            onFile={(file) => void handleImageChange(file)}
           />
         </label>
+
+        <div className="mb-4 border-t border-white/10 pt-5">
+          <p className="mb-4 text-[10px] uppercase tracking-[0.22em] text-white/45">
+            Visuels atelier (switch Paris · Marseille · Lyon)
+          </p>
+          {PERSO_BANNER_CITY_IDS.map((cityId) => (
+            <PersoBannerCityVisualField
+              key={cityId}
+              ref={(node) => {
+                cityFieldRefs.current[cityId] = node;
+              }}
+              cityId={cityId}
+              stored={banner.cityVisuals?.[cityId]}
+              disabled={busy}
+            />
+          ))}
+        </div>
 
         <label className="mb-4 block">
           <span className="mb-2 block text-[10px] uppercase tracking-[0.22em] text-white/45">Sur-titre</span>

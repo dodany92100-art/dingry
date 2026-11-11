@@ -17,5 +17,7 @@ export const config = {
     "/api/checkout",
     "/api/lookbook",
     "/api/catalog-perso-banner",
+    "/api/teaser",
+    "/api/upload",
   ],
 };

@@ -164,8 +164,16 @@ export function ProductImageFlip({
     const src = side === "verso" && backImage?.trim() ? backImage : frontImage;
     const showModalNav = modalFlippable && Boolean(onRequestSide);
 
+    const modalFlipArrowClass = cn(
+      "absolute top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-black/12 bg-white/88 text-black/85 shadow-[0_4px_18px_rgb(0_0_0_/_0.12)] backdrop-blur-[2px] transition-[opacity,transform,background] duration-200",
+      "focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff3d00]",
+      "[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100",
+      "[@media(hover:none)]:opacity-95",
+      "active:scale-[0.97]",
+    );
+
     return (
-      <div className={cn("relative", className)}>
+      <div className={cn("group relative", className)}>
         <DingryProductImage
           src={src}
           alt={side === "verso" ? `${alt} — verso` : alt}
@@ -178,32 +186,36 @@ export function ProductImageFlip({
         />
         {showModalNav ? (
           <>
-            <button
-              type="button"
-              aria-label="Afficher le recto"
-              aria-current={side === "recto"}
-              className={cn(
-                "absolute inset-y-0 left-0 z-10 w-1/2 border-0 bg-transparent p-0",
-                side === "recto" ? "cursor-default" : "cursor-pointer",
-              )}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (side !== "recto") onRequestSide?.("recto");
-              }}
-            />
-            <button
-              type="button"
-              aria-label="Afficher le verso"
-              aria-current={side === "verso"}
-              className={cn(
-                "absolute inset-y-0 right-0 z-10 w-1/2 border-0 bg-transparent p-0",
-                side === "verso" ? "cursor-default" : "cursor-pointer",
-              )}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (side !== "verso") onRequestSide?.("verso");
-              }}
-            />
+            {side !== "recto" ? (
+              <button
+                type="button"
+                aria-label="Afficher le recto"
+                className={cn(modalFlipArrowClass, "left-2 sm:left-3")}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRequestSide?.("recto");
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+                  <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : null}
+            {side !== "verso" ? (
+              <button
+                type="button"
+                aria-label="Afficher le verso"
+                className={cn(modalFlipArrowClass, "right-2 sm:right-3")}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRequestSide?.("verso");
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : null}
           </>
         ) : null}
       </div>

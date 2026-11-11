@@ -7,8 +7,6 @@ import {
   catalogMenuTabLabel,
   type CatalogFilter,
 } from "@/lib/shop-catalog";
-import { cn } from "@/lib/utils";
-
 const CATALOG_CATEGORY_TABS = CATALOG_MENU_TABS.filter((tab) => tab !== CATALOG_MENU_TAB_CUSTOM);
 
 export type CatalogTabValue = CatalogFilter | typeof CATALOG_MENU_TAB_CUSTOM;
@@ -19,34 +17,19 @@ type CatalogFilterBarProps = {
 };
 
 export function CatalogFilterBar({ value, onChange }: CatalogFilterBarProps) {
-  const customActive = value === CATALOG_MENU_TAB_CUSTOM;
+  const categoryValue = value === CATALOG_MENU_TAB_CUSTOM ? CATALOG_CATEGORY_TABS[0]! : value;
 
   return (
-    <div className="dingry-catalog-bar dingry-catalog-bar--silver mb-6 md:mb-8">
-      <div className="dingry-catalog-bar__chrome py-3">
+    <div className="dingry-catalog-bar dingry-catalog-bar--silver dingry-catalog-bar--vitrine mb-6 w-full md:mb-8">
+      <div className="dingry-catalog-bar__chrome py-2.5 md:py-3">
       <AnimatedTabs
         tabs={[...CATALOG_CATEGORY_TABS]}
-        value={customActive ? "" : value}
+        value={categoryValue}
         onValueChange={onChange}
         layoutId="dingry-catalog-tabs"
         aria-label="Catégories de la collection DINGRY"
         variant="underline"
         labelForTab={catalogMenuTabLabel}
-        endAction={
-          <button
-            type="button"
-            role="tab"
-            aria-selected={customActive}
-            tabIndex={customActive ? 0 : -1}
-            onClick={() => onChange(CATALOG_MENU_TAB_CUSTOM)}
-            className={cn(
-              "dingry-catalog-custom-tab shrink-0 snap-center px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.26em] transition-[border-color,box-shadow,background] duration-200 active:scale-[0.97] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]",
-              customActive && "dingry-catalog-custom-tab--active",
-            )}
-          >
-            <span className="gold-text">{catalogMenuTabLabel(CATALOG_MENU_TAB_CUSTOM)}</span>
-          </button>
-        }
       />
       </div>
     </div>

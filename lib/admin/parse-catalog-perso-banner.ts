@@ -1,3 +1,5 @@
+import { clampBannerFocusPercent } from "@/lib/catalog-perso-banner-focus";
+
 type ParseResult = {
   error?: string;
   fields: {
@@ -6,6 +8,8 @@ type ParseResult = {
     title?: string;
     subtitle?: string;
     ctaLabel?: string;
+    imageFocusX?: number;
+    imageFocusY?: number;
   };
 };
 
@@ -46,6 +50,8 @@ export function parseCatalogPersoBannerFields(
   const titleRaw = readString(get("title"));
   const subtitleRaw = readString(get("subtitle"));
   const ctaRaw = readString(get("ctaLabel"));
+  const focusXRaw = readString(get("imageFocusX"));
+  const focusYRaw = readString(get("imageFocusY"));
 
   if (!partial) {
     if (!eyebrowRaw) return { error: "Le sur-titre est requis.", fields: {} };
@@ -71,6 +77,9 @@ export function parseCatalogPersoBannerFields(
     if (typeof capped === "object") return { error: capped.error, fields: {} };
   }
 
+  const focusX = focusXRaw.length > 0 ? clampBannerFocusPercent(Number(focusXRaw)) : undefined;
+  const focusY = focusYRaw.length > 0 ? clampBannerFocusPercent(Number(focusYRaw)) : undefined;
+
   return {
     fields: {
       ...(enabled !== undefined ? { enabled } : {}),
@@ -78,6 +87,8 @@ export function parseCatalogPersoBannerFields(
       ...(titleRaw ? { title: titleRaw } : {}),
       ...(subtitleRaw ? { subtitle: subtitleRaw } : {}),
       ...(ctaRaw ? { ctaLabel: ctaRaw } : {}),
+      ...(focusX !== undefined ? { imageFocusX: focusX } : {}),
+      ...(focusY !== undefined ? { imageFocusY: focusY } : {}),
     },
   };
 }

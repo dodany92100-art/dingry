@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { clientIp } from "@/lib/request-ip";
+import { jsonRateLimited } from "@/lib/rate-limit-response";
 import { limitTeaserSignup, saveTeaserEmail } from "@/lib/teaser-list";
 
 export const runtime = "nodejs";

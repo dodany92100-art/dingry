@@ -1,9 +1,13 @@
 import type { AdminCatalogPersoBanner, ShopCatalogPersoBanner } from "@/lib/admin/types";
+import { DEFAULT_PERSO_BANNER_FOCUS_X, DEFAULT_PERSO_BANNER_FOCUS_Y } from "@/lib/catalog-perso-banner-focus";
 import { CUSTOM_BANNER_COPY } from "@/lib/custom-city-banner";
 
 /** Textes formulaire admin — pas d’URL image (uniquement R2 + Supabase). */
 export const CATALOG_PERSO_BANNER_COPY: Omit<ShopCatalogPersoBanner, "imageUrl"> = {
   enabled: true,
+  imageFocusX: DEFAULT_PERSO_BANNER_FOCUS_X,
+  imageFocusY: DEFAULT_PERSO_BANNER_FOCUS_Y,
+  cityVisuals: {},
   eyebrow: CUSTOM_BANNER_COPY.eyebrow,
   title: CUSTOM_BANNER_COPY.title,
   subtitle: CUSTOM_BANNER_COPY.subtitle,
@@ -14,6 +18,7 @@ export const CATALOG_PERSO_BANNER_COPY: Omit<ShopCatalogPersoBanner, "imageUrl">
 export const DEFAULT_CATALOG_PERSO_BANNER: ShopCatalogPersoBanner = {
   ...CATALOG_PERSO_BANNER_COPY,
   imageUrl: "",
+  cityVisuals: {},
 };
 
 function normalizeCatalogPersoCtaLabel(label: string | undefined): string {
@@ -32,6 +37,9 @@ export function resolveShopCatalogPersoBanner(
   return {
     enabled: stored.enabled,
     imageUrl: stored.imageUrl.trim(),
+    imageFocusX: stored.imageFocusX ?? DEFAULT_PERSO_BANNER_FOCUS_X,
+    imageFocusY: stored.imageFocusY ?? DEFAULT_PERSO_BANNER_FOCUS_Y,
+    cityVisuals: stored.cityVisuals ?? {},
     eyebrow: stored.eyebrow.trim() || CATALOG_PERSO_BANNER_COPY.eyebrow,
     title: stored.title.trim() || CATALOG_PERSO_BANNER_COPY.title,
     subtitle: stored.subtitle.trim() || CATALOG_PERSO_BANNER_COPY.subtitle,
@@ -46,6 +54,9 @@ export function resolveAdminCatalogPersoBanner(
   return {
     enabled: publicBanner.enabled,
     imageUrl: publicBanner.imageUrl,
+    imageFocusX: publicBanner.imageFocusX,
+    imageFocusY: publicBanner.imageFocusY,
+    cityVisuals: publicBanner.cityVisuals,
     blobUrl: stored?.blobUrl ?? null,
     blobPathname: stored?.blobPathname ?? null,
     eyebrow: publicBanner.eyebrow,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const DINGRY_ADMIN_SESSION_EVENT = "dingry:admin-session";
 
@@ -88,7 +88,11 @@ export function useAdminSession() {
     setTotpCodeState(raw.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 11));
   }, []);
 
+  const loginBusyRef = useRef(false);
+
   const login = useCallback(async () => {
+    if (loginBusyRef.current) return;
+    loginBusyRef.current = true;
     setLoginError("");
     setLoginLoading(true);
     try {
@@ -114,6 +118,7 @@ export function useAdminSession() {
     } catch {
       setLoginError("Connexion impossible.");
     } finally {
+      loginBusyRef.current = false;
       setLoginLoading(false);
     }
   }, [setAuthenticated, totpCode]);
