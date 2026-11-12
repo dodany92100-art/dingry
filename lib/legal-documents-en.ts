@@ -175,6 +175,40 @@ export const EN_LEGAL_DOCUMENTS: LegalDocumentBundle = {
       },
     ],
   },
+  expedition: {
+    title: "Delivery policy",
+    subtitle: `DINGRY — ${DINGRY_SITE_DOMAIN} · Last updated: 12 November 2026`,
+    sections: [
+      {
+        heading: "1. Scope",
+        body:
+          "This policy describes how DINGRY orders are shipped and received. It complements the Terms of Sale. Shipping fees are set out in the Shipping fees policy.",
+      },
+      {
+        heading: "2. Service areas",
+        body:
+          "Orders ship to destinations available at checkout (metropolitan France, EU, and international where carriers allow). If a destination is not served, checkout cannot complete for that address.",
+      },
+      {
+        heading: "3. Dispatch times",
+        body:
+          "After payment confirmation, orders are usually processed within 2–5 business days, excluding busy launch periods. Transit times apply in addition (typically 3–7 business days in metropolitan France depending on the option chosen). Displayed times are estimates.",
+      },
+      {
+        heading: "4. Tracking and receipt",
+        body:
+          "When available, tracking is sent by email after dispatch. Check your parcel on delivery and report damage or missing items within 48 hours to DINGRY, with photos if possible.",
+      },
+      {
+        heading: "5. Delay, loss, or damage",
+        body: `For significant delay, loss, or damage, contact ${DINGRY_CONTACT_EMAIL} with your order number. DINGRY works with the carrier within applicable legal and contractual limits.`,
+      },
+      {
+        heading: "6. Contact",
+        body: `Delivery questions: ${DINGRY_CONTACT_EMAIL} · ${DINGRY_SITE_DOMAIN}.`,
+      },
+    ],
+  },
   livraison: {
     title: "Shipping fees policy",
     subtitle: "DINGRY Paris — dingry.fr · Last updated: 10 November 2026",

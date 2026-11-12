@@ -183,6 +183,40 @@ export const LEGAL_DOCUMENTS: Record<
       },
     ],
   },
+  expedition: {
+    title: "Politique de livraison",
+    subtitle: `DINGRY — ${DINGRY_SITE_DOMAIN} · Dernière mise à jour : 12/11/2026`,
+    sections: [
+      {
+        heading: "1. Champ d'application",
+        body:
+          "La présente politique décrit les modalités d'expédition et de réception des commandes passées sur le site DINGRY. Elle complète les Conditions générales de vente (CGV). Les frais de livraison et leur calcul sont détaillés dans la Politique tarifaire — frais de livraison.",
+      },
+      {
+        heading: "2. Zones desservies",
+        body:
+          "DINGRY prépare et expédie les commandes selon les destinations accessibles au moment de la commande (France métropolitaine, Union européenne et international selon transporteurs disponibles). Si une destination n'est pas desservie, la commande ne pourra pas être finalisée pour cette adresse.",
+      },
+      {
+        heading: "3. Délais d'expédition",
+        body:
+          "Après validation du paiement, la commande est traitée dans un délai habituel de 2 à 5 jours ouvrés, hors périodes de forte activité (lancements, séries limitées). Les délais de transport s'ajoutent : en France métropolitaine, comptez en général 3 à 7 jours ouvrés selon l'option choisie. Les délais affichés au moment de la commande sont indicatifs.",
+      },
+      {
+        heading: "4. Suivi et réception",
+        body:
+          "Lorsque le transporteur le permet, un lien ou numéro de suivi est communiqué par e-mail après expédition. Le client doit vérifier l'état du colis à la réception et signaler toute anomalie (colis endommagé, manquant) sous 48 heures à DINGRY, avec photographies si nécessaire.",
+      },
+      {
+        heading: "5. Retard, perte ou colis endommagé",
+        body: `En cas de retard important, de perte ou de détérioration constatée, contactez-nous à ${DINGRY_CONTACT_EMAIL} en indiquant votre numéro de commande. DINGRY intervient auprès du transporteur dans la limite des obligations légales et contractuelles applicables.`,
+      },
+      {
+        heading: "6. Contact",
+        body: `Questions liées à une livraison : ${DINGRY_CONTACT_EMAIL} · ${DINGRY_SITE_DOMAIN}.`,
+      },
+    ],
+  },
   livraison: {
     title: "Politique tarifaire — frais de livraison",
     subtitle: "DINGRY Paris — dingry.fr · Dernière mise à jour : 10 novembre 2026",

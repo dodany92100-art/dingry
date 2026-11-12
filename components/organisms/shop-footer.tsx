@@ -5,26 +5,23 @@ import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryContactModal } from "@/components/molecules/dingry-contact-modal";
 import { DingryNewsletterForm } from "@/components/molecules/dingry-newsletter-form";
 import { DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
-import { LEGAL_DOCUMENTS, legalDocumentsForLocale, type LegalDocId } from "@/lib/legal-placeholders";
+import { legalDocumentsForLocale, type LegalDocId } from "@/lib/legal-placeholders";
 import { useTranslation } from "@/hooks/use-translation";
-import type { Messages } from "@/lib/i18n/merge-messages";
+import { usePathname, useRouter } from "next/navigation";
 import type { CatalogFilter } from "@/lib/catalog-category";
+import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
+import { shopSectionHref } from "@/lib/shop-section-href";
 import type { ShopBasePath } from "@/lib/shop-base-path";
 
 const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 
-const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison"]);
+const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison", "expedition"]);
 
-const COLLECTION_SEO_LINKS: {
-  labelKey: keyof Messages["footer"]["collectionLinks"];
-  filter: CatalogFilter;
-}[] = [
-  { labelKey: "hoodiesSweats", filter: "hoodies" },
-  { labelKey: "tees", filter: "t-shirts" },
-  { labelKey: "caps", filter: "caps" },
-  { labelKey: "cropTops", filter: "crop-top" },
-  { labelKey: "pants", filter: "pants" },
-  { labelKey: "newIn", filter: "all" },
+const FOOTER_LEGAL_LINKS: { id: LegalDocId; labelKey: "privacy" | "shipping" | "pricing" | "returns" }[] = [
+  { id: "rgpd", labelKey: "privacy" },
+  { id: "expedition", labelKey: "shipping" },
+  { id: "livraison", labelKey: "pricing" },
+  { id: "retours", labelKey: "returns" },
 ];
 
 function FooterNavColumn({
@@ -99,7 +96,6 @@ function InstagramIcon() {
 type ShopFooterProps = {
   onScrollToCatalogue?: () => void;
   onScrollToSection?: (sectionId: string) => void;
-  onOpenHeritage?: () => void;
   onSelectCatalogFilter?: (filter: CatalogFilter) => void;
   onOpenAtelierCustom?: () => void;
   shopBasePath?: ShopBasePath;
@@ -108,11 +104,13 @@ type ShopFooterProps = {
 export function ShopFooter({
   onScrollToCatalogue,
   onScrollToSection,
-  onOpenHeritage,
-  onSelectCatalogFilter,
+  onSelectCatalogFilter: _onSelectCatalogFilter,
   onOpenAtelierCustom,
   shopBasePath: _shopBasePath = "/",
 }: ShopFooterProps) {
+  const router = useRouter();
+  const pathname = usePathname() ?? "/";
+  const resolvedBase = _shopBasePath ?? shopBasePathFromPathname(pathname);
   const { locale, t } = useTranslation();
   const [legalDoc, setLegalDoc] = useState<LegalDocId | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
@@ -139,12 +137,28 @@ export function ShopFooter({
   const boutiqueLinkClass =
     "dingry-footer-link block w-full text-left text-[11px] tracking-[0.12em] transition-colors";
 
-  function goCatalogFilter(filter: CatalogFilter) {
-    if (onSelectCatalogFilter) {
-      onSelectCatalogFilter(filter);
+  function goAtelierCustom() {
+    if (onOpenAtelierCustom) {
+      onOpenAtelierCustom();
       return;
     }
-    goCatalogue();
+    scrollToSection("atelier-custom");
+  }
+
+  function goHeritage() {
+    if (pathname.includes("/heritage")) {
+      scrollToSection("heritage-top");
+      return;
+    }
+    router.push(shopHref(resolvedBase, "/heritage"));
+  }
+
+  function goLookbook() {
+    if (pathname.includes("/heritage")) {
+      router.push(shopSectionHref(resolvedBase, "lookbook"));
+      return;
+    }
+    scrollToSection("lookbook");
   }
 
   return (
@@ -153,7 +167,7 @@ export function ShopFooter({
         <div className="w-full">
           <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 sm:gap-y-10 lg:grid-cols-4 lg:items-start lg:gap-8 xl:gap-10">
             <div className="col-span-2 flex flex-col items-start text-left sm:col-span-1">
-              <DingryLogo animate={false} tone="on-light" className="h-10 w-auto max-md:max-h-none md:h-12" />
+              <DingryLogo animate={false} tone="on-light" className="h-11 w-auto max-md:max-h-none md:h-[3.35rem]" />
               <p className={`dingry-typo-manifesto mt-3 max-w-[14rem] text-[10px] text-[#161616]/52`}>
                 {t("footer.manifesto")}
               </p>
@@ -161,87 +175,78 @@ export function ShopFooter({
                 href={DINGRY_INSTAGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="dingry-footer-instagram-cta dingry-footer-instagram-plaque mt-4"
+                className="dingry-footer-instagram-cta dingry-footer-instagram-plaque dingry-footer-instagram-plaque--footer mt-4"
               >
                 <InstagramIcon />
                 <span className="dingry-footer-instagram-cta__handle dingry-footer-instagram-plaque__handle">
                   <span className="gold-text">@dingry_officiel</span>
                 </span>
               </a>
-              <div className="mt-6 w-full sm:max-w-[26rem]">
-                <DingryNewsletterForm />
-              </div>
             </div>
 
-            <FooterNavColumn title={t("footer.collectionsColumn")}>
-              {COLLECTION_SEO_LINKS.map(({ labelKey, filter }) => (
-                <li key={labelKey}>
-                  <button type="button" onClick={() => goCatalogFilter(filter)} className={boutiqueLinkClass}>
-                    {t(`footer.collectionLinks.${labelKey}`)}
-                  </button>
-                </li>
-              ))}
-            </FooterNavColumn>
-
-            <FooterNavColumn title={t("footer.siteColumn")} className="max-sm:col-span-2">
-              <li>
-                <button type="button" onClick={() => scrollToSection("catalogue")} className={boutiqueLinkClass}>
-                  {t("footer.streetLine")}
-                </button>
-              </li>
+            <FooterNavColumn title={t("footer.boutiqueColumn")}>
               <li>
                 <button type="button" onClick={() => goCatalogue()} className={boutiqueLinkClass}>
                   {t("footer.navCollection")}
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => scrollToSection("atelier-custom")} className={boutiqueLinkClass}>
+                <button type="button" onClick={() => goAtelierCustom()} className={boutiqueLinkClass}>
                   {t("nav.atelier")}
                 </button>
               </li>
+            </FooterNavColumn>
+
+            <FooterNavColumn title={t("footer.brandColumn")} className="max-sm:col-span-2">
               <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onOpenHeritage) onOpenHeritage();
-                    else scrollToSection("heritage");
-                  }}
-                  className={boutiqueLinkClass}
-                >
+                <button type="button" onClick={() => goHeritage()} className={boutiqueLinkClass}>
                   {t("nav.heritage")}
                 </button>
               </li>
               <li>
-                <button type="button" onClick={() => scrollToSection("lookbook")} className={boutiqueLinkClass}>
+                <button type="button" onClick={() => goLookbook()} className={boutiqueLinkClass}>
                   {t("nav.lookbook")}
                 </button>
               </li>
             </FooterNavColumn>
 
             <div id="mentions-legales" className="flex flex-col items-start text-left">
-              <p className="dingry-footer-eyebrow mb-3">{t("footer.infoColumn")}</p>
+              <div className="dingry-footer-legal-head mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => setLegalDoc("mentions")}
+                  className="dingry-footer-eyebrow dingry-footer-legal-head__title m-0"
+                >
+                  {t("footer.infoColumn")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalDoc("cgv")}
+                  className="dingry-footer-eyebrow dingry-footer-legal-head__title m-0"
+                >
+                  {t("footer.legalLinks.cgv")}
+                </button>
+              </div>
               <ul className="space-y-2">
-                <li>
-                  <button type="button" onClick={() => setLegalDoc("cgv")} className={boutiqueLinkClass}>
-                    {t("footer.legalLinks.cgvMentions")}
-                  </button>
-                </li>
-                <li>
-                  <button type="button" onClick={() => setLegalDoc("livraison")} className={boutiqueLinkClass}>
-                    {t("footer.legalLinks.shipping")}
-                  </button>
-                </li>
-                <li>
-                  <button type="button" onClick={() => setLegalDoc("retours")} className={boutiqueLinkClass}>
-                    {t("footer.legalLinks.returns")}
-                  </button>
-                </li>
+                {FOOTER_LEGAL_LINKS.map(({ id, labelKey }) => (
+                  <li key={id}>
+                    <button type="button" onClick={() => setLegalDoc(id)} className={boutiqueLinkClass}>
+                      {t(`footer.legalLinks.${labelKey}`)}
+                    </button>
+                  </li>
+                ))}
                 <li>
                   <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
                     {t("footer.navContact")}
                   </button>
                 </li>
               </ul>
+            </div>
+          </div>
+
+          <div className="dingry-footer-newsletter-stage mt-8 flex w-full justify-center md:mt-10">
+            <div className="w-full max-w-[22rem] sm:max-w-[26rem]">
+              <DingryNewsletterForm align="center" />
             </div>
           </div>
 

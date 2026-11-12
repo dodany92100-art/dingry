@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import {
   adminCrmBackendFlags,
   adminCrmMediaBackendGuard,
+  adminCrmMediaReadGuard,
   respondAdminCrmReadError,
   respondAdminCrmWriteError,
 } from "@/lib/admin/admin-crm-route";
@@ -36,7 +37,7 @@ export async function GET() {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
 
-  const blocked = adminCrmMediaBackendGuard();
+  const blocked = adminCrmMediaReadGuard();
   if (blocked) return blocked;
 
   try {

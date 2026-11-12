@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/auth";
 import {
   adminCrmBackendFlags,
+  adminCrmMediaReadGuard,
   respondAdminCrmReadError,
   respondAdminCrmWriteError,
 } from "@/lib/admin/admin-crm-route";
@@ -12,6 +13,7 @@ import {
   type AdminAtelierCustomConfig,
 } from "@/lib/atelier-custom-config";
 import { jsonNoStore } from "@/lib/http";
+import { isSupabaseStoreEnabled } from "@/lib/supabase/server";
 import { readSupabaseAtelierCustomJson, upsertSupabaseAtelierCustomJson } from "@/lib/supabase/shop-banners";
 
 export const runtime = "nodejs";
@@ -24,6 +26,17 @@ function revalidateAtelierCustom() {
 export async function GET() {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
+
+  const blocked = adminCrmMediaReadGuard();
+  if (blocked) return blocked;
+
+  if (!isSupabaseStoreEnabled()) {
+    return jsonNoStore({
+      config: resolveShopAtelierCustomConfig(SHOP_ATELIER_CUSTOM_DEFAULT),
+      customized: false,
+      ...adminCrmBackendFlags(),
+    });
+  }
 
   try {
     const { json, updatedAt } = await readSupabaseAtelierCustomJson();

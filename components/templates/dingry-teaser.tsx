@@ -7,7 +7,7 @@ import {
   COUNTDOWN_UNITS,
   DINGRY_COUNTDOWN_LABEL,
   DINGRY_COUNTDOWN_TARGET_AT,
-  DINGRY_SITE_CONSTRUCTION_LABEL,
+  DINGRY_TEASER_MESSAGE_PARAGRAPHS,
   countdownParts,
   type CountdownParts,
 } from "@/lib/dingry-countdown";
@@ -143,9 +143,13 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
               </div>
             ))}
           </div>
-          <p className="mx-auto max-w-md text-[9px] leading-relaxed tracking-[0.12em] text-white/65 sm:text-[10px] sm:tracking-[0.14em] md:ml-auto md:text-right md:text-[11px]">
-            {DINGRY_SITE_CONSTRUCTION_LABEL}
-          </p>
+          <div className="mx-auto max-w-md space-y-2 text-[9px] leading-relaxed tracking-[0.1em] text-white/65 sm:text-[10px] sm:tracking-[0.12em] md:ml-auto md:text-right md:text-[11px]">
+            {DINGRY_TEASER_MESSAGE_PARAGRAPHS.map((paragraph) => (
+              <p key={paragraph} className="m-0">
+                {paragraph}
+              </p>
+            ))}
+          </div>
         </section>
       </div>
 

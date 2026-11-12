@@ -1,0 +1,323 @@
+/* Page Héritage — lecture magazine, fond shop noir. */
+
+.page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 56rem;
+  padding: 1.5rem 1.25rem 3rem;
+  color: rgb(255 255 255 / 0.92);
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 2.25rem 2rem 4rem;
+  }
+}
+
+.hero {
+  margin-bottom: 2.75rem;
+  border: 1px solid rgb(179 135 40 / 0.35);
+  border-radius: 0.875rem;
+  background: rgb(255 255 255 / 0.04);
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.35);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .hero {
+    margin-bottom: 3.5rem;
+    padding: 2.25rem 2rem;
+  }
+}
+
+.heroEyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #b38728;
+}
+
+.heroTitle {
+  margin: 0;
+  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-size: clamp(1.5rem, 4.5vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.96);
+}
+
+.heroLead {
+  margin: 1.25rem auto 0;
+  max-width: 34rem;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: rgb(255 255 255 / 0.62);
+}
+
+.stream {
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+}
+
+@media (min-width: 768px) {
+  .stream {
+    gap: 4.5rem;
+  }
+}
+
+.chapter {
+  scroll-margin-top: 5.5rem;
+}
+
+.chapterEyebrow {
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgb(179 135 40 / 0.45);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgb(252 246 186 / 0.88);
+}
+
+.articleCard {
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.875rem;
+  background: rgb(255 255 255 / 0.03);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
+}
+
+.articleCover {
+  margin: 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  background: #000;
+}
+
+.articleCoverMedia {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  filter: brightness(0.92) contrast(1.04);
+}
+
+.articleCoverMediaPortrait {
+  filter: brightness(0.96) contrast(1.02);
+}
+
+.articleBody {
+  padding: 1.5rem 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .articleBody {
+    padding: 1.85rem 1.75rem;
+  }
+}
+
+.articleMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.category {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #b38728;
+}
+
+.articleDate {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.4);
+}
+
+.articleTitle {
+  margin: 0 0 0.55rem;
+  font-size: clamp(1.15rem, 2.6vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.94);
+}
+
+.articleSubtitle {
+  margin: 0 0 1.25rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: rgb(255 255 255 / 0.58);
+}
+
+.blockHeading {
+  margin: 1.65rem 0 0.75rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.82);
+}
+
+.prose {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.prose p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.85;
+  color: rgb(255 255 255 / 0.78);
+}
+
+.visual {
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.03);
+}
+
+.visualMedia {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+.ratio169 {
+  aspect-ratio: 16 / 9;
+}
+
+.ratio45 {
+  aspect-ratio: 4 / 5;
+}
+
+.visualPlaceholder {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgb(255 255 255 / 0.04);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.visualPlaceholderLabel {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.38);
+}
+
+.caption {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.48);
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.03);
+}
+
+.chronology {
+  margin-top: 1rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.chronologyTitle {
+  margin: 0 0 1rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.48);
+}
+
+.chronologyTrack {
+  position: relative;
+  padding: 0 0.25rem 0.25rem;
+}
+
+.chronologyLine {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0.4375rem;
+  height: 1px;
+  background: rgb(179 135 40 / 0.7);
+  pointer-events: none;
+}
+
+.chronologyList {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 0.35rem;
+}
+
+@media (min-width: 640px) {
+  .chronologyList {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+}
+
+.chronologyItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.chronologyMarker {
+  position: relative;
+  z-index: 1;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #b38728;
+  box-shadow: 0 0 0 3px #0a0a0a;
+}
+
+.chronologyYear {
+  margin: 0;
+  font-size: clamp(0.625rem, 2.4vw, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgb(255 255 255 / 0.92);
+}
+
+.chronologyLabel {
+  margin: 0;
+  font-size: clamp(0.5625rem, 2.1vw, 0.6875rem);
+  line-height: 1.35;
+  color: rgb(255 255 255 / 0.5);
+}

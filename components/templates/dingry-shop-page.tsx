@@ -70,11 +70,6 @@ const PaymentToast = dynamic(
   { ssr: false },
 );
 
-const HeritageReader = dynamic(
-  () => import("@/components/organisms/shop/heritage-reader").then((m) => ({ default: m.HeritageReader })),
-  { ssr: false },
-);
-
 const prefetchLookbookStrip = () =>
   import("@/components/organisms/shop/lookbook-catalog-strip");
 
@@ -141,8 +136,6 @@ function DingryShopPageInner() {
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authReason, setAuthReason] = useState<string | undefined>();
-  const [heritageReaderOpen, setHeritageReaderOpen] = useState(false);
-
   const openAuth = useCallback((reason?: string) => {
     setAuthReason(reason);
     setAuthOpen(true);
@@ -171,33 +164,18 @@ function DingryShopPageInner() {
   const tabValue = activeFilter;
   const [cartScrollLocked, setCartScrollLocked] = useState(false);
 
-  const openHeritageReader = useCallback(() => {
-    setHeritageReaderOpen(true);
-    const next = `${shopHref(shopBasePath, "/")}?heritage=1`;
-    router.replace(next, { scroll: false });
-  }, [router, shopBasePath]);
-
-  const closeHeritageReader = useCallback(() => {
-    setHeritageReaderOpen(false);
-    router.replace(shopHref(shopBasePath, "/"), { scroll: false });
-  }, [router, shopBasePath]);
-
   useEffect(() => {
     if (searchParams.get("heritage") === "1") {
-      setHeritageReaderOpen(true);
+      router.replace(shopHref(shopBasePath, "/heritage"));
     }
-  }, [searchParams]);
+  }, [router, searchParams, shopBasePath]);
 
   useEffect(() => {
-    const scroller = pageScrollRef.current;
-    if (!scroller) return;
-    if (!heritageReaderOpen) return;
-    const previous = scroller.style.overflow;
-    scroller.style.overflow = "hidden";
-    return () => {
-      scroller.style.overflow = previous;
-    };
-  }, [heritageReaderOpen, pageScrollRef]);
+    const hash = typeof window !== "undefined" ? window.location.hash.slice(1) : "";
+    if (!hash) return;
+    const timer = window.setTimeout(() => scrollToSection(hash), 120);
+    return () => window.clearTimeout(timer);
+  }, [scrollToSection]);
 
   useEffect(() => {
     if (cart.open) setCartScrollLocked(true);
@@ -310,14 +288,7 @@ function DingryShopPageInner() {
     <div className="dingry-shop relative h-dvh w-full overflow-x-hidden overflow-hidden bg-black text-white">
       <BackgroundGradientAnimation
         interactive={false}
-        paused={
-          Boolean(modal.selectedProduct) ||
-          cart.open ||
-          wishlistOpen ||
-          authOpen ||
-          personalizeOpen ||
-          heritageReaderOpen
-        }
+        paused={Boolean(modal.selectedProduct) || cart.open || wishlistOpen || authOpen || personalizeOpen}
       />
       <ShopNav
         shopBasePath={shopBasePath}
@@ -328,7 +299,6 @@ function DingryShopPageInner() {
         onOpenFavorites={() => setWishlistOpen(true)}
         onOpenCart={openCart}
         onScrollToSection={scrollToSection}
-        onOpenHeritage={openHeritageReader}
         onOpenCustom={() => openCustom()}
       />
       <div
@@ -367,7 +337,7 @@ function DingryShopPageInner() {
             rootMargin="420px 0px 48px 0px"
             placeholderClassName="dingry-gold-rule-top min-h-[14rem] [contain-intrinsic-size:auto_14rem]"
           >
-            <HeritageSection onOpenHeritage={openHeritageReader} />
+            <HeritageSection />
           </LazyWhenVisible>
           <LazyWhenVisible
             scrollRootRef={pageScrollRef}
@@ -388,7 +358,6 @@ function DingryShopPageInner() {
               shopBasePath={shopBasePath}
               onScrollToCatalogue={() => scrollToSection("catalogue")}
               onScrollToSection={scrollToSection}
-              onOpenHeritage={openHeritageReader}
               onSelectCatalogFilter={(filter) => {
                 selectFilter(filter);
                 scrollToSection("catalogue");
@@ -461,7 +430,6 @@ function DingryShopPageInner() {
           launchFromElement(from, "cart", "cart");
         }}
       />
-      <HeritageReader open={heritageReaderOpen} onClose={closeHeritageReader} />
       <AuthModal
         open={authOpen}
         reason={authReason}

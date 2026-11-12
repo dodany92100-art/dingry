@@ -1,13 +1,14 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { DINGRY_HERITAGE_EDITORIAL_SRC } from "@/lib/dingry-brand";
+import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import { useTranslation } from "@/hooks/use-translation";
 
-type HeritageSectionProps = {
-  onOpenHeritage: () => void;
-};
-
-export function HeritageSection({ onOpenHeritage }: HeritageSectionProps) {
+export function HeritageSection() {
+  const pathname = usePathname() ?? "/";
+  const heritageHref = shopHref(shopBasePathFromPathname(pathname), "/heritage");
   const { dict, t } = useTranslation();
   const heritage = dict.heritage;
 
@@ -32,13 +33,12 @@ export function HeritageSection({ onOpenHeritage }: HeritageSectionProps) {
           <p className="dingry-heritage-teaser-hook max-w-md text-sm leading-relaxed text-white md:text-base">
             {heritage.homepageHook}
           </p>
-          <button
-            type="button"
-            onClick={onOpenHeritage}
+          <Link
+            href={heritageHref}
             className="dingry-heritage-teaser-cta mt-2 w-fit shrink-0 px-6 py-2.5 text-[10px] font-semibold uppercase tracking-[0.28em] transition-[border-color,box-shadow,background,transform] duration-200 active:scale-[0.97] sm:px-7 sm:text-[11px] sm:tracking-[0.3em]"
           >
             <span className="gold-text">{heritage.ctaDiscover}</span>
-          </button>
+          </Link>
         </div>
       </div>
     </section>

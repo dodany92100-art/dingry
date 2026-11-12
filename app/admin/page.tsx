@@ -297,14 +297,16 @@ function AdminDashboard() {
         expire();
         return;
       }
-      if (
-        productsResult !== "ok" ||
-        ordersResult !== "ok" ||
-        lookbookResult !== "ok" ||
-        bannerResult !== "ok" ||
-        atelierResult !== "ok"
-      ) {
-        setLoadError("Impossible de charger le CRM.");
+      const failed: string[] = [];
+      if (productsResult !== "ok") failed.push("produits");
+      if (ordersResult !== "ok") failed.push("commandes");
+      if (lookbookResult !== "ok") failed.push("lookbook");
+      if (bannerResult !== "ok") failed.push("bannière");
+      if (atelierResult !== "ok") failed.push("atelier");
+      if (failed.length > 0) {
+        setLoadError(
+          `Impossible de charger le CRM (${failed.join(", ")}). Vérifiez Supabase, Blob commandes et la session admin, puis rechargez.`,
+        );
       }
       setLoaded(true);
     })();

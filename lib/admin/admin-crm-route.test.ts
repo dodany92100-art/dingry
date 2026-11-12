@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { StoreUnavailableError } from "@/lib/admin/store-errors";
 import {
   adminCrmMediaBackendGuard,
+  adminCrmMediaReadGuard,
   respondAdminCrmWriteError,
 } from "@/lib/admin/admin-crm-route";
 
@@ -11,6 +12,26 @@ describe("adminCrmMediaBackendGuard", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     const blocked = adminCrmMediaBackendGuard();
     expect(blocked?.status).toBe(503);
+    vi.unstubAllEnvs();
+  });
+
+  it("lecture : Supabase seul suffit (sans R2)", () => {
+    vi.stubEnv("VITEST", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role-key-mock-32chars-min");
+    vi.stubEnv("R2_ACCESS_KEY_ID", "");
+    vi.stubEnv("R2_SECRET_ACCESS_KEY", "");
+    vi.stubEnv("R2_ACCOUNT_ID", "");
+    expect(adminCrmMediaReadGuard()).toBeNull();
+    expect(adminCrmMediaBackendGuard()?.status).toBe(503);
+    vi.unstubAllEnvs();
+  });
+
+  it("lecture : dev sans Supabase → pas de blocage (seed)", () => {
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    vi.stubEnv("NODE_ENV", "development");
+    expect(adminCrmMediaReadGuard()).toBeNull();
     vi.unstubAllEnvs();
   });
 });

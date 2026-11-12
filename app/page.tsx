@@ -15,10 +15,10 @@ export const dynamic = "force-dynamic";
 
 function publicHomeMode(): "shop" | "teaser" | "construction" {
   const mode = process.env.DINGRY_PUBLIC_HOME?.trim().toLowerCase() ?? "";
-  if (mode === "shop") return "shop";
-  if (mode === "teaser") return "teaser";
   if (mode === "construction") return "construction";
   if (Date.now() < DINGRY_TEASER_OPENING_AT) return "teaser";
+  if (mode === "teaser") return "teaser";
+  if (mode === "shop") return "shop";
   return "shop";
 }
 

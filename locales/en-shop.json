@@ -63,17 +63,24 @@
     "navLookbook": "Lookbook",
     "legalClosing": "DINGRY – Pieces, not compromises.",
     "instagramAria": "DINGRY on Instagram",
+    "boutiqueColumn": "Shop",
+    "brandColumn": "The brand",
     "collectionsColumn": "Our collections",
     "siteColumn": "The site",
-    "infoColumn": "Info & access",
+    "infoColumn": "Legal",
     "paymentSectionAria": "Payment",
     "paymentEyebrow": "Payment",
     "copyright": "© {{year}} DINGRY · All rights reserved",
     "legalModalEyebrow": "Legal",
     "legalLinks": {
+      "cgv": "Terms of sale",
+      "mentions": "Legal notice",
+      "privacy": "Privacy policy",
+      "shipping": "Delivery policy",
+      "pricing": "Shipping fees policy",
+      "returns": "Returns & refunds",
       "cgvMentions": "Terms & legal notice",
-      "shipping": "Shipping & rates",
-      "returns": "Returns & refunds"
+      "shippingRates": "Shipping & rates"
     },
     "collectionLinks": {
       "hoodiesSweats": "Oversize hoodies & sweats",

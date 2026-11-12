@@ -5,7 +5,7 @@ import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
 
 const CLOSING_DOCS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison"]);
 
-const DOCS: LegalDocId[] = ["mentions", "cgv", "livraison", "rgpd", "retours"];
+const DOCS: LegalDocId[] = ["mentions", "cgv", "expedition", "livraison", "rgpd", "retours"];
 
 type PageProps = { params: Promise<{ doc: string }> };
 

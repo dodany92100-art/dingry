@@ -3,7 +3,9 @@
 import { FormEvent, useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
+import { buildRelativeUrl } from "@/lib/alto-last-public-url";
 import { getSupabaseBrowser, isSupabaseBrowserAuthEnabled } from "@/lib/supabase/browser";
+import { isSupabaseOAuthProviderEnabled } from "@/lib/supabase/oauth-flags";
 import { mapShopAuthError } from "@/lib/auth/map-auth-error";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "@/components/organisms/shop/motion";
 
@@ -19,7 +21,10 @@ type AuthView = "password" | "magic";
 
 function authCallbackUrl(): string {
   if (typeof window === "undefined") return "/auth/callback";
-  return new URL("/auth/callback", window.location.origin).toString();
+  const next = buildRelativeUrl(window.location.pathname, window.location.search);
+  const url = new URL("/auth/callback", window.location.origin);
+  url.searchParams.set("next", next);
+  return url.toString();
 }
 
 function SocialMark({ children }: { children: ReactNode }) {
@@ -32,6 +37,9 @@ function SocialMark({ children }: { children: ReactNode }) {
 
 export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalProps) {
   const configured = isSupabaseBrowserAuthEnabled();
+  const googleOAuth = isSupabaseOAuthProviderEnabled("google");
+  const appleOAuth = isSupabaseOAuthProviderEnabled("apple");
+  const showSocial = googleOAuth || appleOAuth;
   const [view, setView] = useState<AuthView>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -207,7 +215,9 @@ export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalP
                 </p>
               ) : (
                 <>
+                  {showSocial ? (
                   <div className="space-y-3">
+                    {googleOAuth ? (
                     <button
                       type="button"
                       disabled={busy !== null}
@@ -240,6 +250,8 @@ export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalP
                       )}
                       Se connecter avec Google
                     </button>
+                    ) : null}
+                    {appleOAuth ? (
                     <button
                       type="button"
                       disabled={busy !== null}
@@ -257,13 +269,17 @@ export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalP
                       )}
                       Se connecter avec Apple
                     </button>
+                    ) : null}
                   </div>
+                  ) : null}
 
+                  {showSocial ? (
                   <div className="my-8 flex items-center gap-4">
                     <span className="h-px flex-1 bg-white/10" aria-hidden />
                     <span className="text-[10px] tracking-[0.28em] text-white/35 uppercase">Ou</span>
                     <span className="h-px flex-1 bg-white/10" aria-hidden />
                   </div>
+                  ) : null}
 
                   {magicSent ? (
                     <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-sm leading-relaxed text-white/70">

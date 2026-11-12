@@ -1,7 +1,7 @@
-import { isR2ImageStorageEnabled } from "@/lib/admin/blob-config";
+import { allowCatalogSeedFallback, isR2ImageStorageEnabled } from "@/lib/admin/blob-config";
 import { StoreConflictError, StoreUnavailableError } from "@/lib/admin/store-errors";
 import { jsonNoStore } from "@/lib/http";
-import { isSupabaseStoreEnabled } from "@/lib/supabase/server";
+import { isSupabaseStoreEnabled, supabaseUrl } from "@/lib/supabase/server";
 
 export function adminCrmBackendFlags() {
   return {
@@ -10,18 +10,45 @@ export function adminCrmBackendFlags() {
   };
 }
 
-/** Garde homogène produits / lookbook / bannières (Supabase + R2). */
-export function adminCrmMediaBackendGuard() {
+function supabaseCrmConfigError(): string {
+  const url = supabaseUrl();
+  const serviceRole = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
+  if (!url && !serviceRole) {
+    return "Supabase non configuré : définir NEXT_PUBLIC_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY (.env.local ou Vercel).";
+  }
+  if (!url) {
+    return "NEXT_PUBLIC_SUPABASE_URL manquant.";
+  }
+  if (!serviceRole) {
+    return "SUPABASE_SERVICE_ROLE_KEY est vide — Supabase → Project Settings → API → service_role (secret), puis Vercel Development/Preview/Production.";
+  }
+  return "Supabase CRM indisponible.";
+}
+
+function adminCrmSupabaseGuard() {
   if (!isSupabaseStoreEnabled()) {
     return jsonNoStore(
       {
-        error:
-          "Supabase non configuré (NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY).",
+        error: supabaseCrmConfigError(),
         ...adminCrmBackendFlags(),
       },
       { status: 503 },
     );
   }
+  return null;
+}
+
+/** Lecture lookbook / bannières — prod : Supabase ; dev/preview : seed si Supabase incomplet. */
+export function adminCrmMediaReadGuard() {
+  if (isSupabaseStoreEnabled()) return null;
+  if (allowCatalogSeedFallback()) return null;
+  return adminCrmSupabaseGuard();
+}
+
+/** Écriture + upload média CRM (Supabase + R2). */
+export function adminCrmMediaBackendGuard() {
+  const blocked = adminCrmSupabaseGuard();
+  if (blocked) return blocked;
   if (!isR2ImageStorageEnabled()) {
     return jsonNoStore(
       {

@@ -1,4 +1,4 @@
-export type LegalDocId = "cgv" | "rgpd" | "mentions" | "retours" | "livraison";
+export type LegalDocId = "cgv" | "rgpd" | "mentions" | "retours" | "livraison" | "expedition";
 
 export type LegalDocumentBundle = Record<
   LegalDocId,

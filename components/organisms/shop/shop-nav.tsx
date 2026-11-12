@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { CircleUser, Heart, Menu, X } from "lucide-react";
 import { motion, useAnimation, useReducedMotion } from "motion/react";
 import { useFlyAnimationOptional } from "@/hooks/use-fly-animation";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
+import { shopSectionHref } from "@/lib/shop-section-href";
 import { CATALOG_MENU_TAB_CUSTOM } from "@/lib/shop-catalog";
 import { cn } from "@/lib/utils";
 import { DingryLocaleToggle } from "@/components/atoms/dingry-locale-toggle";
@@ -134,7 +136,6 @@ type ShopNavProps = {
   onOpenFavorites?: () => void;
   onOpenCart: () => void;
   onScrollToSection: (id: string) => void;
-  onOpenHeritage?: () => void;
   /** Ouvre le configurateur tee (bouton doré CUSTOM). */
   onOpenCustom?: () => void;
   /** Aperçu CRM : même chrome, sans `position: fixed` sur la page admin. */
@@ -151,11 +152,13 @@ export function ShopNav({
   onOpenFavorites,
   onOpenCart,
   onScrollToSection,
-  onOpenHeritage,
   onOpenCustom,
   embedded = false,
   shopBasePath = "/",
 }: ShopNavProps) {
+  const router = useRouter();
+  const pathname = usePathname() ?? "/";
+  const onHeritagePage = pathname.includes("/heritage");
   const { t } = useTranslation();
   const fly = useFlyAnimationOptional();
   const reduceMotion = useReducedMotion();
@@ -183,15 +186,19 @@ export function ShopNav({
 
   function goSection(id: ShopNavSectionId) {
     if (id === "heritage") {
-      if (onOpenHeritage) {
-        onOpenHeritage();
+      if (onHeritagePage) {
+        onScrollToSection("heritage-top");
       } else {
-        onScrollToSection("heritage");
+        router.push(shopHref(shopBasePath, "/heritage"));
       }
       setMobileMenuOpen(false);
       return;
     }
-    onScrollToSection(id);
+    if (onHeritagePage) {
+      router.push(shopSectionHref(shopBasePath, id));
+    } else {
+      onScrollToSection(id);
+    }
     setMobileMenuOpen(false);
   }
 

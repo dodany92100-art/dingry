@@ -10,9 +10,10 @@ export function isPublicRootTeaserHome(nowMs: number = Date.now()): boolean {
   const mode = (process.env.NEXT_PUBLIC_DINGRY_PUBLIC_HOME ?? process.env.DINGRY_PUBLIC_HOME ?? "")
     .trim()
     .toLowerCase();
-  if (mode === "shop") return false;
-  if (mode === "teaser" || mode === "construction") return true;
-  return nowMs < DINGRY_TEASER_OPENING_AT;
+  if (mode === "construction") return true;
+  if (nowMs < DINGRY_TEASER_OPENING_AT) return true;
+  if (mode === "teaser") return true;
+  return false;
 }
 
 function pathnameOfRelativeUrl(url: string): string {

@@ -4,8 +4,15 @@ export {
   DINGRY_TEASER_OPENING_LABEL as DINGRY_COUNTDOWN_LABEL,
 } from "@/lib/dingry-teaser-opening";
 
-/** Bandeau / page construction. */
+/** Bandeau / page construction (compteur simple). */
 export const DINGRY_SITE_CONSTRUCTION_LABEL = "Site en construction.";
+
+/** Message accueil teaser (colonnes courte, mobile-friendly). */
+export const DINGRY_TEASER_MESSAGE_PARAGRAPHS = [
+  "On dit que plus c'est long, plus c'est bon… et on compte bien vous le prouver !",
+  "On prend un peu plus de temps que prévu, mais c'est pour vous préparer une vraie DINGRY.",
+  "Merci pour votre patience et votre confiance.",
+] as const;
 
 export const COUNTDOWN_UNITS = [
   { key: "days", label: "J", seconds: 86_400 },

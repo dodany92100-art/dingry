@@ -16,5 +16,8 @@ export function mapShopAuthError(message: string): string {
   if (lower.includes("user already registered")) {
     return "Un compte existe déjà avec cet e-mail.";
   }
+  if (lower.includes("provider is not enabled") || lower.includes("unsupported provider")) {
+    return "Connexion sociale indisponible (provider non activé côté Supabase).";
+  }
   return "Connexion impossible. Vérifiez vos informations ou réessayez.";
 }
