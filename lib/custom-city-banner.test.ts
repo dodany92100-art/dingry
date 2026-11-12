@@ -2,12 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   CUSTOM_BANNER_SUGGESTED_CITIES,
   bannerConfiguratorInitialLabel,
+  formatPersoBannerSubtitle,
   matchBannerCityFromQuery,
   resolveCustomBannerBackground,
 } from "@/lib/custom-city-banner";
 import { PERSONALIZATION_MAX_LABEL_LENGTH } from "@/lib/shop-data";
 
 describe("custom-city-banner", () => {
+  it("subtitle bandeau sans virgule avant « avec »", () => {
+    expect(formatPersoBannerSubtitle("Personnalise ton tee-shirt, avec le nom de ta ville")).toBe(
+      "Personnalise ton tee-shirt avec le nom de ta ville",
+    );
+  });
+
   it("majuscules et limite 28 caractères", () => {
     expect(bannerConfiguratorInitialLabel(" madinina ")).toBe("MADININA");
     expect(bannerConfiguratorInitialLabel("x".repeat(40))).toHaveLength(

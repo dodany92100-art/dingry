@@ -2011,6 +2011,84 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
   opacity: 0.96;
 }
 
+/* Titre accroche bandeau configurator (sous le logo monde — Anton street) */
+.dingry-custom-banner-headline {
+  margin-top: -1.95rem;
+  max-width: min(100%, 28rem);
+  font-size: clamp(1.2rem, 4.8vw, 2rem);
+  line-height: 0.98;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #fff !important;
+  text-wrap: balance;
+}
+
+@media (min-width: 768px) {
+  .dingry-custom-banner-headline {
+    margin-top: -1.45rem;
+    font-size: clamp(1.45rem, 3.2vw, 2.125rem);
+    line-height: 1;
+    letter-spacing: 0.022em;
+  }
+}
+
+.dingry-custom-banner--configurator .dingry-custom-banner-eyebrow {
+  margin-top: 1rem;
+  margin-bottom: 0.1rem;
+  font-size: clamp(0.72rem, 2.4vw, 0.9375rem);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  color: rgb(255 255 255 / 0.9);
+}
+
+@media (min-width: 768px) {
+  .dingry-custom-banner--configurator .dingry-custom-banner-eyebrow {
+    margin-top: 1.2rem;
+    font-size: 0.875rem;
+    letter-spacing: 0.3em;
+  }
+}
+
+.dingry-custom-banner--configurator .dingry-custom-banner-headline {
+  margin-top: -3rem;
+  transform: translateY(-0.4rem);
+}
+
+@media (min-width: 768px) {
+  .dingry-custom-banner--configurator .dingry-custom-banner-headline {
+    margin-top: -2.35rem;
+    transform: translateY(-0.45rem);
+  }
+}
+
+.dingry-custom-banner--configurator header {
+  margin-bottom: 0;
+  transform: translateY(-0.85rem);
+}
+
+@media (min-width: 768px) {
+  .dingry-custom-banner--configurator header {
+    transform: translateY(-1rem);
+  }
+}
+
+.dingry-custom-banner--configurator .dingry-custom-banner-mark {
+  margin-top: -0.65rem;
+  transform: translateY(-0.45rem);
+}
+
+.dingry-custom-banner--configurator .dingry-custom-banner-dock--catalog {
+  margin-top: auto !important;
+  padding-bottom: 0.125rem;
+  transform: translateY(-0.75rem);
+}
+
+@media (min-width: 768px) {
+  .dingry-custom-banner--configurator .dingry-custom-banner-dock--catalog {
+    transform: translateY(-0.85rem);
+  }
+}
+
 .dingry-custom-banner-cta {
   display: inline-flex;
   align-items: center;
@@ -2404,6 +2482,7 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
 
 html[data-theme="light"] .dingry-shop .dingry-custom-banner,
 html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-custom-banner-title,
+html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-custom-banner-headline,
 html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-custom-banner-cta {
   color: #fff !important;
 }

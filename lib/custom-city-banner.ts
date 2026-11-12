@@ -35,10 +35,15 @@ export const CUSTOM_BANNER_SUGGESTED_CITIES: readonly string[] = CUSTOM_BANNER_C
 /** Libellé par défaut à l’ouverture du configurateur atelier (sans ville bandeau). */
 export const DEFAULT_ATELIER_CONFIGURATOR_LABEL = "MARSEILLE";
 
+/** Affichage bandeau : pas de virgule avant « avec » (copie admin ou i18n). */
+export function formatPersoBannerSubtitle(text: string): string {
+  return text.replace(/,\s*(?=avec\b)/iu, " ").replace(/\s{2,}/g, " ").trim();
+}
+
 export const CUSTOM_BANNER_COPY = {
   eyebrow: "CUSTOM • CONFIGURATEUR",
   title: "À chaque ville sa Dingry",
-  subtitle: "Personnalise ton tee-shirt avec le nom de ta ville.",
+  subtitle: "Personnalise ton tee-shirt avec le nom de ta ville",
   cityField: "Choisis ta ville",
   citySearchPlaceholder: "Rechercher une ville…",
   cta: "Personnaliser →",

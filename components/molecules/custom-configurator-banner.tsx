@@ -5,6 +5,7 @@ import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
 import {
   CUSTOM_BANNER_CITIES,
   DEFAULT_ATELIER_CONFIGURATOR_LABEL,
+  formatPersoBannerSubtitle,
   resolveCustomBannerBackground,
 } from "@/lib/custom-city-banner";
 import { useTranslation } from "@/hooks/use-translation";
@@ -69,7 +70,7 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
 
   const eyebrow = content.eyebrow.trim() || bannerCopy.eyebrow;
   const title = content.title.trim() || bannerCopy.title;
-  const subtitle = content.subtitle.trim() || bannerCopy.subtitle;
+  const subtitle = formatPersoBannerSubtitle(content.subtitle.trim() || bannerCopy.subtitle);
 
   const onTabChange = useCallback((tab: string) => {
     const city = CUSTOM_BANNER_CITIES.find((entry) => entry.id === tab);
@@ -112,23 +113,23 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
       <span className="dingry-custom-banner-veil absolute inset-0" aria-hidden />
       <span className="dingry-custom-banner-shine pointer-events-none absolute inset-0" aria-hidden />
 
-      <div className="relative z-10 flex h-full flex-col justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 md:px-7 md:py-5">
-        <header className="max-w-md text-white [text-shadow:0_1px_10px_rgb(0_0_0/0.65)]">
-          <p className="dingry-typo-eyebrow text-[0.62rem]">{eyebrow}</p>
-          <h3 id="dingry-custom-banner-title" className="sr-only">
-            {title}
-          </h3>
+      <div className="dingry-custom-banner__stack relative z-10 flex h-full flex-col justify-between gap-0 px-4 pb-2 pt-0 sm:px-6 sm:pb-2.5 md:px-7 md:pb-3">
+        <header className="max-w-xl text-white [text-shadow:0_1px_10px_rgb(0_0_0/0.65)]">
+          <p className="dingry-custom-banner-eyebrow dingry-typo-eyebrow">{eyebrow}</p>
           <img
             src={DINGRY_LOGO_MONDE_CITIES_SRC}
-            alt=""
+            alt={title}
             width={500}
             height={500}
             decoding="async"
-            className="dingry-custom-banner-mark mt-0.5 h-[clamp(6.5rem,22vw,10.5rem)] w-auto max-w-[min(100%,26rem)] object-contain object-left"
+            className="dingry-custom-banner-mark h-[clamp(6.25rem,24vw,11rem)] w-auto max-w-[min(100%,28rem)] object-contain object-left"
           />
-          <p className="dingry-typo-body-alt mt-2 text-[15px] leading-snug text-white/90 sm:text-base">
+          <h3
+            id="dingry-custom-banner-title"
+            className="dingry-custom-banner-headline dingry-typo-street"
+          >
             {subtitle}
-          </p>
+          </h3>
         </header>
 
         <div className="dingry-custom-banner-dock dingry-custom-banner-dock--catalog mt-auto self-start">
