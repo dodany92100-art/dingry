@@ -1,3 +1,8 @@
+/** Snapshot commandes CRM sur Vercel Blob (`dingry/admin/store.json`). */
+export function isBlobConfigured(): boolean {
+  return (process.env.BLOB_READ_WRITE_TOKEN ?? "").trim().length > 0;
+}
+
 /** Paire Supabase CRM (lecture catalogue / images) — testable sans le garde-fou `VITEST` de `isSupabaseStoreEnabled`. */
 export function isSupabaseCatalogEnvComplete(): boolean {
   const url = (process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
@@ -17,8 +22,8 @@ export function allowCatalogSeedFallback(): boolean {
   return process.env.NODE_ENV !== "production" || isVercelPreviewRuntime();
 }
 
-/** Prod : Supabase CRM (catalogue) ou seed preview / dev. */
+/** Prod : Supabase (catalogue) + Blob (commandes) ou seed preview / dev. */
 export function hasProductionCatalogBackend(): boolean {
   if (process.env.NODE_ENV !== "production") return true;
-  return allowCatalogSeedFallback() || isSupabaseCatalogEnvComplete();
+  return allowCatalogSeedFallback() || (isSupabaseCatalogEnvComplete() && isBlobConfigured());
 }

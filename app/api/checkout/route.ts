@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import type { AdminOrder } from "@/lib/admin/types";
 import { StoreUnavailableError } from "@/lib/admin/store";
+import { customerPhoneFromBody } from "@/lib/checkout-phone";
 import { parseCheckoutLines, quoteCheckout, type CheckoutQuote } from "@/lib/checkout-quote";
 import { StockCheckoutError } from "@/lib/stock";
 import { loadPayPalDraft, quoteFromDraft, savePayPalDraft } from "@/lib/paypal-draft";
@@ -156,9 +157,12 @@ export async function POST(request: Request) {
           ? "brouillon Redis absent à la capture (expiré ou perdu)"
           : "brouillon Redis invalide à la capture";
       await notifyMissingPayPalDraft(orderId, orphanReason);
-      return checkoutErrorResponse(CHECKOUT_CODES.DRAFT_MISSING, "Paiement indisponible.", 503, {
-        log: { intent: "capture", orderId },
-      });
+      return checkoutErrorResponse(
+        CHECKOUT_CODES.DRAFT_MISSING,
+        "Brouillon de commande introuvable. Réessayez depuis le paiement ou contactez-nous avec la référence PayPal.",
+        503,
+        { log: { intent: "capture", orderId } },
+      );
     }
     const quote = quoteFromDraft(draft);
 
@@ -228,7 +232,8 @@ export async function POST(request: Request) {
         { headers: rateHeaders(gate) },
       );
     } catch (error) {
-      const issue = error instanceof Error ? error.name : "erreur";
+      const issue = error instanceof Error ? error.message : "erreur";
+      console.error("[checkout] capture exception", { orderId, issue });
       return checkoutErrorResponse(CHECKOUT_CODES.PERSIST_ORPHAN, "Enregistrement indisponible.", 503, {
         log: { intent: "capture", issue },
       });
@@ -292,8 +297,18 @@ export async function POST(request: Request) {
         log: { intent: "create" },
       });
     }
+    const customerPhone = customerPhoneFromBody(body);
+    if (!customerPhone) {
+      return checkoutErrorResponse(
+        CHECKOUT_CODES.INVALID,
+        "Indiquez un numéro de mobile valide (ex. 06 12 34 56 78).",
+        400,
+        { log: { intent: "create" } },
+      );
+    }
+    const quoteForPay = { ...quote, customerPhone };
     try {
-      const created = await createPayPalOrder(quote);
+      const created = await createPayPalOrder(quoteForPay);
       if (!created || !isPayPalOrderId(created.orderId)) {
         return checkoutErrorResponse(
           CHECKOUT_CODES.PAYPAL_API,
@@ -302,11 +317,14 @@ export async function POST(request: Request) {
           { log: { intent: "create" } },
         );
       }
-      const drafted = await savePayPalDraft(created.orderId, quote);
-      if (!drafted && process.env.NODE_ENV !== "development") {
-        return checkoutErrorResponse(CHECKOUT_CODES.DRAFT_MISSING, "Paiement indisponible.", 503, {
-          log: { intent: "create", orderId: created.orderId },
-        });
+      const drafted = await savePayPalDraft(created.orderId, quoteForPay);
+      if (!drafted) {
+        return checkoutErrorResponse(
+          CHECKOUT_CODES.DRAFT_MISSING,
+          "Session de paiement indisponible (brouillon). Vérifiez Redis Upstash puis réessayez.",
+          503,
+          { log: { intent: "create", orderId: created.orderId } },
+        );
       }
       return jsonNoStore(
         { orderId: created.orderId, approvalUrl: created.approvalUrl },

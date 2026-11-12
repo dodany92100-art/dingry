@@ -149,6 +149,7 @@ export async function persistPayPalPayment(
     stockApplied: false,
     ...(payment.shippingName ? { shippingName: payment.shippingName } : {}),
     ...(payment.shippingAddress ? { shippingAddress: payment.shippingAddress } : {}),
+    ...(quote.customerPhone ? { customerPhone: quote.customerPhone } : {}),
   };
 
   try {

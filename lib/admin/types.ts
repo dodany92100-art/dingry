@@ -240,6 +240,8 @@ export type AdminOrder = {
   source: "paypal" | "demo";
   shippingName?: string;
   shippingAddress?: string;
+  /** Mobile saisi au checkout (livraison / contact). */
+  customerPhone?: string;
   captureId?: string;
   /** Lignes utilisées pour le décrément Redis (reconciliation). */
   stockLines?: { productId: number; qty: number }[];

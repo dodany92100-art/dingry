@@ -23,6 +23,7 @@ import {
 } from "@/lib/dingry-checkout-copy";
 import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import { clientRateLimitMessage } from "@/lib/client/rate-limit-ui";
+import { normalizeCustomerPhone } from "@/lib/checkout-phone";
 import { formatClientCheckoutError } from "@/lib/checkout-diagnostic";
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
 
@@ -100,6 +101,7 @@ export default function CheckoutPage() {
   const [saving, setSaving] = useState(false);
   const [quote, setQuote] = useState<ServerQuote | null>(null);
   const [quoteState, setQuoteState] = useState<"loading" | "ready" | "error">("loading");
+  const [customerPhone, setCustomerPhone] = useState("");
   const tokenRef = useRef<string | null>(null);
   tokenRef.current = token;
   const retryTimerRef = useRef<number | null>(null);
@@ -187,8 +189,9 @@ export default function CheckoutPage() {
   }, [ready, cart]);
 
   const quoteReady = quoteState === "ready" && quote !== null;
+  const phoneForPay = normalizeCustomerPhone(customerPhone);
   const showPayPalButton =
-    quoteReady && !confirmation && !pendingOrderId && !saving;
+    quoteReady && !confirmation && !pendingOrderId && !saving && phoneForPay !== null;
   const disabledPayLabel =
     quoteState === "error"
       ? "Panier à mettre à jour"
@@ -411,6 +414,22 @@ export default function CheckoutPage() {
               <p className="dingry-checkout-pay-lead mt-3">
                 Après validation du contrôle, vous serez redirigé vers PayPal puis renvoyé ici pour confirmer la commande.
               </p>
+              <label className="mt-6 block text-[10px] tracking-[0.18em] text-[#6b7280] uppercase">
+                Mobile (livraison)
+                <input
+                  type="tel"
+                  name="customerPhone"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  value={customerPhone}
+                  onChange={(event) => setCustomerPhone(event.target.value)}
+                  placeholder="06 12 34 56 78"
+                  className="dingry-interactive-luxe mt-2 w-full border border-[#d1d5db] bg-white px-3 py-3 text-sm tracking-normal text-[#4b5563] normal-case placeholder:text-[#9ca3af]"
+                />
+              </label>
+              <p className="mt-2 text-[10px] leading-relaxed tracking-wide text-[#9ca3af]">
+                Joignable pour le transporteur — 06/07 ou +33…
+              </p>
               <TurnstileWidget
                 key={turnstileKey}
                 className="mt-6"
@@ -445,6 +464,7 @@ export default function CheckoutPage() {
                 ) : showPayPalButton ? (
                   <PayPalPaymentButton
                     lines={orderLines(cart)}
+                    customerPhone={phoneForPay ?? ""}
                     tone="light"
                     getTurnstileToken={() => tokenRef.current}
                     onAfterCreateFailure={refreshTurnstileAfterCreate}
@@ -462,9 +482,13 @@ export default function CheckoutPage() {
               <p className="dingry-checkout-pay-footnote mt-3 text-center">
                 {quoteState === "error"
                   ? "Le total n’a pas pu être validé : modifiez ou videz le panier, puis réessayez."
-                  : token
-                    ? "Vérification confirmée. Paiement PayPal sur leur site sécurisé."
-                    : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
+                  : !phoneForPay && customerPhone.trim()
+                    ? "Numéro invalide : 10 chiffres (06…) ou format international +33…"
+                    : !phoneForPay
+                      ? "Saisissez votre mobile avant de payer."
+                      : token
+                        ? "Vérification confirmée. Paiement PayPal sur leur site sécurisé."
+                        : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
               </p>
               {error ? (
                 <p className="mt-4 text-center text-[11px] leading-relaxed text-[#b91c1c]" role="alert">

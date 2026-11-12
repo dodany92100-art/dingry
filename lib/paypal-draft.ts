@@ -1,3 +1,4 @@
+import { normalizeCustomerPhone } from "@/lib/checkout-phone";
 import { checkoutDigest, parseCheckoutLines, type CheckoutLine, type CheckoutQuote } from "@/lib/checkout-quote";
 import { getSharedRedis } from "@/lib/ratelimit";
 
@@ -10,6 +11,7 @@ export type PayPalDraft = {
   currency: "EUR";
   items: string[];
   digest: string;
+  customerPhone?: string;
 };
 
 function draftKey(orderId: string): string {
@@ -33,7 +35,21 @@ function parseDraft(value: unknown): PayPalDraft | null {
     items.push(item);
   }
 
-  return { lines, totalCents: record.totalCents, currency: "EUR", items, digest: record.digest };
+  let customerPhone: string | undefined;
+  if (record.customerPhone !== undefined) {
+    const phone = normalizeCustomerPhone(record.customerPhone);
+    if (!phone) return null;
+    customerPhone = phone;
+  }
+
+  return {
+    lines,
+    totalCents: record.totalCents,
+    currency: "EUR",
+    items,
+    digest: record.digest,
+    ...(customerPhone ? { customerPhone } : {}),
+  };
 }
 
 export function quoteFromDraft(draft: PayPalDraft): CheckoutQuote {
@@ -44,6 +60,7 @@ export function quoteFromDraft(draft: PayPalDraft): CheckoutQuote {
     items: draft.items,
     paypalItems: [],
     digest: draft.digest,
+    ...(draft.customerPhone ? { customerPhone: draft.customerPhone } : {}),
   };
 }
 
@@ -56,6 +73,7 @@ export async function savePayPalDraft(orderId: string, quote: CheckoutQuote): Pr
     currency: quote.currency,
     items: quote.items,
     digest: quote.digest,
+    ...(quote.customerPhone ? { customerPhone: quote.customerPhone } : {}),
   });
   try {
     const result = await client.set(draftKey(orderId), payload, { nx: true, ex: DRAFT_TTL_SECONDS });

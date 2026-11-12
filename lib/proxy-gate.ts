@@ -1,7 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isEdgeWriteRateLimitPath, limitEdgeApiWrite } from "@/lib/edge-api-rate-limit";
 import { jsonNoStore } from "@/lib/http";
-import { isTeaserGateActive, isTeaserGatedPath } from "@/lib/dingry-teaser-gate";
+import {
+  isTeaserGateActive,
+  isTeaserGatePublicReturnPath,
+  isTeaserGatedPath,
+} from "@/lib/dingry-teaser-gate";
 import { ADMIN_COOKIE_NAME, sessionSecretFromEnv, verifyAdminSession } from "@/lib/admin/session-token";
 import { jsonRateLimited } from "@/lib/rate-limit-response";
 import { clientIp } from "@/lib/request-ip";
@@ -54,13 +58,31 @@ function adminDenied(request: NextRequest) {
   return response;
 }
 
+const CHECKOUT_CAPTURE_MAX_BODY = 32_000;
+
+/** Seul `intent: capture` (retour PayPal) — quote/create restent derrière le gate. */
+async function isCheckoutCaptureRequest(request: NextRequest): Promise<boolean> {
+  if (request.nextUrl.pathname !== "/api/checkout" || request.method !== "POST") return false;
+  try {
+    const raw = await request.clone().text();
+    if (Buffer.byteLength(raw, "utf8") === 0 || Buffer.byteLength(raw, "utf8") > CHECKOUT_CAPTURE_MAX_BODY) {
+      return false;
+    }
+    const body = JSON.parse(raw) as { intent?: unknown };
+    return body.intent === "capture";
+  } catch {
+    return false;
+  }
+}
+
 function teaserDenied(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
   if (pathname.startsWith("/api/")) {
     return jsonNoStore({ error: "Non autorisé." }, { status: 401, headers: GATE_DENY_HEADERS });
   }
   const loginUrl = new URL("/admin", request.url);
-  loginUrl.searchParams.set("next", pathname);
+  const nextTarget = search ? `${pathname}${search}` : pathname;
+  loginUrl.searchParams.set("next", nextTarget);
   const response = NextResponse.redirect(loginUrl);
   response.headers.set("Cache-Control", "no-store");
   response.headers.set("X-Robots-Tag", "noindex");
@@ -115,6 +137,9 @@ export async function handleProxyRequest(request: NextRequest): Promise<NextResp
   if (!isTeaserGateActive() || !isTeaserGatedPath(pathname)) {
     return NextResponse.next();
   }
+
+  if (isTeaserGatePublicReturnPath(pathname)) return NextResponse.next();
+  if (await isCheckoutCaptureRequest(request)) return NextResponse.next();
 
   if (await hasValidAdminSession(request)) return NextResponse.next();
   return teaserDenied(request);

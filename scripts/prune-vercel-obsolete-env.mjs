@@ -16,7 +16,6 @@ const OBSOLETE_KEYS = [
   "KV_REST_API_READ_ONLY_TOKEN",
   "REDIS_URL",
   "STRIPE_SECRET_KEY",
-  "BLOB_READ_WRITE_TOKEN",
 ];
 
 const TARGETS = ["production", "preview", "development"];

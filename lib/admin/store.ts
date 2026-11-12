@@ -209,7 +209,7 @@ function cloneStore(store: AdminStore): AdminStore {
 function assertStoreBackend(): void {
   if (!hasProductionCatalogBackend()) {
     throw new StoreUnavailableError(
-      "Stockage CRM manquant en production : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (et R2 pour les uploads images).",
+      "Stockage CRM manquant en production : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, BLOB_READ_WRITE_TOKEN (commandes), R2 (images).",
     );
   }
 }

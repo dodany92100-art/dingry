@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDate, formatPrice, statusClass } from "@/lib/admin/format";
+import { formatCustomerPhoneDisplay } from "@/lib/checkout-phone";
 import type { AdminOrder } from "@/lib/admin/types";
 import { formatReviewReasons, isShippingAddressMissing, type OrderReviewReason } from "@/lib/order-review";
 
@@ -46,6 +47,11 @@ export function OrdersTab({ orders, busyOrderId, error, onCycleStatus, onResolve
                   <div>
                     <p className="text-sm text-white">{order.customerName}</p>
                     <p className="mt-1 text-sm text-white/55">{order.email}</p>
+                    {order.customerPhone ? (
+                      <p className="mt-1 text-sm text-white/55">
+                        {formatCustomerPhoneDisplay(order.customerPhone)}
+                      </p>
+                    ) : null}
                     <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/30">
                       {formatDate(order.createdAt)}
                     </p>

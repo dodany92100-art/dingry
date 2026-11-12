@@ -28,6 +28,8 @@ export type CheckoutQuote = {
   items: string[];
   paypalItems: { name: string; quantity: string; unitCents: number }[];
   digest: string;
+  /** Saisi au checkout (hors digest PayPal). */
+  customerPhone?: string;
 };
 
 export function formatCents(cents: number): string {

@@ -17,7 +17,15 @@ const TEASER_GATED_EXACT = new Set([
 ]);
 
 export function isTeaserGatedPath(pathname: string): boolean {
+  if (TEASER_GATE_PUBLIC_RETURN_PATHS.has(pathname)) return false;
   if (TEASER_GATED_EXACT.has(pathname)) return true;
   if (pathname.startsWith("/checkout/")) return true;
   return false;
+}
+
+/** Retour PayPal — public même en période teaser (capture côté serveur). */
+export const TEASER_GATE_PUBLIC_RETURN_PATHS = new Set(["/checkout/success", "/checkout/cancel"]);
+
+export function isTeaserGatePublicReturnPath(pathname: string): boolean {
+  return TEASER_GATE_PUBLIC_RETURN_PATHS.has(pathname);
 }

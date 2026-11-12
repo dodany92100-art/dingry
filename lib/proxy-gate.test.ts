@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as edgeApiRateLimit from "@/lib/edge-api-rate-limit";
 import {
   PROXY_MATCHER,
   handleProxyRequest,
@@ -9,11 +10,16 @@ import { signAdminSession } from "@/lib/admin/session-token";
 
 const SESSION_SECRET = "a".repeat(32);
 
-function requestFor(path: string, cookieToken?: string): NextRequest {
+function requestFor(
+  path: string,
+  cookieToken?: string,
+  init?: { method?: string; body?: string },
+): NextRequest {
   const url = new URL(path, "https://www.dingry.com");
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { "x-vercel-forwarded-for": "203.0.113.1" };
   if (cookieToken) headers.cookie = `dingry_admin=${cookieToken}`;
-  return new NextRequest(url, { headers });
+  if (init?.body) headers["Content-Type"] = "application/json";
+  return new NextRequest(url, { headers, method: init?.method, body: init?.body });
 }
 
 describe("pathMatchesProxyMatcher", () => {
@@ -42,10 +48,16 @@ describe("handleProxyRequest teaser gate", () => {
     vi.stubEnv("ADMIN_SESSION_SECRET", SESSION_SECRET);
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("VERCEL_ENV", "");
+    vi.spyOn(edgeApiRateLimit, "limitEdgeApiWrite").mockResolvedValue({
+      ok: true,
+      limit: 20,
+      remaining: 19,
+    });
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it("webhook et cron passent sans cookie via next()", async () => {
@@ -64,6 +76,33 @@ describe("handleProxyRequest teaser gate", () => {
     expect(location).toContain("next=%2Fwebsitedx");
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(response.headers.get("X-Robots-Tag")).toBe("noindex");
+  });
+
+  it("sans cookie : /checkout/success?token= public (retour PayPal)", async () => {
+    const response = await handleProxyRequest(
+      requestFor("/checkout/success?token=5R989080W42399034"),
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it("sans cookie : POST /api/checkout capture autorisé", async () => {
+    const response = await handleProxyRequest(
+      requestFor("/api/checkout", undefined, {
+        method: "POST",
+        body: JSON.stringify({ intent: "capture", orderId: "5R989080W42399034" }),
+      }),
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it("sans cookie : POST /api/checkout create refusé", async () => {
+    const response = await handleProxyRequest(
+      requestFor("/api/checkout", undefined, {
+        method: "POST",
+        body: JSON.stringify({ intent: "create", token: "x", lines: [] }),
+      }),
+    );
+    expect(response.status).toBe(401);
   });
 
   it("sans cookie : 401 json sur /api/catalog", async () => {

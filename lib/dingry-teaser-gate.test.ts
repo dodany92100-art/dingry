@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isTeaserGateActive } from "@/lib/dingry-teaser-gate";
+import { isTeaserGateActive, isTeaserGatedPath } from "@/lib/dingry-teaser-gate";
 
 describe("isTeaserGateActive", () => {
   afterEach(() => {
@@ -26,5 +26,13 @@ describe("isTeaserGateActive", () => {
   it("reste actif sur valeur inconnue", () => {
     vi.stubEnv("DINGRY_TEASER_GATE", "open");
     expect(isTeaserGateActive()).toBe(true);
+  });
+});
+
+describe("isTeaserGatedPath", () => {
+  it("checkout/success et cancel publics", () => {
+    expect(isTeaserGatedPath("/checkout/success")).toBe(false);
+    expect(isTeaserGatedPath("/checkout/cancel")).toBe(false);
+    expect(isTeaserGatedPath("/checkout")).toBe(true);
   });
 });

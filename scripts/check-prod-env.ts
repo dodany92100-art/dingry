@@ -116,6 +116,7 @@ function main(): void {
     present("CRON_SECRET", MIN_CRON_SECRET_LENGTH),
     present("UPSTASH_REDIS_REST_URL"),
     present("UPSTASH_REDIS_REST_TOKEN"),
+    present("BLOB_READ_WRITE_TOKEN"),
     crmImageStorage(),
     dingryImgHosts(),
     r2ImageUpload(),

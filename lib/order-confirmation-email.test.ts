@@ -199,6 +199,13 @@ describe("order-confirmation-email", () => {
     await sendCustomerOrderConfirmation(baseOrder(), payment, quote);
 
     expect(ops.sendResendEmail).toHaveBeenCalledTimes(1);
+    expect(ops.sendResendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: "DINGRY <orders@dingry.com>",
+        replyTo: ["dingry@gmail.com"],
+        bcc: ["dingry@gmail.com"],
+      }),
+    );
     expect(redisSet).toHaveBeenCalledWith(confirmationSentRedisKey("ORD-99"), "1", expect.objectContaining({ nx: true }));
   });
 

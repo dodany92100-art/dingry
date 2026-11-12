@@ -1,6 +1,7 @@
 /**
  * Alerte ops minimale (Resend) — id commande + motif, sans données client.
  */
+import { DINGRY_ORDER_FROM, DINGRY_ORDERS_INBOX } from "@/lib/dingry-orders-email";
 import { getSharedRedis } from "@/lib/ratelimit";
 
 export const OPS_ALERT_FETCH_TIMEOUT_MS = 5_000;
@@ -26,6 +27,7 @@ export type ResendEmailPayload = {
   html?: string;
   text?: string;
   replyTo?: string[];
+  bcc?: string[];
 };
 
 /** Envoi Resend brut — utilisé par les alertes ops et les confirmations client. */
@@ -46,6 +48,7 @@ export async function sendResendEmail(payload: ResendEmailPayload): Promise<bool
   if (payload.html) body.html = payload.html;
   if (payload.text) body.text = payload.text;
   if (payload.replyTo && payload.replyTo.length > 0) body.reply_to = payload.replyTo;
+  if (payload.bcc && payload.bcc.length > 0) body.bcc = payload.bcc;
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -69,12 +72,12 @@ export async function sendResendEmail(payload: ResendEmailPayload): Promise<bool
 }
 
 function resendFromAddress(): string {
-  return process.env.OPS_ALERT_FROM?.trim() ?? "";
+  return process.env.OPS_ALERT_FROM?.trim() || DINGRY_ORDER_FROM;
 }
 
 /** @returns true si Resend a accepté l’e-mail (ou config absente en dev). */
 export async function sendOpsAlert(subject: string, details: { orderId?: string; reason: string }): Promise<boolean> {
-  const to = process.env.OPS_ALERT_EMAIL?.trim() ?? "";
+  const to = process.env.OPS_ALERT_EMAIL?.trim() || DINGRY_ORDERS_INBOX;
   const from = resendFromAddress();
 
   console.error("[ops-alert]", { subject, orderId: details.orderId, reason: details.reason });

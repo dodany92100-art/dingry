@@ -10,6 +10,10 @@ describe("sanitizeAdminLoginNext", () => {
   it("défaut admin", () => {
     expect(sanitizeAdminLoginNext(null)).toBe("/admin");
     expect(sanitizeAdminLoginNext("/checkout/success")).toBe("/admin");
+    expect(sanitizeAdminLoginNext("/checkout/success?token=bad")).toBe("/admin");
+    expect(sanitizeAdminLoginNext("/checkout/success?token=5R989080W42399034")).toBe(
+      "/checkout/success?token=5R989080W42399034",
+    );
     expect(sanitizeAdminLoginNext("/admin")).toBe("/admin");
   });
 

@@ -1,4 +1,5 @@
 import { formatCents, parsePaypalCents, type CheckoutQuote } from "@/lib/checkout-quote";
+import { getSiteUrl } from "@/lib/site-url";
 
 type PaypalAmount = { currency_code?: string; value?: string };
 
@@ -111,7 +112,12 @@ async function paypalFetch(path: string, init: RequestInit): Promise<PaypalCallR
     | null;
   if (!response.ok) {
     const issue = data?.details?.[0]?.issue || data?.name || "paypal";
-    console.error("PayPal refus", response.status, issue);
+    const detailLog = (data?.details ?? []).slice(0, 3).map((d) => ({
+      issue: d.issue,
+      field: "field" in d ? (d as { field?: string }).field : undefined,
+      description: "description" in d ? (d as { description?: string }).description : undefined,
+    }));
+    console.error("PayPal refus", response.status, issue, detailLog.length ? { details: detailLog } : {});
     return { ok: false, status: response.status, issue };
   }
   return { ok: true, order: data ?? {} };
@@ -122,11 +128,7 @@ export function paypalConfigured(): boolean {
 }
 
 function siteOrigin(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
-  if (fromEnv) return fromEnv;
-  const vercel = process.env.VERCEL_URL?.trim().replace(/\/$/, "") ?? "";
-  if (vercel) return `https://${vercel}`;
-  return "http://localhost:3000";
+  return getSiteUrl().origin;
 }
 
 export async function createPayPalOrder(

@@ -13,6 +13,7 @@ export type PayPalCartLine = {
 
 type PayPalPaymentButtonProps = {
   lines: PayPalCartLine[];
+  customerPhone: string;
   /** Jeton au clic « Payer », pas dans le rendu. */
   getTurnstileToken: () => string | null;
   /** `create` refusé : jeton Turnstile déjà consommé côté Cloudflare → renouveler le widget. */
@@ -36,6 +37,7 @@ function Spinner({ light = false }: { light?: boolean }) {
 
 export function PayPalPaymentButton({
   lines,
+  customerPhone,
   getTurnstileToken,
   onAfterCreateFailure,
   disabled = false,
@@ -61,7 +63,7 @@ export function PayPalPaymentButton({
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intent: "create", token: turnstileToken, lines }),
+        body: JSON.stringify({ intent: "create", token: turnstileToken, lines, customerPhone }),
       });
       const payload = (await response.json().catch(() => null)) as {
         approvalUrl?: string;

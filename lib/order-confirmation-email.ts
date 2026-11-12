@@ -4,7 +4,7 @@ import { loadPersonalizationProductIds } from "@/lib/atelier-custom-server";
 import { resolveCheckoutLine } from "@/lib/checkout-line-resolve";
 import type { CheckoutLine, CheckoutQuote } from "@/lib/checkout-quote";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
-import { DINGRY_CONTACT_EMAIL } from "@/lib/dingry-legal";
+import { DINGRY_ORDERS_INBOX, DINGRY_ORDER_FROM } from "@/lib/dingry-orders-email";
 import { isShippingAddressMissing } from "@/lib/order-review";
 import { sendOpsAlertOnce, sendResendEmail } from "@/lib/ops-alert";
 import type { VerifiedPayPalPayment } from "@/lib/paypal-server";
@@ -173,7 +173,7 @@ export function renderOrderConfirmationHtml(params: RenderParams): string {
     })
     .join("");
 
-  const contact = escapeHtml(DINGRY_CONTACT_EMAIL);
+  const contact = escapeHtml(DINGRY_ORDERS_INBOX);
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -282,12 +282,12 @@ export function renderOrderConfirmationText(params: RenderParams): string {
     }
   }
 
-  parts.push("", `Total payé : ${formatEuroFromCents(Math.round(order.total * 100))}`, "", `Contact : ${DINGRY_CONTACT_EMAIL}`);
+  parts.push("", `Total payé : ${formatEuroFromCents(Math.round(order.total * 100))}`, "", `Contact : ${DINGRY_ORDERS_INBOX}`);
   return parts.join("\n");
 }
 
 function resendFromAddress(): string {
-  return process.env.OPS_ALERT_FROM?.trim() ?? "";
+  return process.env.OPS_ALERT_FROM?.trim() || DINGRY_ORDER_FROM;
 }
 
 async function claimConfirmationSend(orderId: string): Promise<"claimed" | "duplicate" | "unavailable"> {
@@ -389,7 +389,8 @@ export async function sendCustomerOrderConfirmation(
     const sent = await sendResendEmail({
       from,
       to: [order.email.trim()],
-      replyTo: [DINGRY_CONTACT_EMAIL],
+      replyTo: [DINGRY_ORDERS_INBOX],
+      bcc: [DINGRY_ORDERS_INBOX],
       subject,
       html,
       text,
