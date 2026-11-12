@@ -7,7 +7,7 @@ import {
   COUNTDOWN_UNITS,
   DINGRY_COUNTDOWN_LABEL,
   DINGRY_COUNTDOWN_TARGET_AT,
-  DINGRY_TEASER_MESSAGE_PARAGRAPHS,
+  DINGRY_TEASER_MESSAGE,
   countdownParts,
   type CountdownParts,
 } from "@/lib/dingry-countdown";
@@ -92,10 +92,10 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
   return (
     <div className="relative z-10 flex min-h-[100dvh] w-full max-w-lg flex-col items-center justify-between px-5 py-6 sm:max-w-none sm:px-8 sm:py-8 md:px-12 lg:px-16">
       {/* Mobile : logo haut · compte à rebours bas · desktop : grille 2 col */}
-      <div className="relative flex w-full min-h-0 flex-1 flex-col md:grid md:grid-cols-2 md:items-center md:gap-8">
+      <div className="relative flex w-full min-h-0 flex-1 flex-col md:grid md:grid-cols-2 md:items-stretch md:gap-8">
         <section
           aria-label="DINGRY Paris"
-          className="relative flex min-h-0 flex-1 flex-col md:col-start-1 md:row-start-1 md:h-auto md:flex-none md:justify-self-start"
+          className="relative flex min-h-0 flex-1 flex-col md:col-start-1 md:row-start-1 md:h-auto md:flex-none md:justify-self-start md:self-start"
         >
           <header className="relative z-20 shrink-0 text-center md:text-left">
             <img
@@ -107,63 +107,63 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           </header>
         </section>
 
-        <section
-          aria-label="Ouverture et compte à rebours"
-          className="mt-auto shrink-0 space-y-1.5 pb-1 text-center max-md:translate-y-10 sm:max-md:translate-y-12 md:col-start-2 md:row-start-1 md:mt-0 md:translate-y-0 md:justify-self-end md:pb-0 md:text-right"
-        >
-          <p className="text-[10px] tracking-[0.38em] text-white/80 sm:text-[11px] sm:tracking-[0.42em]">OUVERTURE DU</p>
-          <p
-            className={`${displayClassName} text-[clamp(1.55rem,4.2vw,3.4rem)] leading-[0.92] tracking-[0.02em] text-white`}
+        <div className="mt-auto flex w-full flex-col gap-3 max-md:translate-y-10 sm:max-md:translate-y-12 md:col-start-2 md:row-start-1 md:mt-0 md:max-w-xl md:translate-y-0 md:items-end md:justify-end md:gap-5 md:self-end md:pb-10 md:pt-24 lg:pb-12 lg:pr-2">
+          <section
+            aria-label="Ouverture et compte à rebours"
+            className="shrink-0 space-y-3 pb-1 text-center sm:space-y-3.5 md:w-full md:text-right"
           >
-            SITE OFFICIEL
-          </p>
-          <div className="flex items-center justify-center gap-2 sm:gap-3 md:justify-end">
-            <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" />
-            <p className="text-[10px] tracking-[0.24em] text-white sm:text-[11px] sm:tracking-[0.28em]">
-              {DINGRY_COUNTDOWN_LABEL}
+            <p
+              className={`${displayClassName} text-[10px] tracking-[0.38em] text-white/80 sm:text-[11px] sm:tracking-[0.42em]`}
+            >
+              OUVERTURE DU
             </p>
-            <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" />
-          </div>
-          <div className="flex items-start justify-center gap-0 md:justify-end" aria-live="polite">
-            {UNITS.map((unit, index) => (
-              <div key={unit.key} className="flex items-start">
-                {index > 0 ? (
-                  <span className="mx-2 mt-1 text-xl font-light text-white/35 sm:mx-3 sm:text-2xl md:mx-4">|</span>
-                ) : null}
-                <div className="min-w-[2.65rem] text-center sm:min-w-[3.1rem] md:min-w-[3.6rem]">
-                  <p
-                    className={`${displayClassName} text-[clamp(1.45rem,2.8vw,2.35rem)] leading-none tabular-nums`}
-                  >
-                    {parts ? parts[unit.key] : "––"}
-                  </p>
-                  <p className="mt-1 text-[8px] tracking-[0.16em] text-white/70 uppercase sm:mt-2 sm:text-[9px] md:text-[10px]">
-                    {unit.label}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mx-auto max-w-md space-y-2 text-[9px] leading-relaxed tracking-[0.1em] text-white/65 sm:text-[10px] sm:tracking-[0.12em] md:ml-auto md:text-right md:text-[11px]">
-            {DINGRY_TEASER_MESSAGE_PARAGRAPHS.map((paragraph) => (
-              <p key={paragraph} className="m-0">
-                {paragraph}
+            <p
+              className={`${displayClassName} text-[clamp(1.55rem,4.2vw,3.4rem)] leading-[0.92] tracking-[0.02em] text-white`}
+            >
+              SITE OFFICIEL
+            </p>
+            <div className="flex items-center justify-center gap-2 sm:gap-3 md:justify-end">
+              <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" />
+              <p className="text-[10px] tracking-[0.24em] text-white sm:text-[11px] sm:tracking-[0.28em]">
+                {DINGRY_COUNTDOWN_LABEL}
               </p>
-            ))}
-          </div>
-        </section>
-      </div>
+              <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" />
+            </div>
+            <div className="flex items-start justify-center gap-0 md:justify-end" aria-live="polite">
+              {UNITS.map((unit, index) => (
+                <div key={unit.key} className="flex items-start">
+                  {index > 0 ? (
+                    <span
+                      className={`${displayClassName} mx-2 mt-1 text-xl text-white/35 sm:mx-3 sm:text-2xl md:mx-4`}
+                    >
+                      |
+                    </span>
+                  ) : null}
+                  <div className="min-w-[2.65rem] text-center sm:min-w-[3.1rem] md:min-w-[3.6rem]">
+                    <p
+                      className={`${displayClassName} text-[clamp(1.45rem,2.8vw,2.35rem)] leading-none tabular-nums text-white`}
+                    >
+                      {parts ? parts[unit.key] : "––"}
+                    </p>
+                    <p className="mt-1 text-[8px] tracking-[0.16em] text-white/70 uppercase sm:mt-2 sm:text-[9px] md:text-[10px]">
+                      {unit.label}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p
+              className={`${displayClassName} m-0 max-w-md text-pretty text-left text-sm leading-relaxed tracking-normal text-white/90 normal-case sm:text-[0.95rem] md:text-base md:text-white`}
+            >
+              {DINGRY_TEASER_MESSAGE}
+            </p>
+          </section>
 
-      <div className="mx-auto mb-2 hidden shrink-0 text-white/55 sm:mb-4 md:block" aria-hidden>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="1.4" />
-        </svg>
-      </div>
-
-      <form
-        noValidate
-        onSubmit={onSubmit}
-        className="mx-auto w-full max-w-xs shrink-0 max-md:translate-y-10 sm:max-w-sm sm:max-md:translate-y-12 md:max-w-xl md:translate-y-0"
-      >
+          <form
+            noValidate
+            onSubmit={onSubmit}
+            className="mx-auto w-full max-w-xs shrink-0 sm:max-w-sm md:ml-auto md:max-w-xl"
+          >
         <label htmlFor="teaser-email" className="sr-only">
           Inscrivez-vous pour être informé
         </label>
@@ -214,9 +214,9 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           aria-hidden
           className="sr-only"
         />
-      </form>
+          </form>
 
-      <div className="mt-3 flex w-full max-w-xs shrink-0 items-end justify-between gap-4 sm:max-w-sm md:max-w-none">
+          <div className="mt-0 flex w-full max-w-xs shrink-0 items-end justify-between gap-4 sm:max-w-sm md:ml-auto md:max-w-xl">
         <a
           href="https://www.instagram.com/dingry_officiel/"
           target="_blank"
@@ -230,6 +230,8 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           Shop <span className="px-1.5 text-white/35">|</span> Culture <span className="px-1.5 text-white/35">|</span>{" "}
           Attitude
         </p>
+          </div>
+        </div>
       </div>
     </div>
   );

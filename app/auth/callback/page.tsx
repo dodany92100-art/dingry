@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { sanitizeAuthCallbackNext } from "@/lib/auth/auth-callback-next";
 import { SHOP_PREVIEW_PATH } from "@/lib/shop-base-path";
 import { getSupabaseBrowser } from "@/lib/supabase/browser";
 
-export default function AuthCallbackPage() {
+function AuthCallbackLoading() {
+  return (
+    <p className="flex items-center gap-3 text-[11px] tracking-[0.2em] text-white/50 uppercase">
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-white" aria-hidden />
+      Connexion…
+    </p>
+  );
+}
+
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [failed, setFailed] = useState(false);
@@ -51,11 +60,22 @@ export default function AuthCallbackPage() {
           </Link>
         </div>
       ) : (
-        <p className="flex items-center gap-3 text-[11px] tracking-[0.2em] text-white/50 uppercase">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-white" aria-hidden />
-          Connexion…
-        </p>
+        <AuthCallbackLoading />
       )}
     </main>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-dvh items-center justify-center bg-[#0a0a0a] px-6 text-center text-white">
+          <AuthCallbackLoading />
+        </main>
+      }
+    >
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
