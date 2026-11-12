@@ -93,6 +93,18 @@ function turnstileHostname(): Check {
   };
 }
 
+/** Clé Cloudflare « always pass » (1x00…) : OK en dev, CHK-05 en prod si le secret est réel. */
+function turnstileSiteKeyNotDummy(): Check {
+  const site = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
+  const dummy = site.startsWith("1x00000000000000000000");
+  const ok = site.length > 0 && !dummy;
+  return {
+    name: "NEXT_PUBLIC_TURNSTILE_SITE_KEY (prod)",
+    ok,
+    hint: ok ? "ok" : dummy ? "ne pas utiliser la clé test 1x00… en prod" : "requis",
+  };
+}
+
 function main(): void {
   const checks: Check[] = [
     present("NEXT_PUBLIC_PAYPAL_CLIENT_ID"),
@@ -109,6 +121,7 @@ function main(): void {
     r2ImageUpload(),
     present("TURNSTILE_SECRET_KEY"),
     present("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
+    turnstileSiteKeyNotDummy(),
     turnstileHostname(),
     present("RESEND_API_KEY"),
     present("OPS_ALERT_EMAIL"),

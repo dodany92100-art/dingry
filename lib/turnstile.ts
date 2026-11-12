@@ -9,6 +9,7 @@ type SiteverifyResponse = {
   action?: string;
   hostname?: string;
   "error-codes"?: string[];
+  metadata?: { result_with_testing_key?: boolean };
 };
 
 export type TurnstileVerdict =
@@ -92,7 +93,10 @@ export async function verifyTurnstileToken(token: string, remoteIp?: string): Pr
   }
 
   const body = new URLSearchParams({ secret, response: token });
-  if (remoteIp) body.set("remoteip", remoteIp);
+  /** IP forgeable / IPv6 vs IPv4 : ne pas envoyer `remoteip` sauf opt-in explicite. */
+  if (process.env.TURNSTILE_SEND_REMOTE_IP === "1" && remoteIp) {
+    body.set("remoteip", remoteIp);
+  }
 
   try {
     const response = await fetch(SITEVERIFY_URL, {
@@ -110,11 +114,12 @@ export async function verifyTurnstileToken(token: string, remoteIp?: string): Pr
       console.error("Turnstile refusé", data["error-codes"] ?? []);
       return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
     }
-    if (data.action !== EXPECTED_ACTION) {
+    const testingKey = data.metadata?.result_with_testing_key === true;
+    if (!testingKey && data.action !== EXPECTED_ACTION) {
       console.error("Turnstile action refusée", data.action ?? "absent");
       return { ok: false, status: 403, error: "Vérification anti-bot refusée." };
     }
-    if (turnstileExpectedHostnames().length > 0 || process.env.VERCEL_ENV === "preview") {
+    if (!testingKey && (turnstileExpectedHostnames().length > 0 || process.env.VERCEL_ENV === "preview")) {
       if (!turnstileHostnameAllowed(data.hostname)) {
         console.error("Turnstile hostname refusé", data.hostname ?? "absent");
         return { ok: false, status: 403, error: "Vérification anti-bot refusée." };

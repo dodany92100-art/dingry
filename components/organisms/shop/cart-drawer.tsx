@@ -3,8 +3,8 @@
 import { AnimatePresence, motion } from "motion/react";
 import { cldOpt } from "@/components/molecules/product-card";
 import type { CheckoutConfirmation } from "@/lib/checkout-draft";
-import { DINGRY_SHIPPING_AMOUNT_HINT, DINGRY_SHIPPING_LABEL } from "@/lib/dingry-checkout-copy";
 import { DINGRY_PRODUCT_MODAL_AMBIENCE_SRC } from "@/lib/dingry-brand";
+import { useTranslation } from "@/hooks/use-translation";
 import { lineUnitPrice, cartLineKey, modalSizesFor, type CartLine } from "@/lib/shop-view";
 import { CartReassurance } from "@/components/cart/cart-reassurance";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "./motion";
@@ -42,6 +42,11 @@ export function CartDrawer({
   checkoutDisabled,
   onDiscoverCollection,
 }: CartDrawerProps) {
+  const { t } = useTranslation();
+
+  function itemsCountLabel(count: number): string {
+    return t(count > 1 ? "cart.drawer.itemsCountOther" : "cart.drawer.itemsCountOne", { count });
+  }
 
   function discoverCollectionCta(className?: string) {
     return (
@@ -53,7 +58,7 @@ export function CartDrawer({
           "dingry-gold-pill-btn mt-6 h-11 w-full max-w-xs rounded-full px-5 text-xs uppercase tracking-[0.16em] md:text-sm"
         }
       >
-        <span className="gold-text">Découvrir la collection</span>
+        <span className="gold-text">{t("cart.drawer.discoverCollection")}</span>
       </button>
     );
   }
@@ -72,7 +77,7 @@ export function CartDrawer({
               type="button"
               onClick={onClose}
               className="absolute inset-0 z-20 cursor-pointer"
-              aria-label="Fermer le panier et continuer vos achats"
+              aria-label={t("cart.drawer.closeContinueAria")}
             />
             <img
               src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC}
@@ -103,22 +108,22 @@ export function CartDrawer({
             <div className="dingry-gold-rule-bottom relative flex items-center justify-between p-8">
               <div>
                 <h2 className="text-sm font-bold tracking-[0.3em] uppercase">
-                  {confirmation ? "Commande confirmée" : "Panier"}
+                  {confirmation ? t("cart.drawer.confirmedTitle") : t("cart.drawer.title")}
                 </h2>
                 {count > 0 && !confirmation ? (
                   <p className="mt-1 text-xs text-white/40">
-                    {count} article{count > 1 ? "s" : ""} ·{" "}
+                    {itemsCountLabel(count)} ·{" "}
                     <span className="dingry-cart-recap-amount text-sm tabular-nums text-white/75">
                       {total} €
                     </span>{" "}
-                    TTC
+                    {t("common.ttc")}
                   </p>
                 ) : null}
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Fermer"
+                aria-label={t("cart.drawer.closeAria")}
                 className="w-10 h-10 flex items-center justify-center text-white/40 hover:text-white transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -132,12 +137,12 @@ export function CartDrawer({
               <div className="flex-1 flex items-center justify-center px-8 overflow-y-auto">
                 {confirmation ? (
                   <div data-cart-confirm className="w-full border border-[#FF3D00]/40 bg-[#FF3D00]/10 p-6">
-                    <p className="text-[10px] tracking-[0.35em] text-[#FF3D00] uppercase">Commande validée</p>
+                    <p className="text-[10px] tracking-[0.35em] text-[#FF3D00] uppercase">{t("cart.drawer.orderValidated")}</p>
                     <p className="mt-4 text-sm leading-relaxed text-white">
-                      Merci {confirmation.payerName}. Un reçu e-mail vous a été envoyé par PayPal.
+                      {t("cart.drawer.thanksPaypal", { name: confirmation.payerName })}
                     </p>
                     <p className="mt-4 text-[10px] tracking-[0.22em] text-white/40 uppercase">
-                      Réf. {confirmation.orderId}
+                      {t("cart.drawer.refLabel")} {confirmation.orderId}
                     </p>
                     <ul className="dingry-gold-rule-top relative mt-4 space-y-2 pt-4 text-sm text-white/75">
                       {confirmation.items.map((line) => (
@@ -147,7 +152,7 @@ export function CartDrawer({
                     <p className="dingry-product-price dingry-product-price--lg dingry-product-price--on-dark mt-4">{confirmation.total}€</p>
                     {confirmation.shippingAddress ? (
                       <div className="dingry-gold-rule-top relative mt-4 pt-4 text-xs leading-relaxed text-white/55">
-                        <p className="text-[10px] tracking-[0.22em] text-white/35 uppercase mb-1">Livraison</p>
+                        <p className="text-[10px] tracking-[0.22em] text-white/35 uppercase mb-1">{t("cart.drawer.delivery")}</p>
                         <p>{confirmation.shippingName}</p>
                         <p>{confirmation.shippingAddress}</p>
                       </div>
@@ -158,19 +163,19 @@ export function CartDrawer({
                       onClick={onDismissConfirmation}
                       className="mt-6 w-full py-4 bg-white text-[#050505] text-xs font-bold tracking-[0.3em] uppercase hover:bg-[#FF3D00] hover:text-white transition-colors"
                     >
-                      Continuer
+                      {t("cart.drawer.continue")}
                     </button>
                   </div>
                 ) : (
                   <div className="flex w-full flex-col items-center text-center">
-                    <p className="mb-2 text-sm uppercase tracking-[0.3em] text-white/20">Votre panier est vide.</p>
+                    <p className="mb-2 text-sm uppercase tracking-[0.3em] text-white/20">{t("cart.drawer.empty")}</p>
                     {discoverCollectionCta()}
                     <button
                       type="button"
                       onClick={onClose}
                       className="mt-4 text-[10px] uppercase tracking-[0.22em] text-white/50 hover:text-white"
                     >
-                      Continuer vos achats
+                      {t("cart.drawer.continueShopping")}
                     </button>
                   </div>
                 )}
@@ -201,8 +206,12 @@ export function CartDrawer({
                         <p className="text-xs text-[#FF3D00] mt-1 tracking-wider uppercase">« {item.personalization} »</p>
                       )}
                       <div className="mt-2">
-                        <p className="text-[9px] tracking-[0.25em] text-white/35 uppercase mb-1.5">Taille</p>
-                        <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Taille pour ${item.product.name}`}>
+                        <p className="text-[9px] tracking-[0.25em] text-white/35 uppercase mb-1.5">{t("cart.drawer.size")}</p>
+                        <div
+                          className="flex flex-wrap gap-1.5"
+                          role="group"
+                          aria-label={t("cart.drawer.sizeFor", { name: item.product.name })}
+                        >
                           {sizeOptions.map((s) => (
                             <button
                               key={s}
@@ -221,12 +230,12 @@ export function CartDrawer({
                         </div>
                       </div>
                       <div className="flex items-center gap-3 mt-3">
-                        <span className="text-[9px] tracking-[0.25em] text-white/35 uppercase">Quantité</span>
+                        <span className="text-[9px] tracking-[0.25em] text-white/35 uppercase">{t("cart.drawer.quantity")}</span>
                         <div className="flex items-center border border-white/15">
                           <button
                             type="button"
                             onClick={() => onUpdateQuantity(idx, -1)}
-                            aria-label={`Diminuer la quantité de ${item.product.name}`}
+                            aria-label={t("cart.drawer.decreaseQty", { name: item.product.name })}
                             className="w-7 h-7 text-white/55 hover:bg-white hover:text-black transition-colors"
                           >
                             −
@@ -237,7 +246,7 @@ export function CartDrawer({
                           <button
                             type="button"
                             onClick={() => onUpdateQuantity(idx, 1)}
-                            aria-label={`Augmenter la quantité de ${item.product.name}`}
+                            aria-label={t("cart.drawer.increaseQty", { name: item.product.name })}
                             className="w-7 h-7 text-white/55 hover:bg-white hover:text-black transition-colors"
                           >
                             +
@@ -251,7 +260,7 @@ export function CartDrawer({
                     <button
                       type="button"
                       onClick={() => onRemove(idx)}
-                      aria-label={`Retirer ${item.product.name} du panier`}
+                      aria-label={t("cart.drawer.removeItem", { name: item.product.name })}
                       className="mt-1 self-start text-white/20 transition-colors hover:text-white/60"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -269,27 +278,27 @@ export function CartDrawer({
             {items.length > 0 && (
               <div className="dingry-gold-rule-top relative z-10 shrink-0 bg-[#0a0a0a] p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.55)]">
                 <div className="mb-4 flex items-end justify-between gap-4">
-                  <p className="text-[10px] tracking-[0.22em] text-white/35 uppercase">Récapitulatif</p>
+                  <p className="text-[10px] tracking-[0.22em] text-white/35 uppercase">{t("cart.drawer.recap")}</p>
                   <p
                     className="dingry-cart-recap-total shrink-0 tabular-nums text-white/80"
-                    aria-label={`Total ${total} euros TTC`}
+                    aria-label={t("cart.drawer.totalAria", { total })}
                   >
                     {total} €
                   </p>
                 </div>
                 <div className="space-y-2 text-sm text-white/55">
                   <div className="flex justify-between items-baseline gap-4">
-                    <span>Sous-total</span>
+                    <span>{t("cart.subtotal")}</span>
                     <span className="dingry-cart-recap-amount shrink-0 tabular-nums text-white/75">{total} €</span>
                   </div>
                   <div className="flex justify-between items-baseline gap-4">
-                    <span>{DINGRY_SHIPPING_LABEL}</span>
+                    <span>{t("cart.shippingLabel")}</span>
                     <span className="shrink-0 text-xs tracking-wide text-white/45 uppercase">
-                      {DINGRY_SHIPPING_AMOUNT_HINT}
+                      {t("cart.shippingHint")}
                     </span>
                   </div>
                   <div className="relative z-[1] flex justify-between items-baseline gap-4 border-t border-white/15 pt-3">
-                    <span className="text-xs font-medium tracking-[0.22em] uppercase text-white/70">Total TTC</span>
+                    <span className="text-xs font-medium tracking-[0.22em] uppercase text-white/70">{t("cart.totalTtc")}</span>
                     <span className="dingry-cart-recap-amount dingry-cart-recap-amount--lg shrink-0 tabular-nums text-white/80">
                       {total} €
                     </span>
@@ -301,14 +310,14 @@ export function CartDrawer({
                   disabled={checkoutDisabled}
                   className="mt-5 w-full border border-white/20 bg-white py-4 text-[11px] font-medium tracking-[0.28em] text-[#050505] uppercase transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-white/10 disabled:text-white/25"
                 >
-                  Passer au paiement
+                  {t("cart.checkoutCta")}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   className="mt-3 w-full py-2 text-[10px] tracking-[0.2em] text-white/45 uppercase hover:text-white"
                 >
-                  Continuer mes achats
+                  {t("cart.continueShoppingAlt")}
                 </button>
               </div>
             )}

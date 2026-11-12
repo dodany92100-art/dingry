@@ -3,7 +3,7 @@ export const DINGRY_SHOP_SHELL_CLASS =
   "mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8";
 
 /** Conteneur vitrine catalogue (barre filtres + grille), aligné sur la grille 3 col. */
-export const CATALOG_VITRINE_SHELL_CLASS = "mx-auto w-full max-w-6xl px-4";
+export const CATALOG_VITRINE_SHELL_CLASS = "mx-auto w-full max-w-6xl px-4 max-md:px-0";
 
 /** @deprecated Préférer {@link CATALOG_VITRINE_SHELL_CLASS} */
 export const CATALOG_PRODUCT_GRID_SHELL_CLASS = CATALOG_VITRINE_SHELL_CLASS;

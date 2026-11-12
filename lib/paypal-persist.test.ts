@@ -50,6 +50,10 @@ vi.mock("@/lib/ops-alert", () => ({
   clearPayPalPaymentOrphan: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/order-confirmation-email", () => ({
+  sendCustomerOrderConfirmationForPersist: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/ratelimit", () => ({
   claimPayPalOrder: vi.fn(),
   completePayPalOrder: vi.fn(),
@@ -81,6 +85,27 @@ describe("persistPayPalPayment", () => {
     const result = await persistPayPalPayment(payment, quote);
     expect(result.ok).toBe(true);
     expect(store.patchOrder).toHaveBeenCalledWith("ORDER-1", expect.any(Function));
+  });
+
+  it("n’envoie la confirmation client que lors du premier insert", async () => {
+    const store = await import("@/lib/admin/store");
+    const ratelimit = await import("@/lib/ratelimit");
+    const confirmation = await import("@/lib/order-confirmation-email");
+    vi.mocked(store.findOrder).mockResolvedValue(undefined);
+    vi.mocked(store.insertOrderIfNew).mockResolvedValue(true);
+    vi.mocked(ratelimit.claimPayPalOrder).mockResolvedValue({ status: "claimed", token: "tok" });
+    vi.mocked(ratelimit.completePayPalOrder).mockResolvedValue(true);
+    vi.mocked(store.findOrder).mockResolvedValueOnce(undefined).mockResolvedValueOnce({
+      ...legacyOrder(),
+      stockLines: [{ productId: 11, qty: 1 }],
+    });
+
+    await persistPayPalPayment(payment, quote);
+    expect(confirmation.sendCustomerOrderConfirmationForPersist).toHaveBeenCalledTimes(1);
+
+    vi.mocked(store.findOrder).mockResolvedValue(legacyOrder());
+    await persistPayPalPayment(payment, quote);
+    expect(confirmation.sendCustomerOrderConfirmationForPersist).toHaveBeenCalledTimes(1);
   });
 
   it("claim duplicate sans commande → 503", async () => {

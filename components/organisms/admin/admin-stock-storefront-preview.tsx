@@ -22,6 +22,7 @@ import {
 } from "@/components/organisms/shop/catalog-layout";
 import { CatalogFilterBar, type CatalogTabValue } from "@/components/organisms/shop/catalog-filter-bar";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
+import { DingryI18nProvider } from "@/hooks/use-translation";
 import type { AdminProductCategoryFilter } from "@/lib/shop-data";
 
 type AdminStockStorefrontPreviewProps = {

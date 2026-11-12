@@ -52,7 +52,7 @@ export function PayPalPaymentButton({
 
     const turnstileToken = getTurnstileToken();
     if (!turnstileToken) {
-      setError("Validez le contrôle de sécurité avant de payer.");
+      setError("Complétez la vérification Turnstile (case au-dessus) avant de payer.");
       return;
     }
 

@@ -2,7 +2,7 @@
 
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import type { ShopProduct } from "@/lib/catalog";
-import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
+import { useTranslation } from "@/hooks/use-translation";
 import type { CatalogMenuSection } from "@/lib/shop-catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
 import { CatalogProductCell } from "./catalog-product-cell";
@@ -25,6 +25,7 @@ export function CollectionFeed({
   onToggleWishlist,
   showAdminIdBadge = false,
 }: CollectionFeedProps) {
+  const { t } = useTranslation();
   let indexOffset = 0;
 
   return (
@@ -52,8 +53,8 @@ export function CollectionFeed({
           <div key={section.category} className="scroll-mt-28 space-y-4 md:space-y-5">
             {section.category === "hoodies" ? (
               <div className="pb-4 md:pb-5">
-                <p className="dingry-section-eyebrow">Collection</p>
-                <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{DINGRY_STREET_LINE}</p>
+                <p className="dingry-section-eyebrow">{t("collection.eyebrow")}</p>
+                <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{t("footer.streetLine")}</p>
               </div>
             ) : null}
             <h3 className={CATALOG_SECTION_HEADING_CLASS}>
@@ -61,11 +62,11 @@ export function CollectionFeed({
             </h3>
             {section.products.length === 0 ? (
               <p className="text-sm tracking-wider text-white/40">
-                Aucune pièce en ligne pour le moment · vérifie la catégorie{' '}
-                <span className="text-white/55">{section.label}</span> sur les fiches CRM.
+                {t("collection.emptyCategory")}{" "}
+                <span className="text-white/55">{section.label}</span> {t("collection.emptyCategoryEnd")}
               </p>
             ) : (
-              <div className={CATALOG_PRODUCT_GRID_CLASS} aria-label={`Produits ${section.label}`}>
+              <div className={CATALOG_PRODUCT_GRID_CLASS} aria-label={t("collection.productsAria", { label: section.label })}>
                 {cells}
               </div>
             )}

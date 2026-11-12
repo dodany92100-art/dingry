@@ -24,7 +24,30 @@ export function TurnstileWidget({ onToken, className, tone = "dark" }: Turnstile
     onTokenRef.current("developpement");
   }, [localBypass]);
 
-  if (localBypass) return null;
+  if (localBypass) {
+    return (
+      <div className={className} data-turnstile-placeholder="">
+        <p
+          className={`mb-3 text-[10px] tracking-[0.28em] uppercase ${
+            isLight ? "text-[#0e1118]/45" : "text-white/40"
+          }`}
+        >
+          Vérification
+        </p>
+        <div
+          className={`border px-3 py-3 text-[11px] leading-relaxed tracking-wide ${
+            isLight ? "border-[#0e1118]/12 bg-[#f6f6f4] text-[#6b7280]" : "border-white/10 bg-[#050505] text-white/55"
+          }`}
+        >
+          Cloudflare Turnstile est désactivé en local : définis{" "}
+          <span className={isLight ? "text-[#0e1118]/85" : "text-white/80"}>
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY
+          </span>{" "}
+          dans <code className="text-[10px]">.env.local</code> pour afficher le widget (même emplacement qu’en prod).
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
@@ -69,21 +92,14 @@ export function TurnstileWidget({ onToken, className, tone = "dark" }: Turnstile
             }}
           />
         ) : (
-          <p
-            className={`py-4 text-center text-[11px] leading-relaxed tracking-wide ${
-              isLight ? "text-[#0e1118]/55" : "text-white/50"
-            }`}
-          >
-            Ajoute{" "}
-            <span className={isLight ? "text-[#0e1118]/85" : "text-white/80"}>
-              NEXT_PUBLIC_TURNSTILE_SITE_KEY
-            </span>{" "}
-            pour activer le paiement.
+          <p className="py-4 text-center text-[11px] leading-relaxed text-[#b91c1c]" role="alert">
+            Vérification indisponible (clé Turnstile absente). Le paiement ne peut pas aboutir — contactez DINGRY ou
+            réessayez plus tard.
           </p>
         )}
       </div>
       {message ? (
-        <p className="mt-3 text-center text-[11px] leading-relaxed text-[#ffb4b4]" role="status">
+        <p className="mt-3 text-center text-[11px] leading-relaxed text-[#b91c1c]" role="alert">
           {message}
         </p>
       ) : null}

@@ -23,6 +23,7 @@ import { useShopAuth } from "@/hooks/use-shop-auth";
 import type { PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
+import { DingryI18nProvider } from "@/hooks/use-translation";
 import { isShopProductInStock } from "@/lib/catalog";
 import { parseCatalogFilter } from "@/lib/shop-catalog";
 import {
@@ -305,6 +306,7 @@ function DingryShopPageInner() {
   }
 
   return (
+    <DingryI18nProvider>
     <div className="dingry-shop relative h-dvh w-full overflow-x-hidden overflow-hidden bg-black text-white">
       <BackgroundGradientAnimation
         interactive={false}
@@ -354,7 +356,7 @@ function DingryShopPageInner() {
             id="atelier-custom"
             prefetch={prefetchAtelierCustomSection}
             rootMargin="480px 0px 48px 0px"
-            placeholderClassName="dingry-gold-rule-top min-h-[16rem] [contain-intrinsic-size:auto_16rem]"
+            placeholderClassName="dingry-gold-rule-top min-h-[18rem] [contain-intrinsic-size:auto_18rem]"
           >
             <AtelierCustomSection onOpenCustom={openCustom} persoBanner={persoBanner} />
           </LazyWhenVisible>
@@ -469,6 +471,7 @@ function DingryShopPageInner() {
         }}
       />
     </div>
+    </DingryI18nProvider>
   );
 }
 

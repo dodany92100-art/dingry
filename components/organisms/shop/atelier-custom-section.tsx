@@ -17,15 +17,13 @@ export function AtelierCustomSection({
   persoBanner,
 }: AtelierCustomSectionProps) {
   return (
-    <section className="dingry-gold-rule-top scroll-mt-28 pb-12 pt-10 md:pb-16 md:pt-14">
-      <div className="mb-5 flex flex-col gap-4 md:mb-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <DingryLogo animate={false} tone="on-light" className="mb-4 h-9 w-auto md:h-11" />
-          <p className="dingry-section-eyebrow">Atelier custom</p>
-          <h2 className="dingry-sticky-editorial-title mt-2 text-2xl uppercase leading-tight md:text-3xl">
-            T-shirt personnalisé
-          </h2>
-        </div>
+    <section className="dingry-gold-rule-top scroll-mt-28 py-8 my-6 md:py-10 md:my-8">
+      <div className="mb-4 md:mb-5">
+        <DingryLogo animate={false} tone="on-light" className="mb-3 h-8 w-auto md:h-9" />
+        <p className="dingry-section-eyebrow">Atelier custom</p>
+        <h2 className="dingry-typo-street dingry-typo-street--md mt-1.5 leading-tight">
+          T-shirt personnalisé
+        </h2>
       </div>
       <CustomConfiguratorBanner content={persoBanner} onOpenCustom={onOpenCustom} />
     </section>

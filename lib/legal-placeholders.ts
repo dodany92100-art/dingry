@@ -6,7 +6,11 @@ import {
   DINGRY_LEGAL_SUBTITLE,
   DINGRY_SITE_DOMAIN,
 } from "@/lib/dingry-legal";
-export type LegalDocId = "cgv" | "rgpd" | "mentions" | "retours" | "livraison";
+import type { Locale } from "@/lib/i18n/messages";
+import { EN_LEGAL_DOCUMENTS } from "./legal-documents-en";
+import type { LegalDocId, LegalDocumentBundle } from "./legal-documents-types";
+
+export type { LegalDocId } from "./legal-documents-types";
 
 const vendorBlock = `${DINGRY_COMPANY.legalName}, ${DINGRY_COMPANY.legalForm}, au capital de ${DINGRY_COMPANY.shareCapitalEur} €, immatriculée sous le SIREN ${DINGRY_COMPANY.siren} (${DINGRY_COMPANY.rcs}), dont le siège social est situé ${DINGRY_COMPANY.registeredOffice}, exploite la marque ${DINGRY_BRAND_NAME} sur le site ${DINGRY_SITE_DOMAIN}.`;
 
@@ -220,3 +224,7 @@ export const LEGAL_DOCUMENTS: Record<
     ],
   },
 };
+
+export function legalDocumentsForLocale(locale: Locale): typeof LEGAL_DOCUMENTS {
+  return locale === "en" ? EN_LEGAL_DOCUMENTS : LEGAL_DOCUMENTS;
+}

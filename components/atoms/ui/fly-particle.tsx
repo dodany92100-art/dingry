@@ -36,8 +36,8 @@ export function FlyParticle({ from, to, variant, onComplete }: FlyParticleProps)
       animate={{
         x: [from.x, mid.x, to.x],
         y: [from.y, mid.y, to.y],
-        scale: [1, 0.65, 0.3],
-        opacity: [1, 0.92, 0.12],
+        scale: [1, 0.75, 0.45],
+        opacity: [1, 0.95, 0.35],
       }}
       transition={{
         duration: FLY_DURATION_S,

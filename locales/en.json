@@ -1,0 +1,66 @@
+{
+  "brand": {
+    "manifesto": "TRUE LUXURY IS ATTITUDE",
+    "streetLine": "ROCKTHESTREET"
+  },
+  "nav": {
+    "collection": "Collection",
+    "atelier": "Atelier",
+    "heritage": "Heritage",
+    "lookbook": "Lookbook",
+    "custom": "Custom",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "mobileNavLabel": "Shop navigation",
+    "accountConnected": "Account connected",
+    "signIn": "Sign in",
+    "myAccount": "My account",
+    "openCart": "Open cart",
+    "browseFavorites": "Browse catalog — favorites",
+    "favoritesOne": "Favorites, {{count}} item",
+    "favoritesOther": "Favorites, {{count}} items",
+    "cartOne": "Cart, {{count}} item",
+    "cartOther": "Cart, {{count}} items",
+    "language": "Language",
+    "localeFr": "FR",
+    "localeEn": "EN",
+    "switchToEn": "Switch to English",
+    "switchToFr": "Switch to French"
+  },
+  "catalog": {
+    "filtersAria": "DINGRY collection categories",
+    "unavailable": "Catalog temporarily unavailable — checkout disabled. Try again shortly.",
+    "categories": {
+      "all": "Collection",
+      "hoodies": "Hoodies",
+      "hoodie-zip": "Hoodzip",
+      "sweats": "Crewnecks",
+      "t-shirts": "T-shirts",
+      "jersey": "Jerseys",
+      "pants": "Pants",
+      "crop-top": "Crop tops",
+      "caps": "Caps"
+    },
+    "custom": "Custom"
+  },
+  "cart": {
+    "reassuranceEyebrow": "Information",
+    "reassuranceItems": [
+      "Estimated delivery: 3–7 business days in metropolitan France, unless stated otherwise at checkout.",
+      "Shipping at your expense, depending on destination and carrier — amount shown before payment (PayPal).",
+      "Right of withdrawal: 14 days after delivery. Return shipping at your expense unless defective item or DINGRY error.",
+      "Payment via PayPal (account or card when offered by PayPal). Order confirmed after payment."
+    ],
+    "paymentMethodsAria": "Accepted payment methods"
+  },
+  "newsletter": {
+    "title": "Newsletter",
+    "subtitle": "Drops & exclusives — join us.",
+    "emailPlaceholder": "Email",
+    "emailSrOnly": "Newsletter email",
+    "submit": "Subscribe",
+    "thanks": "Thanks. Confirm sending in your mail client.",
+    "mailtoSubject": "DINGRY Newsletter",
+    "mailtoBody": "Newsletter signup: {{email}}"
+  }
+}

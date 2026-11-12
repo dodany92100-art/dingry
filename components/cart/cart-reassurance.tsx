@@ -1,13 +1,15 @@
-import { DINGRY_CART_REASSURANCE_EYEBROW, DINGRY_CART_REASSURANCE_ITEMS } from "@/lib/dingry-checkout-copy";
+"use client";
+
+import { useTranslation } from "@/hooks/use-translation";
 
 type CartReassuranceProps = {
   tone?: "dark" | "light";
   className?: string;
 };
 
-function PaymentMarksMono({ muted }: { muted: string }) {
+function PaymentMarksMono({ muted, paymentAria }: { muted: string; paymentAria: string }) {
   return (
-    <ul className="mt-4 flex flex-wrap items-center justify-center gap-2" aria-label="Moyens de paiement acceptés">
+    <ul className="mt-4 flex flex-wrap items-center justify-center gap-2" aria-label={paymentAria}>
       <li
         className={`flex h-8 items-center justify-center border px-2 ${muted}`}
         title="Visa"
@@ -38,24 +40,6 @@ function PaymentMarksMono({ muted }: { muted: string }) {
       </li>
       <li
         className={`flex h-8 items-center justify-center border px-2 ${muted}`}
-        title="American Express"
-      >
-        <svg viewBox="0 0 52 16" width="44" height="14" role="img" aria-label="American Express" className="opacity-80">
-          <text
-            x="0"
-            y="12"
-            fill="currentColor"
-            fontFamily="Arial, Helvetica, sans-serif"
-            fontSize="9"
-            fontWeight="700"
-            letterSpacing="0.2"
-          >
-            AMEX
-          </text>
-        </svg>
-      </li>
-      <li
-        className={`flex h-8 items-center justify-center border px-2 ${muted}`}
         title="PayPal"
       >
         <svg viewBox="0 0 56 16" width="48" height="14" role="img" aria-label="PayPal" className="opacity-80">
@@ -77,6 +61,8 @@ function PaymentMarksMono({ muted }: { muted: string }) {
 }
 
 export function CartReassurance({ tone = "dark", className = "" }: CartReassuranceProps) {
+  const { t, tList } = useTranslation();
+  const items = tList("cart.reassuranceItems");
   const isLight = tone === "light";
   const border = isLight ? "border-zinc-200" : "border-white/10";
   const eyebrow = isLight ? "text-zinc-400" : "text-white/35";
@@ -90,17 +76,17 @@ export function CartReassurance({ tone = "dark", className = "" }: CartReassuran
       aria-labelledby="dingry-cart-reassurance-title"
     >
       <p id="dingry-cart-reassurance-title" className={`text-[10px] tracking-[0.28em] uppercase ${eyebrow}`}>
-        {DINGRY_CART_REASSURANCE_EYEBROW}
+        {t("cart.reassuranceEyebrow")}
       </p>
       <ul className={`mt-4 space-y-2.5 text-[11px] leading-relaxed tracking-wide ${body}`}>
-        {DINGRY_CART_REASSURANCE_ITEMS.map((line) => (
+        {items.map((line) => (
           <li key={line} className="flex gap-3">
             <span className={`mt-[0.45rem] h-px w-3 shrink-0 ${bullet}`} aria-hidden />
             <span>{line}</span>
           </li>
         ))}
       </ul>
-      <PaymentMarksMono muted={payMuted} />
+      <PaymentMarksMono muted={payMuted} paymentAria={t("cart.paymentMethodsAria")} />
     </aside>
   );
 }

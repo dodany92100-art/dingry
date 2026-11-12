@@ -186,8 +186,17 @@ export default function CheckoutPage() {
     };
   }, [ready, cart]);
 
-  const canPay = Boolean(token) && !saving && !confirmation && quoteState === "ready" && quote !== null;
-  const showPayPalButton = quoteState === "ready" && quote !== null && !confirmation && !pendingOrderId && canPay;
+  const quoteReady = quoteState === "ready" && quote !== null;
+  const showPayPalButton =
+    quoteReady && !confirmation && !pendingOrderId && !saving;
+  const disabledPayLabel =
+    quoteState === "error"
+      ? "Panier à mettre à jour"
+      : quoteState === "loading"
+        ? "Calcul du total…"
+        : saving
+          ? "Enregistrement…"
+          : "Paiement indisponible";
 
   function syncPendingOrder(orderId: string, status: number) {
     if (shouldPersistPendingCapture(status)) {
@@ -402,7 +411,15 @@ export default function CheckoutPage() {
               <p className="dingry-checkout-pay-lead mt-3">
                 Après validation du contrôle, vous serez redirigé vers PayPal puis renvoyé ici pour confirmer la commande.
               </p>
-              <TurnstileWidget key={turnstileKey} className="mt-6" tone="light" onToken={setToken} />
+              <TurnstileWidget
+                key={turnstileKey}
+                className="mt-6"
+                tone="light"
+                onToken={(value) => {
+                  setToken(value);
+                  if (value) setError(null);
+                }}
+              />
               <div className="mt-6">
                 {quoteState === "loading" ? (
                   <p className="flex items-center justify-center gap-3 py-4 text-[11px] tracking-[0.18em] text-[#9ca3af] uppercase">
@@ -438,11 +455,7 @@ export default function CheckoutPage() {
                     disabled
                     className="w-full cursor-not-allowed bg-[#e5e7eb] py-4 text-[11px] font-medium tracking-[0.28em] text-[#9ca3af] uppercase"
                   >
-                    {quoteState === "error"
-                      ? "Panier à mettre à jour"
-                      : token
-                        ? "Paiement indisponible"
-                        : "Payer avec PayPal"}
+                    {disabledPayLabel}
                   </button>
                 )}
               </div>

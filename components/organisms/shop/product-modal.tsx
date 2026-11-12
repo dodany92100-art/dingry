@@ -241,7 +241,7 @@ function ProductModalContent({
           ) : null}
         </div>
         <div className={styles.body}>
-          <div>
+          <div className={styles.bodyScroll}>
             <div className={styles.toolbar}>
               <div className={styles.toolbarCluster}>
                 <button

@@ -11,6 +11,9 @@ export const DINGRY_STREET_WORDMARK_URL =
   "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/wordmark/1794331150553-kfhl5x-rock-the-street-title.webp";
 
 /** Symbole favicon local (400×400). */
+/** Emblème « À chaque ville sa Dingry » — bandeau atelier custom (PNG détouré). */
+export const DINGRY_LOGO_MONDE_CITIES_SRC = "/dingry-logo-monde-cities.png";
+
 export const DINGRY_FAVICON_SRC = "/dingry-favicon.jpg";
 
 export const DINGRY_FAVICON_URL = DINGRY_FAVICON_SRC;

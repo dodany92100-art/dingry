@@ -10,6 +10,7 @@ import type { ShopProduct } from "@/lib/catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
+import { useTranslation } from "@/hooks/use-translation";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "./motion";
 
 type WishlistDrawerProps = {
@@ -42,6 +43,7 @@ export function WishlistDrawer({
   onDiscoverCollection,
   onAddToCart,
 }: WishlistDrawerProps) {
+  const { t } = useTranslation();
   const [copyToastVisible, setCopyToastVisible] = useState(false);
 
   const items = useMemo(() => {
@@ -64,7 +66,7 @@ export function WishlistDrawer({
 
   const shareSelection = useCallback(async () => {
     const url = boutiqueShareUrl(shopBasePath);
-    const payload = { title: "Ma sélection DINGRY", text: "Ma sélection DINGRY", url };
+    const payload = { title: t("wishlist.shareTitle"), text: t("wishlist.shareText"), url };
     try {
       if (typeof navigator.share === "function") {
         if (typeof navigator.canShare === "function" && !navigator.canShare(payload)) {
@@ -84,7 +86,7 @@ export function WishlistDrawer({
         // navigation privée
       }
     }
-  }, [shopBasePath]);
+  }, [shopBasePath, t]);
 
   const handleAddToCart = useCallback(
     (product: ShopProduct, size: string, from: HTMLElement) => {
@@ -118,13 +120,15 @@ export function WishlistDrawer({
             >
               <div className="dingry-gold-rule-bottom flex items-start justify-between gap-4 p-6 md:p-8">
                 <div>
-                  <p className="text-[10px] tracking-[0.28em] text-white/40 uppercase">Liste de souhaits</p>
+                  <p className="text-[10px] tracking-[0.28em] text-white/40 uppercase">{t("wishlist.title")}</p>
                   <h2 id="dingry-wishlist-title" className="mt-2 text-sm font-bold tracking-[0.22em] uppercase">
-                    Mes favoris
+                    {t("wishlist.myFavorites")}
                   </h2>
                   {items.length > 0 ? (
                     <p className="mt-1 text-xs text-white/45">
-                      {items.length} article{items.length > 1 ? "s" : ""}
+                      {t(items.length > 1 ? "wishlist.itemsCountOther" : "wishlist.itemsCountOne", {
+                        count: items.length,
+                      })}
                     </p>
                   ) : null}
                 </div>
@@ -134,16 +138,16 @@ export function WishlistDrawer({
                       type="button"
                       onClick={() => void shareSelection()}
                       className="flex h-10 items-center gap-2 px-2 text-[10px] tracking-[0.16em] text-white/45 uppercase transition-colors hover:text-white"
-                      aria-label="Partager ma sélection"
+                      aria-label={t("wishlist.shareAria")}
                     >
                       <Share2 size={16} strokeWidth={1.5} aria-hidden />
-                      <span className="hidden sm:inline">Partager</span>
+                      <span className="hidden sm:inline">{t("wishlist.share")}</span>
                     </button>
                   ) : null}
                   <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Fermer la liste de favoris"
+                    aria-label={t("wishlist.closeAria")}
                     className="flex h-10 w-10 items-center justify-center text-white/40 transition-colors hover:text-white"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -156,16 +160,14 @@ export function WishlistDrawer({
 
               {items.length === 0 ? (
                 <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
-                  <p className="text-sm tracking-[0.12em] text-white/35 uppercase">Aucun favori pour le moment.</p>
-                  <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/50">
-                    Touchez le cœur sur un article pour l&apos;enregistrer ici.
-                  </p>
+                  <p className="text-sm tracking-[0.12em] text-white/35 uppercase">{t("wishlist.empty")}</p>
+                  <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/50">{t("wishlist.emptyHint2")}</p>
                   <button
                     type="button"
                     onClick={onDiscoverCollection}
                     className="dingry-gold-pill-btn mt-8 h-11 w-full max-w-xs rounded-full px-6 text-[11px] uppercase tracking-[0.18em]"
                   >
-                    <span className="gold-text">Découvrir la collection</span>
+                    <span className="gold-text">{t("wishlist.discoverCollection")}</span>
                   </button>
                 </div>
               ) : (
@@ -198,7 +200,7 @@ export function WishlistDrawer({
                     className="flex w-full items-center justify-center gap-2 border border-white/15 py-3 text-[10px] tracking-[0.2em] text-white/55 uppercase transition-colors hover:border-white/35 hover:text-white"
                   >
                     <Share2 size={14} strokeWidth={1.5} aria-hidden />
-                    Partager ma sélection
+                    {t("wishlist.shareSelectionCta")}
                   </button>
                   <button
                     type="button"
@@ -208,7 +210,7 @@ export function WishlistDrawer({
                     }}
                     className="w-full border border-white/20 py-3.5 text-[11px] tracking-[0.22em] text-white/70 uppercase transition-colors hover:border-white/40 hover:text-white"
                   >
-                    Continuer vos achats
+                    {t("wishlist.continueShopping")}
                   </button>
                 </div>
               ) : null}

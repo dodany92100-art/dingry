@@ -96,7 +96,18 @@ export function FlyAnimationProvider({ children }: { children: ReactNode }) {
   const layer =
     mounted && typeof document !== "undefined"
       ? createPortal(
-          <div className="pointer-events-none fixed inset-0 z-[80]" aria-hidden>
+          <div className="pointer-events-none fixed inset-0 z-[85]" aria-hidden>
+            <svg className="pointer-events-none absolute h-0 w-0" aria-hidden focusable="false">
+              <defs>
+                <linearGradient id="dingry-gold-gradient-fly" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#bf953f" />
+                  <stop offset="38%" stopColor="#fcf6ba" />
+                  <stop offset="50%" stopColor="#fbf5b7" />
+                  <stop offset="62%" stopColor="#fcf6ba" />
+                  <stop offset="100%" stopColor="#b38728" />
+                </linearGradient>
+              </defs>
+            </svg>
             <AnimatePresence>
               {particles.map((particle) => (
                 <FlyParticle

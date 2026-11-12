@@ -19,22 +19,33 @@ export function orphanPaymentKey(orderId: string): string {
   return `dingry:paypal-orphan:${orderId}`;
 }
 
-/** @returns true si Resend a accepté l’e-mail (ou config absente en dev). */
-export async function sendOpsAlert(subject: string, details: { orderId?: string; reason: string }): Promise<boolean> {
+export type ResendEmailPayload = {
+  from: string;
+  to: string[];
+  subject: string;
+  html?: string;
+  text?: string;
+  replyTo?: string[];
+};
+
+/** Envoi Resend brut — utilisé par les alertes ops et les confirmations client. */
+export async function sendResendEmail(payload: ResendEmailPayload): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY?.trim() ?? "";
-  const to = process.env.OPS_ALERT_EMAIL?.trim() ?? "";
-  const from = process.env.OPS_ALERT_FROM?.trim() ?? "";
-
-  console.error("[ops-alert]", { subject, orderId: details.orderId, reason: details.reason });
-
-  if (!apiKey || !to || !from) {
+  if (!apiKey || !payload.from || payload.to.length === 0) {
     if (isProductionDeploy()) {
-      console.error("[ops-alert] RESEND_API_KEY, OPS_ALERT_EMAIL ou OPS_ALERT_FROM manquant — alerte non envoyée");
+      console.error("[resend] RESEND_API_KEY ou expéditeur/destinataire manquant");
     }
     return false;
   }
 
-  const text = [`Motif: ${details.reason}`, `Commande PayPal: ${details.orderId ?? "—"}`, `Site: DINGRY`].join("\n");
+  const body: Record<string, unknown> = {
+    from: payload.from,
+    to: payload.to,
+    subject: payload.subject,
+  };
+  if (payload.html) body.html = payload.html;
+  if (payload.text) body.text = payload.text;
+  if (payload.replyTo && payload.replyTo.length > 0) body.reply_to = payload.replyTo;
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -43,23 +54,46 @@ export async function sendOpsAlert(subject: string, details: { orderId?: string;
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        subject: `[DINGRY] ${subject}`,
-        text,
-      }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(OPS_ALERT_FETCH_TIMEOUT_MS),
     });
     if (!response.ok) {
-      console.error("[ops-alert] Resend", response.status);
+      console.error("[resend] API", response.status);
       return false;
     }
     return true;
   } catch (error) {
-    console.error("[ops-alert] envoi", error instanceof Error ? error.name : "erreur");
+    console.error("[resend] envoi", error instanceof Error ? error.name : "erreur");
     return false;
   }
+}
+
+function resendFromAddress(): string {
+  return process.env.OPS_ALERT_FROM?.trim() ?? "";
+}
+
+/** @returns true si Resend a accepté l’e-mail (ou config absente en dev). */
+export async function sendOpsAlert(subject: string, details: { orderId?: string; reason: string }): Promise<boolean> {
+  const to = process.env.OPS_ALERT_EMAIL?.trim() ?? "";
+  const from = resendFromAddress();
+
+  console.error("[ops-alert]", { subject, orderId: details.orderId, reason: details.reason });
+
+  if (!to || !from) {
+    if (isProductionDeploy()) {
+      console.error("[ops-alert] OPS_ALERT_EMAIL ou OPS_ALERT_FROM manquant — alerte non envoyée");
+    }
+    return false;
+  }
+
+  const text = [`Motif: ${details.reason}`, `Commande PayPal: ${details.orderId ?? "—"}`, `Site: DINGRY`].join("\n");
+
+  return sendResendEmail({
+    from,
+    to: [to],
+    subject: `[DINGRY] ${subject}`,
+    text,
+  });
 }
 
 /**

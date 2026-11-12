@@ -3,6 +3,7 @@ import type { AdminOrder } from "@/lib/admin/types";
 import type { CheckoutQuote } from "@/lib/checkout-quote";
 import { finalizeOrderStock } from "@/lib/order-stock-finalize";
 import { isShippingAddressMissing, patchForReviewReason } from "@/lib/order-review";
+import { sendCustomerOrderConfirmationForPersist } from "@/lib/order-confirmation-email";
 import { sendOpsAlertOnce, clearPayPalPaymentOrphan } from "@/lib/ops-alert";
 import type { VerifiedPayPalPayment } from "@/lib/paypal-server";
 import {
@@ -174,6 +175,7 @@ export async function persistPayPalPayment(
     const saved = await findOrder(payment.orderId);
     const base = saved ?? order;
     const finalized = await finalizeNewOrder(base, payment);
+    await sendCustomerOrderConfirmationForPersist(finalized, payment, quote);
     await clearPayPalPaymentOrphan(payment.orderId);
     return { ok: true, order: finalized };
   } catch (error) {

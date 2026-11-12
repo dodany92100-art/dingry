@@ -4,10 +4,10 @@ import { AnimatedTabs } from "@/components/atoms/ui/animated-tabs";
 import type { ShopCatalogPersoBanner } from "@/lib/admin/types";
 import {
   CUSTOM_BANNER_CITIES,
-  CUSTOM_BANNER_COPY,
   DEFAULT_ATELIER_CONFIGURATOR_LABEL,
   resolveCustomBannerBackground,
 } from "@/lib/custom-city-banner";
+import { useTranslation } from "@/hooks/use-translation";
 import {
   ATELIER_BANNER_CITY_SWITCH_ENABLED,
   DEFAULT_PERSO_BANNER_CITY_ID,
@@ -15,6 +15,7 @@ import {
   type PersoBannerCityId,
 } from "@/lib/catalog-perso-banner-cities";
 import { bannerObjectPosition } from "@/lib/catalog-perso-banner-focus";
+import { DINGRY_LOGO_MONDE_CITIES_SRC } from "@/lib/dingry-brand";
 import { CATALOG_MENU_TAB_CUSTOM, catalogMenuTabLabel } from "@/lib/shop-catalog";
 import { cn } from "@/lib/utils";
 import { useCallback, useMemo, useState, type CSSProperties } from "react";
@@ -36,6 +37,15 @@ type CustomConfiguratorBannerProps = {
 };
 
 export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfiguratorBannerProps) {
+  const { t } = useTranslation();
+  const bannerCopy = {
+    eyebrow: t("atelier.banner.eyebrow"),
+    title: t("atelier.banner.title"),
+    subtitle: t("atelier.banner.subtitle"),
+    cityField: t("atelier.banner.cityField"),
+    citySearchPlaceholder: t("atelier.banner.citySearchPlaceholder"),
+    cta: t("atelier.banner.cta"),
+  };
   const fixedCityId = DEFAULT_PERSO_BANNER_CITY_ID;
 
   const [selectedCity, setSelectedCity] = useState(DEFAULT_ATELIER_CONFIGURATOR_LABEL);
@@ -57,9 +67,9 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
 
   const backgroundUrl = resolveCustomBannerBackground(cityVisual.imageUrl, content.imageUrl);
 
-  const eyebrow = content.eyebrow.trim() || CUSTOM_BANNER_COPY.eyebrow;
-  const title = content.title.trim() || CUSTOM_BANNER_COPY.title;
-  const subtitle = content.subtitle.trim() || CUSTOM_BANNER_COPY.subtitle;
+  const eyebrow = content.eyebrow.trim() || bannerCopy.eyebrow;
+  const title = content.title.trim() || bannerCopy.title;
+  const subtitle = content.subtitle.trim() || bannerCopy.subtitle;
 
   const onTabChange = useCallback((tab: string) => {
     const city = CUSTOM_BANNER_CITIES.find((entry) => entry.id === tab);
@@ -77,7 +87,7 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
 
   return (
     <article
-      className="dingry-custom-banner dingry-custom-banner--configurator dingry-custom-banner--bandeau group relative mb-8 w-full overflow-hidden rounded-sm text-left md:mb-10"
+      className="dingry-custom-banner dingry-custom-banner--configurator dingry-custom-banner--bandeau group relative mx-auto h-[clamp(15rem,28vw,23.75rem)] w-full max-w-5xl max-h-[380px] overflow-hidden rounded-2xl text-left shadow-[0_12px_40px_rgb(0_0_0/0.22)]"
       aria-labelledby="dingry-custom-banner-title"
       style={
         {
@@ -87,12 +97,12 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
       }
     >
       {backgroundUrl ? (
-        <span className="absolute inset-0 overflow-hidden">
+        <span className="absolute inset-0 block overflow-hidden">
           <img
             src={backgroundUrl}
             alt=""
             aria-hidden
-            className="dingry-custom-banner-photo h-full w-full object-cover"
+            className="dingry-custom-banner-photo h-full min-h-full w-full object-cover"
             style={{
               objectPosition: bannerObjectPosition(cityVisual.imageFocusX, cityVisual.imageFocusY),
             }}
@@ -102,35 +112,43 @@ export function CustomConfiguratorBanner({ content, onOpenCustom }: CustomConfig
       <span className="dingry-custom-banner-veil absolute inset-0" aria-hidden />
       <span className="dingry-custom-banner-shine pointer-events-none absolute inset-0" aria-hidden />
 
-      <div className="relative z-10 flex min-h-[11.5rem] flex-col justify-end px-4 py-5 sm:min-h-[12.5rem] sm:px-6 sm:py-6 md:min-h-[14rem] md:px-8 md:py-8 lg:min-h-[15rem]">
-        <header className="mb-4 max-w-lg text-white [text-shadow:0_1px_10px_rgb(0_0_0/0.65)]">
+      <div className="relative z-10 flex h-full flex-col justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 md:px-7 md:py-5">
+        <header className="max-w-md text-white [text-shadow:0_1px_10px_rgb(0_0_0/0.65)]">
           <p className="dingry-typo-eyebrow text-[0.62rem]">{eyebrow}</p>
-          <h3 id="dingry-custom-banner-title" className="dingry-custom-banner-title mt-2 uppercase">
+          <h3 id="dingry-custom-banner-title" className="sr-only">
             {title}
           </h3>
-          <p className="dingry-typo-body-alt mt-2 text-sm text-white/88">{subtitle}</p>
+          <img
+            src={DINGRY_LOGO_MONDE_CITIES_SRC}
+            alt=""
+            width={500}
+            height={500}
+            decoding="async"
+            className="dingry-custom-banner-mark mt-0.5 h-[clamp(6.5rem,22vw,10.5rem)] w-auto max-w-[min(100%,26rem)] object-contain object-left"
+          />
+          <p className="dingry-typo-body-alt mt-2 text-[15px] leading-snug text-white/90 sm:text-base">
+            {subtitle}
+          </p>
         </header>
 
-        <div className="dingry-custom-banner-dock dingry-custom-banner-dock--catalog self-start">
-          <div className="dingry-custom-banner-dock__chrome">
-            {ATELIER_BANNER_CITY_SWITCH_ENABLED ? (
+        <div className="dingry-custom-banner-dock dingry-custom-banner-dock--catalog mt-auto self-start">
+          {ATELIER_BANNER_CITY_SWITCH_ENABLED ? (
+            <div className="dingry-custom-banner-dock__chrome">
               <AnimatedTabs
                 className="w-fit max-w-full"
                 tabs={[...ATELIER_BANNER_CITY_TAB_IDS]}
                 value={activeTab}
                 onValueChange={onTabChange}
                 layoutId="dingry-custom-banner-cities"
-                aria-label={CUSTOM_BANNER_COPY.cityField}
+                aria-label={bannerCopy.cityField}
                 variant="underline"
                 labelForTab={atelierBannerTabLabel}
-                endAction={
-                  <PersonnaliserCta onClick={openConfigurator} />
-                }
+                endAction={<PersonnaliserCta onClick={openConfigurator} />}
               />
-            ) : (
-              <PersonnaliserCta onClick={openConfigurator} />
-            )}
-          </div>
+            </div>
+          ) : (
+            <PersonnaliserCta onClick={openConfigurator} />
+          )}
         </div>
       </div>
     </article>
@@ -143,7 +161,9 @@ function PersonnaliserCta({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "dingry-catalog-custom-tab dingry-custom-banner-dock__open shrink-0 snap-center px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.26em] transition-[border-color,box-shadow,background] duration-200 active:scale-[0.97] sm:px-5 sm:text-[11px] sm:tracking-[0.28em]",
+        "dingry-heritage-teaser-cta shrink-0 snap-center px-6 py-2.5 text-[10px] font-semibold uppercase tracking-[0.28em] transition-[border-color,box-shadow,background,transform] duration-200 active:scale-[0.97] sm:px-7 sm:text-[11px] sm:tracking-[0.3em]",
+        ATELIER_BANNER_CITY_SWITCH_ENABLED &&
+          "dingry-catalog-custom-tab dingry-custom-banner-dock__open",
       )}
     >
       <span className="gold-text">{catalogMenuTabLabel(CATALOG_MENU_TAB_CUSTOM)}</span>

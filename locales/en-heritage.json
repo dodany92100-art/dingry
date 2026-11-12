@@ -1,0 +1,129 @@
+{
+  "baseline": "TRUE LUXURY IS ATTITUDE",
+  "homepageHook": "DINGRY redefines luxury: character, independence, and attitude before status.",
+  "ctaDiscover": "Discover our story",
+  "chronology": [
+    { "year": "1998", "label": "Royal Wear" },
+    { "year": "2001", "label": "J'voulais" },
+    { "year": "2020s", "label": "The return" },
+    { "year": "Today", "label": "DINGRY" }
+  ],
+  "manifesteIntro": [
+    "DINGRY is a streetwear brand that dares to redefine what luxury means.",
+    "True luxury is not just what you own or what you wear — it is who you are and how you carry yourself.",
+    "We believe in free elegance, aesthetics that outlast trends, and an identity that is not up for negotiation. We choose character over appearance, personality over conformity, self-expression over other people's validation.",
+    "We do not follow codes to belong. We choose our own codes to exist.",
+    "DINGRY does not try to please everyone. It claims a vision, a sensibility, and a certain idea of independence.",
+    "Because luxury is in the attitude.",
+    "DINGRY."
+  ],
+  "manifesteOutro": [
+    "A signature. A state of mind.",
+    "DINGRY is more than a name, more than an aesthetic, more than a brand.",
+    "It is a way of thinking, choosing, and showing up in the world. An invitation to step outside the frame, assert your individuality, and set your own standards.",
+    "We do not believe luxury is a display of power. We believe luxury is an expression of personality.",
+    "Luxury is not about price. It is about presence.",
+    "DINGRY",
+    "TRUE LUXURY IS ATTITUDE"
+  ],
+  "philosophyPillars": [
+    {
+      "title": "ATTITUDE BEFORE STATUS",
+      "paragraphs": [
+        "Status shows off. Attitude is felt. We believe in a form of distinction that has nothing to prove.",
+        "Refuse paved paths. Do not let trends define you. Make your difference a signature."
+      ]
+    },
+    {
+      "title": "TIMELESS BY NATURE",
+      "paragraphs": [
+        "True style does not depend on an era. It is built over time, with rigor, consistency, and character.",
+        "Do not look for your place. Take it. Fully own who you are — no compromise, no permission."
+      ]
+    }
+  ],
+  "storyChapters": [
+    {
+      "title": "THE FOUNDER — A CREATIVE MIND. AN INDEPENDENT VISION.",
+      "paragraphs": [
+        "A free vision. One obsession: create without following.",
+        "Artist, producer, entrepreneur, and fashion creator, Sully Sefil built his path at the crossroads of music, hip-hop culture, streetwear, and entrepreneurship.",
+        "Rooted in urban culture, he developed early creative sensibility fed by hip-hop's expressions: music, dance, graffiti, and fashion.",
+        "An environment that gave him more than aesthetics — a mindset built on freedom, independence, and self-assertion."
+      ]
+    },
+    {
+      "title": "MUSIC — THE FIRST EXPRESSIONS",
+      "paragraphs": [
+        "It was through music that Sully Sefil first made his name.",
+        "As an artist and producer, he moved at the heart of French hip-hop and helped shape it through collaborations and productions.",
+        "His journey led him to work on projects tied to major French rap figures; he notably composed the track \"That's my people\" for Suprême NTM, widely considered one of French rap's greatest classics.",
+        "In 2001, as a singer-songwriter, he reached a wide audience with \"J'voulais\", an emblematic single that marked a turning point and revealed his world to the public.",
+        "For Sully, music was never an end in itself. It was the first territory for a creativity constantly seeking new horizons."
+      ]
+    },
+    {
+      "title": "FASHION — THE ENTREPRENEURIAL SPIRIT",
+      "paragraphs": [
+        "Driven by the same urge to create and build, Sully Sefil gradually brought his universe into fashion.",
+        "In the late 1990s he founded Royal Wear, a streetwear brand — becoming the first French rapper to launch his own label. Royal Wear became a generational success.",
+        "That adventure was a founding step in his entrepreneurial path.",
+        "He then explored other creative territories, notably through Rock The Street, guided by independence, experimentation, and his own reading of fashion.",
+        "For him, clothing is not just a product. It is a message, a language, an attitude, and a way to assert identity."
+      ]
+    },
+    {
+      "title": "A VISION THAT EVOLVES",
+      "paragraphs": [
+        "Through his experiences, Sully Sefil developed a cross-disciplinary approach to creation.",
+        "Music taught him to build a world. Fashion let him give it form. Entrepreneurship taught him to turn vision into project.",
+        "Those experiences now fuel a desire to reinterpret luxury — away from conventions and outward signs of success.",
+        "A vision where character beats status, identity matters more than trends, and freedom remains the first form of distinction."
+      ]
+    },
+    {
+      "title": "DINGRY — A NEW CHAPTER",
+      "paragraphs": [
+        "With DINGRY, Sully Sefil opens a new chapter in his creative and entrepreneurial story.",
+        "DINGRY may be one of the strongest names a brand can carry — it perfectly reflects the era we live in.",
+        "Through this streetwear brand, he intends to push the traditional boundaries between urban culture and contemporary luxury.",
+        "A brand that claims its freedom, owns its difference, and defends a deep conviction: true luxury is not only worn — it is lived.",
+        "Luxury is in the attitude."
+      ]
+    }
+  ],
+  "readerTabs": {
+    "manifeste": "Manifesto",
+    "philosophie": "Philosophy",
+    "fondateur": "The founder"
+  },
+  "articles": {
+    "manifeste": {
+      "category": "Manifesto",
+      "title": "Redefining luxury",
+      "subtitle": "Character before status.",
+      "coverAlt": "DINGRY — manifesto"
+    },
+    "philosophie": {
+      "category": "Philosophy",
+      "title": "Attitude & signature",
+      "subtitle": "Timeless by nature — luxury as presence.",
+      "coverAlt": "DINGRY — editorial philosophy",
+      "heading": "Our philosophy"
+    },
+    "fondateur": {
+      "category": "Story",
+      "title": "The founder — Sully Sefil",
+      "subtitle": "Music, NTM, fashion, and DINGRY's new chapter.",
+      "coverAlt": "Sully Sefil — DINGRY founder"
+    }
+  },
+  "visuals": {
+    "musicAlt": "Music and hip-hop culture",
+    "musicCaption": "The first expressions — illustration",
+    "modeAlt": "Streetwear and entrepreneurship",
+    "modeCaption": "Royal Wear · Rock The Street — illustration"
+  },
+  "founderChapterMusicPrefix": "MUSIC",
+  "founderChapterModePrefix": "FASHION"
+}

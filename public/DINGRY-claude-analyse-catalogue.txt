@@ -1,0 +1,2642 @@
+===== BRIEF =====
+================================================================================
+DINGRY (rts-sepia) — BRIEF POUR CLAUDE — Catalogue / images / mise en ligne
+================================================================================
+Date : 2026-11-09
+Projet : Next.js 16, App Router, boutique DINGRY (streetwear), pas RAP2K.
+
+PROBLÈME UTILISATEUR
+--------------------
+- Une « mise en ligne » a échoué (préciser : déploiement Vercel OU passage produit « live » admin).
+- Soupçon : anciennes images / dépendances stockage (R2, Blob, Cloudinary) qui perturbent le catalogue.
+- Souhait initial : supprimer toutes les images catalogue SAUF celles visibles sur la boutique, puis repartir propre.
+- Question pour Claude : faut-il nettoyer ciblé (Supabase + R2 par produit) ou tout retirer et remettre en ligne ? Quelle procédure minimale pour corriger l’échec sans casser la vitrine ?
+
+ERREUR EXACTE (À REMPLIR PAR L’UTILISATEUR)
+------------------------------------------
+[Non fournie lors de la génération — compléter avant analyse si possible]
+
+ARCHITECTURE CATALOGUE (RÉSUMÉ FACTUEL)
+-------------------------------------
+1) Vitrine fallback : lib/shop-data.ts (PRODUCTS) — URLs Cloudinary en dur dans le code.
+2) CRM : Supabase (+ snapshot store) — lib/admin/store.ts
+3) API publique : app/api/catalog/route.ts → getCachedCatalogProductRows
+4) Fusion vitrine : lib/catalog/index.ts → overlayShopCatalog(fallback, live, removedCatalogIds)
+5) Seuls produits publishStatus !== "draft" exposés : lib/admin/types.ts → toCatalogProduct()
+6) Client boutique : components/organisms/shop/hooks/use-shop-catalog.ts fetch /api/catalog
+7) Images uploadées admin : R2 (lib/r2/storage.ts) ou legacy Vercel Blob ; delete via deleteProductImage dans store.ts
+8) removeProduct : supprime fiche Supabase + médias ; seed IDs → removedCatalogIds (tombstones)
+9) NE PAS utiliser npm run purge:r2 en prod si des produits live pointent encore vers R2.
+10) Scripts utiles : check:prod-env, migrate:r2-images, import:supabase — package.json scripts
+
+FICHIERS INCLUS DANS L’EXPORT (annexe ci-dessous)
+-------------------------------------------------
+lib/shop-data.ts
+lib/catalog/index.ts
+lib/shop-catalog.ts
+lib/shop-catalog-snapshot.ts
+lib/server/shop-catalog-cache.ts
+app/api/catalog/route.ts
+lib/admin/types.ts (extraits toCatalogProduct / types produit)
+lib/admin/seed.ts (début — structure seed)
+lib/r2/storage.ts
+lib/r2/config.ts
+components/organisms/shop/hooks/use-shop-catalog.ts
+scripts/check-prod-env.ts
+package.json
+lib/admin/store.ts (extraits : lecture Supabase, upload/delete image, removeProduct)
+
+CONTRAINTES PROJET
+------------------
+- Modifications minimales, TypeScript strict, pas inventer URLs Cloudinary produits.
+- Prod : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY + R2 pour uploads images (voir store errors).
+- Boutique : DINGRY_PUBLIC_HOME=shop|teaser ; catalogue = overlay seed + live CRM.
+
+QUESTIONS EXPLICITES POUR CLAUDE
+--------------------------------
+1) L’échec de mise en ligne est-il plutôt lié aux env/build ou au stockage images ? Comment trancher avec les logs fournis ?
+2) Procédure recommandée : nettoyage admin (supprimer brouillons/doublons) vs reset Supabase vs purge R2 — risques pour la vitrine actuelle.
+3) Liste d’actions concrètes ordonnées (checklist) pour l’utilisateur ou pour un agent Cursor.
+4) Y a-t-il des incohérences connues dans le code (Blob+R2, draft avec placeholder, cache unstable_cache SHOP_CATALOG_CACHE_TAG) à corriger en code ?
+
+MESSAGE D’ENTRÉE SUGGÉRÉ POUR CLAUDE
+------------------------------------
+Tu analyses ce fichier pour DINGRY : échec de mise en ligne catalogue/images. Réponds aux 4 questions du brief, propose une checklist sans purge R2 globale sauf si justifié, et indique les diffs de code minimaux si nécessaire.
+
+########## FILE: lib/shop-data.ts ##########
+import type { ShopProduct } from "@/lib/catalog";
+import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
+
+/** Taxonomie officielle marque — source {@link ./dingry-product-taxonomy.ts} */
+export {
+  ADMIN_PRODUCT_CATEGORY_NAV,
+  OFFICIAL_PRODUCT_CATEGORIES,
+  isOfficialProductCategory,
+  type AdminProductCategoryFilter,
+  type OfficialProductCategory,
+} from "@/lib/dingry-product-taxonomy";
+
+export const IMAGES = {
+  hero1: "https://res.cloudinary.com/dc9xmxpvv/image/upload/f_auto,q_auto,w_1920,c_crop,g_north,h_1430,w_1960/v1793310395/014c39fa-7191-491e-a893-a58b934498dd_no55a0.jpg",
+  editorial: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793134245/IMG_4031_o8jpgl.jpg",
+  hoodie1: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122066/HOODIE_DINGRY_ORIGINAL_BLEU_ROI_-_VERSO_xsoywe.png",
+  hoodie2: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122066/HOODIE_DINGRY_ORIGINAL_BLEU_ROI_-_RECTO_m541tv.png",
+  hoodie3: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122065/DINGRY_HOODIE_ORIGINAL_VERT_VERSO_g3tdgu.png",
+  hoodie4: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/HOODIE_DINGRY_BLACK_ZIPPE%CC%81_OUTLINE_RECTO_iedtrv.png",
+  hoodie5: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/HOODIE_DINGRY_BLACK_ZIPPE%CC%81_OUTLINE_VERSO_ljjxwj.png",
+  hoodie6: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/DINGRY_HOODIE_ORIGINAL_BLACK_RECTO_knvlfw.png",
+  hoodie7: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122063/DINGRY_HOODIE_ORIGINAL_VERT_RECTO_b4ilsd.png",
+  hoodie8: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122061/DINGRY_-_HOODIE_ORIGINAL_BLACK_VERSO_llv6wk.png",
+  cargo1: "https://images.unsplash.com/photo-1552902875-9ac1f9fe0c07?w=800&h=1000&fit=crop&auto=format",
+  cargo2: "https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800&h=1000&fit=crop&auto=format",
+  bomber1: "https://images.unsplash.com/photo-1660486044177-45cd45bb5e99?w=800&h=1000&fit=crop&auto=format",
+  bomber2: "https://images.unsplash.com/photo-1577471444692-4e7c23b51ce4?w=800&h=1000&fit=crop&auto=format",
+  cap1: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/99459ef5-5357-4aa7-adce-8ab461ca0370_obzc2o.jpg",
+  cap2: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/acb2c9c8-a7d8-4a1b-96bb-c9d6bd131857_qfnvcu.jpg",
+  jersey1: DINGRY_PRODUCT_MEDIA.jerseyWhite,
+  sneaker1: "https://images.unsplash.com/photo-1568153487049-4431a8c15c20?w=800&h=1000&fit=crop&auto=format",
+  sneaker2: "https://images.unsplash.com/photo-1763750581767-b367bcd6c117?w=800&h=1000&fit=crop&auto=format",
+  tee1: DINGRY_PRODUCT_MEDIA.teeWhiteVerso,
+  tee2: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124730/PHOTO-2026-06-26-22-50-57_2_pbdovu.jpg",
+  tee3: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124729/PHOTO-2026-06-26-22-50-56_4_r3ivag.jpg",
+  tee4: DINGRY_PRODUCT_MEDIA.teeWhiteRecto,
+  tee5: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124728/PHOTO-2026-06-26-22-50-56_2_cxu50l.jpg",
+  tee6: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124728/PHOTO-2026-06-26-22-50-56_tk3msx.jpg",
+  tee7: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_3_cnbjll.jpg",
+  tee8: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_6_dhs3l2.jpg",
+  tee9: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_7_iowqbr.jpg",
+  tee10: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124726/PHOTO-2026-06-26-22-50-56_8_g8yqde.jpg",
+  tee11: DINGRY_PRODUCT_MEDIA.teeBlackRecto,
+  teeBlackVerso: DINGRY_PRODUCT_MEDIA.teeBlackVerso,
+  tee12: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_19.33.25_yzr0fb.jpg",
+  tee13: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_21.13.25_ypgmnf.jpg",
+  hoodieParisBlackRecto: DINGRY_PRODUCT_MEDIA.hoodieParisBlackRecto,
+  hoodieParisBlackVerso: DINGRY_PRODUCT_MEDIA.hoodieParisBlackVerso,
+  hoodieParisGreyRecto: DINGRY_PRODUCT_MEDIA.hoodieParisGreyRecto,
+  hoodieParisGreyVerso: DINGRY_PRODUCT_MEDIA.hoodieParisGreyVerso,
+  hoodieParisWhiteRecto: DINGRY_PRODUCT_MEDIA.hoodieParisWhiteRecto,
+  hoodieParisWhiteVerso: DINGRY_PRODUCT_MEDIA.hoodieParisWhiteVerso,
+  hoodieRoyalBlueRecto: DINGRY_PRODUCT_MEDIA.hoodieRoyalBlueRecto,
+  hoodieRoyalBlueVerso: DINGRY_PRODUCT_MEDIA.hoodieRoyalBlueVerso,
+  sweatNeonYellowRecto: DINGRY_PRODUCT_MEDIA.sweatNeonYellowRecto,
+  sweatNeonYellowVerso: DINGRY_PRODUCT_MEDIA.sweatNeonYellowVerso,
+  sweatRoyalBlueRecto: DINGRY_PRODUCT_MEDIA.sweatRoyalBlueRecto,
+  sweatRoyalBlueVerso: DINGRY_PRODUCT_MEDIA.sweatRoyalBlueVerso,
+  sweatPurpleRecto: DINGRY_PRODUCT_MEDIA.sweatPurpleRecto,
+  sweatPurpleVerso: DINGRY_PRODUCT_MEDIA.sweatPurpleVerso,
+};
+
+export const SIZES = ["S", "M", "L", "XL", "TU"] as const;
+
+/** Stock par défaut si une fiche `PRODUCTS` n’a pas de `stock` explicite (admin / Redis). */
+export const DEFAULT_SHOP_PRODUCT_STOCK = 10;
+
+/** Valeurs par défaut ordre / épinglage (CRM + catalogue statique). */
+export const DEFAULT_SHOP_PRODUCT_DISPLAY = {
+  isPinned: false,
+  displayOrder: 0,
+} as const;
+
+/** Quantité effective pour le CRM (jamais exposée au catalogue public). */
+export function resolveShopProductStock(stock: number | undefined): number {
+  if (stock === undefined || !Number.isFinite(stock)) return DEFAULT_SHOP_PRODUCT_STOCK;
+  return Math.max(0, Math.floor(stock));
+}
+
+export const PERSONALIZATION_MAX_LABEL_LENGTH = 28;
+
+/** Produit personnalisable (aligné sur le serveur : PERSONALIZABLE_PRODUCT_ID). */
+export const PERSONALIZABLE_PRODUCT_ID = 24;
+
+/** Maquettes recto (devant) — même logique que la PJ Paris / Marseille / Lyon */
+export const PERSONALIZATION_SHIRTS = [
+  { id: "noir", label: "Noir", image: IMAGES.tee11, cityTop: "57%", citySize: "clamp(0.55rem, 2.9vw, 0.82rem)" },
+  { id: "vert", label: "Vert", image: IMAGES.tee8, cityTop: "53%", citySize: "clamp(0.65rem, 3.1vw, 0.95rem)" },
+  { id: "rouge", label: "Rouge", image: IMAGES.tee9, cityTop: "53%", citySize: "clamp(0.65rem, 3.1vw, 0.95rem)" },
+] as const;
+
+export type PersonalizationShirtId = (typeof PERSONALIZATION_SHIRTS)[number]["id"];
+
+/** Devant réel par collection (assets Cloudinary). */
+const TEE_RECTO_IMAGE_BY_COLLECTION: Record<number, keyof typeof IMAGES> = {
+  1: "tee4",
+  3: "tee10",
+  7: "tee8",
+  9: "tee9",
+  11: "tee11",
+};
+
+const TEE_RECTO_VARIANT_BY_COLLECTION: Record<number, string> = {
+  1: "BLANC — RECTO",
+  11: "NOIR — RECTO",
+};
+
+/** Dos du même modèle que le produit recto (id catalogue), pas collection n+1. */
+export const TEE_VERSO_BY_RECTO_ID: Record<number, { image: keyof typeof IMAGES; variant: string }> = {
+  11: { image: "tee1", variant: "BLANC — VERSO" },
+  13: { image: "tee3", variant: "COLLECTION 03 — VERSO" },
+  17: { image: "tee7", variant: "COLLECTION 07 — VERSO" },
+  19: { image: "tee5", variant: "COLLECTION 09 — VERSO" },
+  21: { image: "teeBlackVerso", variant: "NOIR — VERSO" },
+};
+
+/** Paires hoodies recto/verso (ids catalogue). */
+export const HOODIE_PAIR_DEFS = [
+  { id: 8, color: "Chocolat Paris", reference: "DINGRY-H08", versoId: 30, rectoId: 29 },
+  { id: 9, color: "Blanc Paris", reference: "DINGRY-H09", versoId: 36, rectoId: 35 },
+  { id: 5, color: "Gris Paris", reference: "DINGRY-H05", versoId: 28, rectoId: 27 },
+  // Collection originale
+  { id: 1, color: "Bleu roi", reference: "DINGRY-H01", versoId: 1, rectoId: 2 },
+  { id: 2, color: "Vert original", reference: "DINGRY-H02", versoId: 3, rectoId: 7 },
+  { id: 4, color: "Noir original", reference: "DINGRY-H04", versoId: 8, rectoId: 6 },
+  { id: 3, color: "Noir zippé outline", reference: "DINGRY-H03", versoId: 5, rectoId: 4 },
+] as const;
+
+export const LOOKBOOK_ENTRIES = [
+  [IMAGES.editorial, "DINGRY — Rock the Street", "Par Sully Sefil"],
+  [IMAGES.hero1, "DINGRY Look Book", "Editorial"],
+] as const;
+
+/** Fiches statiques boutique — `stock?: number` optionnel (défaut {@link DEFAULT_SHOP_PRODUCT_STOCK}). */
+export const PRODUCTS: ShopProduct[] = [
+  {
+    id: 1,
+    name: "Hoodie DINGRY Original KING BLUE / PINK",
+    variant: "VERSO",
+    price: 80,
+    image: IMAGES.hoodie1,
+    description: "Coton lourd 480g, coupe oversize, capuche doublée. Finitions intérieures ton sur ton.",
+    category: "Hoodies",
+  },
+  {
+    id: 2,
+    name: "Hoodie DINGRY Original KING BLUE / PINK",
+    variant: "RECTO",
+    price: 80,
+    image: IMAGES.hoodie2,
+    description: "Coloris king blue, broderie pink. Édition limitée.",
+    category: "Hoodies",
+  },
+  {
+    id: 3,
+    name: "Hoodie DINGRY Original VERT",
+    variant: "VERSO",
+    price: 80,
+    image: IMAGES.hoodie3,
+    description: "Coton lourd, coupe oversize et signature DINGRY au dos.",
+    category: "Hoodies",
+  },
+  {
+    id: 4,
+    name: "Hoodie zippé DINGRY Outline / BLACK",
+    variant: "RECTO",
+    price: 90,
+    image: IMAGES.hoodie4,
+    description: "Hoodie zippé noir, silhouette structurée et détails outline.",
+    category: "Hoodies zippés",
+  },
+  {
+    id: 5,
+    name: "Hoodie zippé DINGRY Outline / BLACK",
+    variant: "VERSO",
+    price: 90,
+    image: IMAGES.hoodie5,
+    description: "Vue dos du hoodie zippé outline.",
+    category: "Hoodies zippés",
+  },
+  {
+    id: 6,
+    name: "Hoodie DINGRY Original BLACK",
+    variant: "RECTO",
+    price: 80,
+    image: IMAGES.hoodie6,
+    description: "Le hoodie original DINGRY en noir, coupe oversize.",
+    category: "Hoodies",
+  },
+  {
+    id: 7,
+    name: "Hoodie DINGRY Original VERT",
+    variant: "RECTO",
+    price: 80,
+    image: IMAGES.hoodie7,
+    description: "Le modèle original en vert, pensé pour la rue.",
+    category: "Hoodies",
+  },
+  {
+    id: 8,
+    name: "Hoodie DINGRY Original BLACK",
+    variant: "VERSO",
+    price: 80,
+    image: IMAGES.hoodie8,
+    description: "Vue dos du hoodie original noir DINGRY.",
+    category: "Hoodies",
+  },
+  ...Array.from({ length: 11 }, (_, index) => {
+    const collection = index + 1;
+    const inCatalog = collection in TEE_RECTO_IMAGE_BY_COLLECTION;
+    const defaultKey = `tee${index + 1}` as keyof typeof IMAGES;
+    const imageKey = TEE_RECTO_IMAGE_BY_COLLECTION[collection] ?? defaultKey;
+    const rectoVariant =
+      TEE_RECTO_VARIANT_BY_COLLECTION[collection] ??
+      `COLLECTION ${String(collection).padStart(2, "0")} — RECTO`;
+    return {
+      id: 11 + index,
+      name:
+        collection === 1
+          ? "T-shirt DINGRY Original WHITE"
+          : collection === 11
+            ? "T-shirt DINGRY Original BLACK"
+            : "DINGRY TEE",
+      variant: inCatalog ? rectoVariant : `COLLECTION ${String(collection).padStart(2, "0")} — VERSO`,
+      price: collection === 1 || collection === 11 ? 35 : 119,
+      image: IMAGES[imageKey] ?? IMAGES.tee1,
+      description: "",
+      category: "T-shirts",
+    };
+  }),
+  {
+    id: 22,
+    name: "DINGRY TEE FEMME",
+    variant: "ORIGINAL — RECTO",
+    price: 35,
+    image: IMAGES.tee12,
+    description: "",
+    category: "T-shirts",
+  },
+  {
+    id: 23,
+    name: "DINGRY TEE FEMME",
+    variant: "SIGNATURE — RECTO",
+    price: 35,
+    image: IMAGES.tee13,
+    description: "",
+    category: "T-shirts",
+  },
+  {
+    id: 24,
+    name: "DINGRY TEE",
+    variant: "PERSONNALISÉ — RECTO",
+    price: 35,
+    image: IMAGES.tee11,
+    description: "T-shirt noir personnalisable — ville ou texte sous le logo (+5€).",
+    category: "T-shirts",
+  },
+  {
+    id: 25,
+    name: "HOODIE BLACK PARIS BACK-LOGO",
+    variant: "NOIR PARIS — RECTO",
+    price: 80,
+    image: IMAGES.hoodieParisBlackRecto,
+    description:
+      "Hoodie noir avec logo DINGRY Paris sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
+    category: "Hoodies",
+  },
+  {
+    id: 26,
+    name: "HOODIE BLACK PARIS BACK-LOGO",
+    variant: "NOIR PARIS — VERSO",
+    price: 80,
+    image: IMAGES.hoodieParisBlackVerso,
+    description: "",
+    category: "Hoodies",
+  },
+  {
+    id: 27,
+    name: "Hoodie DINGRY Original GREY",
+    variant: "RECTO",
+    price: 80,
+    image: IMAGES.hoodieParisGreyRecto,
+    description: "Hoodie gris chiné, logo DINGRY sur la poitrine et statement au dos.",
+    category: "Hoodies",
+  },
+  {
+    id: 28,
+    name: "Hoodie DINGRY Original GREY",
+    variant: "VERSO",
+    price: 80,
+    image: IMAGES.hoodieParisGreyVerso,
+    description: "",
+    category: "Hoodies",
+  },
+  {
+    id: 29,
+    name: "Hoodie DINGRY Original CHOCOLAT",
+    variant: "RECTO",
+    price: 80,
+    image: IMAGES.hoodieRoyalBlueRecto,
+    description: "Hoodie chocolat à capuche, logo DINGRY sur la poitrine.",
+    category: "Hoodies",
+  },
+  {
+    id: 30,
+    name: "Hoodie DINGRY Original CHOCOLAT",
+    variant: "VERSO",
+    price: 80,
+    image: IMAGES.hoodieRoyalBlueVerso,
+    description: "",
+    category: "Hoodies",
+  },
+  {
+    id: 35,
+    name: "Hoodie DINGRY Original WHITE",
+    variant: "RECTO",
+    price: 80,
+    image: IMAGES.hoodieParisWhiteRecto,
+    description: "Hoodie blanc, logo DINGRY sur la poitrine et statement au dos.",
+    category: "Hoodies",
+  },
+  {
+    id: 36,
+    name: "Hoodie DINGRY Original WHITE",
+    variant: "VERSO",
+    price: 80,
+    image: IMAGES.hoodieParisWhiteVerso,
+    description: "",
+    category: "Hoodies",
+  },
+  {
+    id: 31,
+    name: "Crewneck DINGRY Original YELLOW FLUO",
+    variant: "RECTO",
+    price: 50,
+    image: IMAGES.sweatNeonYellowRecto,
+    description: "Sweat col rond jaune fluo sans capuche, logo DINGRY Paris noir sur la poitrine.",
+    category: "Crewnecks",
+  },
+  {
+    id: 32,
+    name: "Crewneck DINGRY Original YELLOW FLUO",
+    variant: "VERSO",
+    price: 50,
+    image: IMAGES.sweatNeonYellowVerso,
+    description: "",
+    category: "Crewnecks",
+  },
+  {
+    id: 33,
+    name: "Crewneck DINGRY Original BLUE / YELLOW",
+    variant: "RECTO",
+    price: 50,
+    image: IMAGES.sweatRoyalBlueRecto,
+    description: "Sweat col rond bleu royal sans capuche, écriture Dingry jaune style rétro sur la poitrine.",
+    category: "Crewnecks",
+  },
+  {
+    id: 34,
+    name: "Crewneck DINGRY Original BLUE / YELLOW",
+    variant: "VERSO",
+    price: 50,
+    image: IMAGES.sweatRoyalBlueVerso,
+    description: "",
+    category: "Crewnecks",
+  },
+  {
+    id: 39,
+    name: "Crewneck DINGRY Original PURPLE / PINK",
+    variant: "RECTO",
+    price: 50,
+    image: IMAGES.sweatPurpleRecto,
+    description: "Sweat col rond violet sans capuche, logo DINGRY Paris rose sur la poitrine et éclair sur la manche.",
+    category: "Crewnecks",
+  },
+  {
+    id: 40,
+    name: "Crewneck DINGRY Original PURPLE / PINK",
+    variant: "VERSO",
+    price: 50,
+    image: IMAGES.sweatPurpleVerso,
+    description: "",
+    category: "Crewnecks",
+  },
+  {
+    id: 37,
+    name: "CAP DINGRY Original BLACK",
+    variant: "TU",
+    price: 40,
+    image: IMAGES.cap1,
+    description: "Casquette noire, logo DINGRY blanc sur l'avant et marque sur la bride.",
+    category: "Caps",
+    sizes: ["TU"],
+  },
+  {
+    id: 38,
+    name: "CAP DINGRY Original RED",
+    variant: "TU",
+    price: 40,
+    image: IMAGES.cap2,
+    description: "Casquette rouge, logo DINGRY blanc sur l'avant et marque sur la bride.",
+    category: "Caps",
+    sizes: ["TU"],
+  },
+  {
+    id: 41,
+    name: "JERSEY DINGRY",
+    variant: "BLANC",
+    price: 129,
+    image: DINGRY_PRODUCT_MEDIA.jerseyWhite,
+    description: "Jersey mesh blanc, logo DINGRY Paris noir sur la poitrine et éclairs sur les manches.",
+    category: "Jerseys",
+  },
+  {
+    id: 42,
+    name: "JERSEY DINGRY",
+    variant: "NOIR",
+    price: 129,
+    image: DINGRY_PRODUCT_MEDIA.jerseyBlack,
+    description: "Jersey mesh noir, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
+    category: "Jerseys",
+  },
+];
+
+########## FILE: lib/catalog/index.ts ##########
+import {
+  normalizePrintPlacement,
+  type CatalogProduct,
+  type ProductPrintPlacement,
+} from "@/lib/admin/types";
+import { shopOptionsFromProductOptions, shopOptionsFromColorDeclinations } from "@/lib/catalog/product-options";
+import { isDraftPlaceholderImage, isProductSize } from "@/lib/admin/types";
+import {
+  isVersoCatalogId,
+  resolveRectoCatalogId,
+  versoSkuFromRecto,
+} from "@/lib/catalog-verso-recto";
+import { CATALOG_CANONICAL_IMAGE_BY_ID } from "@/lib/dingry-product-media";
+import { normalizeAdminCategory, resolveShopCategory, type ShopCategory } from "@/lib/shop-catalog";
+export type ShopProduct = {
+  id: number;
+  name: string;
+  variant: string;
+  price: number;
+  image: string;
+  /** Dos (CRM) — prioritaire sur les paires figées hoodies/sweats si renseigné. */
+  imageBack?: string;
+  description: string;
+  fabrication?: string;
+  limitedEdition?: string;
+  materials?: string;
+  sizeGuide?: string;
+  printPlacement?: ProductPrintPlacement;
+  category: ShopCategory | string;
+  sku?: string;
+  sizes?: string[];
+  colorDeclinations?: string[];
+  /** Options parent (couleur…) — visuels optionnels, SKU combiné au checkout. */
+  options?: import("@/lib/catalog/product-options").ShopProductOption[];
+  /** 0 = rupture (API `inStock: false`), absent = fallback statique en stock. */
+  stock?: number;
+  isPinned?: boolean;
+  displayOrder?: number;
+  /** ISO — tri antichrono boutique si pas d’ordre manuel. */
+  adminCreatedAt?: string;
+};
+
+export function isShopProductInStock(product: ShopProduct): boolean {
+  if (product.stock === undefined) return true;
+  return product.stock > 0;
+}
+
+function storyFieldsFromCatalog(product: CatalogProduct): Pick<
+  ShopProduct,
+  "fabrication" | "limitedEdition" | "materials" | "sizeGuide" | "printPlacement"
+> {
+  return {
+    ...(product.fabrication?.trim() ? { fabrication: product.fabrication.trim() } : {}),
+    ...(product.limitedEdition?.trim() ? { limitedEdition: product.limitedEdition.trim() } : {}),
+    ...(product.materials?.trim() ? { materials: product.materials.trim() } : {}),
+    ...(product.sizeGuide?.trim() ? { sizeGuide: product.sizeGuide.trim() } : {}),
+    ...(product.printPlacement ? { printPlacement: product.printPlacement } : {}),
+  };
+}
+
+function shopOptionsForCatalog(product: CatalogProduct) {
+  if (product.options && product.options.length > 0) {
+    return shopOptionsFromProductOptions(product.options);
+  }
+  if (product.colorDeclinations && product.colorDeclinations.length > 0) {
+    return shopOptionsFromColorDeclinations(product.colorDeclinations, product.variant, {
+      parentSku: product.sku,
+      productName: product.name,
+    });
+  }
+  return undefined;
+}
+
+export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
+  const options = shopOptionsForCatalog(product);
+  return {
+    id: product.id,
+    name: product.name,
+    variant: product.variant,
+    price: product.price,
+    image: product.image,
+    ...(product.imageBack?.trim() ? { imageBack: product.imageBack.trim() } : {}),
+    description: product.description,
+    ...storyFieldsFromCatalog(product),
+    category: resolveShopCategory(product.id, product.category),
+    sku: product.sku,
+    sizes: product.sizes,
+    stock: product.stock,
+    ...(product.colorDeclinations?.length ? { colorDeclinations: [...product.colorDeclinations] } : {}),
+    ...(options?.length ? { options } : {}),
+    ...(product.isPinned ? { isPinned: true } : {}),
+    ...(product.displayOrder !== undefined && product.displayOrder > 0
+      ? { displayOrder: product.displayOrder }
+      : {}),
+    ...(product.adminCreatedAt ? { adminCreatedAt: product.adminCreatedAt } : {}),
+  };
+}
+
+function resolveLiveOverlay(
+  productId: number,
+  liveById: Map<number, CatalogProduct>,
+): { overlay: CatalogProduct; inheritedFromRecto: boolean } | null {
+  const direct = liveById.get(productId);
+  if (direct) return { overlay: direct, inheritedFromRecto: false };
+
+  if (!isVersoCatalogId(productId)) return null;
+  const rectoId = resolveRectoCatalogId(productId);
+  if (rectoId === productId) return null;
+  const fromRecto = liveById.get(rectoId);
+  if (!fromRecto) return null;
+  return { overlay: fromRecto, inheritedFromRecto: true };
+}
+
+function mergeStoryOverlay(
+  base: ShopProduct,
+  overlay: CatalogProduct,
+): Pick<ShopProduct, "fabrication" | "limitedEdition" | "materials" | "sizeGuide" | "printPlacement"> {
+  const pick = (key: "fabrication" | "limitedEdition" | "materials" | "sizeGuide") => {
+    const fromOverlay = overlay[key]?.trim();
+    if (fromOverlay) return fromOverlay;
+    return base[key]?.trim() || undefined;
+  };
+  const printPlacement = overlay.printPlacement || base.printPlacement;
+  return {
+    ...(pick("fabrication") ? { fabrication: pick("fabrication") } : {}),
+    ...(pick("limitedEdition") ? { limitedEdition: pick("limitedEdition") } : {}),
+    ...(pick("materials") ? { materials: pick("materials") } : {}),
+    ...(pick("sizeGuide") ? { sizeGuide: pick("sizeGuide") } : {}),
+    ...(printPlacement ? { printPlacement } : {}),
+  };
+}
+
+function applyCatalogOverlay(
+  product: ShopProduct,
+  overlay: CatalogProduct,
+  inheritedFromRecto: boolean,
+): ShopProduct {
+  const liveImage = overlay.image.trim();
+  const sku =
+    inheritedFromRecto && product.id !== overlay.id
+      ? versoSkuFromRecto(overlay.sku)
+      : overlay.sku;
+  const overlayBack = overlay.imageBack?.trim();
+  const crmImage =
+    liveImage && !isDraftPlaceholderImage(liveImage)
+      ? liveImage
+      : (CATALOG_CANONICAL_IMAGE_BY_ID[product.id] ?? product.image);
+  return {
+    ...product,
+    name: overlay.name,
+    variant: inheritedFromRecto
+      ? product.variant || overlay.variant
+      : overlay.variant || product.variant,
+    price: overlay.price,
+    image: inheritedFromRecto ? product.image : crmImage,
+    ...(inheritedFromRecto
+      ? {}
+      : overlayBack && !isDraftPlaceholderImage(overlayBack)
+        ? { imageBack: overlayBack }
+        : { imageBack: undefined }),
+    description: overlay.description?.trim() || product.description,
+    ...mergeStoryOverlay(product, overlay),
+    category: resolveShopCategory(product.id, overlay.category || product.category),
+    sku,
+    sizes: overlay.sizes,
+    stock: overlay.stock,
+    ...(overlay.colorDeclinations?.length
+      ? { colorDeclinations: [...overlay.colorDeclinations] }
+      : {}),
+    ...(overlay.isPinned ? { isPinned: true } : product.isPinned ? { isPinned: true } : {}),
+    ...(overlay.displayOrder !== undefined
+      ? { displayOrder: overlay.displayOrder }
+      : product.displayOrder !== undefined
+        ? { displayOrder: product.displayOrder }
+        : {}),
+    ...(overlay.adminCreatedAt
+      ? { adminCreatedAt: overlay.adminCreatedAt }
+      : product.adminCreatedAt
+        ? { adminCreatedAt: product.adminCreatedAt }
+        : {}),
+  };
+}
+
+function normalizeRemovedCatalogIds(ids: readonly (string | number)[] | undefined): Set<number> {
+  const removed = new Set<number>();
+  if (!ids?.length) return removed;
+  for (const raw of ids) {
+    const id = Number(String(raw).trim());
+    if (Number.isInteger(id) && id > 0) removed.add(id);
+  }
+  return removed;
+}
+
+/** Id masqué boutique : tombstone CRM ou verso dont le recto est retiré. */
+export function isShopCatalogIdHidden(
+  catalogId: number,
+  removed: ReadonlySet<number>,
+): boolean {
+  if (removed.has(catalogId)) return true;
+  const rectoId = resolveRectoCatalogId(catalogId);
+  return rectoId !== catalogId && removed.has(rectoId);
+}
+
+export function overlayShopCatalog(
+  fallback: ShopProduct[],
+  live: CatalogProduct[],
+  removedCatalogIds: readonly (string | number)[] = [],
+): ShopProduct[] {
+  const removed = normalizeRemovedCatalogIds(removedCatalogIds);
+  const liveById = new Map(live.map((product) => [product.id, product]));
+
+  const merged = fallback.map((product) => {
+    const resolved = resolveLiveOverlay(product.id, liveById);
+    const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[product.id];
+    if (!resolved) {
+      const image = product.image.trim() && !isDraftPlaceholderImage(product.image)
+        ? product.image
+        : (canonicalImage ?? product.image);
+      const category = resolveShopCategory(product.id, product.category);
+      const next =
+        image !== product.image || category !== product.category
+          ? { ...product, image, category }
+          : product;
+      return next;
+    }
+    return applyCatalogOverlay(product, resolved.overlay, resolved.inheritedFromRecto);
+  });
+
+  const extras = live
+    .filter((product) => !fallback.some((item) => item.id === product.id))
+    .map(catalogToShopProduct)
+    .map((product) => {
+      const liveImage = product.image.trim();
+      if (liveImage && !isDraftPlaceholderImage(liveImage)) return product;
+      const canonicalImage = CATALOG_CANONICAL_IMAGE_BY_ID[product.id];
+      return canonicalImage ? { ...product, image: canonicalImage } : product;
+    });
+
+  return [...merged, ...extras].filter((product) => !isShopCatalogIdHidden(product.id, removed));
+}
+
+function sizesFromApiRecord(record: Record<string, unknown>): CatalogProduct["sizes"] {
+  if (!Array.isArray(record.sizes)) return ["S", "M", "L", "XL"];
+  const sizes = record.sizes
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item): item is string => item.length > 0 && isProductSize(item));
+  return sizes.length > 0 ? (Array.from(new Set(sizes)) as CatalogProduct["sizes"]) : ["S", "M", "L", "XL"];
+}
+
+export function shopProductFromUnknown(value: unknown): CatalogProduct | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const id = Number(record.id);
+  const price = Number(record.price);
+  if (!Number.isInteger(id) || id <= 0 || !Number.isFinite(price) || price <= 0) return null;
+  if (typeof record.name !== "string" || typeof record.image !== "string") return null;
+  const inStockFromApi = typeof record.inStock === "boolean" ? record.inStock : undefined;
+  const stockFromApi: number | undefined =
+    inStockFromApi !== undefined
+      ? inStockFromApi
+        ? 1
+        : 0
+      : record.stock !== undefined && Number.isFinite(Number(record.stock))
+        ? Math.max(0, Number(record.stock))
+        : undefined;
+  const printPlacement = normalizePrintPlacement(record.printPlacement);
+  return {
+    id,
+    sku: typeof record.sku === "string" ? record.sku : `DINGRY-${id}`,
+    name: record.name,
+    variant: typeof record.variant === "string" ? record.variant : "",
+    ...(typeof record.imageBack === "string" && record.imageBack.trim()
+      ? { imageBack: record.imageBack.trim() }
+      : {}),
+    description: typeof record.description === "string" ? record.description : "",
+    fabrication: typeof record.fabrication === "string" ? record.fabrication : undefined,
+    limitedEdition: typeof record.limitedEdition === "string" ? record.limitedEdition : undefined,
+    materials: typeof record.materials === "string" ? record.materials : undefined,
+    sizeGuide: typeof record.sizeGuide === "string" ? record.sizeGuide : undefined,
+    ...(printPlacement ? { printPlacement } : {}),
+    category: normalizeAdminCategory(typeof record.category === "string" ? record.category : "Tee"),
+    price,
+    image: record.image,
+    sizes: sizesFromApiRecord(record),
+    stock: stockFromApi,
+  };
+}
+
+########## FILE: lib/shop-catalog.ts ##########
+import {
+  CATALOG_CATEGORIES,
+  CATALOG_FILTER_LABEL,
+  filterByCategory,
+  normalizeCatalogCategory,
+  type CatalogCategory,
+  type CatalogFilter,
+} from "@/lib/catalog-category";
+import { sortCatalogProducts } from "@/lib/catalog-sort";
+import {
+  DINGRY_JERSEY_PRODUCT_IDS,
+  DINGRY_SWEAT_PRODUCT_IDS,
+  DINGRY_TEE_PRODUCT_IDS,
+} from "@/lib/dingry-product-media";
+import { normalizeProductCategory, type ProductCategory } from "@/lib/admin/types";
+import type { ShopProduct } from "@/lib/catalog";
+
+export { filterByCategory, parseCatalogFilter, CATALOG_FILTERS, CATALOG_FILTER_LABEL, CATALOG_MENU_TAB_CUSTOM, CATALOG_MENU_TABS, catalogMenuTabLabel } from "@/lib/catalog-category";
+export type { CatalogCategory, CatalogFilter } from "@/lib/catalog-category";
+
+/** Catégories affichées sur une fiche produit boutique. */
+export type ShopCategory =
+  | "T-shirts"
+  | "Hoodie"
+  | "Hoodie zippé"
+  | "Sweats"
+  | "Caps"
+  | "Jersey"
+  | "Pants"
+  | "Crop Top";
+
+export const SHOP_TEE_CATEGORY = "T-shirts" satisfies ShopCategory;
+
+/** Onglets catégorie (sans « Tout ») — même ordre que le menu catalogue. */
+const SHOP_CATEGORY_BY_MENU_SLUG: Record<CatalogCategory, ShopCategory> = {
+  hoodies: "Hoodie",
+  "hoodie-zip": "Hoodie zippé",
+  sweats: "Sweats",
+  "t-shirts": SHOP_TEE_CATEGORY,
+  jersey: "Jersey",
+  pants: "Pants",
+  "crop-top": "Crop Top",
+  caps: "Caps",
+};
+
+export const SHOP_CATEGORY_TABS = CATALOG_CATEGORIES.map(
+  (slug) => SHOP_CATEGORY_BY_MENU_SLUG[slug],
+) as readonly ShopCategory[];
+
+/** Barre catalogue : « Tout » + chaque catégorie ci-dessus. */
+export const SHOP_CATALOG_TABS = ["Collection", ...SHOP_CATEGORY_TABS] as const;
+
+export type ShopCatalogTab = (typeof SHOP_CATALOG_TABS)[number];
+
+/** Retirés boutique (doublon Collection 05 — même photo que 09). */
+export const DINGRY_RETIRED_PRODUCT_IDS = new Set([12, 13, 14, 15, 16]);
+
+export function isActiveShopProduct(product: { id: number }): boolean {
+  return !DINGRY_RETIRED_PRODUCT_IDS.has(product.id);
+}
+
+export function shopCatalogTabLabel(tab: ShopCatalogTab): string {
+  return tab === "Hoodie zippé" ? "Zip" : tab;
+}
+
+export function isShopTeeCategory(category: string): boolean {
+  return (
+    category === "Tee" ||
+    category === "T-shirts" ||
+    category === SHOP_TEE_CATEGORY
+  );
+}
+
+export function isShopCategory(category: string): category is ShopCategory {
+  return (SHOP_CATEGORY_TABS as readonly string[]).includes(category) || isShopTeeCategory(category);
+}
+
+/** Admin → libellé boutique (onglets + filtres). */
+export function resolveShopCategory(productId: number, category: string): ShopCategory | string {
+  const slug = normalizeCatalogCategory(category);
+  if (slug) return SHOP_CATEGORY_BY_MENU_SLUG[slug];
+  if (DINGRY_SWEAT_PRODUCT_IDS.has(productId)) return "Sweats";
+  if (DINGRY_TEE_PRODUCT_IDS.has(productId)) return SHOP_TEE_CATEGORY;
+  if (DINGRY_JERSEY_PRODUCT_IDS.has(productId)) return "Jersey";
+  if (category === "Tee" || category === "T-shirts") return SHOP_TEE_CATEGORY;
+  return category;
+}
+
+export function normalizeAdminCategory(value: string): ProductCategory {
+  return normalizeProductCategory(value);
+}
+
+/** Cartes grille : hors doublons retirés et hors vues verso. La catégorie ne filtre pas ici. */
+export function toCatalogCards<T extends { id: number; variant?: string }>(products: readonly T[]): T[] {
+  return products.filter(
+    (product) => isActiveShopProduct(product) && !/\bVERSO\b/i.test(product.variant ?? ""),
+  );
+}
+
+/** Grille : catégorie stricte, puis cartes recto. `all` garde aussi les catégories inconnues. */
+export function filterCatalogProducts(
+  products: ShopProduct[],
+  tab: CatalogFilter,
+): ShopProduct[] {
+  return toCatalogCards(filterByCategory(products, tab));
+}
+
+export type CatalogMenuSection = {
+  category: CatalogCategory;
+  label: string;
+  products: ShopProduct[];
+};
+
+/** Blocs Collection visibles même sans fiche (famille lancée progressivement). */
+export const CATALOG_SECTION_ALWAYS_VISIBLE = new Set<CatalogCategory>(["pants", "crop-top"]);
+
+function keepCatalogMenuSection(section: CatalogMenuSection): boolean {
+  return section.products.length > 0 || CATALOG_SECTION_ALWAYS_VISIBLE.has(section.category);
+}
+
+/** Vue « Collection » : blocs produits dans l’ordre du menu (Hoodies → Caps). */
+export function buildCatalogMenuSections(products: readonly ShopProduct[]): CatalogMenuSection[] {
+  const cards = toCatalogCards(products);
+  return CATALOG_CATEGORIES.map((category) => ({
+    category,
+    label: CATALOG_FILTER_LABEL[category],
+    products: sortCatalogProducts(
+      cards.filter((product) => normalizeCatalogCategory(product.category) === category),
+      "featured",
+    ),
+  })).filter(keepCatalogMenuSection);
+}
+
+/** Fiche produit avec bascule recto / verso (hoodies, sweats ; tees via meta dédiée). */
+export function isRectoVersoShopCategory(category: string): boolean {
+  const slug = normalizeCatalogCategory(category);
+  return slug === "hoodies" || slug === "hoodie-zip" || slug === "sweats";
+}
+
+########## FILE: lib/shop-catalog-snapshot.ts ##########
+import type { AdminProduct, AdminStore } from "@/lib/admin/types";
+import { toCatalogProduct } from "@/lib/admin/types";
+import { overlayShopCatalog, type ShopProduct } from "@/lib/catalog";
+import { PRODUCTS } from "@/lib/shop-data";
+
+export type ShopCatalogSnapshot = {
+  shopById: ReadonlyMap<number, ShopProduct>;
+  removed: ReadonlySet<number>;
+  adminById: ReadonlyMap<number, AdminProduct>;
+};
+
+export function removedCatalogIdSet(store: AdminStore): ReadonlySet<number> {
+  return new Set(
+    (store.removedCatalogIds ?? [])
+      .map((id) => Number(id))
+      .filter((catalogId) => Number.isInteger(catalogId) && catalogId > 0),
+  );
+}
+
+export function publicLiveCatalogRows(
+  store: AdminStore,
+): NonNullable<ReturnType<typeof toCatalogProduct>>[] {
+  return store.products
+    .map((row) => toCatalogProduct(row))
+    .filter((row): row is NonNullable<ReturnType<typeof toCatalogProduct>> => row !== null);
+}
+
+function adminProductById(store: AdminStore): ReadonlyMap<number, AdminProduct> {
+  const map = new Map<number, AdminProduct>();
+  for (const product of store.products) {
+    const id = Number(product.id);
+    if (Number.isInteger(id) && id > 0) map.set(id, product);
+  }
+  return map;
+}
+
+/** Même surface que la vitrine (`overlayShopCatalog` + tombstones). */
+export function buildShopCatalogSnapshot(store: AdminStore): ShopCatalogSnapshot {
+  const removed = removedCatalogIdSet(store);
+  const live = publicLiveCatalogRows(store);
+  const shopById = new Map(
+    overlayShopCatalog(PRODUCTS, live, [...removed]).map((product) => [product.id, product]),
+  );
+  return { shopById, removed, adminById: adminProductById(store) };
+}
+
+########## FILE: lib/server/shop-catalog-cache.ts ##########
+import { unstable_cache } from "next/cache";
+import { loadStoreReadOnly } from "@/lib/admin/store";
+import type { toCatalogProduct } from "@/lib/admin/types";
+import { publicLiveCatalogRows, removedCatalogIdSet } from "@/lib/shop-catalog-snapshot";
+
+export const SHOP_CATALOG_CACHE_TAG = "dingry-shop-catalog";
+
+type CachedCatalogRows = {
+  products: NonNullable<ReturnType<typeof toCatalogProduct>>[];
+  removedCatalogIds: number[];
+};
+
+async function loadCatalogProductRows(): Promise<CachedCatalogRows> {
+  const store = await loadStoreReadOnly();
+  const products = publicLiveCatalogRows(store);
+  const removedCatalogIds = [...removedCatalogIdSet(store)];
+  return { products, removedCatalogIds };
+}
+
+/** Produits CRM / Supabase — invalidé par `revalidateShopCatalog()` (mutation admin). */
+export const getCachedCatalogProductRows = unstable_cache(
+  loadCatalogProductRows,
+  ["dingry-public-catalog-rows-v1"],
+  { tags: [SHOP_CATALOG_CACHE_TAG] },
+);
+
+########## FILE: app/api/catalog/route.ts ##########
+import { NextResponse } from "next/server";
+import { StoreUnavailableError } from "@/lib/admin/store";
+import { getCachedCatalogProductRows } from "@/lib/server/shop-catalog-cache";
+import { isInStockFromQuantity, readStockQuantities } from "@/lib/stock";
+
+export const runtime = "nodejs";
+
+export async function GET() {
+  try {
+    const { products: catalogRows, removedCatalogIds } = await getCachedCatalogProductRows();
+    const stockById = await readStockQuantities(catalogRows.map((product) => product.id));
+    const products = catalogRows.map((catalog) => {
+      const live = stockById.get(catalog.id) ?? "missing";
+      const inStock = isInStockFromQuantity(live);
+      const { stock: _stock, ...publicProduct } = catalog;
+      return { ...publicProduct, inStock };
+    });
+    return NextResponse.json(
+      { products, removedCatalogIds },
+      {
+        headers: {
+          "Cache-Control": "private, no-store, max-age=0, must-revalidate",
+        },
+      },
+    );
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) {
+      console.error("Catalogue injoignable", error.name);
+      return NextResponse.json({ error: "Catalogue momentanément indisponible." }, { status: 503 });
+    }
+    console.error("Catalogue injoignable", error instanceof Error ? error.name : "erreur");
+    return NextResponse.json({ error: "Catalogue momentanément indisponible." }, { status: 503 });
+  }
+}
+
+########## FILE: lib/admin/seed.ts ##########
+import type { AdminOrder, AdminProduct, AdminStore, ProductCategory, ProductSize } from "@/lib/admin/types";
+import { STORE_VERSION } from "@/lib/admin/types";
+import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
+import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
+
+const DEFAULT_SIZES = ["S", "M", "L", "XL"] as const;
+
+function product(
+  id: string,
+  sku: string,
+  name: string,
+  variant: string,
+  price: number,
+  imageUrl: string,
+  description: string,
+  category: ProductCategory,
+  stock: number,
+  sizes: readonly ProductSize[] = DEFAULT_SIZES,
+): AdminProduct {
+  return {
+    id,
+    sku,
+    name,
+    variant,
+    description,
+    fabrication: "",
+    limitedEdition: "",
+    materials: "",
+    sizeGuide: "",
+    printPlacement: "",
+    category,
+    price,
+    sizes: [...sizes],
+    stock,
+    publishStatus: "live",
+    colorDeclinations: [],
+    imageUrl,
+    blobUrl: null,
+    blobPathname: null,
+    imageBackUrl: "",
+    imageBackBlobUrl: null,
+    imageBackBlobPathname: null,
+    createdAt: "2026-10-01T10:00:00.000Z",
+    isPinned: false,
+    displayOrder: 0,
+  };
+}
+
+export const SEEDED_PRODUCTS: AdminProduct[] = [
+  product(
+    "2",
+    "DINGRY-H01",
+    "PHANTOM HOODIE",
+    "ZENITH",
+    80,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122066/HOODIE_DINGRY_ORIGINAL_BLEU_ROI_-_RECTO_m541tv.png",
+    "Même coupe que la Nuit Noire. Coloris exclusive, édition numérotée 200 exemplaires.",
+    "Hoodies",
+    14,
+  ),
+  product(
+    "4",
+    "DINGRY-H03",
+    "DINGRY ZIP HOODIE",
+    "BLACK OUTLINE — RECTO",
+    90,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/HOODIE_DINGRY_BLACK_ZIPPE%CC%81_OUTLINE_RECTO_iedtrv.png",
+    "Hoodie zippé noir, silhouette structurée et détails outline.",
+    "Hoodies zippés",
+    8,
+  ),
+  product(
+    "6",
+    "DINGRY-H04",
+    "DINGRY ORIGINAL HOODIE",
+    "BLACK — RECTO",
+    80,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122064/DINGRY_HOODIE_ORIGINAL_BLACK_RECTO_knvlfw.png",
+    "Le hoodie original DINGRY en noir, coupe oversize.",
+    "Hoodies",
+    11,
+  ),
+  product(
+    "7",
+    "DINGRY-H02",
+    "DINGRY ORIGINAL HOODIE",
+    "VERT — RECTO",
+    80,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122063/DINGRY_HOODIE_ORIGINAL_VERT_RECTO_b4ilsd.png",
+    "Le modèle original en vert, pensé pour la rue.",
+    "Hoodies",
+    9,
+  ),
+  product(
+    "11",
+    "DINGRY-T01",
+    "DINGRY TEE",
+    "BLANC — RECTO",
+    35,
+    DINGRY_PRODUCT_MEDIA.teeWhiteRecto,
+    "",
+    "T-shirts",
+    22,
+  ),
+  product(
+    "13",
+    "DINGRY-T03",
+    "DINGRY TEE",
+    "COLLECTION 03 — RECTO",
+    35,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124726/PHOTO-2026-06-26-22-50-56_8_g8yqde.jpg",
+    "",
+    "T-shirts",
+    18,
+  ),
+  product(
+    "17",
+    "DINGRY-T07",
+    "DINGRY TEE",
+    "COLLECTION 07 — RECTO",
+    35,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_6_dhs3l2.jpg",
+    "",
+    "T-shirts",
+    18,
+  ),
+  product(
+    "19",
+    "DINGRY-T09",
+    "DINGRY TEE",
+    "COLLECTION 09 — RECTO",
+    35,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_7_iowqbr.jpg",
+    "",
+    "T-shirts",
+    14,
+  ),
+  product(
+    "21",
+    "DINGRY-T11",
+    "DINGRY TEE",
+    "NOIR — RECTO",
+    35,
+    DINGRY_PRODUCT_MEDIA.teeBlackRecto,
+    "",
+    "T-shirts",
+    12,
+  ),
+  product(
+    "22",
+    "DINGRY-TF01",
+    "DINGRY TEE FEMME",
+    "ORIGINAL — RECTO",
+    35,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_19.33.25_yzr0fb.jpg",
+    "",
+    "T-shirts",
+    16,
+  ),
+  product(
+    "23",
+    "DINGRY-TF02",
+    "DINGRY TEE FEMME",
+    "SIGNATURE — RECTO",
+    35,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_21.13.25_ypgmnf.jpg",
+    "",
+    "T-shirts",
+    13,
+  ),
+  product(
+    "24",
+    "DINGRY-T-PERSO",
+    "DINGRY TEE",
+    "PERSONNALISÉ — RECTO",
+    35,
+    DINGRY_PRODUCT_MEDIA.teeBlackRecto,
+    "T-shirt noir personnalisable — ville ou texte sous le logo (+5€).",
+    "T-shirts",
+    20,
+  ),
+  product(
+    "25",
+    "DINGRY-H07",
+    "HOODIE BLACK PARIS BACK-LOGO",
+    "NOIR PARIS — RECTO",
+    80,
+    DINGRY_PRODUCT_MEDIA.hoodieParisBlackRecto,
+    "Hoodie noir avec logo DINGRY Paris sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
+    "Hoodies",
+    12,
+  ),
+  product(
+    "26",
+    "DINGRY-H07-V",
+    "HOODIE BLACK PARIS BACK-LOGO",
+    "NOIR PARIS — VERSO",
+    80,
+    DINGRY_PRODUCT_MEDIA.hoodieParisBlackVerso,
+    "",
+    "Hoodies",
+    12,
+  ),
+  product(
+    "27",
+    "DINGRY-H05",
+    "HOODIE GREY PARIS BACK-LOGO",
+    "GRIS PARIS — RECTO",
+    80,
+    DINGRY_PRODUCT_MEDIA.hoodieParisGreyRecto,
+    "Hoodie gris chiné avec logo DINGRY Paris rouge sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
+    "Hoodies",
+    10,
+  ),
+  product(
+    "28",
+    "DINGRY-H05-V",
+    "HOODIE GREY PARIS BACK-LOGO",
+    "GRIS PARIS — VERSO",
+    80,
+    DINGRY_PRODUCT_MEDIA.hoodieParisGreyVerso,
+    "",
+    "Hoodies",
+    10,
+  ),
+  product(
+    "31",
+    "DINGRY-S02",
+    "SWEAT NEON YELLOW PARIS",
+    "JAUNE FLUO — RECTO",
+    50,
+    DINGRY_PRODUCT_MEDIA.sweatNeonYellowRecto,
+    "Sweat col rond jaune fluo sans capuche, logo DINGRY Paris noir sur la poitrine.",
+    "Crewnecks",
+    12,
+  ),
+  product(
+    "32",
+    "DINGRY-S02-V",
+    "SWEAT NEON YELLOW PARIS",
+    "JAUNE FLUO — VERSO",
+    50,
+    DINGRY_PRODUCT_MEDIA.sweatNeonYellowVerso,
+    "",
+    "Crewnecks",
+    12,
+  ),
+  product(
+    "33",
+    "DINGRY-S01",
+    "SWEAT ROYAL BLUE RETRO",
+    "ROYAL BLUE — RECTO",
+    50,
+    DINGRY_PRODUCT_MEDIA.sweatRoyalBlueRecto,
+    "Sweat col rond bleu royal sans capuche, écriture Dingry jaune style rétro sur la poitrine.",
+    "Crewnecks",
+    12,
+  ),
+  product(
+    "34",
+    "DINGRY-S01-V",
+    "SWEAT ROYAL BLUE RETRO",
+    "ROYAL BLUE — VERSO",
+    50,
+    DINGRY_PRODUCT_MEDIA.sweatRoyalBlueVerso,
+    "",
+    "Crewnecks",
+    12,
+  ),
+  product(
+    "39",
+    "DINGRY-S03",
+    "CREWNECK DINGRY PURPLE",
+    "PURPLE — RECTO",
+    50,
+    DINGRY_PRODUCT_MEDIA.sweatPurpleRecto,
+    "Sweat col rond violet sans capuche, logo DINGRY Paris rose sur la poitrine et éclair sur la manche.",
+    "Crewnecks",
+    12,
+  ),
+  product(
+    "40",
+    "DINGRY-S03-V",
+    "CREWNECK DINGRY PURPLE",
+    "PURPLE — VERSO",
+    50,
+    DINGRY_PRODUCT_MEDIA.sweatPurpleVerso,
+    "",
+    "Crewnecks",
+    12,
+  ),
+  product(
+    "35",
+    "DINGRY-H09",
+    "HOODIE WHITE PARIS BACK-LOGO",
+    "BLANC PARIS — RECTO",
+    80,
+    DINGRY_PRODUCT_MEDIA.hoodieParisWhiteRecto,
+    "Hoodie blanc avec logo DINGRY Paris sur la poitrine, éclairs sur les manches et grand print vertical DINGRY au dos.",
+    "Hoodies",
+    10,
+  ),
+  product(
+    "36",
+    "DINGRY-H09-V",
+    "HOODIE WHITE PARIS BACK-LOGO",
+    "BLANC PARIS — VERSO",
+    80,
+    DINGRY_PRODUCT_MEDIA.hoodieParisWhiteVerso,
+    "",
+    "Hoodies",
+    10,
+  ),
+  product(
+    "29",
+    "DINGRY-H08",
+    "HOODIE CHOCOLAT PARIS",
+    "CHOCOLAT PARIS — RECTO",
+    80,
+    DINGRY_PRODUCT_MEDIA.hoodieRoyalBlueRecto,
+    "Hoodie chocolat à capuche, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
+    "Hoodies",
+    12,
+  ),
+  product(
+    "30",
+    "DINGRY-H08-V",
+    "HOODIE CHOCOLAT PARIS",
+    "CHOCOLAT PARIS — VERSO",
+    80,
+    DINGRY_PRODUCT_MEDIA.hoodieRoyalBlueVerso,
+    "",
+    "Hoodies",
+    12,
+  ),
+  product(
+    "37",
+    "DINGRY-CAP01",
+    "CASQUETTE DINGRY",
+    "NOIR",
+    40,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/99459ef5-5357-4aa7-adce-8ab461ca0370_obzc2o.jpg",
+    "Casquette noire, logo DINGRY blanc sur l'avant et marque sur la bride.",
+    "Caps",
+    20,
+    ["TU"],
+  ),
+  product(
+    "38",
+    "DINGRY-CAP02",
+    "CASQUETTE DINGRY",
+    "ROUGE",
+    40,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/acb2c9c8-a7d8-4a1b-96bb-c9d6bd131857_qfnvcu.jpg",
+    "Casquette rouge, logo DINGRY blanc sur l'avant et marque sur la bride.",
+    "Caps",
+    18,
+    ["TU"],
+  ),
+  product(
+    "41",
+    "DINGRY-J01",
+    "JERSEY DINGRY",
+    "BLANC",
+    129,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310835/31908e1d-4023-4ed0-be80-f3c114bbb097_kz5cef.jpg",
+    "Jersey mesh blanc, logo DINGRY Paris noir sur la poitrine et éclairs sur les manches.",
+    "Jerseys",
+    14,
+  ),
+  product(
+    "42",
+    "DINGRY-J02",
+    "JERSEY DINGRY",
+    "NOIR",
+    129,
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310836/e2110850-29a4-4e76-aeb4-1972601d467d_cgyeld.jpg",
+    "Jersey mesh noir, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
+    "Jerseys",
+    14,
+  ),
+];
+
+export const SEEDED_ORDERS: AdminOrder[] = [
+  {
+    id: "ord_1001",
+    customerName: "Léa Martin",
+    email: "lea.martin@email.com",
+    total: 189,
+    items: ["PHANTOM HOODIE — ZENITH / M"],
+    status: "En attente",
+    createdAt: "2026-10-26T09:14:00.000Z",
+    source: "demo",
+  },
+  {
+    id: "ord_1002",
+    customerName: "Karim Diop",
+    email: "karim.diop@email.com",
+    total: 243,
+    items: ["DINGRY TEE — COLLECTION 01 / L", "Personnalisation Paris"],
+    status: "Expédié",
+    createdAt: "2026-10-25T16:42:00.000Z",
+    source: "demo",
+  },
+  {
+    id: "ord_1003",
+    customerName: "Sofia Nguyen",
+    email: "sofia.nguyen@email.com",
+    total: 219,
+    items: ["DINGRY ZIP HOODIE — BLACK OUTLINE / S"],
+    status: "Livré",
+    createdAt: "2026-10-23T11:05:00.000Z",
+    source: "demo",
+  },
+];
+
+export function createSeededStore(): AdminStore {
+  return {
+    version: STORE_VERSION,
+    products: SEEDED_PRODUCTS.map((item) => ({ ...item, sizes: [...item.sizes] })),
+    orders: SEEDED_ORDERS.map((item) => ({ ...item, items: [...item.items] })),
+    lookbook: seededLookbookSlides(),
+    removedLookbookSlideIds: [],
+    priceFamilies: [],
+    makerTemplates: [],
+  };
+}
+
+########## FILE: lib/r2/storage.ts ##########
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { compressImageToWebp } from "@/lib/supabase/compress-image";
+import {
+  isR2ImageStorageEnabled,
+  isR2PublicUrl,
+  objectKeyFromR2PublicUrl,
+  r2BucketName,
+  r2CredentialFormatError,
+  r2PublicUrlForKey,
+  r2S3Endpoint,
+} from "@/lib/r2/config";
+
+export { isR2ImageStorageEnabled } from "@/lib/r2/config";
+
+export type R2StoredImage = {
+  imageUrl: string;
+  blobUrl: string | null;
+  blobPathname: string | null;
+};
+
+let cachedClient: S3Client | null = null;
+
+function r2Client(): S3Client {
+  const accessKeyId = (process.env.R2_ACCESS_KEY_ID ?? "").trim();
+  const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY ?? "").trim();
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error("R2 : R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY requis.");
+  }
+  const formatError = r2CredentialFormatError();
+  if (formatError) {
+    throw new Error(`R2 : ${formatError}`);
+  }
+  cachedClient ??= new S3Client({
+    region: "auto",
+    endpoint: r2S3Endpoint(),
+    credentials: { accessKeyId, secretAccessKey },
+  });
+  return cachedClient;
+}
+
+export function r2ObjectKey(folder: string, fileName: string): string {
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const safeFolder = folder.replace(/^\/+|\/+$/g, "");
+  return `${safeFolder}/${stamp}-${fileName}`;
+}
+
+export async function uploadR2PublicImage(objectKey: string, file: File): Promise<R2StoredImage> {
+  if (!isR2ImageStorageEnabled()) {
+    throw new Error("Stockage R2 non configuré.");
+  }
+  const key = objectKey.replace(/^\/+/, "");
+  const bytes = await compressImageToWebp(Buffer.from(await file.arrayBuffer()));
+  await r2Client().send(
+    new PutObjectCommand({
+      Bucket: r2BucketName(),
+      Key: key,
+      Body: bytes,
+      ContentType: "image/webp",
+      CacheControl: "public, max-age=31536000, immutable",
+    }),
+  );
+  const imageUrl = r2PublicUrlForKey(key);
+  return { imageUrl, blobUrl: imageUrl, blobPathname: key };
+}
+
+export async function deleteR2Object(objectKey: string | null | undefined): Promise<void> {
+  if (!objectKey?.trim() || !isR2ImageStorageEnabled()) return;
+  const key = objectKey.replace(/^\/+/, "");
+  try {
+    await r2Client().send(
+      new DeleteObjectCommand({
+        Bucket: r2BucketName(),
+        Key: key,
+      }),
+    );
+  } catch (error) {
+    console.error("[r2] delete", error instanceof Error ? error.message : "erreur");
+  }
+}
+
+export async function deleteR2PublicImage(
+  imageUrl: string,
+  objectKey: string | null | undefined,
+): Promise<void> {
+  if (!isR2PublicUrl(imageUrl) && !objectKey) return;
+  const key = objectKey?.trim() || objectKeyFromR2PublicUrl(imageUrl);
+  if (key) await deleteR2Object(key);
+}
+
+########## FILE: lib/r2/config.ts ##########
+/** Nom du bucket R2 Cloudflare (sans le préfixe chemin objet `dingry/…`). */
+export const R2_DEFAULT_BUCKET_NAME = "dingrybuckets";
+
+/** URL publique navigateur (custom domain ou `pub-xxx.r2.dev`). */
+export const R2_DEFAULT_PUBLIC_BASE = "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev";
+
+function trimmed(name: string): string {
+  return (process.env[name] ?? "").trim();
+}
+
+export function r2PublicBaseUrl(): string {
+  const fromEnv = trimmed("R2_PUBLIC_BASE_URL");
+  if (fromEnv) {
+    if (fromEnv.startsWith("http://") || fromEnv.startsWith("https://")) {
+      return fromEnv.replace(/\/$/, "");
+    }
+    return `https://${fromEnv.replace(/\/$/, "")}`;
+  }
+  const host = (trimmed("DINGRY_IMG_HOSTS").split(",")[0] ?? "").trim();
+  if (host && !host.includes("://")) return `https://${host.replace(/\/$/, "")}`;
+  if (host.startsWith("http")) {
+    try {
+      return new URL(host).origin;
+    } catch {
+      return R2_DEFAULT_PUBLIC_BASE;
+    }
+  }
+  return R2_DEFAULT_PUBLIC_BASE;
+}
+
+export function r2BucketName(): string {
+  return trimmed("R2_BUCKET_NAME") || R2_DEFAULT_BUCKET_NAME;
+}
+
+export function r2AccountId(): string {
+  return trimmed("R2_ACCOUNT_ID");
+}
+
+export function r2S3Endpoint(): string {
+  const custom = trimmed("R2_S3_ENDPOINT");
+  if (custom) return custom.replace(/\/$/, "");
+  const account = r2AccountId();
+  if (!account) return "";
+  return `https://${account}.r2.cloudflarestorage.com`;
+}
+
+/** Longueurs des clés « S3 API » Cloudflare R2 (pas le token API global du compte). */
+export const R2_S3_ACCESS_KEY_ID_LENGTH = 32;
+export const R2_S3_SECRET_ACCESS_KEY_LENGTH = 64;
+
+/**
+ * Détecte une config R2 typique (clés inversées, secret dans ACCESS_KEY_ID, etc.).
+ * Ne retourne jamais les valeurs des clés.
+ */
+export function r2CredentialFormatError(): string | null {
+  const accessKeyId = trimmed("R2_ACCESS_KEY_ID");
+  const secretAccessKey = trimmed("R2_SECRET_ACCESS_KEY");
+  if (!accessKeyId || !secretAccessKey) return null;
+
+  if (accessKeyId.startsWith("cfat_") || secretAccessKey.startsWith("cfat_")) {
+    return "Token API Cloudflare (préfixe cfat_) : incompatible avec l’upload S3. Créer un token « R2 / S3 API » (Access Key ID 32 + Secret 64) dans R2 → Manage R2 API Tokens.";
+  }
+
+  if (
+    accessKeyId.length === R2_S3_SECRET_ACCESS_KEY_LENGTH &&
+    secretAccessKey.length === R2_S3_ACCESS_KEY_ID_LENGTH
+  ) {
+    return "R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY semblent inversés (32 vs 64 caractères).";
+  }
+
+  if (accessKeyId.length !== R2_S3_ACCESS_KEY_ID_LENGTH) {
+    const looksLikePublicUrl =
+      /^https?:\/\//i.test(accessKeyId) ||
+      accessKeyId.includes(".r2.dev") ||
+      accessKeyId.includes("r2.cloudflarestorage.com");
+    const hint = looksLikePublicUrl
+      ? "Vous avez collé l’URL publique du bucket : la mettre uniquement dans R2_PUBLIC_BASE_URL / DINGRY_IMG_HOSTS, pas dans R2_ACCESS_KEY_ID."
+      : accessKeyId.length === R2_S3_SECRET_ACCESS_KEY_LENGTH || accessKeyId.length === 65
+        ? "La valeur ressemble à la clé secrète : la mettre dans R2_SECRET_ACCESS_KEY, pas R2_ACCESS_KEY_ID."
+        : "Cloudflare → R2 → Manage R2 API Tokens → Create API token (permissions Object Read & Write sur le bucket) : utiliser l’« Access Key ID » (32 car.), pas le token API global ni l’URL publique.";
+    return `R2_ACCESS_KEY_ID invalide (${accessKeyId.length} car., attendu ${R2_S3_ACCESS_KEY_ID_LENGTH}). ${hint}`;
+  }
+
+  if (secretAccessKey.length !== R2_S3_SECRET_ACCESS_KEY_LENGTH) {
+    return `R2_SECRET_ACCESS_KEY invalide (${secretAccessKey.length} car., attendu ${R2_S3_SECRET_ACCESS_KEY_LENGTH}).`;
+  }
+
+  return null;
+}
+
+/** Upload CRM → R2 (clés API S3, pas l’URL publique seule). */
+export function isR2ImageStorageEnabled(): boolean {
+  if (process.env.VITEST === "true") {
+    return Boolean(
+      trimmed("R2_ACCESS_KEY_ID") &&
+        trimmed("R2_SECRET_ACCESS_KEY") &&
+        r2AccountId() &&
+        r2BucketName(),
+    );
+  }
+  return Boolean(
+    trimmed("R2_ACCESS_KEY_ID") &&
+      trimmed("R2_SECRET_ACCESS_KEY") &&
+      r2AccountId() &&
+      r2BucketName() &&
+      r2S3Endpoint(),
+  );
+}
+
+export function r2PublicUrlForKey(objectKey: string): string {
+  const base = r2PublicBaseUrl();
+  const path = objectKey.replace(/^\/+/, "");
+  return `${base}/${path}`;
+}
+
+export function objectKeyFromR2PublicUrl(url: string): string | null {
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return null;
+  try {
+    const base = r2PublicBaseUrl();
+    const parsed = new URL(trimmedUrl);
+    const baseParsed = new URL(base);
+    if (parsed.origin !== baseParsed.origin) {
+      if (!parsed.hostname.endsWith(".r2.dev")) return null;
+    }
+    const prefix = baseParsed.pathname.replace(/\/$/, "");
+    let pathname = parsed.pathname;
+    if (prefix && pathname.startsWith(prefix)) {
+      pathname = pathname.slice(prefix.length);
+    }
+    const key = pathname.replace(/^\/+/, "");
+    return key || null;
+  } catch {
+    return null;
+  }
+}
+
+export function isR2PublicUrl(url: string | null | undefined): boolean {
+  if (!url?.trim()) return false;
+  const trimmedUrl = url.trim();
+  if (trimmedUrl.includes(".r2.dev")) return true;
+  try {
+    return new URL(trimmedUrl).origin === new URL(r2PublicBaseUrl()).origin;
+  } catch {
+    return false;
+  }
+}
+
+########## FILE: components/organisms/shop/hooks/use-shop-catalog.ts ##########
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { overlayShopCatalog, shopProductFromUnknown, type ShopProduct } from "@/lib/catalog";
+import { PRODUCTS } from "@/lib/shop-data";
+
+export type CatalogState = "loading" | "ready" | "error";
+
+export function useShopCatalog() {
+  const [products, setProducts] = useState<ShopProduct[]>(PRODUCTS);
+  const [catalogState, setCatalogState] = useState<CatalogState>("loading");
+  const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCatalog() {
+      setCatalogState((state) => (state === "ready" ? state : "loading"));
+      try {
+        const response = await fetch("/api/catalog");
+        if (!response.ok) {
+          if (!cancelled) {
+            setProducts(PRODUCTS);
+            setCatalogState("ready");
+          }
+          return;
+        }
+        const data = (await response.json()) as {
+          products?: unknown;
+          removedCatalogIds?: unknown;
+        };
+        const live = Array.isArray(data.products)
+          ? data.products
+              .map(shopProductFromUnknown)
+              .filter((item): item is NonNullable<typeof item> => item !== null)
+          : [];
+        const removedCatalogIds = Array.isArray(data.removedCatalogIds)
+          ? data.removedCatalogIds.filter(
+              (id): id is number => typeof id === "number" && Number.isInteger(id) && id > 0,
+            )
+          : [];
+        if (!cancelled) {
+          setProducts(overlayShopCatalog(PRODUCTS, live, removedCatalogIds));
+          setCatalogState("ready");
+        }
+      } catch {
+        if (!cancelled) {
+          setProducts(PRODUCTS);
+          setCatalogState("ready");
+        }
+      }
+    }
+    void loadCatalog();
+    return () => {
+      cancelled = true;
+    };
+  }, [retryCount]);
+
+  const retry = useCallback(() => setRetryCount((value) => value + 1), []);
+
+  return { products, catalogState, retry };
+}
+
+########## FILE: scripts/check-prod-env.ts ##########
+/**
+ * Contrôle des variables Vercel Production avant déploiement (sans afficher les secrets).
+ * Usage : npx tsx scripts/check-prod-env.ts
+ */
+
+import { MIN_CRON_SECRET_LENGTH } from "../lib/cron-auth";
+import { isR2ImageStorageEnabled, r2BucketName, r2CredentialFormatError } from "../lib/r2/config";
+import { collectProductionEnvErrors, readSupabaseEnv } from "../lib/env";
+
+type Check = { name: string; ok: boolean; hint: string };
+
+function present(name: string, minLength = 1): Check {
+  const value = process.env[name]?.trim() ?? "";
+  const ok = value.length >= minLength;
+  return {
+    name,
+    ok,
+    hint: ok ? "ok" : minLength > 1 ? `requis (≥ ${minLength} caractères)` : "requis",
+  };
+}
+
+function paypalLive(): Check {
+  const env = process.env.PAYPAL_ENV?.trim().toLowerCase() ?? "";
+  const ok = env === "" || env === "live";
+  return {
+    name: "PAYPAL_ENV",
+    ok,
+    hint: ok ? "ok" : "doit être live ou absent en prod (pas sandbox)",
+  };
+}
+
+function stockPrefix(): Check {
+  const prefix = process.env.STOCK_KEY_PREFIX?.trim();
+  if (!prefix) {
+    return { name: "STOCK_KEY_PREFIX", ok: true, hint: "ok (défaut dingry:)" };
+  }
+  const ok = prefix === "dingry:";
+  return {
+    name: "STOCK_KEY_PREFIX",
+    ok,
+    hint: ok ? "ok" : 'doit être "dingry:" en prod',
+  };
+}
+
+function crmImageStorage(): Check {
+  const errors = collectProductionEnvErrors();
+  if (errors.length === 0) {
+    const { url } = readSupabaseEnv();
+    const hint = url.length > 0 ? "ok (Supabase)" : "ok (Vercel Blob)";
+    return { name: "CRM stockage images", ok: true, hint };
+  }
+  return {
+    name: "CRM stockage images",
+    ok: false,
+    hint: errors.join(" — "),
+  };
+}
+
+function dingryImgHosts(): Check {
+  const raw = process.env.DINGRY_IMG_HOSTS?.trim() ?? process.env.NEXT_PUBLIC_MEDIA_CDN_HOST?.trim() ?? "";
+  const ok = raw.length > 0;
+  return {
+    name: "DINGRY_IMG_HOSTS",
+    ok,
+    hint: ok
+      ? "ok"
+      : 'recommandé (ex. pub-xxx.r2.dev sans https) — *.r2.dev déjà en CSP, mais explicite pour remotePatterns',
+  };
+}
+
+function r2ImageUpload(): Check {
+  const formatError = r2CredentialFormatError();
+  if (formatError) {
+    return { name: "R2 upload CRM", ok: false, hint: formatError };
+  }
+  const ok = isR2ImageStorageEnabled();
+  return {
+    name: "R2 upload CRM",
+    ok,
+    hint: ok
+      ? `ok (bucket ${r2BucketName()})`
+      : `R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_BASE_URL (R2_BUCKET_NAME défaut ${r2BucketName()})`,
+  };
+}
+
+function turnstileHostname(): Check {
+  const raw = process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim() ?? "";
+  const ok = raw.length > 0;
+  return {
+    name: "TURNSTILE_EXPECTED_HOSTNAME",
+    ok,
+    hint: ok ? "ok" : 'requis en prod (ex. "dingry.com,www.dingry.com")',
+  };
+}
+
+function main(): void {
+  const checks: Check[] = [
+    present("NEXT_PUBLIC_PAYPAL_CLIENT_ID"),
+    present("PAYPAL_CLIENT_SECRET"),
+    present("PAYPAL_WEBHOOK_ID", 8),
+    paypalLive(),
+    present("ADMIN_TOTP_SECRET", 16),
+    present("ADMIN_SESSION_SECRET", 32),
+    present("CRON_SECRET", MIN_CRON_SECRET_LENGTH),
+    present("UPSTASH_REDIS_REST_URL"),
+    present("UPSTASH_REDIS_REST_TOKEN"),
+    crmImageStorage(),
+    dingryImgHosts(),
+    r2ImageUpload(),
+    present("TURNSTILE_SECRET_KEY"),
+    present("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
+    turnstileHostname(),
+    present("RESEND_API_KEY"),
+    present("OPS_ALERT_EMAIL"),
+    present("OPS_ALERT_FROM"),
+    stockPrefix(),
+  ];
+
+  const failed = checks.filter((check) => !check.ok);
+  for (const check of checks) {
+    console.log(`${check.ok ? "✓" : "✗"} ${check.name} — ${check.hint}`);
+  }
+
+  if (failed.length > 0) {
+    console.error(`\n${failed.length} contrôle(s) en échec.`);
+    process.exit(1);
+  }
+  console.log("\nContrôles prod OK (valeurs non affichées).");
+}
+
+main();
+
+########## FILE: package.json ##########
+{
+  "name": "my-project",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node scripts/verify-anti-regression.js && vitest run",
+    "check:all": "tsc --noEmit && npm test && npm run knip",
+    "check:prod-env": "tsx scripts/check-prod-env.ts",
+    "verify:anti-regression": "node scripts/verify-anti-regression.js",
+    "prepare": "husky",
+    "knip": "knip --no-exit-code",
+    "analyze": "ANALYZE=true next build --webpack",
+    "check:build-size": "bash check-build-size.sh",
+    "check:build-size:build": "bash check-build-size.sh --build --save",
+    "seed-stock": "tsx scripts/seed-stock.ts",
+    "import:supabase": "tsx scripts/import-store-to-supabase.ts",
+    "import:product-options": "tsx scripts/import-product-options.ts",
+    "verify:smart-album": "vitest run lib/admin/smart-collage-album.test.ts lib/admin/product-options-import-album.test.ts",
+    "migrate:r2-images": "tsx scripts/migrate-product-images-to-r2.ts",
+    "purge:r2": "tsx scripts/purge-r2-bucket.ts --confirm",
+    "smoke:quote": "tsx scripts/smoke-quote.ts",
+    "test:e2e": "playwright test",
+    "vercel:env-preview": "node scripts/push-vercel-preview-env.mjs",
+    "vercel:env-sync": "node scripts/sync-vercel-env-parity.mjs",
+    "vercel:env-prune": "node scripts/prune-vercel-obsolete-env.mjs",
+    "verify:vercel-env": "node scripts/verify-vercel-env-parity.mjs",
+    "preview:setup": "node scripts/setup-preview-paypal-webhook.mjs",
+    "preview:deploy": "node scripts/deploy-preview.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1164.0",
+    "@marsidev/react-turnstile": "^1.6.3",
+    "@supabase/supabase-js": "^2.119.0",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.40.0",
+    "@vercel/analytics": "1.6.1",
+    "clsx": "^2.1.1",
+    "motion": "^14.7.1",
+    "next": "^16.4.3",
+    "otpauth": "^9.5.2",
+    "qrcode": "^1.5.4",
+    "react": "^19",
+    "react-dom": "^19",
+    "sharp": "^0.35.5",
+    "tailwind-merge": "^3.3.1",
+    "tw-animate-css": "^1.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@next/bundle-analyzer": "^16.4.5",
+    "@playwright/test": "^1.65.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^18.0.9",
+    "husky": "^9.1.7",
+    "knip": "^6.44.0",
+    "postcss": "^8.5",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.20.5",
+    "typescript": "5.7.3",
+    "vitest": "^3.2.4"
+  }
+}
+
+########## FILE: lib/admin/types.ts (extraits catalogue) ##########
+
+export type { PriceFamily } from "@/lib/validations/price-family";
+
+export type AdminStore = {
+  version: number;
+  products: AdminProduct[];
+  orders: AdminOrder[];
+  lookbook: AdminLookbookSlide[];
+  catalogPersoBanner?: AdminCatalogPersoBanner;
+  /** @deprecated — remplacé par `makerTemplates`. */
+  priceFamilies?: import("@/lib/validations/price-family").PriceFamily[];
+  /** Bibliothèque modèles maker (HOODIE, TEE-SHIRT…). */
+  makerTemplates?: import("@/lib/validations/catalog-maker-template").CatalogMakerTemplate[];
+  /** Fiches seed retirées du stock admin / catalogue live (ids catalogue). */
+  removedCatalogIds?: string[];
+  /** Slides lookbook supprimées — ne pas réinjecter depuis le seed au rechargement. */
+  removedLookbookSlideIds?: string[];
+};
+
+export const STORE_VERSION = 16;
+
+export function isPantWaistSize(value: string): value is PantWaistSize {
+  return (PANT_WAIST_PRESET_SIZES as readonly string[]).includes(value);
+}
+
+export function isProductSize(value: string): value is ProductSize {
+  const normalized = value.trim();
+  if ((PRODUCT_SIZES as readonly string[]).includes(normalized)) return true;
+  return isValidPantWaistSize(normalized);
+}
+
+export { normalizePantWaistSize, isValidPantWaistSize, PANT_WAIST_PRESET_SIZES, PANT_WAIST_MIN, PANT_WAIST_MAX } from "@/lib/admin/pant-waist";
+
+export function isProductCategory(value: string): value is ProductCategory {
+  return normalizeProductCategory(value) === value && (PRODUCT_CATEGORIES as readonly string[]).includes(value);
+}
+
+export function isOrderStatus(value: string): value is OrderStatus {
+  return (ORDER_STATUSES as readonly string[]).includes(value);
+}
+
+export function nextOrderStatus(status: OrderStatus): OrderStatus {
+  if (status === "À vérifier") {
+    return status;
+  }
+  const index = FULFILLMENT_STATUSES.indexOf(status);
+  if (index < 0) return "En attente";
+  return FULFILLMENT_STATUSES[(index + 1) % FULFILLMENT_STATUSES.length] ?? "En attente";
+}
+
+export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {
+  const id = Number(product.id);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  if (product.publishStatus === "draft") return null;
+  return {
+    id,
+    sku: product.sku,
+    name: product.name,
+    variant: product.variant,
+    description: product.description,
+    ...(product.fabrication.trim() ? { fabrication: product.fabrication.trim() } : {}),
+    ...(product.limitedEdition.trim() ? { limitedEdition: product.limitedEdition.trim() } : {}),
+    ...(product.materials.trim() ? { materials: product.materials.trim() } : {}),
+    ...(product.sizeGuide.trim() ? { sizeGuide: product.sizeGuide.trim() } : {}),
+    ...(product.printPlacement ? { printPlacement: product.printPlacement } : {}),
+    category: product.category,
+    price: product.price,
+    image: product.imageUrl,
+    ...(product.imageBackUrl.trim() ? { imageBack: product.imageBackUrl.trim() } : {}),
+    sizes: product.sizes,
+    stock: product.stock,
+    ...(product.colorDeclinations.length > 0
+      ? { colorDeclinations: [...product.colorDeclinations] }
+      : {}),
+    ...(product.options && product.options.length > 0 ? { options: [...product.options] } : {}),
+    isPinned: product.isPinned,
+    displayOrder: product.displayOrder,
+    adminCreatedAt: product.createdAt,
+  };
+}
+
+########## FILE: lib/admin/store.ts (extraits) ##########
+import { randomUUID } from "node:crypto";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+import {
+  allowCatalogSeedFallback,
+  hasProductionCatalogBackend,
+  isSupabaseCatalogEnvComplete,
+} from "@/lib/admin/blob-config";
+import {
+  isStoreWriteConflict,
+  CatalogMakerDuplicateError,
+  PriceFamilyDuplicateError,
+  StoreConflictError,
+  StoreUnavailableError,
+} from "@/lib/admin/store-errors";
+import {
+  materializeCatalogMakerTemplate,
+  validateCatalogMakerTemplate,
+  type CatalogMakerTemplate,
+} from "@/lib/validations/catalog-maker-template";
+import {
+  materializePriceFamily,
+  priceFamilyDraftFromProductFields,
+  validatePriceFamilyDraft,
+  type PriceFamily,
+} from "@/lib/validations/price-family";
+import { readFileStoreSnapshot, writeFileStoreSnapshot } from "@/lib/admin/store-snapshot-file";
+import { isSupabaseStoreEnabled } from "@/lib/supabase/server";
+import { deleteR2PublicImage, isR2ImageStorageEnabled, r2ObjectKey, uploadR2PublicImage } from "@/lib/r2/storage";
+import { isR2PublicUrl } from "@/lib/r2/config";
+import { isVercelBlobUrl, removePublicImage } from "@/lib/supabase/storage";
+import {
+  addRemovedCatalogIds,
+  deleteSupabaseProduct,
+  getSupabaseProduct,
+  listRemovedCatalogIds,
+  listSupabaseProducts,
+  nextSupabaseProductId,
+  reorderSupabaseProducts,
+  upsertSupabaseProduct,
+} from "@/lib/supabase/admin-products";
+import { getSharedRedis } from "@/lib/ratelimit";
+import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
+import { createSeededStore, SEEDED_PRODUCTS } from "@/lib/admin/seed";
+import { assertPublishableProduct, requirePublishableProduct } from "@/lib/admin/assert-publishable";
+import { RETIRED_LOOKBOOK_SEED_TITLES, seededLookbookSlides } from "@/lib/admin/lookbook-seed";
+import {
+  isVersoCatalogId,
+  resolveRectoCatalogId,
+  VERSO_TO_RECTO_CATALOG_ID,
+} from "@/lib/catalog-verso-recto";
+import { CATALOG_CANONICAL_IMAGE_BY_ID, DINGRY_JERSEY_PRODUCT_IDS, DINGRY_SWEAT_PRODUCT_IDS, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
+import {
+  DRAFT_PRODUCT_PLACEHOLDER_IMAGE,
+  isDraftPlaceholderImage,
+  isProductCategory,
+  isProductSize,
+  normalizeProductCategory,
+  normalizePublishStatus,
+  normalizePrintPlacement,
+  STORE_VERSION,
+  type AdminCatalogPersoBanner,
+  type AdminLookbookSlide,
+  type AdminOrder,
+  type AdminProduct,
+  type AdminStore,
+  parseColorDeclinations,
+  type ProductCategory,
+  type ProductPrintPlacement,
+  type ProductPublishStatus,
+  type ProductSize,
+} from "@/lib/admin/types";
+import { reconcileDropBatchWithCatalog, type DropBatchItem } from "@/lib/admin/drop-batch";
+import {
+  applyDisplayOrderByIds,
+  normalizeDisplayOrder,
+  normalizeIsPinned,
+} from "@/lib/admin/product-display-order";
+import { DEFAULT_CATALOG_PERSO_BANNER } from "@/lib/catalog-perso-banner";
+import { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
+
+export { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
+
+const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
+const STORE_WRITE_ATTEMPTS = 8;
+const STORE_LOCK_KEY = "dingry:store-lock";
+const STORE_LOCK_TTL_SECONDS = 20;
+const STORE_LOCK_WAIT_ATTEMPTS = 25;
+
+/** Une file par processus : évite les conflits etag entre requêtes API concurrentes (dev / sauvegarde + stock). */
+let storeWriteQueue: Promise<unknown> = Promise.resolve();
+
+function enqueueStoreWrite<T>(task: () => Promise<T>): Promise<T> {
+  const next = storeWriteQueue.then(task, task);
+  storeWriteQueue = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
+
+const STORE_LOCK_RELEASE_LUA = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+end
+return 0`;
+
+async function acquireStoreLock(): Promise<string | null> {
+  const client = getSharedRedis();
+  if (!client) return null;
+  const token = randomUUID();
+  for (let attempt = 0; attempt < STORE_LOCK_WAIT_ATTEMPTS; attempt++) {
+    try {
+      const result = await client.set(STORE_LOCK_KEY, token, { nx: true, ex: STORE_LOCK_TTL_SECONDS });
+      if (result === "OK") return token;
+    } catch (error) {
+      console.error("[store] lock Redis", error instanceof Error ? error.name : "erreur");
+      return null;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 40 + attempt * 20));
+  }
+  throw new StoreConflictError();
+}
+
+async function releaseStoreLock(token: string | null): Promise<void> {
+  if (!token) return;
+  const client = getSharedRedis();
+  if (!client) return;
+  try {
+    await client.eval(STORE_LOCK_RELEASE_LUA, [STORE_LOCK_KEY], [token]);
+  } catch (error) {
+    console.error("[store] unlock Redis", error instanceof Error ? error.name : "erreur");
+  }
+}
+
+export {
+  isStoreWriteConflict,
+  StoreConflictError,
+  StoreUnavailableError,
+} from "@/lib/admin/store-errors";
+
+export { PublishValidationError } from "@/lib/admin/assert-publishable";
+
+export class ProductStockAdjustError extends Error {
+  constructor(
+    message: string,
+    readonly code: "negative" | "unavailable" | "missing",
+  ) {
+    super(message);
+    this.name = "ProductStockAdjustError";
+  }
+}
+
+type StoreSnapshot = {
+  store: AdminStore;
+  etag: string | null;
+  /** Store JSON on disk/blob had an older version before normalize. */
+  migratedFromVersion?: number;
+};
+
+function storeWriteBackoff(attempt: number): Promise<void> {
+  const ms = 80 + Math.random() * 120 + attempt * 40;
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function cloneStore(store: AdminStore): AdminStore {
+  return {
+    ...store,
+    products: store.products.map((product) => ({ ...product, sizes: [...product.sizes] })),
+    orders: store.orders.map((order) => ({ ...order })),
+    lookbook: store.lookbook.map((slide) => ({ ...slide })),
+    ...(store.catalogPersoBanner ? { catalogPersoBanner: { ...store.catalogPersoBanner } } : {}),
+  };
+}
+
+function assertStoreBackend(): void {
+  if (!hasProductionCatalogBackend()) {
+    throw new StoreUnavailableError(
+      "Stockage CRM manquant en production : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (et R2 pour les uploads images).",
+    );
+  }
+}
+
+/** En local le token Blob lit mais l'API d'écriture répond 403. Le fichier local fait foi. */
+function useLocalStoreFiles(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
+async function readStoreSnapshot(): Promise<StoreSnapshot | "missing"> {
+  assertStoreBackend();
+  let file: Awaited<ReturnType<typeof readFileStoreSnapshot>>;
+  try {
+    file = await readFileStoreSnapshot();
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) throw error;
+    throw new StoreUnavailableError();
+  }
+  if (file !== "missing") return file;
+    removedLookbookSlideIds: Array.isArray(value.removedLookbookSlideIds)
+      ? value.removedLookbookSlideIds
+      : [],
+    catalogPersoBanner: value.catalogPersoBanner,
+  });
+}
+
+async function overlaySupabaseProducts(store: AdminStore): Promise<AdminStore> {
+  if (!isSupabaseStoreEnabled()) return store;
+  try {
+    const products = await listSupabaseProducts();
+    if (products.length === 0) return store;
+    const removed = await listRemovedCatalogIds();
+    return {
+      ...store,
+      products,
+      removedCatalogIds: removed.length > 0 ? removed : store.removedCatalogIds,
+    };
+  } catch (error) {
+    console.error("[store] lecture Supabase produits", error instanceof Error ? error.message : "erreur");
+    throw new StoreUnavailableError("Catalogue Supabase indisponible.");
+  }
+}
+
+/** Lecture seule : aucune écriture Blob (catalogue, devis, findOrder). */
+export async function loadStoreReadOnly(): Promise<AdminStore> {
+  try {
+    const snapshot = await readStoreSnapshot();
+    if (snapshot === "missing") {
+      if (isSupabaseStoreEnabled()) {
+        const products = await listSupabaseProducts();
+        const removed = await listRemovedCatalogIds();
+        return {
+          version: STORE_VERSION,
+          products,
+          orders: [],
+          lookbook: [],
+          removedCatalogIds: removed,
+        };
+      }
+      if (!allowCatalogSeedFallback()) {
+        throw new StoreUnavailableError();
+      }
+      console.warn("[store] snapshot absent, catalogue seed (preview/dev)");
+      return overlaySupabaseProducts(normalizeStore(createSeededStore()));
+    }
+    return overlaySupabaseProducts(coalesceStoreMakerTemplates(snapshot.store));
+  } catch (error) {
+    if (error instanceof StoreUnavailableError) {
+      if (!allowCatalogSeedFallback()) {
+        throw error;
+      }
+      console.warn("[store] lecture seule indisponible, catalogue seed (preview/dev)");
+      return normalizeStore(createSeededStore());
+    }
+    throw error;
+  }
+}
+
+async function ensureInitialStore(): Promise<AdminStore> {
+  const seeded = normalizeStore(createSeededStore());
+  try {
+    await writeStoreSnapshot(seeded, null, true);
+    await seedCatalogStockFromProducts(seeded.products);
+    return seeded;
+  } catch (error) {
+    if (isStoreWriteConflict(error)) {
+      const again = await readStoreSnapshot();
+      if (again !== "missing") return again.store;
+    }
+    throw error;
+  }
+}
+
+/** Charge le magasin ; peut créer le fichier initial (admin, écritures). */
+export async function loadStore(): Promise<AdminStore> {
+  const snapshot = await readStoreSnapshot();
+  if (snapshot === "missing") {
+    return ensureInitialStore();
+  }
+  if (snapshot.migratedFromVersion !== undefined) {
+type ProductImageFace = "recto" | "verso";
+
+type UploadedAdminImage = { imageUrl: string; blobUrl: string | null; blobPathname: string | null };
+
+const IMAGE_STORAGE_UNAVAILABLE =
+  "Stockage image indisponible : configurer R2 (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_BASE_URL) ou utiliser npm run dev (fichiers locaux).";
+
+async function uploadAdminImageFile(
+  file: File,
+  options: { supabaseFolder: string; blobPathPrefix: string; localFilePrefix: string },
+): Promise<UploadedAdminImage> {
+  const filename = `${safeFileName(file.name).replace(/\.[^.]+$/, "") || "image"}.webp`;
+
+  if (isR2ImageStorageEnabled()) {
+    try {
+      const key = r2ObjectKey(`dingry/${options.supabaseFolder}`, filename);
+      return await uploadR2PublicImage(key, file);
+    } catch (error) {
+      console.error("[store] upload R2", error instanceof Error ? error.message : "erreur");
+      throw new StoreUnavailableError(
+        error instanceof Error && error.message.length > 0
+          ? `Upload image impossible (R2) : ${error.message}`
+          : "Upload image impossible (Cloudflare R2).",
+      );
+    }
+  }
+
+  if (useLocalStoreFiles()) {
+    await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
+    const localName = `${options.localFilePrefix}-${Date.now()}-${filename}`;
+    const bytes = Buffer.from(await file.arrayBuffer());
+    await writeFile(path.join(LOCAL_UPLOADS_DIR, localName), bytes);
+    return {
+      imageUrl: `/admin-uploads/${localName}`,
+      blobUrl: null,
+      blobPathname: null,
+    };
+  }
+
+  throw new StoreUnavailableError(IMAGE_STORAGE_UNAVAILABLE);
+}
+
+export async function uploadProductImage(
+  productId: string,
+  file: File,
+  face: ProductImageFace = "recto",
+): Promise<UploadedAdminImage> {
+  return uploadAdminImageFile(file, {
+    supabaseFolder: `products/${productId}/${face}`,
+    blobPathPrefix: `products/${productId}`,
+    localFilePrefix: productId,
+  });
+}
+
+async function deleteLocalUpload(imageUrl: string): Promise<void> {
+  if (!imageUrl.startsWith("/admin-uploads/")) return;
+  const relative = imageUrl.replace("/admin-uploads/", "");
+  const filePath = path.join(LOCAL_UPLOADS_DIR, path.basename(relative));
+  try {
+    await unlink(filePath);
+  } catch {
+    // fichier déjà absent
+  }
+}
+
+async function deleteBlobOrLocal(
+  blobUrl: string | null,
+  blobPathname: string | null,
+  imageUrl: string,
+): Promise<void> {
+  if (isR2PublicUrl(imageUrl) || isR2PublicUrl(blobUrl)) {
+    await deleteR2PublicImage(imageUrl, blobPathname);
+    return;
+  }
+  if (blobPathname && isR2ImageStorageEnabled() && !isVercelBlobUrl(blobUrl)) {
+    await deleteR2PublicImage(imageUrl, blobPathname);
+    return;
+  }
+  if (blobPathname && !blobPathname.startsWith("dingry/")) {
+    await removePublicImage(blobPathname);
+    return;
+  }
+  if (isVercelBlobUrl(blobUrl) || isVercelBlobUrl(imageUrl) || blobPathname?.startsWith("dingry/")) {
+    console.warn("[store] média Vercel Blob héritage non supprimé (Blob retiré).");
+    return;
+  }
+  await deleteLocalUpload(imageUrl);
+}
+
+/** Supprime le média recto ou verso sans toucher l’autre face. */
+export async function deleteProductFaceMedia(
+  product: AdminProduct,
+  face: ProductImageFace,
+): Promise<void> {
+  if (face === "recto") {
+    if (!product.imageUrl.trim() || isDraftPlaceholderImage(product.imageUrl)) return;
+    await deleteBlobOrLocal(product.blobUrl, product.blobPathname, product.imageUrl);
+    return;
+  }
+  const back = product.imageBackUrl.trim();
+  if (!back) return;
+  await deleteBlobOrLocal(product.imageBackBlobUrl, product.imageBackBlobPathname, back);
+}
+
+export async function deleteProductImage(product: AdminProduct): Promise<void> {
+  await deleteProductFaceMedia(product, "recto");
+  await deleteProductFaceMedia(product, "verso");
+}
+
+function nextProductId(products: AdminProduct[]): string {
+  const max = products.reduce((current, item) => {
+    const value = Number(item.id);
+  } else {
+    const snapshot = await readStoreSnapshot();
+    existingProducts =
+      snapshot === "missing" ? normalizeStore(createSeededStore()).products : snapshot.store.products;
+  }
+  const id = isSupabaseStoreEnabled()
+    ? await nextSupabaseProductId(existingProducts)
+    : nextProductId(existingProducts);
+  let uploaded: Awaited<ReturnType<typeof uploadProductImage>>;
+  if (input.file && input.file.size > 0) {
+    uploaded = await uploadProductImage(id, input.file, "recto");
+  } else if (input.preuploadedRecto?.imageUrl) {
+    uploaded = input.preuploadedRecto;
+  } else if (input.publishStatus === "draft") {
+    uploaded = {
+      imageUrl: DRAFT_PRODUCT_PLACEHOLDER_IMAGE,
+      blobUrl: null,
+      blobPathname: null,
+    };
+  } else {
+    throw new StoreUnavailableError("Une image est requise pour mettre en ligne.");
+  }
+  let uploadedBack: Awaited<ReturnType<typeof uploadProductImage>> | undefined;
+  if (input.fileBack && input.fileBack.size > 0) {
+    uploadedBack = await uploadProductImage(id, input.fileBack, "verso");
+  } else if (input.preuploadedVerso?.imageUrl) {
+    uploadedBack = input.preuploadedVerso;
+  }
+  const product: AdminProduct = {
+    id,
+    sku: input.sku,
+    name: input.name,
+    variant: input.variant,
+    description: input.description,
+    fabrication: input.fabrication,
+    limitedEdition: input.limitedEdition,
+    materials: input.materials,
+    sizeGuide: input.sizeGuide,
+    printPlacement: input.printPlacement ?? "",
+    category: input.category,
+    price: input.price,
+    sizes: input.sizes,
+    stock: input.stock,
+    publishStatus: input.publishStatus,
+    colorDeclinations: input.colorDeclinations ?? [],
+    imageUrl: uploaded.imageUrl,
+    blobUrl: uploaded.blobUrl,
+    blobPathname: uploaded.blobPathname,
+    imageBackUrl: uploadedBack?.imageUrl ?? "",
+    imageBackBlobUrl: uploadedBack?.blobUrl ?? null,
+    imageBackBlobPathname: uploadedBack?.blobPathname ?? null,
+    createdAt: new Date().toISOString(),
+    isPinned: false,
+    displayOrder: 0,
+  };
+
+  if (product.publishStatus === "live") {
+    requirePublishableProduct(product);
+  }
+
+  if (isSupabaseStoreEnabled()) {
+    const created = await upsertSupabaseProduct(product);
+    const createdId = Number(created.id);
+    if (Number.isInteger(createdId) && createdId > 0) {
+      const seeded = await writeStockQuantity(createdId, created.stock);
+      if (!seeded) await seedStockIfMissing(createdId, created.stock);
+    }
+    return created;
+  }
+
+  return withStoreOptimistic(
+    (store) => {
+      store.products = [product, ...store.products];
+      return { store, result: product };
+    },
+    { adminRelaxedFinalize: true },
+  ).then(async (created) => {
+    const id = Number(created.id);
+    if (Number.isInteger(id) && id > 0) {
+      const seeded = await writeStockQuantity(id, created.stock);
+      if (!seeded) await seedStockIfMissing(id, created.stock);
+    }
+    return created;
+  });
+}
+
+function applyFieldsToProduct(
+  product: AdminProduct,
+  fields: Partial<ProductInput> & { clearImage?: boolean },
+  uploadedRecto: Awaited<ReturnType<typeof uploadProductImage>> | undefined,
+  uploadedVerso: Awaited<ReturnType<typeof uploadProductImage>> | undefined,
+  clearImageBack: boolean,
+): AdminProduct {
+  if (typeof fields.sku === "string") product.sku = fields.sku;
+  if (typeof fields.name === "string") product.name = fields.name;
+  if (typeof fields.variant === "string") product.variant = fields.variant;
+  if (typeof fields.description === "string") product.description = fields.description;
+  if (typeof fields.fabrication === "string") product.fabrication = fields.fabrication;
+  if (typeof fields.limitedEdition === "string") product.limitedEdition = fields.limitedEdition;
+  if (typeof fields.materials === "string") product.materials = fields.materials;
+  if (typeof fields.sizeGuide === "string") product.sizeGuide = fields.sizeGuide;
+  if (fields.printPlacement !== undefined) product.printPlacement = fields.printPlacement;
+  if (fields.category) product.category = fields.category;
+  if (typeof fields.price === "number") product.price = fields.price;
+  if (fields.sizes) product.sizes = fields.sizes;
+  if (typeof fields.stock === "number") {
+    product.stock = Math.max(0, Math.floor(fields.stock));
+  }
+  if (fields.publishStatus) product.publishStatus = fields.publishStatus;
+  if (fields.colorDeclinations !== undefined) product.colorDeclinations = fields.colorDeclinations;
+  if (typeof fields.isPinned === "boolean") product.isPinned = fields.isPinned;
+  if (typeof fields.displayOrder === "number") {
+    product.displayOrder = normalizeDisplayOrder(fields.displayOrder);
+  }
+  if (uploadedRecto) {
+    product.imageUrl = uploadedRecto.imageUrl;
+    product.blobUrl = uploadedRecto.blobUrl;
+    product.blobPathname = uploadedRecto.blobPathname;
+  } else if (fields.clearImage && product.publishStatus !== "live") {
+    product.imageUrl = DRAFT_PRODUCT_PLACEHOLDER_IMAGE;
+    product.blobUrl = null;
+    product.blobPathname = null;
+  }
+  if (uploadedVerso) {
+    product.imageBackUrl = uploadedVerso.imageUrl;
+    product.imageBackBlobUrl = uploadedVerso.blobUrl;
+    product.imageBackBlobPathname = uploadedVerso.blobPathname;
+  } else if (clearImageBack) {
+    product.imageBackUrl = "";
+    product.imageBackBlobUrl = null;
+    product.imageBackBlobPathname = null;
+  }
+  if (product.publishStatus === "live") {
+    requirePublishableProduct(product);
+  }
+  return product;
+}
+
+async function findProductRecord(id: string): Promise<AdminProduct | undefined> {
+  if (isSupabaseStoreEnabled()) {
+    return (await getSupabaseProduct(id)) ?? undefined;
+}
+
+function tombstoneCatalogPair(tombstone: Set<string>, id: string): void {
+  tombstone.add(id);
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) return;
+  if (isVersoCatalogId(numericId)) {
+    tombstone.add(String(resolveRectoCatalogId(numericId)));
+    return;
+  }
+  for (const [verso, recto] of VERSO_TO_RECTO_CATALOG_ID) {
+    if (recto === numericId) tombstone.add(String(verso));
+  }
+}
+
+export async function removeProduct(id: string): Promise<boolean> {
+  if (isSupabaseStoreEnabled()) {
+    const existing = await getSupabaseProduct(id);
+    if (!existing) return false;
+    const ok = await deleteSupabaseProduct(id);
+    if (!ok) return false;
+    if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
+      const tombstone = new Set<string>();
+      tombstoneCatalogPair(tombstone, id);
+      await addRemovedCatalogIds([...tombstone]);
+      for (const extra of tombstone) {
+        if (extra !== id) await deleteSupabaseProduct(extra);
+      }
+    }
+    await deleteProductImage(existing);
+    return true;
+  }
+
+  const removed = await withStoreOptimistic(
+    (store) => {
+      const product = store.products.find((item) => item.id === id);
+      if (!product) {
+        return { store, result: null, skipWrite: true };
+      }
+      const copy = { ...product, sizes: [...product.sizes] };
+      store.products = store.products.filter((item) => item.id !== id);
+      if (SEEDED_PRODUCTS.some((seed) => seed.id === id)) {
+        const tombstone = new Set(store.removedCatalogIds ?? []);
+        tombstoneCatalogPair(tombstone, id);
+        store.removedCatalogIds = [...tombstone];
+        store.products = store.products.filter((item) => !tombstone.has(item.id));
+      }
+      return { store, result: copy };
+    },
+    { adminRelaxedFinalize: true },
+  );
+
+  if (!removed) return false;
+  await deleteProductImage(removed);
+  return true;
+}
+
+export async function findOrder(id: string): Promise<AdminOrder | undefined> {
+  const snapshot = await readStoreSnapshot();
+  if (snapshot === "missing") return undefined;
+  return snapshot.store.orders.find((item) => item.id === id);

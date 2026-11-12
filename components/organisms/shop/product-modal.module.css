@@ -28,12 +28,16 @@
   width: 100%;
   max-width: 56rem;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid rgb(0 0 0 / 0.1);
   background: rgb(255 255 255 / 0.82);
   color: #161616;
   box-shadow: 0 24px 80px rgb(0 0 0 / 0.28);
+  scrollbar-width: thin;
+  scrollbar-color: rgb(22 22 22 / 0.28) transparent;
 }
 
 .ambience {
@@ -69,7 +73,8 @@
 @media (min-width: 768px) {
   .panel {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: stretch;
+    overflow: hidden;
   }
 }
 
@@ -145,32 +150,47 @@
   position: relative;
   z-index: 1;
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 0.75rem;
   background: rgb(255 255 255 / 0.7);
   padding: 1.5rem;
   font-size: 0.9375rem;
   backdrop-filter: blur(1px);
 }
 
+.bodyScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(22 22 22 / 0.28) transparent;
+  padding-right: 0.15rem;
+}
+
+.bodyScroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bodyScroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgb(22 22 22 / 0.22);
+}
+
 @media (min-width: 768px) {
   .body {
-    justify-content: flex-start;
-    gap: 0.75rem;
+    flex: 1 1 0;
+    min-width: 0;
+    max-height: 90vh;
     overflow: hidden;
     padding: 1.65rem 2rem 1.25rem;
     background: #fff;
     backdrop-filter: none;
-  }
-
-  .body > div:first-child {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: rgb(22 22 22 / 0.22) transparent;
   }
 
   .description {

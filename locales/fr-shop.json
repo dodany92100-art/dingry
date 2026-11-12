@@ -1,0 +1,124 @@
+{
+  "cart": {
+    "drawer": {
+      "title": "Panier",
+      "confirmedTitle": "Commande confirmée",
+      "closeAria": "Fermer",
+      "closeContinueAria": "Fermer le panier et continuer vos achats",
+      "empty": "Votre panier est vide.",
+      "continueShopping": "Continuer vos achats",
+      "discoverCollection": "Découvrir la collection",
+      "orderValidated": "Commande validée",
+      "thanksPaypal": "Merci {{name}}. Un reçu e-mail vous a été envoyé par PayPal.",
+      "refLabel": "Réf.",
+      "delivery": "Livraison",
+      "recap": "Récapitulatif",
+      "continue": "Continuer",
+      "checkout": "Paiement",
+      "itemsCountOne": "{{count}} article",
+      "itemsCountOther": "{{count}} articles",
+      "size": "Taille",
+      "sizeFor": "Taille pour {{name}}",
+      "quantity": "Quantité",
+      "decreaseQty": "Diminuer la quantité de {{name}}",
+      "increaseQty": "Augmenter la quantité de {{name}}",
+      "removeItem": "Retirer {{name}} du panier",
+      "totalAria": "Total {{total}} euros TTC"
+    },
+    "shippingLabel": "Frais de livraison",
+    "shippingHint": "Selon destination",
+    "deliveryEstimate": "Tarif et délai confirmés avant paiement (estimation France : 3 à 7 jours ouvrés).",
+    "subtotal": "Sous-total",
+    "totalTtc": "Total TTC",
+    "checkoutCta": "Passer au paiement",
+    "continueShoppingAlt": "Continuer mes achats"
+  },
+  "checkout": {},
+  "wishlist": {
+    "title": "Liste de souhaits",
+    "myFavorites": "Mes favoris",
+    "empty": "Aucun favori pour le moment.",
+    "discoverCollection": "Découvrir la collection",
+    "share": "Partager",
+    "shareAria": "Partager ma sélection",
+    "closeAria": "Fermer la liste de favoris",
+    "shareTitle": "Ma sélection DINGRY",
+    "shareText": "Ma sélection DINGRY",
+    "itemsCountOne": "{{count}} article",
+    "itemsCountOther": "{{count}} articles",
+    "emptyHint": "Explorez la collection et enregistrez vos pièces préférées.",
+    "emptyHint2": "Touchez le cœur sur un article pour l'enregistrer ici.",
+    "continueShopping": "Continuer vos achats",
+    "shareSelectionCta": "Partager ma sélection"
+  },
+  "footer": {
+    "manifesto": "LE LUXE EST DANS L'ATTITUDE",
+    "streetLine": "ROCKTHESTREET",
+    "navShop": "Boutique",
+    "navLegal": "Légal",
+    "navCollection": "Collection",
+    "navContact": "Contact",
+    "navHeritage": "Notre histoire",
+    "navAtelier": "Atelier custom",
+    "navLookbook": "Lookbook",
+    "legalClosing": "DINGRY – Des pièces, pas des compromis.",
+    "instagramAria": "Instagram DINGRY",
+    "collectionsColumn": "Nos collections",
+    "siteColumn": "Le site",
+    "infoColumn": "Informations & accès",
+    "paymentSectionAria": "Paiement",
+    "paymentEyebrow": "Paiement",
+    "copyright": "© {{year}} DINGRY · Tous droits réservés",
+    "legalModalEyebrow": "Légal",
+    "legalLinks": {
+      "cgvMentions": "CGV & mentions légales",
+      "shipping": "Livraison & tarifs",
+      "returns": "Retours & remboursements"
+    },
+    "collectionLinks": {
+      "hoodiesSweats": "Hoodies & sweats oversize",
+      "tees": "T-shirts streetwear",
+      "caps": "Caps",
+      "cropTops": "Crop tops",
+      "pants": "Pants",
+      "newIn": "Nouveautés & exclusivités"
+    }
+  },
+  "atelier": {
+    "sectionEyebrow": "Atelier custom",
+    "sectionTitle": "T-shirt personnalisé",
+    "banner": {
+      "eyebrow": "CUSTOM • CONFIGURATEUR",
+      "title": "À chaque ville sa Dingry",
+      "subtitle": "Personnalise ton tee-shirt, avec le nom de ta ville",
+      "cityField": "Choisis ta ville",
+      "citySearchPlaceholder": "Rechercher une ville…",
+      "cta": "CUSTOM"
+    }
+  },
+  "heritageTeaser": {
+    "eyebrow": "Héritage"
+  },
+  "heritageReader": {
+    "overlayCloseAria": "Fermer le lecteur Héritage",
+    "tabsAria": "Chapitres Héritage",
+    "chronologyTitle": "Chronologie",
+    "visualPlaceholder": "Visuel"
+  },
+  "collection": {
+    "eyebrow": "Collection",
+    "adminCategoryHint": "Associez une",
+    "adminCategoryHintEnd": "mise en ligne avec la bonne catégorie.",
+    "emptyCategory": "Aucune pièce en ligne pour le moment · vérifie la catégorie",
+    "emptyCategoryEnd": "sur les fiches CRM.",
+    "productsAria": "Produits {{label}}"
+  },
+  "product": {
+    "selectSize": "Sélectionnez une taille",
+    "imprint": "Impression"
+  },
+  "common": {
+    "ttc": "TTC",
+    "close": "Fermer"
+  }
+}

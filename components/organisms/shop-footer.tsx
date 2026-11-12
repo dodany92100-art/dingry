@@ -5,8 +5,9 @@ import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryContactModal } from "@/components/molecules/dingry-contact-modal";
 import { DingryNewsletterForm } from "@/components/molecules/dingry-newsletter-form";
 import { DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
-import { DINGRY_MANIFESTO_FR, DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
-import { LEGAL_DOCUMENTS, type LegalDocId } from "@/lib/legal-placeholders";
+import { LEGAL_DOCUMENTS, legalDocumentsForLocale, type LegalDocId } from "@/lib/legal-placeholders";
+import { useTranslation } from "@/hooks/use-translation";
+import type { Messages } from "@/lib/i18n/merge-messages";
 import type { CatalogFilter } from "@/lib/catalog-category";
 import type { ShopBasePath } from "@/lib/shop-base-path";
 
@@ -14,13 +15,16 @@ const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 
 const LEGAL_CLOSING_IDS = new Set<LegalDocId>(["cgv", "rgpd", "retours", "livraison"]);
 
-const COLLECTION_SEO_LINKS: { label: string; filter: CatalogFilter }[] = [
-  { label: "Hoodies & sweats oversize", filter: "hoodies" },
-  { label: "T-shirts streetwear", filter: "t-shirts" },
-  { label: "Caps", filter: "caps" },
-  { label: "Crop tops", filter: "crop-top" },
-  { label: "Pants", filter: "pants" },
-  { label: "Nouveautés & exclusivités", filter: "all" },
+const COLLECTION_SEO_LINKS: {
+  labelKey: keyof Messages["footer"]["collectionLinks"];
+  filter: CatalogFilter;
+}[] = [
+  { labelKey: "hoodiesSweats", filter: "hoodies" },
+  { labelKey: "tees", filter: "t-shirts" },
+  { labelKey: "caps", filter: "caps" },
+  { labelKey: "cropTops", filter: "crop-top" },
+  { labelKey: "pants", filter: "pants" },
+  { labelKey: "newIn", filter: "all" },
 ];
 
 function FooterNavColumn({
@@ -40,9 +44,9 @@ function FooterNavColumn({
   );
 }
 
-function PaymentMarks() {
+function PaymentMarks({ paymentAria }: { paymentAria: string }) {
   return (
-    <ul className="mt-0 flex flex-wrap items-center justify-center gap-2" aria-label="Moyens de paiement acceptés">
+    <ul className="mt-0 flex flex-wrap items-center justify-center gap-2" aria-label={paymentAria}>
       <li className="dingry-pay-badge" title="PayPal">
         <svg viewBox="0 0 88 24" width="72" height="20" role="img" aria-label="PayPal">
           <text x="0" y="18" fill="#003087" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="700" fontStyle="italic">
@@ -109,9 +113,12 @@ export function ShopFooter({
   onOpenAtelierCustom,
   shopBasePath: _shopBasePath = "/",
 }: ShopFooterProps) {
+  const { locale, t } = useTranslation();
   const [legalDoc, setLegalDoc] = useState<LegalDocId | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
-  const activeLegal = legalDoc ? LEGAL_DOCUMENTS[legalDoc] : null;
+  const legalBundle = legalDocumentsForLocale(locale);
+  const activeLegal = legalDoc ? legalBundle[legalDoc] : null;
+  const legalClosing = locale === "en" ? t("footer.legalClosing") : DINGRY_LEGAL_CLOSING;
 
   function scrollToSection(sectionId: string) {
     if (onScrollToSection) {
@@ -148,7 +155,7 @@ export function ShopFooter({
             <div className="col-span-2 flex flex-col items-start text-left sm:col-span-1">
               <DingryLogo animate={false} tone="on-light" className="h-10 w-auto max-md:max-h-none md:h-12" />
               <p className={`dingry-typo-manifesto mt-3 max-w-[14rem] text-[10px] text-[#161616]/52`}>
-                {DINGRY_MANIFESTO_FR}
+                {t("footer.manifesto")}
               </p>
               <a
                 href={DINGRY_INSTAGRAM_URL}
@@ -166,30 +173,30 @@ export function ShopFooter({
               </div>
             </div>
 
-            <FooterNavColumn title="Nos collections">
-              {COLLECTION_SEO_LINKS.map(({ label, filter }) => (
-                <li key={label}>
+            <FooterNavColumn title={t("footer.collectionsColumn")}>
+              {COLLECTION_SEO_LINKS.map(({ labelKey, filter }) => (
+                <li key={labelKey}>
                   <button type="button" onClick={() => goCatalogFilter(filter)} className={boutiqueLinkClass}>
-                    {label}
+                    {t(`footer.collectionLinks.${labelKey}`)}
                   </button>
                 </li>
               ))}
             </FooterNavColumn>
 
-            <FooterNavColumn title="Le site" className="max-sm:col-span-2">
+            <FooterNavColumn title={t("footer.siteColumn")} className="max-sm:col-span-2">
               <li>
                 <button type="button" onClick={() => scrollToSection("catalogue")} className={boutiqueLinkClass}>
-                  {DINGRY_STREET_LINE}
+                  {t("footer.streetLine")}
                 </button>
               </li>
               <li>
                 <button type="button" onClick={() => goCatalogue()} className={boutiqueLinkClass}>
-                  Collection
+                  {t("footer.navCollection")}
                 </button>
               </li>
               <li>
                 <button type="button" onClick={() => scrollToSection("atelier-custom")} className={boutiqueLinkClass}>
-                  Atelier
+                  {t("nav.atelier")}
                 </button>
               </li>
               <li>
@@ -201,37 +208,37 @@ export function ShopFooter({
                   }}
                   className={boutiqueLinkClass}
                 >
-                  Héritage
+                  {t("nav.heritage")}
                 </button>
               </li>
               <li>
                 <button type="button" onClick={() => scrollToSection("lookbook")} className={boutiqueLinkClass}>
-                  Lookbook
+                  {t("nav.lookbook")}
                 </button>
               </li>
             </FooterNavColumn>
 
             <div id="mentions-legales" className="flex flex-col items-start text-left">
-              <p className="dingry-footer-eyebrow mb-3">Informations & accès</p>
+              <p className="dingry-footer-eyebrow mb-3">{t("footer.infoColumn")}</p>
               <ul className="space-y-2">
                 <li>
                   <button type="button" onClick={() => setLegalDoc("cgv")} className={boutiqueLinkClass}>
-                    CGV & mentions légales
+                    {t("footer.legalLinks.cgvMentions")}
                   </button>
                 </li>
                 <li>
                   <button type="button" onClick={() => setLegalDoc("livraison")} className={boutiqueLinkClass}>
-                    Livraison & tarifs
+                    {t("footer.legalLinks.shipping")}
                   </button>
                 </li>
                 <li>
                   <button type="button" onClick={() => setLegalDoc("retours")} className={boutiqueLinkClass}>
-                    Retours & remboursements
+                    {t("footer.legalLinks.returns")}
                   </button>
                 </li>
                 <li>
                   <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
-                    Contact
+                    {t("footer.navContact")}
                   </button>
                 </li>
               </ul>
@@ -240,17 +247,17 @@ export function ShopFooter({
 
           <section
             className="dingry-gold-rule-top mt-10 flex w-full flex-col gap-6 pt-8 md:mt-12"
-            aria-label="Paiement"
+            aria-label={t("footer.paymentSectionAria")}
           >
             <div className="flex w-full flex-col items-center gap-6 text-center">
               <div className="flex w-full flex-col items-center">
-                <p className="dingry-footer-eyebrow m-0 text-[#161616]/60">Paiement</p>
+                <p className="dingry-footer-eyebrow m-0 text-[#161616]/60">{t("footer.paymentEyebrow")}</p>
                 <div className="mt-3 flex w-full justify-center">
-                  <PaymentMarks />
+                  <PaymentMarks paymentAria={t("cart.paymentMethodsAria")} />
                 </div>
               </div>
               <p className="pb-1 text-[10px] tracking-[0.08em] text-[#161616]/55">
-                © <span suppressHydrationWarning>{new Date().getFullYear()}</span> DINGRY · Tous droits réservés
+                {t("footer.copyright", { year: new Date().getFullYear() })}
               </p>
             </div>
           </section>
@@ -276,7 +283,7 @@ export function ShopFooter({
             >
               <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] p-6 md:p-8">
                 <div>
-                  <p className="dingry-section-eyebrow">Légal</p>
+                  <p className="dingry-section-eyebrow">{t("footer.legalModalEyebrow")}</p>
                   <h2 id="legal-modal-title" className="mt-2 text-xl font-bold uppercase tracking-wide md:text-2xl">
                     {activeLegal.title}
                   </h2>
@@ -286,7 +293,7 @@ export function ShopFooter({
                   type="button"
                   onClick={() => setLegalDoc(null)}
                   className="flex h-11 w-11 shrink-0 items-center justify-center text-white/40 transition-colors hover:text-white"
-                  aria-label="Fermer"
+                  aria-label={t("common.close")}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -307,7 +314,7 @@ export function ShopFooter({
                 </div>
                 {LEGAL_CLOSING_IDS.has(legalDoc) ? (
                   <p className="dingry-gold-rule-top relative mt-8 block pt-4 text-sm tracking-normal text-white/90 normal-case">
-                    {DINGRY_LEGAL_CLOSING}
+                    {legalClosing}
                   </p>
                 ) : null}
               </div>

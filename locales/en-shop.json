@@ -1,0 +1,124 @@
+{
+  "cart": {
+    "drawer": {
+      "title": "Cart",
+      "confirmedTitle": "Order confirmed",
+      "closeAria": "Close",
+      "closeContinueAria": "Close cart and continue shopping",
+      "empty": "Your cart is empty.",
+      "continueShopping": "Continue shopping",
+      "discoverCollection": "Discover the collection",
+      "orderValidated": "Order confirmed",
+      "thanksPaypal": "Thank you {{name}}. A PayPal receipt has been sent to your email.",
+      "refLabel": "Ref.",
+      "delivery": "Delivery",
+      "recap": "Summary",
+      "continue": "Continue",
+      "checkout": "Checkout",
+      "itemsCountOne": "{{count}} item",
+      "itemsCountOther": "{{count}} items",
+      "size": "Size",
+      "sizeFor": "Size for {{name}}",
+      "quantity": "Quantity",
+      "decreaseQty": "Decrease quantity for {{name}}",
+      "increaseQty": "Increase quantity for {{name}}",
+      "removeItem": "Remove {{name}} from cart",
+      "totalAria": "Total {{total}} euros incl. VAT"
+    },
+    "shippingLabel": "Shipping",
+    "shippingHint": "Depends on destination",
+    "deliveryEstimate": "Rate and delivery time confirmed before payment (France estimate: 3–7 business days).",
+    "subtotal": "Subtotal",
+    "totalTtc": "Total incl. VAT",
+    "checkoutCta": "Proceed to checkout",
+    "continueShoppingAlt": "Continue shopping"
+  },
+  "checkout": {},
+  "wishlist": {
+    "title": "Wishlist",
+    "myFavorites": "My favorites",
+    "empty": "No favorites yet.",
+    "discoverCollection": "Discover the collection",
+    "share": "Share",
+    "shareAria": "Share my selection",
+    "closeAria": "Close wishlist",
+    "shareTitle": "My DINGRY selection",
+    "shareText": "My DINGRY selection",
+    "itemsCountOne": "{{count}} item",
+    "itemsCountOther": "{{count}} items",
+    "emptyHint": "Browse the collection and save your favorite pieces.",
+    "emptyHint2": "Tap the heart on any item to save it here.",
+    "continueShopping": "Continue shopping",
+    "shareSelectionCta": "Share my selection"
+  },
+  "footer": {
+    "manifesto": "TRUE LUXURY IS ATTITUDE",
+    "streetLine": "ROCKTHESTREET",
+    "navShop": "Shop",
+    "navLegal": "Legal",
+    "navCollection": "Collection",
+    "navContact": "Contact",
+    "navHeritage": "Our story",
+    "navAtelier": "Custom atelier",
+    "navLookbook": "Lookbook",
+    "legalClosing": "DINGRY – Pieces, not compromises.",
+    "instagramAria": "DINGRY on Instagram",
+    "collectionsColumn": "Our collections",
+    "siteColumn": "The site",
+    "infoColumn": "Info & access",
+    "paymentSectionAria": "Payment",
+    "paymentEyebrow": "Payment",
+    "copyright": "© {{year}} DINGRY · All rights reserved",
+    "legalModalEyebrow": "Legal",
+    "legalLinks": {
+      "cgvMentions": "Terms & legal notice",
+      "shipping": "Shipping & rates",
+      "returns": "Returns & refunds"
+    },
+    "collectionLinks": {
+      "hoodiesSweats": "Oversize hoodies & sweats",
+      "tees": "Streetwear t-shirts",
+      "caps": "Caps",
+      "cropTops": "Crop tops",
+      "pants": "Pants",
+      "newIn": "New drops & exclusives"
+    }
+  },
+  "atelier": {
+    "sectionEyebrow": "Custom atelier",
+    "sectionTitle": "Personalized t-shirt",
+    "banner": {
+      "eyebrow": "CUSTOM • CONFIGURATOR",
+      "title": "Every city its own Dingry",
+      "subtitle": "Personalize your tee with your city name",
+      "cityField": "Choose your city",
+      "citySearchPlaceholder": "Search a city…",
+      "cta": "CUSTOM"
+    }
+  },
+  "heritageTeaser": {
+    "eyebrow": "Heritage"
+  },
+  "heritageReader": {
+    "overlayCloseAria": "Close Heritage reader",
+    "tabsAria": "Heritage chapters",
+    "chronologyTitle": "Timeline",
+    "visualPlaceholder": "Visual"
+  },
+  "collection": {
+    "eyebrow": "Collection",
+    "adminCategoryHint": "Link each",
+    "adminCategoryHintEnd": "listing to the right category.",
+    "emptyCategory": "No items live yet · check category",
+    "emptyCategoryEnd": "on CRM product records.",
+    "productsAria": "Products {{label}}"
+  },
+  "product": {
+    "selectSize": "Select a size",
+    "imprint": "Print"
+  },
+  "common": {
+    "ttc": "incl. VAT",
+    "close": "Close"
+  }
+}

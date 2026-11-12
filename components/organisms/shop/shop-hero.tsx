@@ -7,7 +7,7 @@ const HERO_IMAGE = DINGRY_TEASING_HERO_SRC;
 
 export function ShopHero() {
   return (
-    <section className="dingry-hero relative h-dvh w-full min-h-[700px] shrink-0 overflow-hidden bg-black text-white">
+    <section className="dingry-hero relative h-[100dvh] w-full shrink-0 overflow-hidden bg-black text-white md:min-h-[700px]">
       <div className="absolute inset-0 z-0">
         <Image
           src={HERO_IMAGE}
@@ -16,7 +16,7 @@ export function ShopHero() {
           fill
           sizes="100vw"
           unoptimized
-          className="object-contain object-center"
+          className="object-cover object-[50%_38%] md:object-contain md:object-center"
         />
       </div>
     </section>

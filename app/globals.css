@@ -296,8 +296,11 @@
   transform-origin: center 62%;
 }
 
-/* Logo header — bords adoucis pour fondre dans la barre (#12151c) */
+/* Logo header — hauteur calée sur les boutons nav (h-10 / min-h-11) */
 .dingry-nav-logo img {
+  height: 2.5rem;
+  max-height: 2.5rem;
+  width: auto;
   opacity: 0.97;
   -webkit-mask-image: radial-gradient(
     ellipse 100% 100% at 50% 50%,
@@ -718,7 +721,8 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   --dingry-accent: #ff3d00;
   --dingry-accent-hover: #e03500;
   --dingry-accent-soft: #ff8a4d;
-  --dingry-nav-h: 3.0625rem;
+  /* Hauteur header (ShopNav) — caler sticky catalogue */
+  --dingry-nav-h: 3.5rem;
   --dingry-gold-rule-gradient: linear-gradient(
     90deg,
     rgb(170 119 28 / 0.35) 0%,
@@ -762,7 +766,14 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
 
 @media (min-width: 768px) {
   .dingry-shop {
-    --dingry-nav-h: 5.3125rem;
+    --dingry-nav-h: 4.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dingry-shop {
+    /* Même hauteur réelle que md (py-3 + min-h-11) — évite filet sous ShopNav en sticky */
+    --dingry-nav-h: 4.25rem;
   }
 }
 
@@ -808,6 +819,25 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.95),
     inset 0 -1px 0 rgb(166 166 166 / 0.35);
+}
+
+.dingry-catalog-bar--silver .dingry-catalog-bar__chrome {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #e2e8f0 14%,
+    #cbd5e1 28%,
+    #94a3b8 42%,
+    #ffffff 50%,
+    #64748b 58%,
+    #cbd5e1 74%,
+    #f8fafc 88%,
+    #ffffff 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.98),
+    inset 0 -1px 0 rgb(100 116 139 / 0.32),
+    0 6px 18px rgb(0 0 0 / 0.2);
 }
 
 .dingry-catalog-bar__chrome::after {
@@ -862,11 +892,89 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
 }
 
 .dingry-catalog-bar--silver .relative.min-w-0 > .absolute:nth-child(1) {
+  background: none !important;
   background-image: linear-gradient(to right, rgb(240 240 240 / 0.98), transparent) !important;
 }
 
 .dingry-catalog-bar--silver .relative.min-w-0 > .absolute:nth-child(2) {
+  background: none !important;
   background-image: linear-gradient(to left, rgb(240 240 240 / 0.98), transparent) !important;
+}
+
+/* Vitrine : reflet chrome centré sur la barre (sous les onglets) */
+.dingry-catalog-bar--silver.dingry-catalog-bar--vitrine .dingry-catalog-bar__chrome::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 1;
+  width: min(62%, 22rem);
+  pointer-events: none;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(203 213 225 / 0.35) 28%,
+    rgb(255 255 255 / 0.82) 50%,
+    rgb(203 213 225 / 0.35) 72%,
+    transparent 100%
+  );
+}
+
+@media (max-width: 767px) {
+  .dingry-catalog-bar--silver.dingry-catalog-bar--vitrine .dingry-catalog-bar__chrome::after {
+    display: none;
+  }
+
+  .dingry-catalog-bar--mobile-bleed {
+    width: calc(100% + 2rem);
+    max-width: none;
+    margin-left: -1rem;
+    margin-right: -1rem;
+  }
+
+  .dingry-catalog-bar--mobile-bleed .dingry-catalog-bar__chrome [role="tablist"] {
+    padding-inline: 0.75rem;
+    scroll-padding-inline: 1rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .dingry-catalog-bar--mobile-bleed {
+    width: calc(100% + 3rem);
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+  }
+}
+
+.dingry-catalog-bar--silver.dingry-catalog-bar--vitrine .dingry-catalog-tabs-scroll > .absolute:first-child {
+  width: 2.25rem;
+  background: none !important;
+  background-image: linear-gradient(
+    to right,
+    rgb(230 230 230 / 0.98) 0%,
+    rgb(239 239 239 / 0.55) 45%,
+    transparent 100%
+  ) !important;
+}
+
+.dingry-catalog-bar--silver.dingry-catalog-bar--vitrine .dingry-catalog-tabs-scroll > .absolute:nth-child(2) {
+  width: min(28%, 5.5rem);
+  background: none !important;
+  background-image: linear-gradient(
+    to left,
+    rgb(248 250 252 / 0.96) 0%,
+    rgb(226 232 240 / 0.72) 22%,
+    rgb(203 213 225 / 0.38) 48%,
+    transparent 100%
+  ) !important;
+}
+
+@media (min-width: 768px) {
+  .dingry-catalog-bar--silver.dingry-catalog-bar--vitrine .dingry-catalog-tabs-scroll > .absolute:first-child {
+    opacity: 0;
+  }
 }
 
 .dingry-catalog-bar--silver [role="tablist"] button[role="tab"] {
@@ -885,7 +993,14 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
 }
 
 .dingry-catalog-bar--silver .dingry-catalog-bar__chrome::after {
-  opacity: 0.45;
+  opacity: 0.55;
+  background: linear-gradient(
+    60deg,
+    rgb(255 255 255 / 0) 15%,
+    rgb(255 255 255 / 0.72) 48%,
+    rgb(226 232 240 / 0.35) 62%,
+    rgb(255 255 255 / 0) 85%
+  );
 }
 
 .dingry-catalog-bar--silver .dingry-catalog-custom-tab {
@@ -970,6 +1085,7 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
 .dingry-typo-street {
   font-family: var(--font-anton), "Arial Narrow", sans-serif;
   font-weight: 400;
+  font-synthesis: none;
   letter-spacing: 0.02em;
   line-height: 0.95;
   text-transform: uppercase;
@@ -1392,6 +1508,24 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
   box-shadow: 0 0 12px rgb(191 149 63 / 0.55);
 }
 
+.dingry-catalog-bar--silver [role="tab"][aria-selected="true"] .dingry-tab-underline-gold {
+  right: auto;
+  left: 50%;
+  width: 72%;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #bf953f 18%,
+    #fcf6ba 50%,
+    #b38728 82%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 10px rgb(255 255 255 / 0.55),
+    0 0 14px rgb(191 149 63 / 0.45);
+}
+
 .dingry-gold-rule-top {
   border-top-color: transparent !important;
 }
@@ -1440,10 +1574,33 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
   box-shadow: 0 0 14px rgb(191 149 63 / 0.22);
 }
 
+.dingry-shop-nav-bar {
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.1) 0%,
+    rgb(18 20 28 / 0.58) 38%,
+    rgb(12 14 20 / 0.72) 100%
+  );
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 1px 0 rgb(0 0 0 / 0.22);
+}
+
+.dingry-fly-particle .dingry-nav-favoris-heart--on {
+  fill: url(#dingry-gold-gradient-fly);
+  stroke: url(#dingry-gold-gradient-fly);
+}
+
 .dingry-nav-favoris-heart--on {
   fill: url(#dingry-gold-gradient-nav);
   stroke: url(#dingry-gold-gradient-nav);
   filter: drop-shadow(0 0 6px rgb(252 246 186 / 0.4));
+}
+
+.dingry-fly-particle {
+  filter: drop-shadow(0 0 10px rgb(252 246 186 / 0.45));
 }
 
 .dingry-nav-favoris-badge {
@@ -1531,6 +1688,7 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
 
 .dingry-catalog-custom-tab {
   border: 1px solid rgb(191 149 63 / 0.55);
+  border-radius: 9999px;
   background: rgb(16 18 24 / 0.96);
   box-shadow: none;
 }
@@ -1848,6 +2006,11 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
   color: #fff;
 }
 
+.dingry-custom-banner-mark {
+  filter: brightness(0) invert(1) drop-shadow(0 2px 14px rgb(0 0 0 / 0.55));
+  opacity: 0.96;
+}
+
 .dingry-custom-banner-cta {
   display: inline-flex;
   align-items: center;
@@ -1903,7 +2066,13 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
 }
 
 .dingry-custom-banner--configurator.dingry-custom-banner--bandeau {
-  max-height: min(18rem, 46vh);
+  max-height: 23.75rem;
+}
+
+@media (max-width: 767px) {
+  .dingry-custom-banner--configurator.dingry-custom-banner--bandeau {
+    max-height: min(20rem, 62vw);
+  }
 }
 
 .dingry-custom-banner--configurator .dingry-custom-banner-veil {
@@ -1964,31 +2133,56 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
 }
 
 /* Onglet Custom = même rendu que la barre catalogue (silver) */
-.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab {
+.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab,
+.dingry-heritage-teaser .dingry-heritage-teaser-cta,
+.dingry-custom-banner-dock--catalog .dingry-heritage-teaser-cta {
   position: relative;
   z-index: 3;
-  min-height: 2.35rem;
-  border-color: rgb(154 115 32 / 0.82);
-  background: linear-gradient(168deg, #cfc098 0%, #b8a06e 42%, #a18d58 100%);
+  min-height: 2.5rem;
+  border-radius: 9999px;
+  padding-inline: 1.35rem;
+  border-color: rgb(139 102 28 / 0.95);
+  background: linear-gradient(
+    168deg,
+    #fcf6ba 0%,
+    #e5c76a 22%,
+    #bf953f 48%,
+    #b38728 78%,
+    #8a6a22 100%
+  );
   box-shadow:
-    inset 0 1px 0 rgb(212 188 130 / 0.4),
-    0 1px 2px rgb(48 38 22 / 0.28);
+    inset 0 2px 5px rgb(255 250 220 / 0.65),
+    inset 0 -3px 6px rgb(60 42 10 / 0.28),
+    0 4px 16px rgb(191 149 63 / 0.38);
 }
 
-.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab .gold-text {
-  background: linear-gradient(135deg, #4a3810 0%, #6b5218 42%, #3d2e0c 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab .gold-text,
+.dingry-heritage-teaser .dingry-heritage-teaser-cta .gold-text,
+.dingry-custom-banner-dock--catalog .dingry-heritage-teaser-cta .gold-text {
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  -webkit-text-fill-color: #1f1608;
+  color: #1f1608;
+  text-shadow: 0 1px 0 rgb(252 246 186 / 0.35);
 }
 
-.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab:hover {
-  border-color: rgb(179 135 40 / 0.92);
-  background: linear-gradient(168deg, #d9c9a2 0%, #c0aa78 45%, #ab9660 100%);
+.dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab:hover,
+.dingry-heritage-teaser .dingry-heritage-teaser-cta:hover,
+.dingry-custom-banner-dock--catalog .dingry-heritage-teaser-cta:hover {
+  border-color: rgb(179 135 40 / 1);
+  background: linear-gradient(
+    168deg,
+    #fff8d4 0%,
+    #f0d57a 20%,
+    #d4ad4a 50%,
+    #c99a32 82%,
+    #9a7520 100%
+  );
   box-shadow:
-    inset 0 1px 0 rgb(220 198 140 / 0.45),
-    0 1px 3px rgb(48 38 22 / 0.32);
+    inset 0 2px 6px rgb(255 252 235 / 0.7),
+    inset 0 -3px 6px rgb(60 42 10 / 0.22),
+    0 6px 20px rgb(191 149 63 / 0.45);
 }
 
 .dingry-footer-instagram-plaque {
@@ -2123,6 +2317,23 @@ html[data-theme="light"] .dingry-shop .dingry-below-hero-surface {
 @media (min-width: 768px) {
   .dingry-custom-banner-photo {
     transform: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .dingry-custom-banner--configurator.dingry-custom-banner--bandeau .dingry-custom-banner-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-width: 100%;
+    min-height: 100%;
+    transform: none;
+    object-fit: cover;
+  }
+
+  .dingry-custom-banner--configurator.dingry-custom-banner--bandeau > span.absolute.inset-0 {
+    display: block;
   }
 }
 
@@ -2281,21 +2492,79 @@ html[data-theme="light"] .dingry-shop nav [class*="bg-[#FF3D00]"] * {
   color: #fff !important;
 }
 
+.dingry-nav-shell {
+  column-gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .dingry-nav-shell {
+    column-gap: 1.25rem;
+  }
+}
+
+.dingry-nav-menu-link {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dingry-nav-mobile-menu {
+  background-color: rgb(18 21 28 / 0.98) !important;
+  color: #fff;
+}
+
+.dingry-nav-mobile-menu .dingry-typo-manifesto,
+.dingry-nav-mobile-menu .dingry-typo-street,
+.dingry-nav-mobile-menu button,
+.dingry-nav-mobile-menu span {
+  color: rgb(255 255 255 / 0.88) !important;
+}
+
+.dingry-nav-mobile-menu button:hover {
+  color: #fff !important;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-nav-mobile-menu,
+html[data-theme="light"] .dingry-shop .dingry-nav-mobile-menu .dingry-typo-manifesto {
+  background-color: rgb(18 21 28 / 0.98) !important;
+  color: #fff !important;
+}
+
+html[data-theme="light"] .dingry-shop nav .dingry-nav-burger,
+html[data-theme="light"] .dingry-shop nav .dingry-nav-burger svg {
+  color: rgb(255 255 255 / 0.92) !important;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-catalog-bar--silver [role="tablist"] button[role="tab"] {
+  color: #141414 !important;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.45);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-catalog-bar--silver [role="tablist"] button[role="tab"][aria-selected="true"] {
+  color: #0a0a0a !important;
+}
+
 .dingry-nav-tagline {
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.2rem;
   min-width: 0;
+  max-width: min(13.5rem, 28vw);
   padding-top: 0.125rem;
   text-align: left;
+}
+
+@media (min-width: 1024px) {
+  .dingry-nav-tagline {
+    display: flex;
+  }
 }
 
 .dingry-nav-tagline .dingry-typo-manifesto-en,
 .dingry-nav-tagline .dingry-typo-manifesto {
   width: max-content;
-  max-width: min(16rem, 44vw);
-  font-size: 0.625rem;
+  max-width: 100%;
+  font-size: 0.5625rem;
   line-height: 1.45;
   letter-spacing: 0.1em;
   white-space: nowrap;
@@ -2305,7 +2574,7 @@ html[data-theme="light"] .dingry-shop nav [class*="bg-[#FF3D00]"] * {
 .dingry-nav-tagline__street {
   width: max-content;
   margin-top: 0;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   line-height: 1.25;
   letter-spacing: 0.04em;
   text-align: left;
@@ -2610,6 +2879,7 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
   min-height: 2.875rem;
   max-width: 100%;
   padding: 0.65rem 1.1rem;
+  border-radius: 9999px;
   border: 1px solid rgb(22 22 22 / 0.88);
   background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
   color: #fff;
@@ -2633,6 +2903,7 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
 
 .dingry-footer-instagram-cta__handle {
   padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
   border: 1px solid rgb(255 255 255 / 0.22);
   background: rgb(255 255 255 / 0.08);
   color: #fcf6ba;
@@ -2707,6 +2978,7 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
 
 .dingry-contact-submit {
   border: 1px solid #161616;
+  border-radius: 9999px;
   background: #161616;
   padding: 0.75rem 1rem;
   font-size: 10px;
@@ -2743,6 +3015,7 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
 }
 
 .dingry-heritage-teaser .dingry-sticky-editorial-title,
+.dingry-heritage-teaser .dingry-typo-street,
 .dingry-heritage-teaser .dingry-heritage-teaser-hook {
   color: #fff;
   text-shadow: 0 1px 12px rgb(0 0 0 / 0.45);
@@ -2750,34 +3023,17 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
 
 html[data-theme="light"] .dingry-shop .dingry-heritage-teaser [class*="text-white"],
 html[data-theme="light"] .dingry-shop .dingry-heritage-teaser .dingry-sticky-editorial-title,
+html[data-theme="light"] .dingry-shop .dingry-heritage-teaser .dingry-typo-street,
 html[data-theme="light"] .dingry-shop .dingry-heritage-teaser .dingry-heritage-teaser-hook {
   color: #fff !important;
 }
 
-.dingry-heritage-teaser-cta {
+.dingry-heritage-teaser .dingry-heritage-teaser-cta,
+.dingry-custom-banner-dock--catalog .dingry-heritage-teaser-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.75rem;
-  padding: 0.65rem 1.35rem;
-  border: 1px solid rgb(252 246 186 / 0.45);
-  background: rgb(0 0 0 / 0.35);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: #fcf6ba;
-  backdrop-filter: blur(6px);
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    color 0.2s ease;
-}
-
-.dingry-heritage-teaser-cta:hover {
-  border-color: #fcf6ba;
-  background: rgb(252 246 186 / 0.12);
-  color: #fff;
+  border: 1px solid rgb(139 102 28 / 0.95);
 }
 
 .dingry-heritage-magazine .dingry-heritage-prose {

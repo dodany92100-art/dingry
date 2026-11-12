@@ -1,17 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
+import type { HeritageEditorialArticle, HeritageReaderBlock, HeritageReaderTabId } from "@/lib/dingry-heritage-articles";
 import {
-  DINGRY_HERITAGE_BASELINE_ACCENT,
-  DINGRY_HERITAGE_READER_TABS,
-  heritageArticleForTab,
-  type HeritageEditorialArticle,
-  type HeritageReaderBlock,
-  type HeritageReaderTabId,
-} from "@/lib/dingry-heritage-articles";
-import { DINGRY_HERITAGE_CHRONOLOGY } from "@/lib/dingry-heritage-content";
+  heritageArticleForTabLocale,
+  heritageReaderTabsFromBundle,
+} from "@/lib/i18n/heritage-articles-locale";
+import { useTranslation } from "@/hooks/use-translation";
 import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
 import styles from "./heritage-reader.module.css";
 
@@ -22,7 +19,15 @@ type HeritageReaderProps = {
   initialArticleId?: string;
 };
 
-function ReaderBlock({ block, blockKey }: { block: HeritageReaderBlock; blockKey: string }) {
+function ReaderBlock({
+  block,
+  blockKey,
+  visualPlaceholder,
+}: {
+  block: HeritageReaderBlock;
+  blockKey: string;
+  visualPlaceholder: string;
+}) {
   if (block.kind === "paragraphs") {
     return (
       <div className={styles.prose}>
@@ -45,7 +50,7 @@ function ReaderBlock({ block, blockKey }: { block: HeritageReaderBlock; blockKey
         <img src={block.src} alt={block.alt} className={styles.visualMedia} loading="lazy" />
       ) : (
         <div className={`${styles.visualPlaceholder} ${ratioClass}`} role="img" aria-label={block.alt}>
-          <span className={styles.visualPlaceholderLabel}>Visuel</span>
+          <span className={styles.visualPlaceholderLabel}>{visualPlaceholder}</span>
           <span className={`${styles.visualPlaceholderLabel} max-w-[12rem] normal-case tracking-[0.08em]`}>
             {block.caption}
           </span>
@@ -56,7 +61,13 @@ function ReaderBlock({ block, blockKey }: { block: HeritageReaderBlock; blockKey
   );
 }
 
-function ArticleCard({ article }: { article: HeritageEditorialArticle }) {
+function ArticleCard({
+  article,
+  visualPlaceholder,
+}: {
+  article: HeritageEditorialArticle;
+  visualPlaceholder: string;
+}) {
   return (
     <article className={styles.articleCard} id={`heritage-article-${article.id}`}>
       {article.cover ? (
@@ -81,7 +92,12 @@ function ArticleCard({ article }: { article: HeritageEditorialArticle }) {
         <h3 className={styles.articleTitle}>{article.title}</h3>
         <p className={styles.articleSubtitle}>{article.subtitle}</p>
         {article.blocks.map((block, index) => (
-          <ReaderBlock key={`${article.id}-${index}`} block={block} blockKey={`${article.id}-${index}`} />
+          <ReaderBlock
+            key={`${article.id}-${index}`}
+            block={block}
+            blockKey={`${article.id}-${index}`}
+            visualPlaceholder={visualPlaceholder}
+          />
         ))}
       </div>
     </article>
@@ -92,6 +108,10 @@ const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function HeritageReader({ open, onClose, initialArticleId }: HeritageReaderProps) {
+  const { dict, t } = useTranslation();
+  const heritage = dict.heritage;
+  const readerTabs = useMemo(() => heritageReaderTabsFromBundle(heritage), [heritage]);
+
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -102,7 +122,10 @@ export function HeritageReader({ open, onClose, initialArticleId }: HeritageRead
       ? initialArticleId
       : "manifeste";
   const [activeTab, setActiveTab] = useState<HeritageReaderTabId>(initialTab);
-  const activeArticle = heritageArticleForTab(activeTab);
+  const activeArticle = useMemo(
+    () => heritageArticleForTabLocale(activeTab, heritage),
+    [activeTab, heritage],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -185,7 +208,7 @@ export function HeritageReader({ open, onClose, initialArticleId }: HeritageRead
           <motion.button
             type="button"
             className={styles.overlay}
-            aria-label="Fermer le lecteur Héritage"
+            aria-label={t("heritageReader.overlayCloseAria")}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -209,82 +232,86 @@ export function HeritageReader({ open, onClose, initialArticleId }: HeritageRead
               onTouchStart={(e) => handleTouchStart(e.changedTouches[0]?.clientY ?? 0)}
               onTouchEnd={(e) => handleTouchEnd(e.changedTouches[0]?.clientY ?? 0)}
             >
-            <div className={styles.dragHandle} aria-hidden>
-              <span className={styles.dragHandleBar} />
-            </div>
-            <header className={styles.header}>
-              <DingryLogo animate={false} tone="on-dark" className="h-8 w-auto md:h-9" />
-              <button
-                ref={closeBtnRef}
-                type="button"
-                onClick={onClose}
-                className={styles.closeBtn}
-                aria-label="Fermer"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </header>
-
-            <div ref={scrollRef} className={styles.scroll}>
-              <div className={styles.inner}>
-                <div className={styles.baseline}>
-                  <p id={titleId} className={styles.baselineText}>
-                    {DINGRY_HERITAGE_BASELINE_ACCENT}
-                  </p>
-                </div>
-
-                <div className={styles.tabs} role="tablist" aria-label="Chapitres Héritage">
-                  {DINGRY_HERITAGE_READER_TABS.map((tab) => {
-                    const selected = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        role="tab"
-                        id={`heritage-tab-${tab.id}`}
-                        aria-selected={selected}
-                        aria-controls="heritage-tabpanel"
-                        tabIndex={selected ? 0 : -1}
-                        className={`${styles.tab} ${selected ? styles.tabOn : ""}`}
-                        onClick={() => selectTab(tab.id)}
-                      >
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div
-                  id="heritage-tabpanel"
-                  role="tabpanel"
-                  aria-labelledby={`heritage-tab-${activeTab}`}
-                  className={styles.tabPanel}
-                >
-                  <ArticleCard key={activeArticle.id} article={activeArticle} />
-                </div>
-
-                <section className={styles.chronology} aria-labelledby="heritage-chronology-title">
-                  <h2 id="heritage-chronology-title" className={styles.chronologyTitle}>
-                    Chronologie
-                  </h2>
-                  <div className={styles.chronologyTrack}>
-                    <div className={styles.chronologyLine} aria-hidden />
-                    <ol className={styles.chronologyList}>
-                      {DINGRY_HERITAGE_CHRONOLOGY.map((milestone) => (
-                        <li key={milestone.year} className={styles.chronologyItem}>
-                          <span className={styles.chronologyMarker} aria-hidden />
-                          <p className={styles.chronologyYear}>{milestone.year}</p>
-                          <p className={styles.chronologyLabel}>{milestone.label}</p>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                </section>
+              <div className={styles.dragHandle} aria-hidden>
+                <span className={styles.dragHandleBar} />
               </div>
-            </div>
+              <header className={styles.header}>
+                <DingryLogo animate={false} tone="on-dark" className="h-8 w-auto md:h-9" />
+                <button
+                  ref={closeBtnRef}
+                  type="button"
+                  onClick={onClose}
+                  className={styles.closeBtn}
+                  aria-label={t("common.close")}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </header>
+
+              <div ref={scrollRef} className={styles.scroll}>
+                <div className={styles.inner}>
+                  <div className={styles.baseline}>
+                    <p id={titleId} className={styles.baselineText}>
+                      {heritage.baseline}
+                    </p>
+                  </div>
+
+                  <div className={styles.tabs} role="tablist" aria-label={t("heritageReader.tabsAria")}>
+                    {readerTabs.map((tab) => {
+                      const selected = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          role="tab"
+                          id={`heritage-tab-${tab.id}`}
+                          aria-selected={selected}
+                          aria-controls="heritage-tabpanel"
+                          tabIndex={selected ? 0 : -1}
+                          className={`${styles.tab} ${selected ? styles.tabOn : ""}`}
+                          onClick={() => selectTab(tab.id)}
+                        >
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div
+                    id="heritage-tabpanel"
+                    role="tabpanel"
+                    aria-labelledby={`heritage-tab-${activeTab}`}
+                    className={styles.tabPanel}
+                  >
+                    <ArticleCard
+                      key={activeArticle.id}
+                      article={activeArticle}
+                      visualPlaceholder={t("heritageReader.visualPlaceholder")}
+                    />
+                  </div>
+
+                  <section className={styles.chronology} aria-labelledby="heritage-chronology-title">
+                    <h2 id="heritage-chronology-title" className={styles.chronologyTitle}>
+                      {t("heritageReader.chronologyTitle")}
+                    </h2>
+                    <div className={styles.chronologyTrack}>
+                      <div className={styles.chronologyLine} aria-hidden />
+                      <ol className={styles.chronologyList}>
+                        {heritage.chronology.map((milestone) => (
+                          <li key={milestone.year} className={styles.chronologyItem}>
+                            <span className={styles.chronologyMarker} aria-hidden />
+                            <p className={styles.chronologyYear}>{milestone.year}</p>
+                            <p className={styles.chronologyLabel}>{milestone.label}</p>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  </section>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
