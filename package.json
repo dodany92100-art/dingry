@@ -25,6 +25,7 @@
     "smoke:quote": "tsx scripts/smoke-quote.ts",
     "test:e2e": "playwright test",
     "vercel:env-preview": "node scripts/push-vercel-preview-env.mjs",
+    "supabase:google-oauth": "node scripts/enable-supabase-google-oauth.mjs",
     "vercel:env-sync": "node scripts/sync-vercel-env-parity.mjs",
     "vercel:env-prune": "node scripts/prune-vercel-obsolete-env.mjs",
     "verify:vercel-env": "node scripts/verify-vercel-env-parity.mjs",

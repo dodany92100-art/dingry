@@ -313,9 +313,12 @@ export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalP
                       <button
                         type="button"
                         className="w-full py-2 text-[10px] tracking-[0.2em] text-white/45 uppercase hover:text-white"
-                        onClick={() => setView("password")}
+                        onClick={() => {
+                          setView("password");
+                          setError(null);
+                        }}
                       >
-                        Utiliser un mot de passe
+                        Mot de passe ou création de compte
                       </button>
                     </form>
                   ) : (
