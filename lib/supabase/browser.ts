@@ -21,6 +21,7 @@ export function getSupabaseBrowser(): SupabaseClient | null {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
+      experimental: { appendPkceFlowIdToRedirects: true },
     },
   });
   return cached;

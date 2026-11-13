@@ -42,15 +42,12 @@ function SocialMark({ children }: { children: ReactNode }) {
 export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser, onSignOut }: AuthModalProps) {
   const configured = isSupabaseBrowserAuthEnabled();
   const googleOAuth = isSupabaseOAuthProviderEnabled("google");
-  const appleOAuth = isSupabaseOAuthProviderEnabled("apple");
-  const showSocial = googleOAuth || appleOAuth;
+  const showSocial = googleOAuth;
   const [view, setView] = useState<AuthView>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
-  const [busy, setBusy] = useState<"google" | "apple" | "password" | "magic" | "signup" | "signout" | null>(
-    null,
-  );
+  const [busy, setBusy] = useState<"google" | "password" | "magic" | "signup" | "signout" | null>(null);
   const isAccountView = Boolean(accountUser?.email);
   const [error, setError] = useState<string | null>(null);
   const [magicSent, setMagicSent] = useState(false);
@@ -71,17 +68,17 @@ export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser,
     return () => window.removeEventListener("keydown", onKey);
   }, [open, busy, onClose]);
 
-  async function oauth(provider: "google" | "apple") {
+  async function oauthGoogle() {
     const client = getSupabaseBrowser();
     if (!client) {
       setError("Connexion indisponible : Supabase non configuré.");
       return;
     }
     setError(null);
-    setBusy(provider);
+    setBusy("google");
     const redirectTo = authCallbackUrl();
     const { data, error: oauthError } = await client.auth.signInWithOAuth({
-      provider,
+      provider: "google",
       options: { redirectTo },
     });
     if (oauthError) {
@@ -275,7 +272,7 @@ export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser,
                     <button
                       type="button"
                       disabled={busy !== null}
-                      onClick={() => void oauth("google")}
+                      onClick={() => void oauthGoogle()}
                       className="flex w-full items-center justify-center gap-3 rounded-full border border-white/15 bg-white py-3.5 text-[11px] font-medium tracking-[0.2em] text-[#0a0a0a] uppercase transition-opacity hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {busy === "google" ? (
@@ -303,25 +300,6 @@ export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser,
                         </SocialMark>
                       )}
                       Se connecter avec Google
-                    </button>
-                    ) : null}
-                    {appleOAuth ? (
-                    <button
-                      type="button"
-                      disabled={busy !== null}
-                      onClick={() => void oauth("apple")}
-                      className="flex w-full items-center justify-center gap-3 rounded-full border border-white/20 bg-[#111] py-3.5 text-[11px] font-medium tracking-[0.2em] text-white uppercase transition-colors hover:bg-[#1a1a1a] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {busy === "apple" ? (
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                      ) : (
-                        <SocialMark>
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
-                            <path d="M16.4 11.5c.02-2.11 1.72-3.12 1.8-3.17-1-.15-1.94-.58-2.57-1.18-.63-.61-1.06-1.44-1.03-2.4.03-1.23.5-2.16 1.03-2.69.54-.53 1.15-.9 1.85-1.03-2.09-.33-3.97.99-4.98.99-1.02 0-2.58-.97-4.24-.94-2.18.03-4.2 1.27-5.33 3.23-2.27 3.94-.58 9.78 1.63 12.98 1.08 1.57 2.37 3.33 4.06 3.26 1.63-.07 2.24-1.05 4.21-1.05 1.97 0 2.52 1.05 4.24 1.02 1.75-.03 2.86-1.58 3.94-3.16.1-.16.19-.32.27-.48-2.53-1.08-4.22-3.45-4.24-6.02zM13.2 4.38c.87-1.05 1.46-2.51 1.3-3.97-1.26.05-2.79.84-3.69 1.89-.8.92-1.5 2.41-1.31 3.87 1.39.11 2.81-.71 3.7-1.79z" />
-                          </svg>
-                        </SocialMark>
-                      )}
-                      Se connecter avec Apple
                     </button>
                     ) : null}
                   </div>
