@@ -17,6 +17,7 @@ export function getSupabaseBrowser(): SupabaseClient | null {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim();
   cached = createClient(url, key, {
     auth: {
+      flowType: "pkce",
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,

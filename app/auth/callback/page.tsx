@@ -16,6 +16,14 @@ function AuthCallbackLoading() {
   );
 }
 
+const AUTH_CALLBACK_WAIT_MS = 6000;
+
+function clearOAuthHashFromHistory() {
+  if (typeof window === "undefined" || !window.location.hash) return;
+  const path = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", path);
+}
+
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -28,25 +36,51 @@ function AuthCallbackContent() {
       setFailed(true);
       return;
     }
+
     let cancelled = false;
-    void (async () => {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-      if (code) {
-        const { error } = await client.auth.exchangeCodeForSession(code);
-        if (error) {
-          if (!cancelled) setFailed(true);
-          return;
-        }
+    let redirected = false;
+
+    const finish = (sessionPresent: boolean) => {
+      if (cancelled || redirected) return;
+      if (sessionPresent) {
+        redirected = true;
+        clearOAuthHashFromHistory();
+        router.replace(nextPath);
+        return;
       }
-      const { data } = await client.auth.getSession();
-      if (!cancelled) {
-        if (data.session) router.replace(nextPath);
-        else setFailed(true);
-      }
-    })();
+      setFailed(true);
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const hasCode = params.has("code");
+    const hasHash = /access_token=|refresh_token=|error=/i.test(window.location.hash);
+
+    const checkSession = () =>
+      client.auth.getSession().then(({ data }) => Boolean(data.session));
+
+    if (!hasCode && !hasHash) {
+      void checkSession().then((ok) => finish(ok));
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const { data: sub } = client.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) finish(true);
+    });
+
+    void checkSession().then((ok) => {
+      if (ok) finish(true);
+    });
+
+    const timeout = window.setTimeout(() => {
+      void checkSession().then((ok) => finish(ok));
+    }, AUTH_CALLBACK_WAIT_MS);
+
     return () => {
       cancelled = true;
+      sub.subscription.unsubscribe();
+      window.clearTimeout(timeout);
     };
   }, [router, nextPath]);
 
