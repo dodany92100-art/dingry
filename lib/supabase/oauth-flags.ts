@@ -9,10 +9,11 @@ export function isSupabaseOAuthProviderEnabled(provider: "google" | "apple"): bo
   const key =
     provider === "google" ? "NEXT_PUBLIC_SUPABASE_OAUTH_GOOGLE" : "NEXT_PUBLIC_SUPABASE_OAUTH_APPLE";
   const raw = (process.env[key] ?? "").trim();
-  if (raw === "1") return true;
   if (raw === "0") return false;
-  if (process.env.NODE_ENV === "development" && supabaseAuthEnvReady()) {
-    return true;
+  if (raw === "1") return true;
+  if (!supabaseAuthEnvReady()) return false;
+  if (provider === "apple") {
+    return (process.env.NEXT_PUBLIC_SUPABASE_OAUTH_APPLE ?? "").trim() === "1";
   }
-  return false;
+  return true;
 }
