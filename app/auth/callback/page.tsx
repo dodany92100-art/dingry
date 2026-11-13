@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { sanitizeAuthCallbackNext } from "@/lib/auth/auth-callback-next";
 import { SHOP_PREVIEW_PATH } from "@/lib/shop-base-path";
-import { getSupabaseOAuthCallbackClient } from "@/lib/supabase/auth-callback-client";
+import { getSupabaseBrowser } from "@/lib/supabase/browser";
 
 function AuthCallbackLoading() {
   return (
@@ -16,12 +16,18 @@ function AuthCallbackLoading() {
   );
 }
 
-const AUTH_CALLBACK_WAIT_MS = 10000;
+const AUTH_CALLBACK_WAIT_MS = 6000;
 
-function clearOAuthHashFromHistory() {
-  if (typeof window === "undefined" || !window.location.hash) return;
-  const path = window.location.pathname + window.location.search;
-  window.history.replaceState(null, "", path);
+function stripOAuthMaterialFromUrl() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.searchParams.delete("code");
+  url.searchParams.delete("error");
+  url.searchParams.delete("error_description");
+  url.searchParams.delete("error_code");
+  const clean = `${url.pathname}${url.search}`;
+  window.history.replaceState(null, "", clean);
 }
 
 function AuthCallbackContent() {
@@ -29,9 +35,11 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const [failed, setFailed] = useState(false);
   const nextPath = sanitizeAuthCallbackNext(searchParams.get("next"));
+
   useEffect(() => {
-    const client = getSupabaseOAuthCallbackClient();
+    const client = getSupabaseBrowser();
     if (!client) {
+      stripOAuthMaterialFromUrl();
       setFailed(true);
       return;
     }
@@ -39,31 +47,39 @@ function AuthCallbackContent() {
     let cancelled = false;
     let redirected = false;
 
+    const markFailed = () => {
+      if (cancelled || redirected) return;
+      stripOAuthMaterialFromUrl();
+      setFailed(true);
+    };
+
     const finish = (sessionPresent: boolean) => {
       if (cancelled || redirected) return;
       if (sessionPresent) {
         redirected = true;
-        clearOAuthHashFromHistory();
+        stripOAuthMaterialFromUrl();
         router.replace(nextPath);
         return;
       }
-      setFailed(true);
+      markFailed();
     };
 
     const params = new URLSearchParams(window.location.search);
-    const hasCode = params.has("code");
-    const hasHash = /access_token=|refresh_token=|error=/i.test(window.location.hash);
-    const oauthError = params.get("error_description") ?? params.get("error");
+    const hashRaw = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+    const hashParams = new URLSearchParams(hashRaw);
+    const oauthError =
+      params.get("error") ?? hashParams.get("error") ?? params.get("error_description") ?? hashParams.get("error_description");
+    const hasImplicitTokens = /(?:^|&)(?:access_token|refresh_token)=/i.test(hashRaw);
 
-    if (oauthError) {
-      setFailed(true);
+    if (oauthError || hasImplicitTokens) {
+      markFailed();
       return;
     }
 
-    const checkSession = () =>
-      client.auth.getSession().then(({ data }) => Boolean(data.session));
+    const hasCode = params.has("code");
+    const checkSession = () => client.auth.getSession().then(({ data }) => Boolean(data.session));
 
-    if (!hasCode && !hasHash) {
+    if (!hasCode) {
       void checkSession().then((ok) => finish(ok));
       return () => {
         cancelled = true;
