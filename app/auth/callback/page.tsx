@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { sanitizeAuthCallbackNext } from "@/lib/auth/auth-callback-next";
 import { SHOP_PREVIEW_PATH } from "@/lib/shop-base-path";
-import { getSupabaseBrowser } from "@/lib/supabase/browser";
+import { getSupabaseOAuthCallbackClient } from "@/lib/supabase/auth-callback-client";
 
 function AuthCallbackLoading() {
   return (
@@ -16,7 +16,7 @@ function AuthCallbackLoading() {
   );
 }
 
-const AUTH_CALLBACK_WAIT_MS = 6000;
+const AUTH_CALLBACK_WAIT_MS = 10000;
 
 function clearOAuthHashFromHistory() {
   if (typeof window === "undefined" || !window.location.hash) return;
@@ -29,9 +29,8 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const [failed, setFailed] = useState(false);
   const nextPath = sanitizeAuthCallbackNext(searchParams.get("next"));
-
   useEffect(() => {
-    const client = getSupabaseBrowser();
+    const client = getSupabaseOAuthCallbackClient();
     if (!client) {
       setFailed(true);
       return;
@@ -54,6 +53,12 @@ function AuthCallbackContent() {
     const params = new URLSearchParams(window.location.search);
     const hasCode = params.has("code");
     const hasHash = /access_token=|refresh_token=|error=/i.test(window.location.hash);
+    const oauthError = params.get("error_description") ?? params.get("error");
+
+    if (oauthError) {
+      setFailed(true);
+      return;
+    }
 
     const checkSession = () =>
       client.auth.getSession().then(({ data }) => Boolean(data.session));
@@ -66,7 +71,9 @@ function AuthCallbackContent() {
     }
 
     const { data: sub } = client.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) finish(true);
+      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        finish(true);
+      }
     });
 
     void checkSession().then((ok) => {
