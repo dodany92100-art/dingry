@@ -26,7 +26,7 @@ export function stockPatchAfterShort(current: AdminOrder): Partial<AdminOrder> {
     stockApplied: false,
     reviewReasons: mergeReviewReasons(current.reviewReasons, "stock"),
   };
-  if (current.status === "En attente") {
+  if (current.status === "Payée" || current.status === "En préparation") {
     return { ...stockFlags, status: "À vérifier" as const };
   }
   if (current.status === "À vérifier") {

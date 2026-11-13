@@ -133,9 +133,10 @@ function siteOrigin(): string {
 
 export async function createPayPalOrder(
   quote: CheckoutQuote,
+  options?: { returnOrigin?: string },
 ): Promise<{ orderId: string; approvalUrl: string } | null> {
   const value = formatCents(quote.totalCents);
-  const origin = siteOrigin();
+  const origin = options?.returnOrigin?.trim() || siteOrigin();
   const result = await paypalFetch("/v2/checkout/orders", {
     method: "POST",
     body: JSON.stringify({
@@ -200,20 +201,79 @@ function formatAddress(unit: PaypalPurchaseUnit | undefined): string {
     .slice(0, 280);
 }
 
+function paypalAmountCents(amount: PaypalAmount | undefined): number | null {
+  const code = amount?.currency_code?.trim().toUpperCase();
+  if (code !== "EUR") return null;
+  return parsePaypalCents(amount?.value);
+}
+
 function amountMatches(amount: PaypalAmount | undefined, quote: CheckoutQuote): boolean {
-  return amount?.currency_code === quote.currency && parsePaypalCents(amount.value) === quote.totalCents;
+  return paypalAmountCents(amount) === quote.totalCents;
+}
+
+export function readPayPalAmountDebug(order: PaypalOrder): {
+  unitCents: number | null;
+  captureCents: number | null;
+  customId: string | null;
+  status: string | null;
+} {
+  const unit = order.purchase_units?.[0];
+  const capture = unit?.payments?.captures?.[0];
+  return {
+    unitCents: paypalAmountCents(unit?.amount),
+    captureCents: paypalAmountCents(capture?.amount),
+    customId: unit?.custom_id?.trim() || null,
+    status: order.status ?? null,
+  };
+}
+
+/** PayPal omet parfois `custom_id` au GET — le brouillon Redis reste indexé par `orderId`. */
+function customIdMatches(unit: PaypalPurchaseUnit, quote: CheckoutQuote): boolean {
+  const customId = unit.custom_id?.trim() ?? "";
+  if (!customId) return true;
+  return customId === quote.digest;
+}
+
+export type PayPalQuoteVerifyIssue =
+  | "ok"
+  | "status"
+  | "units"
+  | "digest"
+  | "amount_unit"
+  | "capture_missing"
+  | "capture_status"
+  | "amount_capture";
+
+export function diagnosePayPalQuoteMismatch(
+  order: PaypalOrder,
+  quote: CheckoutQuote,
+  expectedStatus: "APPROVED" | "COMPLETED",
+): PayPalQuoteVerifyIssue {
+  if (order.status !== expectedStatus) return "status";
+  const unit = order.purchase_units?.[0];
+  if (!unit || order.purchase_units?.length !== 1) return "units";
+  if (!customIdMatches(unit, quote)) return "digest";
+
+  if (expectedStatus === "APPROVED") {
+    if (!amountMatches(unit.amount, quote)) return "amount_unit";
+    return "ok";
+  }
+
+  const capture = unit.payments?.captures?.[0];
+  if (!capture?.id) return "capture_missing";
+  if (capture.status !== "COMPLETED") return "capture_status";
+  if (!amountMatches(capture.amount, quote)) return "amount_capture";
+  return "ok";
 }
 
 export function readVerifiedPayment(order: PaypalOrder, quote: CheckoutQuote): VerifiedPayPalPayment | null {
-  if (order.status !== "COMPLETED" || !order.id) return null;
+  if (diagnosePayPalQuoteMismatch(order, quote, "COMPLETED") !== "ok") return null;
+  if (!order.id) return null;
   const unit = order.purchase_units?.[0];
-  if (!unit || order.purchase_units?.length !== 1) return null;
-  if (unit.custom_id !== quote.digest) return null;
-  if (!amountMatches(unit.amount, quote)) return null;
+  if (!unit) return null;
 
   const capture = unit.payments?.captures?.[0];
-  if (!capture?.id || capture.status !== "COMPLETED") return null;
-  if (!amountMatches(capture.amount, quote)) return null;
+  if (!capture?.id) return null;
 
   const given = order.payer?.name?.given_name?.trim() ?? "";
   const family = order.payer?.name?.surname?.trim() ?? "";
@@ -232,10 +292,7 @@ export function readVerifiedPayment(order: PaypalOrder, quote: CheckoutQuote): V
 }
 
 export function orderReadyToCapture(order: PaypalOrder, quote: CheckoutQuote): boolean {
-  if (order.status !== "APPROVED") return false;
-  const unit = order.purchase_units?.[0];
-  if (!unit || order.purchase_units?.length !== 1) return false;
-  return unit.custom_id === quote.digest && amountMatches(unit.amount, quote);
+  return diagnosePayPalQuoteMismatch(order, quote, "APPROVED") === "ok";
 }
 
 export type PayPalWebhookHeaders = {

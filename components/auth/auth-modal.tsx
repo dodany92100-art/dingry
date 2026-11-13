@@ -8,7 +8,11 @@ import { getAuthCallbackOrigin } from "@/lib/auth/auth-callback-origin";
 import { getSupabaseBrowser, isSupabaseBrowserAuthEnabled } from "@/lib/supabase/browser";
 import { isSupabaseOAuthProviderEnabled } from "@/lib/supabase/oauth-flags";
 import { mapShopAuthError } from "@/lib/auth/map-auth-error";
+import { ShopOrderHistory } from "@/components/molecules/shop-order-history";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "@/components/organisms/shop/motion";
+import { useShopOrders } from "@/hooks/use-shop-orders";
+import { isFulfillmentOwnerClient } from "@/lib/shop/fulfillment-owner-client";
+import Link from "next/link";
 
 type AuthModalProps = {
   open: boolean;
@@ -18,6 +22,7 @@ type AuthModalProps = {
   reason?: string;
   /** Session boutique — affiche « Mon compte » au lieu du formulaire login. */
   accountUser?: { email: string | undefined } | null;
+  accessToken?: string | null;
   onSignOut?: () => Promise<void>;
 };
 
@@ -39,7 +44,15 @@ function SocialMark({ children }: { children: ReactNode }) {
   );
 }
 
-export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser, onSignOut }: AuthModalProps) {
+export function AuthModal({
+  open,
+  onClose,
+  onAuthenticated,
+  reason,
+  accountUser,
+  accessToken,
+  onSignOut,
+}: AuthModalProps) {
   const configured = isSupabaseBrowserAuthEnabled();
   const googleOAuth = isSupabaseOAuthProviderEnabled("google");
   const showSocial = googleOAuth;
@@ -49,6 +62,8 @@ export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser,
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState<"google" | "password" | "magic" | "signup" | "signout" | null>(null);
   const isAccountView = Boolean(accountUser?.email);
+  const shopOrders = useShopOrders(accessToken, open && isAccountView);
+  const showFulfillmentLink = isAccountView && isFulfillmentOwnerClient(accountUser?.email);
   const [error, setError] = useState<string | null>(null);
   const [magicSent, setMagicSent] = useState(false);
 
@@ -208,16 +223,31 @@ export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser,
             role="dialog"
             aria-modal="true"
             aria-labelledby="dingry-auth-title"
-            className="relative z-10 flex h-full w-full max-w-md flex-col border-l border-white/[0.08] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.5)]"
+            className="dingry-auth-drawer relative z-10 flex h-full w-full max-w-md flex-col border-l border-white/[0.08] bg-[#0a0a0a] text-white shadow-[-24px_0_80px_rgba(0,0,0,0.5)]"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={DRAWER_PANEL_SPRING}
           >
             <div className="dingry-gold-rule-bottom flex items-start justify-between gap-4 p-8">
-              <div>
-                <p className="text-[10px] tracking-[0.32em] text-white/35 uppercase">Espace client</p>
-                <h2 id="dingry-auth-title" className="mt-2 text-sm font-bold tracking-[0.28em] uppercase">
+              <div className={isAccountView ? "dingry-auth-account" : undefined}>
+                <p
+                  className={
+                    isAccountView
+                      ? "dingry-auth-account-eyebrow"
+                      : "text-[10px] tracking-[0.32em] text-white/35 uppercase"
+                  }
+                >
+                  Espace client
+                </p>
+                <h2
+                  id="dingry-auth-title"
+                  className={
+                    isAccountView
+                      ? "dingry-auth-account-title mt-2"
+                      : "mt-2 text-sm font-bold tracking-[0.28em] uppercase"
+                  }
+                >
                   {isAccountView ? "Mon compte" : "Connexion"}
                 </h2>
                 {reason ? (
@@ -242,14 +272,32 @@ export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser,
                   <span className="text-white/80">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> pour activer la connexion.
                 </p>
               ) : isAccountView ? (
-                <div className="space-y-6">
+                <div className="dingry-auth-account space-y-6">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                    <p className="text-[10px] tracking-[0.24em] text-white/40 uppercase">Connecté en tant que</p>
-                    <p className="mt-2 break-all text-sm text-white">{accountUser?.email}</p>
+                    <p className="dingry-auth-account-eyebrow">Connecté en tant que</p>
+                    <p className="dingry-auth-account-email mt-2 break-all">{accountUser?.email}</p>
                   </div>
-                  <p className="text-[11px] leading-relaxed text-white/45">
-                    Votre sélection et votre expérience sont liées à ce compte sur cet appareil.
+                  <p className="dingry-auth-account-body">
+                    Vos achats PayPal invités sont rattachés à cet e-mail : reconnectez-vous pour retrouver vos
+                    commandes.
                   </p>
+                  {showFulfillmentLink ? (
+                    <Link
+                      href="/fulfillment"
+                      onClick={onClose}
+                      className="inline-flex rounded-full border border-white/20 px-4 py-2 text-[10px] tracking-[0.18em] text-white/80 uppercase transition-colors hover:bg-white/[0.06]"
+                    >
+                      Gérer les expéditions
+                    </Link>
+                  ) : null}
+                  <div>
+                    <p className="dingry-auth-account-eyebrow mb-3">Mes commandes</p>
+                    <ShopOrderHistory
+                      orders={shopOrders.orders}
+                      loading={shopOrders.loading}
+                      error={shopOrders.error}
+                    />
+                  </div>
                   {onSignOut ? (
                     <button
                       type="button"

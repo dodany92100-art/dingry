@@ -1,0 +1,34 @@
+# DINGRY — fichiers protégés (agent Cursor)
+
+Sauf **demande explicite** de l'utilisateur, ne pas modifier les zones ci-dessous. Lecture et diagnostic autorisés. Aucun refactor ni correctif « opportuniste » sur ces chemins.
+
+## Authentification Supabase (boutique)
+
+- `components/auth/auth-modal.tsx`
+- Tout le dossier `lib/supabase/**` (dont `oauth-flags.ts`, client navigateur)
+
+## Connexion Google (OAuth Supabase + callback)
+
+- `app/auth/callback/**`
+- `lib/auth/auth-callback-oauth.ts`, `lib/auth/auth-callback-origin.ts`, `lib/auth/auth-callback-next.ts`
+- `lib/auth/scrub-public-oauth-query.ts`, `lib/auth/map-auth-error.ts`
+- `scripts/enable-supabase-google-oauth.mjs`
+- `hooks/use-shop-auth.ts`
+
+## Compte client, invité, rattachement commandes
+
+- Tout le dossier `lib/shop/**`
+- `app/api/shop/orders/**`
+- `app/api/shop/fulfillment/**`
+
+## Tunnel PayPal (paiement → enregistrement commande)
+
+- `lib/paypal-server.ts`, `lib/paypal-persist.ts`, `lib/paypal-draft.ts`, `lib/paypal-return-origin.ts`
+- `app/api/checkout/route.ts`
+- `app/checkout/**`
+- `app/api/paypal/**`
+- `hooks/use-shop-orders.ts`, `hooks/use-fulfillment-orders.ts`
+
+## Déblocage
+
+Modifier ces fichiers **uniquement** si la requête utilisateur le nomme clairement (ex. « modifie auth-modal », « Google OAuth », « corrige capture PayPal »), avec un diff minimal.

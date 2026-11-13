@@ -52,16 +52,23 @@ describe("readVerifiedPayment", () => {
     expect(payment?.totalCents).toBe(5000);
   });
 
-  it("rejette custom_id absent", () => {
-    expect(readVerifiedPayment(completedOrder(undefined), quote)).toBeNull();
-  });
-
-  it("rejette custom_id vide", () => {
-    expect(readVerifiedPayment(completedOrder(""), quote)).toBeNull();
+  it("accepte custom_id absent si le montant correspond (GET PayPal)", () => {
+    const payment = readVerifiedPayment(completedOrder(undefined), quote);
+    expect(payment?.orderId).toBe("ORDER-ABC");
   });
 
   it("rejette un digest différent", () => {
     expect(readVerifiedPayment(completedOrder("b".repeat(64)), quote)).toBeNull();
+  });
+
+  it("accepte si seule la capture correspond (unit.amount divergent)", () => {
+    const order = completedOrder(digest);
+    const unit = order.purchase_units?.[0];
+    const capture = unit?.payments?.captures?.[0];
+    if (!unit?.amount || !capture?.amount) throw new Error("fixture PayPal incomplète");
+    unit.amount.value = "49.00";
+    capture.amount.value = "50.00";
+    expect(readVerifiedPayment(order, quote)?.totalCents).toBe(5000);
   });
 
   it("rejette un montant PayPal différent du devis", () => {

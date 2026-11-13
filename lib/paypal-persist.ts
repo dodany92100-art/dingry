@@ -15,6 +15,8 @@ import {
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
 import { stockLinesFromCheckout } from "@/lib/stock";
 import { deferAfter } from "@/lib/defer-after";
+import { customerEmailUsable } from "@/lib/auth/customer-email";
+import { scheduleGuestPayPalAccountLink } from "@/lib/shop/link-guest-order";
 
 export { PAYPAL_ORDER_FINALIZING_MESSAGE };
 
@@ -90,6 +92,11 @@ async function finalizeNewOrder(
   return finalizeStockThenAddressReview(order, payment);
 }
 
+function scheduleGuestLinkOnPaidOrder(order: AdminOrder, payment: VerifiedPayPalPayment): void {
+  if (!customerEmailUsable(payment.email)) return;
+  scheduleGuestPayPalAccountLink(order.id, payment.email, payment.payerName);
+}
+
 export async function persistPayPalPayment(
   payment: VerifiedPayPalPayment,
   quote: CheckoutQuote,
@@ -102,6 +109,7 @@ export async function persistPayPalPayment(
       return { ok: false, status: 409, error: "Cette commande est déjà enregistrée." };
     }
     const order = await returnPaidOrder(existing, quote, payment);
+    scheduleGuestLinkOnPaidOrder(order, payment);
     await clearPayPalPaymentOrphan(payment.orderId);
     return { ok: true, order };
   }
@@ -114,6 +122,7 @@ export async function persistPayPalPayment(
     const again = await findOrder(payment.orderId);
     if (again && orderMatches(again, payment, total)) {
       const order = await returnPaidOrder(again, quote, payment);
+      scheduleGuestLinkOnPaidOrder(order, payment);
       await clearPayPalPaymentOrphan(payment.orderId);
       return { ok: true, order };
     }
@@ -141,7 +150,7 @@ export async function persistPayPalPayment(
     email: payment.email || "—",
     total,
     items: quote.items,
-    status: "En attente",
+    status: "Payée",
     createdAt: new Date().toISOString(),
     source: "paypal",
     stockLines,
@@ -161,6 +170,7 @@ export async function persistPayPalPayment(
           logPayPalPersist("marqueur Redis absent après insert existant", payment.orderId);
         }
         const finalized = await returnPaidOrder(again, quote, payment);
+        scheduleGuestLinkOnPaidOrder(finalized, payment);
         await clearPayPalPaymentOrphan(payment.orderId);
         return { ok: true, order: finalized };
       }
@@ -177,6 +187,7 @@ export async function persistPayPalPayment(
     const base = saved ?? order;
     const finalized = await finalizeNewOrder(base, payment);
     await sendCustomerOrderConfirmationForPersist(finalized, payment, quote);
+    scheduleGuestLinkOnPaidOrder(finalized, payment);
     await clearPayPalPaymentOrphan(payment.orderId);
     return { ok: true, order: finalized };
   } catch (error) {

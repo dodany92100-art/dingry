@@ -1,6 +1,8 @@
 "use client";
 
-import { formatDate, formatPrice, statusClass } from "@/lib/admin/format";
+import { OrderFulfillmentControls } from "@/components/molecules/order-fulfillment-controls";
+import { formatDate, formatPrice } from "@/lib/admin/format";
+import type { OrderStatus } from "@/lib/admin/types";
 import { formatCustomerPhoneDisplay } from "@/lib/checkout-phone";
 import type { AdminOrder } from "@/lib/admin/types";
 import { formatReviewReasons, isShippingAddressMissing, type OrderReviewReason } from "@/lib/order-review";
@@ -11,6 +13,8 @@ type OrdersTabProps = {
   busyOrderId: string | null;
   error: string;
   onCycleStatus: (order: AdminOrder) => void;
+  onSetStatus: (order: AdminOrder, status: OrderStatus) => void;
+  onSaveTracking: (order: AdminOrder, trackingNumber: string) => void;
   onResolveReview: (order: AdminOrder, reason: OrderReviewReason) => void;
 };
 
@@ -31,7 +35,15 @@ function stockLabel(order: AdminOrder): string | null {
   return null;
 }
 
-export function OrdersTab({ orders, busyOrderId, error, onCycleStatus, onResolveReview }: OrdersTabProps) {
+export function OrdersTab({
+  orders,
+  busyOrderId,
+  error,
+  onCycleStatus,
+  onSetStatus,
+  onSaveTracking,
+  onResolveReview,
+}: OrdersTabProps) {
   return (
     <div>
       {error ? <p className="mb-3 text-sm text-red-400">{error}</p> : null}
@@ -62,14 +74,15 @@ export function OrdersTab({ orders, busyOrderId, error, onCycleStatus, onResolve
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">{formatPrice(order.total)}</p>
-                    <button
-                      type="button"
-                      disabled={busyOrderId === order.id}
-                      onClick={() => onCycleStatus(order)}
-                      className={`mt-2 h-9 px-3 text-[11px] uppercase tracking-[0.16em] border ${statusClass(order.status)} disabled:opacity-40`}
-                    >
-                      {order.status}
-                    </button>
+                    <div className="mt-2">
+                      <OrderFulfillmentControls
+                        order={order}
+                        busy={busyOrderId === order.id}
+                        onCycle={() => onCycleStatus(order)}
+                        onSetStatus={(status) => onSetStatus(order, status)}
+                        onSaveTracking={(tracking) => onSaveTracking(order, tracking)}
+                      />
+                    </div>
                     {order.reviewReasons?.length ? (
                       <p className="mt-2 text-[10px] tracking-[0.12em] text-amber-200/80 uppercase">
                         Motif · {formatReviewReasons(order.reviewReasons)}

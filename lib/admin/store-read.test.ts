@@ -38,7 +38,7 @@ describe("readFileStoreSnapshot via withStoreOptimistic", () => {
           email: "t@test.fr",
           total: 35,
           items: ["Tee"],
-          status: "En attente",
+          status: "Payée",
           createdAt: new Date().toISOString(),
           source: "paypal",
         }),

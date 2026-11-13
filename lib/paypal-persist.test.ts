@@ -31,7 +31,7 @@ const legacyOrder = (): AdminOrder => ({
   email: "t@test.com",
   total: 10,
   items: quote.items,
-  status: "En attente",
+  status: "Payée",
   createdAt: new Date().toISOString(),
   source: "paypal",
   stockPending: true,
@@ -52,6 +52,10 @@ vi.mock("@/lib/ops-alert", () => ({
 
 vi.mock("@/lib/order-confirmation-email", () => ({
   sendCustomerOrderConfirmationForPersist: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/shop/link-guest-order", () => ({
+  scheduleGuestPayPalAccountLink: vi.fn(),
 }));
 
 vi.mock("@/lib/ratelimit", () => ({

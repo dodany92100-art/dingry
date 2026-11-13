@@ -29,7 +29,7 @@ const baseOrder = (): AdminOrder => ({
   email: "client@example.com",
   total: 40,
   items: ["DINGRY TEE — M — Paris ×1"],
-  status: "En attente",
+  status: "Payée",
   createdAt: "2026-11-12T10:00:00.000Z",
   source: "paypal",
   shippingName: "Jean Dupont",

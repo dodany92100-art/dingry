@@ -14,7 +14,7 @@ const baseOrder = (overrides: Partial<AdminOrder> = {}): AdminOrder => ({
   email: "t@test.com",
   total: 10,
   items: [],
-  status: "En attente",
+  status: "Payée",
   createdAt: new Date().toISOString(),
   source: "paypal",
   ...overrides,
@@ -28,7 +28,7 @@ describe("mergeReviewReasons", () => {
 });
 
 describe("patchForReviewReason", () => {
-  it("depuis En attente", () => {
+  it("depuis Payée", () => {
     expect(patchForReviewReason(baseOrder(), "adresse")).toEqual({
       status: "À vérifier",
       reviewReasons: ["adresse"],
@@ -42,7 +42,7 @@ describe("patchForReviewReason", () => {
   });
 
   it("depuis Expédié ne rétrograde pas", () => {
-    expect(patchForReviewReason(baseOrder({ status: "Expédié" }), "stock")).toEqual({
+    expect(patchForReviewReason(baseOrder({ status: "Expédiée" }), "stock")).toEqual({
       reviewReasons: ["stock"],
     });
   });
@@ -81,7 +81,7 @@ describe("resolveReviewReason", () => {
     ).toEqual({});
   });
 
-  it("passe en En attente quand le dernier motif est levé", () => {
+  it("passe en Payée quand le dernier motif est levé", () => {
     expect(
       resolveReviewReason(
         baseOrder({
@@ -92,6 +92,6 @@ describe("resolveReviewReason", () => {
         }),
         "adresse",
       ),
-    ).toEqual({ reviewReasons: undefined, status: "En attente" });
+    ).toEqual({ reviewReasons: undefined, status: "Payée" });
   });
 });

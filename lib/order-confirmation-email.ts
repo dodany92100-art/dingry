@@ -1,3 +1,4 @@
+import { customerEmailUsable } from "@/lib/auth/customer-email";
 import { loadStoreReadOnly } from "@/lib/admin/store";
 import type { AdminOrder } from "@/lib/admin/types";
 import { loadPersonalizationProductIds } from "@/lib/atelier-custom-server";
@@ -47,11 +48,6 @@ function formatOrderDate(iso: string): string {
       timeZone: "Europe/Paris",
     }).format(date),
   );
-}
-
-function customerEmailUsable(email: string | undefined): email is string {
-  const trimmed = email?.trim() ?? "";
-  return trimmed.length > 0 && trimmed !== "—" && trimmed.includes("@");
 }
 
 export type OrderConfirmationLineDetailed = {

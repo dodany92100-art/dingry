@@ -21,9 +21,9 @@ function order(partial: Partial<AdminOrder> & Pick<AdminOrder, "id" | "status">)
 describe("selectPaypalOrders", () => {
   it("ignore demo et trie statut puis date", () => {
     const list = selectPaypalOrders([
-      order({ id: "a", status: "Livré", createdAt: "2026-11-02T12:00:00.000Z" }),
-      order({ id: "b", status: "En attente", createdAt: "2026-11-01T12:00:00.000Z" }),
-      order({ id: "c", status: "En attente", createdAt: "2026-11-03T12:00:00.000Z" }),
+      order({ id: "a", status: "Livrée", createdAt: "2026-11-02T12:00:00.000Z" }),
+      order({ id: "b", status: "Payée", createdAt: "2026-11-01T12:00:00.000Z" }),
+      order({ id: "c", status: "Payée", createdAt: "2026-11-03T12:00:00.000Z" }),
       order({ id: "d", status: "À vérifier", createdAt: "2026-11-04T12:00:00.000Z" }),
     ]);
     expect(list.map((o) => o.id)).toEqual(["d", "c", "b", "a"]);
@@ -31,20 +31,21 @@ describe("selectPaypalOrders", () => {
 
   it("exclut les commandes demo", () => {
     const list = selectPaypalOrders([
-      order({ id: "demo-1", status: "En attente", source: "demo" }),
-      order({ id: "pp-1", status: "En attente" }),
+      order({ id: "demo-1", status: "Payée", source: "demo" }),
+      order({ id: "pp-1", status: "Payée" }),
     ]);
     expect(list.map((o) => o.id)).toEqual(["pp-1"]);
   });
 });
 
 describe("countPendingShipments", () => {
-  it("compte En attente uniquement", () => {
+  it("compte Payée et En préparation", () => {
     const paypal = selectPaypalOrders([
-      order({ id: "1", status: "En attente" }),
-      order({ id: "2", status: "Expédié" }),
+      order({ id: "1", status: "Payée" }),
+      order({ id: "2", status: "En préparation" }),
+      order({ id: "3", status: "Expédiée" }),
     ]);
-    expect(countPendingShipments(paypal)).toBe(1);
+    expect(countPendingShipments(paypal)).toBe(2);
   });
 });
 
@@ -52,8 +53,8 @@ describe("countStockPending", () => {
   it("stockPending sans stockApplied", () => {
     expect(
       countStockPending([
-        order({ id: "1", status: "En attente", stockPending: true, stockApplied: false }),
-        order({ id: "2", status: "En attente", stockPending: true, stockApplied: true }),
+        order({ id: "1", status: "Payée", stockPending: true, stockApplied: false }),
+        order({ id: "2", status: "Payée", stockPending: true, stockApplied: true }),
       ]),
     ).toBe(1);
   });

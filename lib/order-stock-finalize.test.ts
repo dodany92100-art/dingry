@@ -13,7 +13,7 @@ const baseOrder = (overrides: Partial<AdminOrder> = {}): AdminOrder => ({
   email: "t@test.com",
   total: 10,
   items: [],
-  status: "En attente",
+  status: "Payée",
   createdAt: new Date().toISOString(),
   source: "paypal",
   stockLines: [{ productId: 11, qty: 1 }],
@@ -28,7 +28,7 @@ describe("stockPatchAfterApply", () => {
   });
 
   it("ne modifie pas le statut", () => {
-    expect(stockPatchAfterApply(baseOrder({ status: "Expédié" }))).toEqual({
+    expect(stockPatchAfterApply(baseOrder({ status: "Expédiée" }))).toEqual({
       stockPending: false,
       stockApplied: true,
     });
@@ -36,7 +36,7 @@ describe("stockPatchAfterApply", () => {
 });
 
 describe("stockPatchAfterShort", () => {
-  it("marque terminal À vérifier depuis En attente", () => {
+  it("marque terminal À vérifier depuis Payée", () => {
     expect(stockPatchAfterShort(baseOrder())).toEqual({
       stockPending: false,
       stockApplied: false,
@@ -56,7 +56,7 @@ describe("stockPatchAfterShort", () => {
   });
 
   it("ne rétrograde pas un statut déjà avancé par l’admin", () => {
-    expect(stockPatchAfterShort(baseOrder({ status: "Expédié" }))).toEqual({
+    expect(stockPatchAfterShort(baseOrder({ status: "Expédiée" }))).toEqual({
       stockPending: false,
       stockApplied: false,
     });

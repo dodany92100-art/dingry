@@ -39,9 +39,15 @@ export function formatCents(cents: number): string {
 }
 
 export function parsePaypalCents(value: unknown): number | null {
-  if (typeof value !== "string" || !/^\d+\.\d{2}$/.test(value)) return null;
-  const [euros, fraction] = value.split(".");
-  const cents = Number(euros) * 100 + Number(fraction);
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return null;
+  const [eurosRaw, fractionRaw = ""] = trimmed.split(".");
+  const euros = Number(eurosRaw);
+  if (!Number.isFinite(euros) || euros < 0) return null;
+  const fraction = fractionRaw.padEnd(2, "0").slice(0, 2);
+  if (!/^\d{1,2}$/.test(fraction)) return null;
+  const cents = euros * 100 + Number(fraction);
   return Number.isSafeInteger(cents) ? cents : null;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { AdminOrder } from "@/lib/admin/types";
+import type { AdminOrder, OrderStatus } from "@/lib/admin/types";
 import type { OrderReviewReason } from "@/lib/order-review";
 import type { LoadResult } from "./use-admin-products";
 
@@ -64,6 +64,56 @@ export function useAdminOrders({ onUnauthorized }: Options) {
     [onUnauthorized],
   );
 
+  const patchOrderFields = useCallback(
+    async (order: AdminOrder, body: Record<string, unknown>) => {
+      setOrderError("");
+      setBusyOrderId(order.id);
+      try {
+        const response = await fetch(`/api/admin/orders/${order.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (response.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        const data = (await response.json().catch(() => ({}))) as {
+          order?: AdminOrder;
+          error?: string;
+        };
+        const updated = data.order;
+        if (response.ok && updated) {
+          setOrders((current) => current.map((item) => (item.id === order.id ? updated : item)));
+        } else {
+          setOrderError(data.error || "Mise à jour impossible.");
+        }
+      } catch {
+        setOrderError("Mise à jour impossible.");
+      } finally {
+        setBusyOrderId(null);
+      }
+    },
+    [onUnauthorized],
+  );
+
+  const setStatus = useCallback(
+    async (order: AdminOrder, status: OrderStatus) => {
+      await patchOrderFields(order, { status });
+    },
+    [patchOrderFields],
+  );
+
+  const saveTracking = useCallback(
+    async (order: AdminOrder, trackingNumber: string) => {
+      await patchOrderFields(
+        order,
+        trackingNumber ? { trackingNumber } : { clearTracking: true },
+      );
+    },
+    [patchOrderFields],
+  );
+
   const resolveReview = useCallback(
     async (order: AdminOrder, reason: OrderReviewReason) => {
       setOrderError("");
@@ -97,5 +147,5 @@ export function useAdminOrders({ onUnauthorized }: Options) {
     [onUnauthorized],
   );
 
-  return { orders, busyOrderId, orderError, load, reset, cycleStatus, resolveReview };
+  return { orders, busyOrderId, orderError, load, reset, cycleStatus, setStatus, saveTracking, resolveReview };
 }

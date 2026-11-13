@@ -103,6 +103,7 @@ import {
   normalizeDisplayOrder,
   normalizeIsPinned,
 } from "@/lib/admin/product-display-order";
+import { normalizeAdminOrder } from "@/lib/admin/order-status";
 import { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
 import {
   CRM_CONTENT_IMAGE_MAX_BYTES,
@@ -738,11 +739,15 @@ function migrateStore(raw: AdminStore): AdminStore {
   };
 }
 
+function normalizeStoreOrders(orders: AdminOrder[]): AdminOrder[] {
+  return orders.map((order) => normalizeAdminOrder(order));
+}
+
 function normalizeStore(value: AdminStore): AdminStore {
   return migrateStore({
     version: typeof value.version === "number" ? value.version : 0,
     products: Array.isArray(value.products) ? value.products : [],
-    orders: Array.isArray(value.orders) ? value.orders : [],
+    orders: normalizeStoreOrders(Array.isArray(value.orders) ? value.orders : []),
     lookbook: Array.isArray(value.lookbook) ? value.lookbook : [],
     removedCatalogIds: Array.isArray(value.removedCatalogIds) ? value.removedCatalogIds : [],
     removedLookbookSlideIds: Array.isArray(value.removedLookbookSlideIds)

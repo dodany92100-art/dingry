@@ -588,6 +588,8 @@ function AdminDashboard() {
             busyOrderId={ordersApi.busyOrderId}
             error={ordersApi.orderError}
             onCycleStatus={(order) => void ordersApi.cycleStatus(order)}
+            onSetStatus={(order, status) => void ordersApi.setStatus(order, status)}
+            onSaveTracking={(order, tracking) => void ordersApi.saveTracking(order, tracking)}
             onResolveReview={(order, reason) => void ordersApi.resolveReview(order, reason)}
           />
         ) : (

@@ -2930,6 +2930,67 @@ html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border
   color: #6b7280;
 }
 
+/** Tiroir auth — toujours sombre (catalogue clair ne doit pas éclaircir le panneau). */
+.dingry-auth-drawer {
+  color-scheme: dark;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-auth-drawer {
+  background-color: #0a0a0a !important;
+  border-color: rgb(255 255 255 / 0.12) !important;
+  color: rgb(255 255 255 / 0.92);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-auth-drawer [class*="text-white"] {
+  color: inherit;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-auth-drawer .text-white\/40 {
+  color: rgb(255 255 255 / 0.45) !important;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-auth-drawer .text-white\/45 {
+  color: rgb(255 255 255 / 0.55) !important;
+}
+
+/** Tiroir compte client — titres & historique en Anton. */
+.dingry-auth-account {
+  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dingry-auth-account .dingry-auth-account-title {
+  font-size: clamp(1.35rem, 4vw, 1.65rem);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 0.96);
+}
+
+.dingry-auth-account .dingry-auth-account-eyebrow {
+  font-size: 0.625rem;
+  letter-spacing: 0.28em;
+  color: rgb(255 255 255 / 0.58);
+}
+
+.dingry-auth-account .dingry-auth-account-body {
+  font-size: 0.72rem;
+  line-height: 1.55;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.72);
+}
+
+.dingry-auth-account .dingry-auth-account-email {
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  text-transform: lowercase;
+  color: rgb(255 255 255 / 0.96);
+}
+
 .dingry-footer-classic {
   font-family: var(--font-anton), "Arial Narrow", sans-serif;
   font-weight: 400;

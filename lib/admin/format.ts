@@ -25,7 +25,8 @@ export function formatDate(value: string): string {
 
 export function statusClass(status: OrderStatus): string {
   if (status === "À vérifier") return "border-amber-500/40 bg-amber-500/10 text-amber-200";
-  if (status === "Expédié") return "border-[#FF3D00]/40 bg-[#FF3D00]/15 text-[#ff8a4d]";
-  if (status === "Livré") return "border-white/20 bg-white/10 text-white";
+  if (status === "Expédiée") return "border-[#FF3D00]/40 bg-[#FF3D00]/15 text-[#ff8a4d]";
+  if (status === "Livrée") return "border-white/20 bg-white/10 text-white";
+  if (status === "En préparation") return "border-sky-500/35 bg-sky-500/10 text-sky-200";
   return "border-white/10 bg-white/[0.04] text-white/55";
 }

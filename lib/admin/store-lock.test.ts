@@ -26,7 +26,7 @@ function order() {
     email: "a@b.fr",
     total: 10,
     items: [],
-    status: "En attente" as const,
+    status: "Payée" as const,
     createdAt: new Date().toISOString(),
     source: "paypal" as const,
   };
@@ -65,7 +65,7 @@ describe("verrou Redis store", () => {
     "prend et libère dingry:store-lock autour de l’écriture",
     async () => {
       const { patchOrder } = await import("@/lib/admin/store");
-      await patchOrder("ORD-1", () => ({ status: "Expédié" }));
+      await patchOrder("ORD-1", () => ({ status: "Expédiée" }));
       expect(redisSet).toHaveBeenCalledWith(
         "dingry:store-lock",
         expect.any(String),
@@ -82,7 +82,7 @@ describe("verrou Redis store", () => {
     async () => {
       redisSet.mockResolvedValue(null);
       const { patchOrder, StoreConflictError } = await import("@/lib/admin/store");
-      await expect(patchOrder("ORD-1", () => ({ status: "Expédié" }))).rejects.toBeInstanceOf(
+      await expect(patchOrder("ORD-1", () => ({ status: "Expédiée" }))).rejects.toBeInstanceOf(
         StoreConflictError,
       );
       expect(writeMock).not.toHaveBeenCalled();

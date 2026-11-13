@@ -29,6 +29,7 @@ function CheckoutSuccessInner() {
   const retryTimerRef = useRef<number | null>(null);
   const [confirmation, setConfirmation] = useState<CheckoutConfirmation | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [saving, setSaving] = useState(true);
 
   const orderId = (searchParams.get("token") ?? "").trim();
@@ -65,6 +66,7 @@ function CheckoutSuccessInner() {
         });
         const payload = (await response.json().catch(() => null)) as {
           error?: string;
+          code?: string;
           order?: CheckoutConfirmation;
         } | null;
         const retryAfterHeader = Number(response.headers.get("Retry-After") ?? "0");
@@ -106,7 +108,18 @@ function CheckoutSuccessInner() {
         if (response.status !== 400 && response.status !== 409) {
           savePendingCheckoutOrder(orderId);
         }
-        setError(payload?.error ?? "La commande n'a pas pu être enregistrée.");
+        const serverError = payload?.error ?? "La commande n'a pas pu être enregistrée.";
+        const code = payload?.code ?? null;
+        const mismatch = code === "CHK-09";
+        setErrorCode(code);
+        setError(
+          mismatch
+            ? formatClientCheckoutError(
+                "Le montant PayPal ne correspond pas au panier enregistré. Ne repayez pas : si PayPal vous a débité, contactez-nous avec la référence ci-dessous.",
+                code ?? undefined,
+              )
+            : formatClientCheckoutError(serverError, code ?? undefined),
+        );
         setSaving(false);
       } catch {
         savePendingCheckoutOrder(orderId);
@@ -180,12 +193,21 @@ function CheckoutSuccessInner() {
               {isPayPalOrderId(orderId) ? (
                 <p className="mt-4 text-[10px] tracking-[0.22em] text-[#9ca3af] uppercase">Réf. {orderId}</p>
               ) : null}
-              <Link
-                href="/checkout"
-                className="dingry-checkout-pay-secondary mt-8 block w-full border py-4 text-center text-[11px] font-medium tracking-[0.28em] uppercase"
-              >
-                Retour au paiement
-              </Link>
+              {errorCode !== "CHK-09" ? (
+                <Link
+                  href="/checkout"
+                  className="dingry-checkout-pay-secondary mt-8 block w-full border py-4 text-center text-[11px] font-medium tracking-[0.28em] uppercase"
+                >
+                  Retour au paiement
+                </Link>
+              ) : (
+                <Link
+                  href="/"
+                  className="dingry-checkout-pay-secondary mt-8 block w-full border py-4 text-center text-[11px] font-medium tracking-[0.28em] uppercase"
+                >
+                  Retour à la boutique
+                </Link>
+              )}
             </>
           )}
         </section>

@@ -30,13 +30,13 @@ export function patchForReviewReason(
   if (current.status === "À vérifier") {
     return { reviewReasons };
   }
-  if (current.status === "En attente") {
+  if (current.status === "Payée" || current.status === "En préparation") {
     return { status: "À vérifier", reviewReasons };
   }
   return { reviewReasons };
 }
 
-/** Retire un motif ; si plus aucun motif et statut « À vérifier », repasse en « En attente ». */
+/** Retire un motif ; si plus aucun motif et statut « À vérifier », repasse en « Payée ». */
 export function resolveReviewReason(
   current: AdminOrder,
   reason: OrderReviewReason,
@@ -57,7 +57,7 @@ export function resolveReviewReason(
       ? ORDER_REVIEW_REASONS.filter((item) => remaining.includes(item))
       : undefined;
   if (current.status === "À vérifier" && remaining.length === 0) {
-    return { reviewReasons: undefined, status: "En attente" };
+    return { reviewReasons: undefined, status: "Payée" };
   }
   return { reviewReasons };
 }

@@ -21,7 +21,7 @@ function order(id: string) {
     email: "c@test.fr",
     total: 42,
     items: ["Article"],
-    status: "En attente" as const,
+    status: "Payée" as const,
     createdAt: new Date().toISOString(),
     source: "paypal" as const,
   };
@@ -64,8 +64,8 @@ describe("withStoreOptimistic concurrence fichier (prod)", () => {
 
       const { patchOrder } = await import("@/lib/admin/store");
       await Promise.all([
-        patchOrder("ORD-1", () => ({ status: "Expédié" })),
-        patchOrder("ORD-2", () => ({ status: "Expédié" })),
+        patchOrder("ORD-1", () => ({ status: "Expédiée" })),
+        patchOrder("ORD-2", () => ({ status: "Expédiée" })),
       ]);
 
       expect(writeMock).toHaveBeenCalledTimes(2);
@@ -86,7 +86,7 @@ describe("withStoreOptimistic concurrence fichier (prod)", () => {
     });
     writeMock.mockRejectedValueOnce(new StoreConflictError()).mockResolvedValueOnce(undefined);
 
-    await expect(patchOrder("ORD-1", () => ({ status: "Expédié" }))).resolves.toEqual(
+    await expect(patchOrder("ORD-1", () => ({ status: "Expédiée" }))).resolves.toEqual(
       expect.objectContaining({ changed: true }),
     );
     expect(writeMock).toHaveBeenCalledTimes(2);
@@ -99,7 +99,7 @@ describe("withStoreOptimistic concurrence fichier (prod)", () => {
     readMock.mockImplementation(async () => storeSnapshot([order("ORD-1")], "etag-stuck"));
     writeMock.mockRejectedValue(new StoreConflictError());
 
-    await expect(patchOrder("ORD-1", () => ({ status: "Expédié" }))).rejects.toBeInstanceOf(StoreConflictError);
+    await expect(patchOrder("ORD-1", () => ({ status: "Expédiée" }))).rejects.toBeInstanceOf(StoreConflictError);
     expect(writeMock.mock.calls.length).toBeGreaterThanOrEqual(8);
   }, 20_000);
 });

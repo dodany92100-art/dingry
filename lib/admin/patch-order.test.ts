@@ -9,7 +9,7 @@ const sampleOrder = (overrides: Partial<AdminOrder> = {}): AdminOrder => ({
   email: "a@b.c",
   total: 1,
   items: [],
-  status: "En attente",
+  status: "Payée",
   createdAt: "2026-01-01T00:00:00.000Z",
   source: "paypal",
   stockPending: true,
@@ -39,7 +39,7 @@ describe("orderPatchHasChanges", () => {
 
 describe("stockPatchAfterShort + alerte", () => {
   it("rupture sur commande Expédiée produit un patch qui change le store", () => {
-    const current = sampleOrder({ status: "Expédié" });
+    const current = sampleOrder({ status: "Expédiée" });
     const patch = stockPatchAfterShort(current);
     expect(orderPatchHasChanges(current, patch)).toBe(true);
     expect(patch.status).toBeUndefined();

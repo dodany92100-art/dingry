@@ -11,10 +11,13 @@ import {
   capturePayPalOrder,
   createPayPalOrder,
   fetchPayPalOrder,
+  diagnosePayPalQuoteMismatch,
   orderReadyToCapture,
   paypalConfigured,
+  readPayPalAmountDebug,
   readVerifiedPayment,
 } from "@/lib/paypal-server";
+import { payPalReturnOrigin } from "@/lib/paypal-return-origin";
 import { limitCheckoutEntry, limitCheckoutPayment, limitCheckoutQuote } from "@/lib/ratelimit";
 import { clientIp } from "@/lib/request-ip";
 import { jsonNoStore } from "@/lib/http";
@@ -180,11 +183,22 @@ export async function POST(request: Request) {
       const lookedUp = fetched.order;
       const ready = orderReadyToCapture(lookedUp, quote);
       if (!ready && lookedUp.status !== "COMPLETED") {
+        const issue = diagnosePayPalQuoteMismatch(lookedUp, quote, "APPROVED");
+        const amounts = readPayPalAmountDebug(lookedUp);
         return checkoutErrorResponse(
           CHECKOUT_CODES.AMOUNT_MISMATCH,
           "Le montant PayPal ne correspond pas à la commande.",
           400,
-          { log: { intent: "capture", orderId } },
+          {
+            log: {
+              intent: "capture",
+              orderId,
+              issue,
+              draftCents: quote.totalCents,
+              paypalUnitCents: amounts.unitCents ?? undefined,
+              paypalCaptureCents: amounts.captureCents ?? undefined,
+            },
+          },
         );
       }
 
@@ -214,11 +228,23 @@ export async function POST(request: Request) {
 
       const payment = readVerifiedPayment(paypalOrder, quote);
       if (!payment || payment.orderId !== orderId) {
+        const issue = diagnosePayPalQuoteMismatch(paypalOrder, quote, "COMPLETED");
+        const amounts = readPayPalAmountDebug(paypalOrder);
         return checkoutErrorResponse(
           CHECKOUT_CODES.AMOUNT_MISMATCH,
           "Le montant PayPal ne correspond pas à la commande.",
           400,
-          { log: { intent: "capture", orderId } },
+          {
+            log: {
+              intent: "capture",
+              orderId,
+              issue,
+              draftCents: quote.totalCents,
+              paypalUnitCents: amounts.unitCents ?? undefined,
+              paypalCaptureCents: amounts.captureCents ?? undefined,
+              paypalCustomId: amounts.customId ?? undefined,
+            },
+          },
         );
       }
 
@@ -308,7 +334,8 @@ export async function POST(request: Request) {
     }
     const quoteForPay = { ...quote, customerPhone };
     try {
-      const created = await createPayPalOrder(quoteForPay);
+      const returnOrigin = payPalReturnOrigin(request);
+      const created = await createPayPalOrder(quoteForPay, { returnOrigin });
       if (!created || !isPayPalOrderId(created.orderId)) {
         return checkoutErrorResponse(
           CHECKOUT_CODES.PAYPAL_API,

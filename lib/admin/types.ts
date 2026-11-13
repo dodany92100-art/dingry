@@ -25,10 +25,15 @@ export type PantWaistSize = (typeof PANT_WAIST_PRESET_SIZES)[number];
 /** Tailles catalogue : lettres + tours pantalon (presets ou personnalisés validés). */
 export type ProductSize = (typeof PRODUCT_SIZES)[number] | string;
 
-export type OrderStatus = "En attente" | "Expédié" | "Livré" | "À vérifier";
+export type OrderStatus = "Payée" | "En préparation" | "Expédiée" | "Livrée" | "À vérifier";
 
 /** Chaîne du bouton « avancer le statut » (sans « À vérifier »). */
-export const FULFILLMENT_STATUSES: OrderStatus[] = ["En attente", "Expédié", "Livré"];
+export const FULFILLMENT_STATUSES: OrderStatus[] = [
+  "Payée",
+  "En préparation",
+  "Expédiée",
+  "Livrée",
+];
 
 export const ORDER_STATUSES: OrderStatus[] = [...FULFILLMENT_STATUSES, "À vérifier"];
 
@@ -251,6 +256,10 @@ export type AdminOrder = {
   stockApplied?: boolean;
   /** Motifs du statut « À vérifier » (cumulables). */
   reviewReasons?: ("stock" | "adresse")[];
+  /** Compte Supabase créé ou existant (achat invité PayPal). */
+  supabaseUserId?: string;
+  /** Numéro de suivi transporteur (optionnel). */
+  trackingNumber?: string;
 };
 
 export type AdminLookbookSlide = {
@@ -350,14 +359,7 @@ export function isOrderStatus(value: string): value is OrderStatus {
   return (ORDER_STATUSES as readonly string[]).includes(value);
 }
 
-export function nextOrderStatus(status: OrderStatus): OrderStatus {
-  if (status === "À vérifier") {
-    return status;
-  }
-  const index = FULFILLMENT_STATUSES.indexOf(status);
-  if (index < 0) return "En attente";
-  return FULFILLMENT_STATUSES[(index + 1) % FULFILLMENT_STATUSES.length] ?? "En attente";
-}
+export { nextOrderStatus } from "@/lib/admin/order-status";
 
 function catalogImageUrl(url: string): string {
   const trimmed = url.trim();

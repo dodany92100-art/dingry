@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SEEDED_PRODUCTS } from "@/lib/admin/seed";
-import { quoteCheckout, VITRINE_ONLY, type CheckoutLine } from "@/lib/checkout-quote";
+import { parsePaypalCents, quoteCheckout, VITRINE_ONLY, type CheckoutLine } from "@/lib/checkout-quote";
 import { PRODUCTS } from "@/lib/shop-data";
 
 vi.mock("@/lib/admin/store", () => ({
@@ -14,6 +14,14 @@ vi.mock("@/lib/stock", () => ({
 }));
 
 import { loadStoreReadOnly } from "@/lib/admin/store";
+
+describe("parsePaypalCents", () => {
+  it("accepte un ou deux décimales", () => {
+    expect(parsePaypalCents("50.00")).toBe(5000);
+    expect(parsePaypalCents("50.0")).toBe(5000);
+    expect(parsePaypalCents("50")).toBe(5000);
+  });
+});
 
 describe("quoteCheckout — prix CRM", () => {
   beforeEach(() => {

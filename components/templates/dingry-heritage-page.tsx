@@ -181,6 +181,7 @@ function DingryHeritagePageInner() {
         open={authOpen}
         reason={authReason}
         accountUser={shopAuth.user ? { email: shopAuth.user.email } : null}
+        accessToken={shopAuth.session?.access_token ?? null}
         onSignOut={shopAuth.signOut}
         onClose={() => {
           setAuthOpen(false);
