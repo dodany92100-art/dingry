@@ -31,6 +31,7 @@ import {
   resolvePersonalizationShopProduct,
 } from "@/lib/atelier-custom-config";
 import { PERSONALIZABLE_PRODUCT_ID, PRODUCTS } from "@/lib/shop-data";
+import { hasSupabaseOAuthQuery, searchWithoutOAuthQuery } from "@/lib/auth/scrub-public-oauth-query";
 import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import { bannerConfiguratorInitialLabel } from "@/lib/custom-city-banner";
 import {
@@ -140,6 +141,21 @@ function DingryShopPageInner() {
     setAuthReason(reason);
     setAuthOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (!searchParams || !hasSupabaseOAuthQuery(searchParams)) return;
+    const errorCode = searchParams.get("error_code");
+    const cleanSearch = searchWithoutOAuthQuery(searchParams);
+    const path = `${pathname ?? shopBasePath}${cleanSearch}`;
+    router.replace(path);
+    if (errorCode === "flow_state_already_used") {
+      openAuth("Lien de connexion déjà utilisé. Fermez les autres onglets Dingry, puis relancez Google une seule fois.");
+      return;
+    }
+    if (searchParams.get("error")) {
+      openAuth("La connexion n’a pas abouti. Réessayez.");
+    }
+  }, [openAuth, pathname, router, searchParams, shopBasePath]);
 
   const toggleWishlistWithAuth = useCallback(
     (productId: number) => {
@@ -433,6 +449,8 @@ function DingryShopPageInner() {
       <AuthModal
         open={authOpen}
         reason={authReason}
+        accountUser={shopAuth.user ? { email: shopAuth.user.email } : null}
+        onSignOut={shopAuth.signOut}
         onClose={() => {
           setAuthOpen(false);
           setAuthReason(undefined);

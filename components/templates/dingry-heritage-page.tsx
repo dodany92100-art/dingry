@@ -180,6 +180,8 @@ function DingryHeritagePageInner() {
       <AuthModal
         open={authOpen}
         reason={authReason}
+        accountUser={shopAuth.user ? { email: shopAuth.user.email } : null}
+        onSignOut={shopAuth.signOut}
         onClose={() => {
           setAuthOpen(false);
           setAuthReason(undefined);

@@ -16,6 +16,9 @@ type AuthModalProps = {
   onAuthenticated?: () => void;
   /** Sous-titre contextuel (wishlist, atelier…). */
   reason?: string;
+  /** Session boutique — affiche « Mon compte » au lieu du formulaire login. */
+  accountUser?: { email: string | undefined } | null;
+  onSignOut?: () => Promise<void>;
 };
 
 type AuthView = "password" | "magic";
@@ -36,7 +39,7 @@ function SocialMark({ children }: { children: ReactNode }) {
   );
 }
 
-export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalProps) {
+export function AuthModal({ open, onClose, onAuthenticated, reason, accountUser, onSignOut }: AuthModalProps) {
   const configured = isSupabaseBrowserAuthEnabled();
   const googleOAuth = isSupabaseOAuthProviderEnabled("google");
   const appleOAuth = isSupabaseOAuthProviderEnabled("apple");
@@ -45,7 +48,10 @@ export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalP
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
-  const [busy, setBusy] = useState<"google" | "apple" | "password" | "magic" | "signup" | null>(null);
+  const [busy, setBusy] = useState<"google" | "apple" | "password" | "magic" | "signup" | "signout" | null>(
+    null,
+  );
+  const isAccountView = Boolean(accountUser?.email);
   const [error, setError] = useState<string | null>(null);
   const [magicSent, setMagicSent] = useState(false);
 
@@ -73,12 +79,36 @@ export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalP
     }
     setError(null);
     setBusy(provider);
-    const { error: oauthError } = await client.auth.signInWithOAuth({
+    const redirectTo = authCallbackUrl();
+    const { data, error: oauthError } = await client.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: authCallbackUrl() },
+      options: { redirectTo },
     });
+    if (oauthError) {
+      setBusy(null);
+      setError(mapShopAuthError(oauthError.message));
+      return;
+    }
+    if (data.url) {
+      window.location.assign(data.url);
+      return;
+    }
     setBusy(null);
-    if (oauthError) setError(mapShopAuthError(oauthError.message));
+    setError("Impossible d’ouvrir la connexion. Réessayez.");
+  }
+
+  async function onSignOutClick() {
+    if (!onSignOut) return;
+    setError(null);
+    setBusy("signout");
+    try {
+      await onSignOut();
+      onClose();
+    } catch {
+      setError("La déconnexion n’a pas abouti. Réessayez.");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function onPasswordSubmit(event: FormEvent) {
@@ -191,7 +221,7 @@ export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalP
               <div>
                 <p className="text-[10px] tracking-[0.32em] text-white/35 uppercase">Espace client</p>
                 <h2 id="dingry-auth-title" className="mt-2 text-sm font-bold tracking-[0.28em] uppercase">
-                  Connexion
+                  {isAccountView ? "Mon compte" : "Connexion"}
                 </h2>
                 {reason ? (
                   <p className="mt-3 max-w-xs text-[11px] leading-relaxed tracking-wide text-white/45">{reason}</p>
@@ -214,6 +244,29 @@ export function AuthModal({ open, onClose, onAuthenticated, reason }: AuthModalP
                   Configurez <span className="text-white/80">NEXT_PUBLIC_SUPABASE_URL</span> et{" "}
                   <span className="text-white/80">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> pour activer la connexion.
                 </p>
+              ) : isAccountView ? (
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <p className="text-[10px] tracking-[0.24em] text-white/40 uppercase">Connecté en tant que</p>
+                    <p className="mt-2 break-all text-sm text-white">{accountUser?.email}</p>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-white/45">
+                    Votre sélection et votre expérience sont liées à ce compte sur cet appareil.
+                  </p>
+                  {onSignOut ? (
+                    <button
+                      type="button"
+                      disabled={busy !== null}
+                      onClick={() => void onSignOutClick()}
+                      className="flex w-full items-center justify-center gap-2 rounded-full border border-white/20 py-3.5 text-[11px] font-medium tracking-[0.22em] text-white uppercase transition-colors hover:bg-white/[0.06] disabled:opacity-50"
+                    >
+                      {busy === "signout" ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                      ) : null}
+                      Se déconnecter
+                    </button>
+                  ) : null}
+                </div>
               ) : (
                 <>
                   {showSocial ? (
