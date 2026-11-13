@@ -20,7 +20,7 @@ export function getSupabaseBrowser(): SupabaseClient | null {
       flowType: "pkce",
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true,
+      detectSessionInUrl: false,
     },
   });
   return cached;

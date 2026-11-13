@@ -1,9 +1,17 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import type { AuthHandoffResult } from "@/lib/auth/auth-callback-oauth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { sanitizeAuthCallbackNext } from "@/lib/auth/auth-callback-next";
+import {
+  exchangePkceCodeOnce,
+  isAllowedEmailOtpType,
+  logAuthCallbackFailure,
+  scanAuthCallbackUrl,
+  verifyEmailOtpOnce,
+} from "@/lib/auth/auth-callback-oauth";
 import { SHOP_PREVIEW_PATH } from "@/lib/shop-base-path";
 import { getSupabaseBrowser } from "@/lib/supabase/browser";
 
@@ -23,6 +31,8 @@ function stripOAuthMaterialFromUrl() {
   const url = new URL(window.location.href);
   url.hash = "";
   url.searchParams.delete("code");
+  url.searchParams.delete("token_hash");
+  url.searchParams.delete("type");
   url.searchParams.delete("error");
   url.searchParams.delete("error_description");
   url.searchParams.delete("error_code");
@@ -39,6 +49,7 @@ function AuthCallbackContent() {
   useEffect(() => {
     const client = getSupabaseBrowser();
     if (!client) {
+      logAuthCallbackFailure("supabase_not_configured", null);
       stripOAuthMaterialFromUrl();
       setFailed(true);
       return;
@@ -47,63 +58,95 @@ function AuthCallbackContent() {
     let cancelled = false;
     let redirected = false;
 
-    const markFailed = () => {
+    const markFailed = (context: string, error: Parameters<typeof logAuthCallbackFailure>[1] = null) => {
       if (cancelled || redirected) return;
+      logAuthCallbackFailure(context, error);
       stripOAuthMaterialFromUrl();
       setFailed(true);
     };
 
-    const finish = (sessionPresent: boolean) => {
+    const finishSuccess = () => {
       if (cancelled || redirected) return;
-      if (sessionPresent) {
-        redirected = true;
-        stripOAuthMaterialFromUrl();
-        router.replace(nextPath);
-        return;
-      }
-      markFailed();
+      redirected = true;
+      stripOAuthMaterialFromUrl();
+      router.replace(nextPath);
     };
 
-    const params = new URLSearchParams(window.location.search);
     const hashRaw = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
-    const hashParams = new URLSearchParams(hashRaw);
-    const oauthError =
-      params.get("error") ?? hashParams.get("error") ?? params.get("error_description") ?? hashParams.get("error_description");
-    const hasImplicitTokens = /(?:^|&)(?:access_token|refresh_token)=/i.test(hashRaw);
+    const scan = scanAuthCallbackUrl(window.location.search, hashRaw);
 
-    if (oauthError || hasImplicitTokens) {
-      markFailed();
+    if (scan.oauthError || scan.hasImplicitTokens) {
+      markFailed(scan.hasImplicitTokens ? "implicit_hash_rejected" : "oauth_error_query");
       return;
     }
 
-    const hasCode = params.has("code");
-    const checkSession = () => client.auth.getSession().then(({ data }) => Boolean(data.session));
+    const runHandoff = (handoff: Promise<AuthHandoffResult>, failContext: string) => {
+      const { data: sub } = client.auth.onAuthStateChange((event, session) => {
+        if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+          finishSuccess();
+        }
+      });
 
-    if (!hasCode) {
-      void checkSession().then((ok) => finish(ok));
+      let settled = false;
+      const settleFailure = (context: string, error: Parameters<typeof logAuthCallbackFailure>[1]) => {
+        if (settled || cancelled || redirected) return;
+        settled = true;
+        markFailed(context, error);
+      };
+
+      void handoff.then((result) => {
+        if (cancelled || redirected) return;
+        if (result.ok) {
+          settled = true;
+          finishSuccess();
+          return;
+        }
+        settleFailure(failContext, result.error);
+      });
+
+      const timeout = window.setTimeout(() => {
+        if (settled || cancelled || redirected) return;
+        void client.auth.getSession().then(({ data, error }) => {
+          if (cancelled || redirected || settled) return;
+          if (data.session) {
+            settled = true;
+            finishSuccess();
+            return;
+          }
+          settleFailure("handoff_timeout", error ?? null);
+        });
+      }, AUTH_CALLBACK_WAIT_MS);
+
       return () => {
         cancelled = true;
+        sub.subscription.unsubscribe();
+        window.clearTimeout(timeout);
       };
+    };
+
+    if (scan.hasCode && scan.code) {
+      return runHandoff(exchangePkceCodeOnce(client, scan.code), "exchange_code_for_session");
     }
 
-    const { data: sub } = client.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        finish(true);
+    if (scan.hasTokenHash && scan.tokenHash) {
+      if (!isAllowedEmailOtpType(scan.otpType)) {
+        markFailed("otp_type_rejected", null);
+        return;
       }
+      return runHandoff(verifyEmailOtpOnce(client, scan.tokenHash, scan.otpType), "verify_email_otp");
+    }
+
+    void client.auth.getSession().then(({ data, error }) => {
+      if (cancelled || redirected) return;
+      if (error) {
+        markFailed("get_session_without_handoff", error);
+        return;
+      }
+      if (data.session) finishSuccess();
+      else markFailed("get_session_without_handoff", null);
     });
-
-    void checkSession().then((ok) => {
-      if (ok) finish(true);
-    });
-
-    const timeout = window.setTimeout(() => {
-      void checkSession().then((ok) => finish(ok));
-    }, AUTH_CALLBACK_WAIT_MS);
-
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
-      window.clearTimeout(timeout);
     };
   }, [router, nextPath]);
 
