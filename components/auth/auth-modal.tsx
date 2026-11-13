@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { buildRelativeUrl } from "@/lib/alto-last-public-url";
+import { getAuthCallbackOrigin } from "@/lib/auth/auth-callback-origin";
 import { getSupabaseBrowser, isSupabaseBrowserAuthEnabled } from "@/lib/supabase/browser";
 import { isSupabaseOAuthProviderEnabled } from "@/lib/supabase/oauth-flags";
 import { mapShopAuthError } from "@/lib/auth/map-auth-error";
@@ -22,7 +23,7 @@ type AuthView = "password" | "magic";
 function authCallbackUrl(): string {
   if (typeof window === "undefined") return "/auth/callback";
   const next = buildRelativeUrl(window.location.pathname, window.location.search);
-  const url = new URL("/auth/callback", window.location.origin);
+  const url = new URL("/auth/callback", getAuthCallbackOrigin() || window.location.origin);
   url.searchParams.set("next", next);
   return url.toString();
 }

@@ -2,6 +2,14 @@ import type { AuthError, EmailOtpType, Session, SupabaseClient } from "@supabase
 
 const ALLOWED_EMAIL_OTP_TYPES = new Set<string>(["email", "signup", "magiclink"]);
 
+export const PKCE_FLOW_ID_QUERY_PARAM = "sb_flow_id";
+const PKCE_FLOW_ID_PATTERN = /^[a-zA-Z0-9_-]{8,64}$/;
+
+export function readPkceFlowId(search: string): string | null {
+  const raw = new URLSearchParams(search).get(PKCE_FLOW_ID_QUERY_PARAM)?.trim() ?? "";
+  return PKCE_FLOW_ID_PATTERN.test(raw) ? raw : null;
+}
+
 export type AllowedEmailOtpType = "email" | "signup" | "magiclink";
 
 export type AuthCallbackUrlScan = {
@@ -9,6 +17,7 @@ export type AuthCallbackUrlScan = {
   hasImplicitTokens: boolean;
   hasCode: boolean;
   code: string | null;
+  pkceFlowId: string | null;
   hasTokenHash: boolean;
   tokenHash: string | null;
   otpType: string | null;
@@ -32,6 +41,7 @@ export function scanAuthCallbackUrl(search: string, hashRaw: string): AuthCallba
     hasImplicitTokens,
     hasCode: Boolean(code),
     code: code || null,
+    pkceFlowId: readPkceFlowId(search),
     hasTokenHash: Boolean(tokenHash),
     tokenHash: tokenHash || null,
     otpType,
@@ -60,13 +70,18 @@ function handoffResult(
 }
 
 /** Un seul `exchangeCodeForSession` par code dans le tab (StrictMode / double effet). */
-export async function exchangePkceCodeOnce(client: SupabaseClient, code: string): Promise<AuthHandoffResult> {
-  const codeKey = code;
+export async function exchangePkceCodeOnce(
+  client: SupabaseClient,
+  code: string,
+  pkceFlowId?: string | null,
+): Promise<AuthHandoffResult> {
+  const codeKey = pkceFlowId ? `${pkceFlowId}:${code}` : code;
   if (inFlightExchange?.codeKey === codeKey) {
     return inFlightExchange.promise;
   }
+  const exchangeOptions = pkceFlowId ? { flowId: pkceFlowId } : undefined;
   const promise = client.auth
-    .exchangeCodeForSession(code)
+    .exchangeCodeForSession(code, exchangeOptions)
     .then(({ data, error }) => handoffResult(data, error));
   inFlightExchange = { codeKey, promise };
   void promise.finally(() => {
@@ -126,11 +141,16 @@ export function authCallbackFailureFromError(error: AuthError | null): AuthCallb
   };
 }
 
-export function logAuthCallbackFailure(context: string, error: AuthError | null): void {
+export function logAuthCallbackFailure(
+  context: string,
+  error: AuthError | null,
+  diagnostics?: { hasPkceFlowId?: boolean },
+): void {
   const detail = authCallbackFailureFromError(error);
   console.error("[auth/callback]", context, {
     message: detail.message,
     errorName: detail.errorName,
     errorCode: detail.errorCode,
+    ...(diagnostics?.hasPkceFlowId !== undefined ? { hasPkceFlowId: diagnostics.hasPkceFlowId } : {}),
   });
 }

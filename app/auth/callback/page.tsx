@@ -36,6 +36,7 @@ function stripOAuthMaterialFromUrl() {
   url.searchParams.delete("error");
   url.searchParams.delete("error_description");
   url.searchParams.delete("error_code");
+  url.searchParams.delete("sb_flow_id");
   const clean = `${url.pathname}${url.search}`;
   window.history.replaceState(null, "", clean);
 }
@@ -58,9 +59,13 @@ function AuthCallbackContent() {
     let cancelled = false;
     let redirected = false;
 
-    const markFailed = (context: string, error: Parameters<typeof logAuthCallbackFailure>[1] = null) => {
+    const markFailed = (
+      context: string,
+      error: Parameters<typeof logAuthCallbackFailure>[1] = null,
+      diagnostics?: Parameters<typeof logAuthCallbackFailure>[2],
+    ) => {
       if (cancelled || redirected) return;
-      logAuthCallbackFailure(context, error);
+      logAuthCallbackFailure(context, error, diagnostics);
       stripOAuthMaterialFromUrl();
       setFailed(true);
     };
@@ -80,7 +85,11 @@ function AuthCallbackContent() {
       return;
     }
 
-    const runHandoff = (handoff: Promise<AuthHandoffResult>, failContext: string) => {
+    const runHandoff = (
+      handoff: Promise<AuthHandoffResult>,
+      failContext: string,
+      diagnostics?: Parameters<typeof logAuthCallbackFailure>[2],
+    ) => {
       const { data: sub } = client.auth.onAuthStateChange((event, session) => {
         if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
           finishSuccess();
@@ -91,7 +100,7 @@ function AuthCallbackContent() {
       const settleFailure = (context: string, error: Parameters<typeof logAuthCallbackFailure>[1]) => {
         if (settled || cancelled || redirected) return;
         settled = true;
-        markFailed(context, error);
+        markFailed(context, error, diagnostics);
       };
 
       void handoff.then((result) => {
@@ -125,7 +134,11 @@ function AuthCallbackContent() {
     };
 
     if (scan.hasCode && scan.code) {
-      return runHandoff(exchangePkceCodeOnce(client, scan.code), "exchange_code_for_session");
+      return runHandoff(
+        exchangePkceCodeOnce(client, scan.code, scan.pkceFlowId),
+        "exchange_code_for_session",
+        { hasPkceFlowId: Boolean(scan.pkceFlowId) },
+      );
     }
 
     if (scan.hasTokenHash && scan.tokenHash) {

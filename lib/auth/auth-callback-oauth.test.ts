@@ -67,6 +67,15 @@ describe("exchangePkceCodeOnce", () => {
     const [a, b] = await Promise.all([first, second]);
     expect(a.ok && b.ok).toBe(true);
   });
+
+  it("passe flowId à exchangeCodeForSession", async () => {
+    const session = { access_token: "at" } as Session;
+    const exchange = vi.fn().mockResolvedValue({ data: { session }, error: null });
+    const client = { auth: { exchangeCodeForSession: exchange } } as unknown as SupabaseClient;
+
+    await exchangePkceCodeOnce(client, "code-1", "flow-abcdef12");
+    expect(exchange).toHaveBeenCalledWith("code-1", { flowId: "flow-abcdef12" });
+  });
 });
 
 describe("verifyEmailOtpOnce", () => {
