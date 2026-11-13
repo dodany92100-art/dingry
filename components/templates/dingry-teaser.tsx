@@ -1,6 +1,5 @@
 "use client";
 
-import { clientRateLimitMessage } from "@/lib/client/rate-limit-ui";
 import { useEffect, useState, type FormEvent } from "react";
 import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
 import {
@@ -30,6 +29,72 @@ const UNITS = COUNTDOWN_UNITS.map((u) => ({
 type TeaserProps = {
   displayClassName: string;
 };
+
+const TEASER_MESSAGE_PAD_CLASS =
+  "m-0 w-full max-w-md rounded-lg bg-black/40 px-4 py-3 text-pretty text-left text-sm leading-relaxed tracking-normal text-white backdrop-blur-sm normal-case sm:text-[0.95rem] md:text-base";
+
+function TeaserCountdownDigits({
+  displayClassName,
+  parts,
+}: {
+  displayClassName: string;
+  parts: CountdownParts | null;
+}) {
+  return (
+    <div className="flex items-start justify-center gap-0" aria-live="polite">
+      {UNITS.map((unit, index) => (
+        <div key={unit.key} className="flex items-start">
+          {index > 0 ? (
+            <span
+              className={`${displayClassName} mx-2 mt-1 text-xl text-white/35 sm:mx-3 sm:text-2xl md:mx-4`}
+            >
+              |
+            </span>
+          ) : null}
+          <div className="min-w-[2.65rem] text-center sm:min-w-[3.1rem] md:min-w-[3.6rem]">
+            <p
+              className={`${displayClassName} text-[clamp(1.45rem,2.8vw,2.35rem)] leading-none tabular-nums text-white`}
+            >
+              {parts ? parts[unit.key] : "––"}
+            </p>
+            <p className="mt-1 text-[8px] tracking-[0.16em] text-white/70 uppercase sm:mt-2 sm:text-[9px] md:text-[10px]">
+              {unit.label}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TeaserOpeningTitles({ displayClassName }: { displayClassName: string }) {
+  return (
+    <div className="space-y-2 text-center md:space-y-2.5">
+      <p
+        className={`${displayClassName} text-[10px] tracking-[0.38em] text-white/80 sm:text-[11px] sm:tracking-[0.42em]`}
+      >
+        OUVERTURE DU
+      </p>
+      <p
+        className={`${displayClassName} text-[clamp(1.55rem,4.2vw,3.4rem)] leading-[0.92] tracking-[0.02em] text-white`}
+      >
+        SITE OFFICIEL
+      </p>
+    </div>
+  );
+}
+
+function TeaserOpeningDateRow() {
+  return (
+    <div className="flex items-center justify-center gap-2 sm:gap-3">
+      <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" aria-hidden />
+      <p className="text-[10px] tracking-[0.24em] text-white sm:text-[11px] sm:tracking-[0.28em]">
+        {DINGRY_COUNTDOWN_LABEL}
+      </p>
+      <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" aria-hidden />
+    </div>
+  );
+}
 
 function InstagramIcon() {
   return (
@@ -107,63 +172,39 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           </header>
         </section>
 
-        <div className="mt-auto flex w-full flex-col gap-3 max-md:translate-y-10 sm:max-md:translate-y-12 md:col-start-2 md:row-start-1 md:mt-0 md:max-w-xl md:translate-y-0 md:items-end md:justify-end md:gap-5 md:self-end md:pb-10 md:pt-24 lg:pb-12 lg:pr-2">
-          <section
-            aria-label="Ouverture et compte à rebours"
-            className="shrink-0 space-y-3 pb-1 text-center sm:space-y-3.5 md:w-full md:text-right"
-          >
-            <p
-              className={`${displayClassName} text-[10px] tracking-[0.38em] text-white/80 sm:text-[11px] sm:tracking-[0.42em]`}
-            >
-              OUVERTURE DU
-            </p>
-            <p
-              className={`${displayClassName} text-[clamp(1.55rem,4.2vw,3.4rem)] leading-[0.92] tracking-[0.02em] text-white`}
-            >
-              SITE OFFICIEL
-            </p>
-            <div className="flex items-center justify-center gap-2 sm:gap-3 md:justify-end">
-              <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" />
-              <p className="text-[10px] tracking-[0.24em] text-white sm:text-[11px] sm:tracking-[0.28em]">
-                {DINGRY_COUNTDOWN_LABEL}
-              </p>
-              <span className="h-px w-6 bg-white/75 sm:w-8 md:w-10" />
-            </div>
-            <div className="flex items-start justify-center gap-0 md:justify-end" aria-live="polite">
-              {UNITS.map((unit, index) => (
-                <div key={unit.key} className="flex items-start">
-                  {index > 0 ? (
-                    <span
-                      className={`${displayClassName} mx-2 mt-1 text-xl text-white/35 sm:mx-3 sm:text-2xl md:mx-4`}
-                    >
-                      |
-                    </span>
-                  ) : null}
-                  <div className="min-w-[2.65rem] text-center sm:min-w-[3.1rem] md:min-w-[3.6rem]">
-                    <p
-                      className={`${displayClassName} text-[clamp(1.45rem,2.8vw,2.35rem)] leading-none tabular-nums text-white`}
-                    >
-                      {parts ? parts[unit.key] : "––"}
-                    </p>
-                    <p className="mt-1 text-[8px] tracking-[0.16em] text-white/70 uppercase sm:mt-2 sm:text-[9px] md:text-[10px]">
-                      {unit.label}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p
-              className={`${displayClassName} m-0 max-w-md text-pretty text-left text-sm leading-relaxed tracking-normal text-white/90 normal-case sm:text-[0.95rem] md:text-base md:text-white`}
-            >
-              {DINGRY_TEASER_MESSAGE}
-            </p>
-          </section>
+        {/* Mobile : bloc unique titre + compteur + texte */}
+        <section
+          aria-label="Ouverture et compte à rebours"
+          className="mt-auto shrink-0 space-y-3 pb-1 text-center max-md:translate-y-10 sm:max-md:translate-y-12 sm:space-y-3.5 md:hidden"
+        >
+          <TeaserOpeningTitles displayClassName={displayClassName} />
+          <TeaserOpeningDateRow />
+          <TeaserCountdownDigits displayClassName={displayClassName} parts={parts} />
+          <p className={`${displayClassName} ${TEASER_MESSAGE_PAD_CLASS}`}>{DINGRY_TEASER_MESSAGE}</p>
+        </section>
 
-          <form
-            noValidate
-            onSubmit={onSubmit}
-            className="mx-auto w-full max-w-xs shrink-0 sm:max-w-sm md:ml-auto md:max-w-xl"
-          >
+        <div className="hidden w-full flex-col items-center gap-4 text-center md:col-start-2 md:row-start-1 md:ml-auto md:mt-24 md:flex md:max-w-md md:self-start">
+          <TeaserOpeningTitles displayClassName={displayClassName} />
+          <div className="w-full space-y-3">
+            <TeaserOpeningDateRow />
+            <TeaserCountdownDigits displayClassName={displayClassName} parts={parts} />
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop : bloc 3 texte — position seule, ne déplace pas le compteur */}
+      <p
+        className={`${displayClassName} ${TEASER_MESSAGE_PAD_CLASS} pointer-events-auto hidden md:absolute md:bottom-28 md:right-12 md:z-20 md:block lg:bottom-32 lg:right-16`}
+      >
+        {DINGRY_TEASER_MESSAGE}
+      </p>
+
+      {/* Bloc 4 : e-mail */}
+      <form
+        noValidate
+        onSubmit={onSubmit}
+        className="mx-auto w-full max-w-xs shrink-0 sm:max-w-sm md:max-w-md"
+      >
         <label htmlFor="teaser-email" className="sr-only">
           Inscrivez-vous pour être informé
         </label>
@@ -214,9 +255,9 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           aria-hidden
           className="sr-only"
         />
-          </form>
+      </form>
 
-          <div className="mt-0 flex w-full max-w-xs shrink-0 items-end justify-between gap-4 sm:max-w-sm md:ml-auto md:max-w-xl">
+      <div className="mt-3 flex w-full max-w-xs shrink-0 items-end justify-between gap-4 sm:max-w-sm md:mx-auto md:max-w-md">
         <a
           href="https://www.instagram.com/dingry_officiel/"
           target="_blank"
@@ -230,8 +271,6 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           Shop <span className="px-1.5 text-white/35">|</span> Culture <span className="px-1.5 text-white/35">|</span>{" "}
           Attitude
         </p>
-          </div>
-        </div>
       </div>
     </div>
   );
