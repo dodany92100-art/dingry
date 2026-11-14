@@ -3,7 +3,7 @@
 import { OrderFulfillmentControls } from "@/components/molecules/order-fulfillment-controls";
 import { formatDate, formatPrice } from "@/lib/admin/format";
 import type { OrderStatus } from "@/lib/admin/types";
-import { formatCustomerPhoneDisplay } from "@/lib/checkout-phone";
+import { customerPhoneTelHref, formatCustomerPhoneDisplay } from "@/lib/checkout-phone";
 import type { AdminOrder } from "@/lib/admin/types";
 import { formatReviewReasons, isShippingAddressMissing, type OrderReviewReason } from "@/lib/order-review";
 
@@ -63,10 +63,22 @@ export function OrdersTab({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-sm text-white">{order.customerName}</p>
-                    <p className="mt-1 text-sm text-white/55">{order.email}</p>
+                    <p className="mt-1 text-sm">
+                      <a
+                        href={`mailto:${encodeURIComponent(order.email)}`}
+                        className="text-violet-200/90 underline decoration-violet-400/40 underline-offset-2 hover:text-violet-100"
+                      >
+                        {order.email}
+                      </a>
+                    </p>
                     {order.customerPhone ? (
-                      <p className="mt-1 text-sm text-white/55">
-                        {formatCustomerPhoneDisplay(order.customerPhone)}
+                      <p className="mt-1 text-sm">
+                        <a
+                          href={customerPhoneTelHref(order.customerPhone)}
+                          className="text-violet-200/90 underline decoration-violet-400/40 underline-offset-2 hover:text-violet-100"
+                        >
+                          {formatCustomerPhoneDisplay(order.customerPhone)}
+                        </a>
                       </p>
                     ) : null}
                     <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/30">

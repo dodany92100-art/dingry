@@ -186,7 +186,7 @@ export function CatalogPersoBannerTab({
 
       <form
         onSubmit={(event) => void handleSubmit(event)}
-        className="dingry-admin-stock max-w-xl border border-white/10 p-4 md:p-6"
+        className="dingry-admin-stock dingry-admin-glass max-w-xl rounded-2xl p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 md:p-6"
       >
         <label className="mb-5 flex items-center gap-3">
           <input

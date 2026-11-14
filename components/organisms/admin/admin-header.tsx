@@ -10,6 +10,7 @@ type AdminHeaderProps = {
   lowStockCount: number;
   totalStock: number;
   onLogout: () => void;
+  onOpenChangelog?: () => void;
 };
 
 export function AdminHeader({
@@ -18,6 +19,7 @@ export function AdminHeader({
   lowStockCount,
   totalStock,
   onLogout,
+  onOpenChangelog,
 }: AdminHeaderProps) {
   const deployedAt = formatCrmBuildLabel();
   const version = adminCrmVersion();
@@ -29,19 +31,49 @@ export function AdminHeader({
           <h1 className="shrink-0 text-base font-semibold leading-none tracking-tight text-white sm:text-lg md:text-2xl">
             DINGRY
           </h1>
-          <span className="hidden shrink-0 text-[10px] text-zinc-500 sm:inline md:text-sm">
-            CRM v{version}
-            {deployedAt ? (
-              <>
-                {" "}
-                · maj.{" "}
-                <time dateTime={process.env.NEXT_PUBLIC_CRM_BUILD_AT} className="text-zinc-400">
-                  {deployedAt}
-                </time>
-              </>
-            ) : null}
-          </span>
-          <span className="shrink-0 text-[10px] text-zinc-500 sm:hidden">v{version}</span>
+          {onOpenChangelog ? (
+            <button
+              type="button"
+              onClick={onOpenChangelog}
+              title="Journal des versions CRM depuis v1"
+              className="hidden shrink-0 rounded-full border border-transparent px-1.5 py-0.5 text-left text-[10px] text-zinc-500 transition hover:border-white/15 hover:bg-white/[0.04] hover:text-zinc-300 sm:inline md:text-sm"
+            >
+              CRM v{version}
+              {deployedAt ? (
+                <>
+                  {" "}
+                  · maj.{" "}
+                  <time dateTime={process.env.NEXT_PUBLIC_CRM_BUILD_AT} className="text-zinc-400">
+                    {deployedAt}
+                  </time>
+                </>
+              ) : null}
+            </button>
+          ) : (
+            <span className="hidden shrink-0 text-[10px] text-zinc-500 sm:inline md:text-sm">
+              CRM v{version}
+              {deployedAt ? (
+                <>
+                  {" "}
+                  · maj.{" "}
+                  <time dateTime={process.env.NEXT_PUBLIC_CRM_BUILD_AT} className="text-zinc-400">
+                    {deployedAt}
+                  </time>
+                </>
+              ) : null}
+            </span>
+          )}
+          {onOpenChangelog ? (
+            <button
+              type="button"
+              onClick={onOpenChangelog}
+              className="shrink-0 rounded-full border border-transparent px-1 py-0.5 text-[10px] text-zinc-500 transition hover:border-white/15 hover:text-zinc-300 sm:hidden"
+            >
+              v{version} · journal
+            </button>
+          ) : (
+            <span className="shrink-0 text-[10px] text-zinc-500 sm:hidden">v{version}</span>
+          )}
           <span className="shrink-0 whitespace-nowrap text-[10px] text-zinc-400 sm:text-[11px] md:text-sm">
             {pendingOrders} <span className="text-zinc-500">exp.</span>
           </span>

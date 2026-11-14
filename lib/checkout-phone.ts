@@ -18,6 +18,11 @@ export function customerPhoneFromBody(body: unknown): string | null {
   return normalizeCustomerPhone(phone);
 }
 
+export function customerPhoneTelHref(phone: string): string {
+  const compact = phone.replace(/[\s.\-()]/g, "");
+  return compact ? `tel:${compact}` : "#";
+}
+
 export function formatCustomerPhoneDisplay(phone: string): string {
   const digits = phone.replace(/\s/g, "");
   if (/^0\d{9}$/.test(digits)) {

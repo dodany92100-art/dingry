@@ -18,6 +18,8 @@ import { AtelierCustomTab } from "@/components/organisms/admin/atelier-custom-ta
 import { CatalogPersoBannerTab } from "@/components/organisms/admin/catalog-perso-banner-tab";
 import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
+import { PromoCodesTab } from "@/components/organisms/admin/promo-codes-tab";
+import { CrmChangelogDialog } from "@/components/organisms/admin/crm-changelog-dialog";
 import { ReleaseBanner } from "@/components/organisms/admin/release-banner";
 import { AdminActionToast } from "@/components/organisms/admin/admin-action-toast";
 import { AdminCrmTabRow } from "@/components/organisms/admin/admin-crm-tab-row";
@@ -72,7 +74,8 @@ function parseTabParam(value: string | null): TabId {
     value === "commandes" ||
     value === "lookbook" ||
     value === "banniere" ||
-    value === "atelier"
+    value === "atelier" ||
+    value === "promos"
   ) {
     return value;
   }
@@ -121,6 +124,7 @@ function AdminDashboard() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [visibleDraftIds, setVisibleDraftIds] = useState<string[]>([]);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const loginNext = useMemo(
     () => sanitizeAdminLoginNext(searchParams.get("next")),
     [searchParams],
@@ -449,8 +453,10 @@ function AdminDashboard() {
         lowStockCount={lowStockCount}
         totalStock={totalStock}
         onLogout={() => void handleLogout()}
+        onOpenChangelog={() => setChangelogOpen(true)}
       />
-      <ReleaseBanner />
+      <ReleaseBanner onOpenChangelog={() => setChangelogOpen(true)} />
+      <CrmChangelogDialog open={changelogOpen} onClose={() => setChangelogOpen(false)} />
 
       <div className={`dingry-admin px-6 py-4 md:px-10 md:py-6${showWorkflowBanner ? " pb-28" : ""}`}>
         <AdminCrmTabRow
@@ -583,6 +589,8 @@ function AdminDashboard() {
             }}
           />
           </>
+        ) : tab === "promos" ? (
+          <PromoCodesTab />
         ) : tab === "commandes" ? (
           <OrdersTab
             orders={paypalOrders}

@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 
-export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "banniere" | "atelier";
+export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "banniere" | "atelier" | "promos";
 
 const TABS: readonly (readonly [TabId, string])[] = [
   ["produits", "Stock"],
@@ -11,6 +11,7 @@ const TABS: readonly (readonly [TabId, string])[] = [
   ["banniere", "Bannière"],
   ["atelier", "Atelier CUSTOM"],
   ["lookbook", "Lookbook"],
+  ["promos", "Codes promo"],
 ];
 
 const INDICATOR_LAYOUT_ID = "dingry-admin-main-tab-indicator";

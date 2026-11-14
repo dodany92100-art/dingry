@@ -5,7 +5,11 @@ import { formatCrmBuildLabel } from "@/lib/admin/crm-build-label";
 import { ADMIN_CRM_RELEASE, adminCrmReleaseTitle } from "@/lib/admin/crm-release";
 import { isCrmReleaseDismissed, persistCrmReleaseDismissed } from "@/lib/admin/crm-release-dismiss";
 
-export function ReleaseBanner() {
+type ReleaseBannerProps = {
+  onOpenChangelog?: () => void;
+};
+
+export function ReleaseBanner({ onOpenChangelog }: ReleaseBannerProps) {
   const [dismissed, setDismissed] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -26,7 +30,7 @@ export function ReleaseBanner() {
   return (
     <div className="border-b border-[#FF3D00]/35 bg-[#0c1830]/90 px-6 py-5 md:px-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-3xl">
+        <div className="max-w-3xl min-w-0 flex-1">
           <p className="text-sm font-medium text-[#8ec0ff]">
             Nouveautés · {adminCrmReleaseTitle()}
             {deployedAt ? (
@@ -38,10 +42,21 @@ export function ReleaseBanner() {
           </p>
           <p className="mt-2 text-sm leading-relaxed text-white/75">{ADMIN_CRM_RELEASE.summary}</p>
           <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-white/55">
-            {ADMIN_CRM_RELEASE.highlights.map((line) => (
+            {ADMIN_CRM_RELEASE.highlights.slice(0, 2).map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
+          {onOpenChangelog ? (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={onOpenChangelog}
+                className="h-8 rounded-full border border-[#8ec0ff]/35 px-3 text-[11px] font-medium uppercase tracking-[0.12em] text-[#8ec0ff] transition hover:border-[#8ec0ff]/60 hover:text-white"
+              >
+                Lire plus — tout depuis CRM v1
+              </button>
+            </div>
+          ) : null}
         </div>
         <button
           type="button"

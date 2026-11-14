@@ -22,7 +22,7 @@ export function AdminCrmTabRow({
         tab={tab}
         onChange={onChange}
         hideStockTabsOnNarrow={hideStockTabsOnNarrow}
-        className="mb-0 min-w-0 flex-1"
+        className="mb-0 w-fit max-w-full"
       />
       {trailing ? (
         <div className="flex shrink-0 items-center justify-center gap-2.5 max-[449px]:w-full sm:justify-end">

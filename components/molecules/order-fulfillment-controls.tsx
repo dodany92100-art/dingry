@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { printShippingLabel } from "@/lib/admin/print-shipping-label";
 import { statusClass } from "@/lib/admin/format";
 import { FULFILLMENT_STATUSES, type AdminOrder, type OrderStatus } from "@/lib/admin/types";
 
@@ -67,16 +68,26 @@ export function OrderFulfillmentControls({
           <span className="text-[10px] text-white/45">Actuel · {order.trackingNumber}</span>
         ) : null}
       </div>
-      {onResendConfirmation && order.source === "paypal" ? (
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={busy}
-          onClick={onResendConfirmation}
-          className="h-8 border border-emerald-500/35 px-3 text-[9px] uppercase tracking-[0.14em] text-emerald-200/90 disabled:opacity-40"
+          onClick={() => printShippingLabel(order)}
+          className="h-8 border border-violet-400/35 px-3 text-[9px] uppercase tracking-[0.14em] text-violet-200/90 disabled:opacity-40"
         >
-          Renvoyer confirmation
+          Étiquette envoi
         </button>
-      ) : null}
+        {onResendConfirmation && order.source === "paypal" ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onResendConfirmation}
+            className="h-8 border border-emerald-500/35 px-3 text-[9px] uppercase tracking-[0.14em] text-emerald-200/90 disabled:opacity-40"
+          >
+            Renvoyer confirmation
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
