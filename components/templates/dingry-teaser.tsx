@@ -177,7 +177,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
         {/* Mobile : ouverture + compteur en haut à droite (tête / fumée du visuel) */}
         <section
           aria-label="Ouverture et compte à rebours"
-          className="pointer-events-none absolute top-[clamp(14.5rem,44vh,16.75rem)] -right-5 z-20 w-[min(62vw,248px)] space-y-2.5 text-center sm:-right-3 sm:top-[clamp(15rem,46vh,17.25rem)] sm:space-y-3 md:hidden"
+          className="pointer-events-none absolute top-[clamp(12.25rem,38vh,14.5rem)] -right-5 z-20 w-[min(62vw,248px)] space-y-2.5 text-center sm:-right-3 sm:top-[clamp(12.75rem,40vh,15rem)] sm:space-y-3 md:hidden"
         >
           <TeaserOpeningTitles displayClassName={displayClassName} />
           <TeaserOpeningDateRow />
