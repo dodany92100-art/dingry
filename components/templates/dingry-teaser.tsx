@@ -32,6 +32,8 @@ type TeaserProps = {
 
 const TEASER_MESSAGE_PAD_CLASS =
   "m-0 w-full max-w-md rounded-lg bg-black/40 px-4 py-3 text-pretty text-left text-sm leading-relaxed tracking-normal text-white backdrop-blur-sm normal-case sm:text-[0.95rem] md:text-base";
+const TEASER_MESSAGE_PAD_MOBILE_CLASS =
+  "max-md:bg-black/20 max-md:backdrop-blur-[2px]";
 
 function TeaserCountdownDigits({
   displayClassName,
@@ -175,7 +177,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
         {/* Mobile : ouverture + compteur en haut à droite (tête / fumée du visuel) */}
         <section
           aria-label="Ouverture et compte à rebours"
-          className="pointer-events-none absolute top-[clamp(17.25rem,50vh,19.5rem)] -right-5 z-20 w-[min(62vw,248px)] space-y-2.5 text-center sm:-right-3 sm:top-[clamp(17.75rem,52vh,20rem)] sm:space-y-3 md:hidden"
+          className="pointer-events-none absolute top-[clamp(14.5rem,44vh,16.75rem)] -right-5 z-20 w-[min(62vw,248px)] space-y-2.5 text-center sm:-right-3 sm:top-[clamp(15rem,46vh,17.25rem)] sm:space-y-3 md:hidden"
         >
           <TeaserOpeningTitles displayClassName={displayClassName} />
           <TeaserOpeningDateRow />
@@ -200,7 +202,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
 
       {/* Mobile : texte au-dessus de l’e-mail (plus masqué par la barre) */}
       <p
-        className={`${displayClassName} ${TEASER_MESSAGE_PAD_CLASS} relative z-20 mb-3 w-full shrink-0 md:hidden`}
+        className={`${displayClassName} ${TEASER_MESSAGE_PAD_CLASS} ${TEASER_MESSAGE_PAD_MOBILE_CLASS} relative z-20 mb-3 w-full shrink-0 md:hidden`}
       >
         {DINGRY_TEASER_MESSAGE}
       </p>

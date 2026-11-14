@@ -1,5 +1,6 @@
 "use client";
 
+import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { ExternalLink, Power } from "lucide-react";
 import { formatCrmBuildLabel } from "@/lib/admin/crm-build-label";
 import { adminCrmVersion } from "@/lib/admin/crm-version";
@@ -28,8 +29,8 @@ export function AdminHeader({
     <header className="dingry-admin-glass dingry-admin-header sticky top-0 z-30 border-b-0 border-white/10 px-4 py-2 sm:px-6 sm:py-2.5 md:px-10 md:py-3 [--dingry-admin-header-offset:2.5rem] sm:[--dingry-admin-header-offset:2.65rem] md:[--dingry-admin-header-offset:3.25rem]">
       <div className="flex items-center justify-between gap-2 md:gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-x-2 overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-x-2.5 md:gap-x-4">
-          <h1 className="shrink-0 text-base font-semibold leading-none tracking-tight text-white sm:text-lg md:text-2xl">
-            DINGRY
+          <h1 className="shrink-0 leading-none">
+            <DingryLogo animate={false} className="h-6 w-auto sm:h-7 md:h-8" />
           </h1>
           {onOpenChangelog ? (
             <button
