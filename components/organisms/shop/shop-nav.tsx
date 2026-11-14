@@ -9,18 +9,18 @@ import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 import { shopSectionHref } from "@/lib/shop-section-href";
-import { CATALOG_MENU_TAB_CUSTOM } from "@/lib/shop-catalog";
 import { cn } from "@/lib/utils";
 import { DingryLocaleToggle } from "@/components/atoms/dingry-locale-toggle";
 import { useTranslation } from "@/hooks/use-translation";
 
-const SECTIONS = [
+const NAV_SECTION_LINKS = [
   ["catalogue", "nav.collection"],
   ["heritage", "nav.heritage"],
-  ["lookbook", "nav.lookbook"],
 ] as const;
 
-type ShopNavSectionId = (typeof SECTIONS)[number][0];
+const NAV_LOOKBOOK_LINK = ["lookbook", "nav.lookbook"] as const;
+
+type ShopNavSectionId = (typeof NAV_SECTION_LINKS)[number][0] | (typeof NAV_LOOKBOOK_LINK)[0];
 type ShopNavActiveSection = ShopNavSectionId | "custom";
 
 const NAV_MENU_INDICATOR_LAYOUT_ID = "dingry-shop-nav-menu-indicator";
@@ -201,6 +201,7 @@ export function ShopNav({
   const favorisControls = useAnimation();
   const cartControls = useAnimation();
   const navMenuControls = useAnimation();
+  const catalogueLinkControls = useAnimation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<ShopNavActiveSection | null>(null);
   const [navMagnetFlash, setNavMagnetFlash] = useState(false);
@@ -282,6 +283,41 @@ export function ShopNav({
     setMobileMenuOpen(false);
   }
 
+  function renderDesktopNavSection([id, labelKey]: readonly [ShopNavSectionId, string]) {
+    const isActive = activeSection === id;
+    const linkButton = (
+      <button
+        key={id}
+        type="button"
+        onClick={() => goSection(id)}
+        className={cn(
+          "dingry-nav-menu-link dingry-interactive-luxe relative min-h-11 px-1.5 text-xs tracking-[0.26em] text-white/45 uppercase hover:text-white lg:px-2 lg:text-[0.8125rem] lg:tracking-[0.28em]",
+          isActive && "dingry-nav-menu-link--active",
+        )}
+      >
+        {isActive && !reduceMotion ? (
+          <motion.span
+            layoutId={NAV_MENU_INDICATOR_LAYOUT_ID}
+            className="dingry-nav-menu-link-indicator"
+            transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.78 }}
+            aria-hidden
+          />
+        ) : isActive && reduceMotion ? (
+          <span className="dingry-nav-menu-link-indicator" aria-hidden />
+        ) : null}
+        <span className="relative z-[1]">{t(labelKey)}</span>
+      </button>
+    );
+    if (id === "catalogue" && !reduceMotion) {
+      return (
+        <motion.span key={id} animate={catalogueLinkControls} className="inline-flex">
+          {linkButton}
+        </motion.span>
+      );
+    }
+    return linkButton;
+  }
+
   return (
     <nav
       className={cn(
@@ -345,48 +381,24 @@ export function ShopNav({
             className="dingry-nav-menu hidden shrink-0 items-center justify-center gap-3 justify-self-center md:flex lg:gap-5"
           >
             <LayoutGroup id="dingry-shop-nav-menu">
-              {SECTIONS.map(([id, labelKey]) => {
-                const isActive = activeSection === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => goSection(id)}
-                    className={cn(
-                      "dingry-nav-menu-link dingry-interactive-luxe relative min-h-11 px-1.5 text-xs tracking-[0.26em] text-white/45 uppercase hover:text-white lg:px-2 lg:text-[0.8125rem] lg:tracking-[0.28em]",
-                      isActive && "dingry-nav-menu-link--active",
-                    )}
-                  >
-                    {isActive && !reduceMotion ? (
-                      <motion.span
-                        layoutId={NAV_MENU_INDICATOR_LAYOUT_ID}
-                        className="dingry-nav-menu-link-indicator"
-                        transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.78 }}
-                        aria-hidden
-                      />
-                    ) : isActive && reduceMotion ? (
-                      <span className="dingry-nav-menu-link-indicator" aria-hidden />
-                    ) : null}
-                    <span className="relative z-[1]">{t(labelKey)}</span>
-                  </button>
-                );
-              })}
+              {NAV_SECTION_LINKS.map((entry) => renderDesktopNavSection(entry))}
+              {onOpenCustom ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveSection("custom");
+                    onOpenCustom();
+                  }}
+                  className={cn(
+                    "dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe min-h-11 shrink-0 px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] lg:px-4 lg:text-[10px] lg:tracking-[0.18em]",
+                    activeSection === "custom" && "dingry-nav-custom-tab--active",
+                  )}
+                >
+                  <span className="gold-text">{t("nav.custom")}</span>
+                </button>
+              ) : null}
+              {renderDesktopNavSection(NAV_LOOKBOOK_LINK)}
             </LayoutGroup>
-            {onOpenCustom ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveSection("custom");
-                  onOpenCustom();
-                }}
-                className={cn(
-                  "dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe min-h-11 shrink-0 px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] lg:px-4 lg:text-[10px] lg:tracking-[0.18em]",
-                  activeSection === "custom" && "dingry-nav-custom-tab--active",
-                )}
-              >
-                <span className="gold-text">{t("nav.custom")}</span>
-              </button>
-            ) : null}
           </motion.div>
           <div className="relative z-10 ml-auto flex shrink-0 items-center gap-2 justify-self-end md:ml-0 md:gap-3">
             <DingryLocaleToggle className="max-md:hidden" />
@@ -441,7 +453,7 @@ export function ShopNav({
                   {t("brand.streetLine")}
                 </button>
               </li>
-              {SECTIONS.filter(([id]) => id !== "catalogue").map(([id, labelKey]) => (
+              {NAV_SECTION_LINKS.filter(([id]) => id !== "catalogue").map(([id, labelKey]) => (
                 <li key={id}>
                   <button
                     type="button"
@@ -453,7 +465,7 @@ export function ShopNav({
                 </li>
               ))}
               {onOpenCustom ? (
-                <li className="mt-2 border-t border-white/10 pt-2">
+                <li>
                   <button
                     type="button"
                     onClick={() => {
@@ -469,6 +481,15 @@ export function ShopNav({
                   </button>
                 </li>
               ) : null}
+              <li key={NAV_LOOKBOOK_LINK[0]}>
+                <button
+                  type="button"
+                  onClick={() => goSection(NAV_LOOKBOOK_LINK[0])}
+                  className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
+                >
+                  {t(NAV_LOOKBOOK_LINK[1])}
+                </button>
+              </li>
             </ul>
           </motion.div>
         ) : null}

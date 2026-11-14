@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { DINGRY_CONTACT_EMAIL } from "@/lib/dingry-legal";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatMessage } from "@/lib/i18n/messages";
@@ -50,13 +51,14 @@ export function DingryNewsletterForm({ align = "start" }: DingryNewsletterFormPr
       ) : (
         <form
           onSubmit={handleSubmit}
-          className={`mt-3 flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center ${
-            centered ? "justify-center" : "justify-start"
-          }`}
+          className={`mt-3 flex w-full ${centered ? "justify-center" : "justify-start"}`}
         >
-          <label className="flex w-full sm:w-auto">
-            <span className="sr-only">{t("newsletter.emailSrOnly")}</span>
+          <div className="dingry-newsletter-field relative w-full max-w-[16rem] sm:max-w-[18rem]">
+            <label className="sr-only" htmlFor="dingry-newsletter-email-input">
+              {t("newsletter.emailSrOnly")}
+            </label>
             <input
+              id="dingry-newsletter-email-input"
               type="email"
               name="newsletter-email"
               autoComplete="email"
@@ -65,12 +67,16 @@ export function DingryNewsletterForm({ align = "start" }: DingryNewsletterFormPr
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("newsletter.emailPlaceholder")}
-              className="dingry-contact-field dingry-newsletter-email w-full sm:max-w-[11.25rem]"
+              className="dingry-contact-field dingry-newsletter-email dingry-newsletter-email--with-send w-full"
             />
-          </label>
-          <button type="submit" className="dingry-contact-submit dingry-newsletter-submit w-full sm:w-auto">
-            {t("newsletter.submit")}
-          </button>
+            <button
+              type="submit"
+              className="dingry-newsletter-send"
+              aria-label={t("newsletter.submit")}
+            >
+              <ArrowRight className="dingry-newsletter-send__icon" strokeWidth={2.25} aria-hidden />
+            </button>
+          </div>
         </form>
       )}
     </div>

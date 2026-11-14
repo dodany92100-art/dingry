@@ -117,8 +117,11 @@ function DingryShopPageInner() {
   const { pageScrollRef, scrollToSection, restoreScrollPosition } = usePageScroll();
 
   const scrollToCatalogueWithNavMagnet = useCallback(() => {
-    setNavMagnet({ section: "catalogue", at: Date.now() });
-    scrollToSection("catalogue");
+    const at = Date.now();
+    setNavMagnet({ section: "catalogue", at });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToSection("catalogue"));
+    });
   }, [scrollToSection]);
   const { products, catalogState, retry } = useShopCatalog();
   const { config: atelierConfig } = useShopAtelierCustom({
