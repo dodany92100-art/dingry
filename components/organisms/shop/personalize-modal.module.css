@@ -322,7 +322,9 @@
 }
 
 .sheetFooterPrice {
-  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   font-size: 1.25rem;
   letter-spacing: 0.02em;
   color: rgb(22 22 22 / 0.85);
@@ -774,10 +776,9 @@
   border-radius: 9999px;
   background: #fff;
   padding: 0.875rem 1.25rem;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.8125rem;
-  font-weight: 700;
-  font-stretch: condensed;
+  font-weight: 600;
   letter-spacing: 0.045em;
   text-transform: uppercase;
   color: #161616;

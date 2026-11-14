@@ -1,13 +1,8 @@
 "use client";
 
 import { AnimatedTabs } from "@/components/atoms/ui/animated-tabs";
-import {
-  CATALOG_MENU_TAB_CUSTOM,
-  catalogMenuTabsForStorefront,
-  type CatalogFilter,
-} from "@/lib/shop-catalog";
+import { CATALOG_FILTERS, CATALOG_MENU_TAB_CUSTOM, type CatalogFilter } from "@/lib/shop-catalog";
 import type { ShopProduct } from "@/lib/catalog";
-import { useMemo } from "react";
 import { useTranslation } from "@/hooks/use-translation";
 
 export type CatalogTabValue = CatalogFilter | typeof CATALOG_MENU_TAB_CUSTOM;
@@ -18,12 +13,9 @@ type CatalogFilterBarProps = {
   products: readonly ShopProduct[];
 };
 
-export function CatalogFilterBar({ value, onChange, products }: CatalogFilterBarProps) {
+export function CatalogFilterBar({ value, onChange, products: _products }: CatalogFilterBarProps) {
   const { t, catalogTabLabel } = useTranslation();
-  const categoryTabs = useMemo(
-    () => catalogMenuTabsForStorefront(products).filter((tab) => tab !== CATALOG_MENU_TAB_CUSTOM),
-    [products],
-  );
+  const categoryTabs = CATALOG_FILTERS;
   const categoryValue = value === CATALOG_MENU_TAB_CUSTOM ? categoryTabs[0] ?? "all" : value;
 
   return (
@@ -37,6 +29,7 @@ export function CatalogFilterBar({ value, onChange, products }: CatalogFilterBar
         layoutId="dingry-catalog-tabs"
         aria-label={t("catalog.filtersAria")}
         variant="underline"
+        scrollActiveIntoView={false}
         labelForTab={catalogTabLabel}
       />
       </div>

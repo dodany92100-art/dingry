@@ -50,14 +50,14 @@ export function CollectionFeed({
         indexOffset += section.products.length;
 
         return (
-          <div key={section.category} className="scroll-mt-28 space-y-4 md:space-y-5">
+          <div key={section.category} className="space-y-4 md:space-y-5">
             {section.category === "hoodies" ? (
               <div className="pb-4 md:pb-5">
                 <p className="dingry-section-eyebrow">{t("collection.eyebrow")}</p>
                 <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{t("footer.streetLine")}</p>
               </div>
             ) : null}
-            <h3 className={CATALOG_SECTION_HEADING_CLASS}>
+            <h3 id={`catalog-section-${section.category}`} className={CATALOG_SECTION_HEADING_CLASS}>
               {section.label}
             </h3>
             {section.products.length === 0 ? (

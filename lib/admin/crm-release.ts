@@ -1,18 +1,19 @@
 import { adminCrmVersion } from "@/lib/admin/crm-version";
 
 export const ADMIN_CRM_RELEASE = {
-  title: "Supabase & studio produit",
+  title: "Boutique en ligne & fiches produits",
   summary:
-    "Catalogue et images sur Supabase Storage, fiche produit retravaillée (scroll, typo, panneaux sombres).",
+    "dingry.com est à jour. Le parcours client et l’édition des produits sont plus fluides ; ce bandeau résume ce qui change pour vous au quotidien.",
   highlights: [
-    "Produits en base Supabase : plus de conflits Blob sur les fiches.",
-    "Upload images → bucket dgry-images (WebP compressé côté serveur).",
-    "Fiche plein écran : brouillon / en ligne, zones de texte élargies.",
+    "Paiement : PayPal s’ouvre dans une fenêtre, le client reste sur le site pendant le règlement.",
+    "Boutique : textes et prix plus lisibles (nouvelle typographie), panier et checkout harmonisés.",
+    "Nouveau produit : choisir une fiche déjà en ligne dans la liste préremplit nom, prix, tailles, textes, stock et photos.",
+    "Modèles catalogue : impossible d’enregistrer deux fois le même modèle par erreur.",
   ],
 } as const;
 
 export function adminCrmReleaseTitle(): string {
-  return `CRM v${adminCrmVersion()} — ${ADMIN_CRM_RELEASE.title}`;
+  return `${ADMIN_CRM_RELEASE.title} · version ${adminCrmVersion()}`;
 }
 
 export const ADMIN_CRM_RELEASE_DISMISS_KEY = "dingry-admin-crm-release-dismissed-build";

@@ -8,7 +8,11 @@ import { shopProductCanonicalPath, shopProductDocumentTitle } from "@/lib/seo/sh
 import { LazyWhenVisible } from "@/components/molecules/lazy-when-visible";
 import { BackgroundGradientAnimation } from "@/components/atoms/ui/background-gradient-animation";
 import { CatalogSection } from "@/components/organisms/shop/catalog-section";
-import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
+import {
+  CATALOG_SCROLL_OFFSET_CLASS,
+  DINGRY_SHOP_LOWER_BAND_CLASS,
+  DINGRY_SHOP_SHELL_CLASS,
+} from "@/components/organisms/shop/catalog-layout";
 import { useCatalogFilter } from "@/components/organisms/shop/hooks/use-catalog-filter";
 import { usePageScroll } from "@/components/organisms/shop/hooks/use-page-scroll";
 import { useProductModal } from "@/components/organisms/shop/hooks/use-product-modal";
@@ -24,7 +28,7 @@ import {
   type PersonalizedLineInput,
 } from "@/components/organisms/shop/personalize-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
-import { ShopNav } from "@/components/organisms/shop/shop-nav";
+import { ShopNav, type ShopNavMagnet } from "@/components/organisms/shop/shop-nav";
 import { DingryI18nProvider } from "@/hooks/use-translation";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { parseCatalogFilter } from "@/lib/shop-catalog";
@@ -36,11 +40,7 @@ import { PERSONALIZABLE_PRODUCT_ID, PRODUCTS } from "@/lib/shop-data";
 import { hasSupabaseOAuthQuery, searchWithoutOAuthQuery } from "@/lib/auth/scrub-public-oauth-query";
 import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import { bannerConfiguratorInitialLabel } from "@/lib/custom-city-banner";
-import {
-  buildFlipPairs,
-  resolveSaleProduct,
-  visibleCatalogProducts,
-} from "@/lib/shop-view";
+import { buildFlipPairs, resolveSaleProduct } from "@/lib/shop-view";
 
 const ProductModal = dynamic(
   () => import("@/components/organisms/shop/product-modal").then((m) => ({ default: m.ProductModal })),
@@ -115,6 +115,11 @@ function DingryShopPageInner() {
   const searchParams = useSearchParams();
   const shopBasePath = shopBasePathFromPathname(pathname ?? "/");
   const { pageScrollRef, scrollToSection, restoreScrollPosition } = usePageScroll();
+
+  const scrollToCatalogueWithNavMagnet = useCallback(() => {
+    setNavMagnet({ section: "catalogue", at: Date.now() });
+    scrollToSection("catalogue");
+  }, [scrollToSection]);
   const { products, catalogState, retry } = useShopCatalog();
   const { config: atelierConfig } = useShopAtelierCustom({
     enabled: catalogState !== "loading",
@@ -129,6 +134,7 @@ function DingryShopPageInner() {
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [navMagnet, setNavMagnet] = useState<ShopNavMagnet | undefined>(undefined);
   const [authReason, setAuthReason] = useState<string | undefined>();
   const openAuth = useCallback((reason?: string) => {
     setAuthReason(reason);
@@ -161,7 +167,6 @@ function DingryShopPageInner() {
     [openAuth, shopAuth.user, wishlist],
   );
 
-  const filtered = useMemo(() => visibleCatalogProducts(products, activeFilter), [products, activeFilter]);
   const flipPairs = useMemo(() => buildFlipPairs(products), [products]);
   const personalizationProduct = useMemo(
     () =>
@@ -269,17 +274,17 @@ function DingryShopPageInner() {
   }, []);
 
   const scrollToAtelierLanding = useCallback(() => {
+    const landOnHero = () => {
+      if (document.getElementById("atelier-custom-hero")) {
+        scrollToSection("atelier-custom-hero");
+        return true;
+      }
+      return false;
+    };
+    if (landOnHero()) return;
     scrollToSection("atelier-custom");
-    window.setTimeout(() => {
-      const scroller = pageScrollRef.current;
-      const hero = document.getElementById("atelier-custom-hero");
-      if (!scroller || !hero) return;
-      const top =
-        hero.getBoundingClientRect().top -
-        scroller.getBoundingClientRect().top +
-        scroller.scrollTop;
-      scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-    }, 500);
+    window.setTimeout(landOnHero, 280);
+    window.setTimeout(landOnHero, 720);
   }, [scrollToSection]);
 
   useEffect(() => {
@@ -357,21 +362,22 @@ function DingryShopPageInner() {
         onOpenCart={openCart}
         onScrollToSection={scrollToSection}
         onOpenCustom={scrollToAtelierLanding}
+        navMagnet={navMagnet}
       />
       <div
         ref={pageScrollRef}
         className="dingry-page relative z-10 h-full overflow-x-hidden overflow-y-auto overscroll-y-contain bg-transparent [overflow-anchor:none]"
       >
-        <ShopHero onDiscoverCollection={() => scrollToSection("catalogue")} />
+        <ShopHero onDiscoverCollection={scrollToCatalogueWithNavMagnet} />
         <div className={DINGRY_SHOP_SHELL_CLASS}>
-          <div id="catalogue-landing" />
+          <div id="catalogue-landing" className={CATALOG_SCROLL_OFFSET_CLASS} aria-hidden />
           <CatalogSection
             tabValue={tabValue}
             onTabChange={handleTabChange}
             catalogState={catalogState}
             onRetry={retry}
-            filterKey={activeFilter}
-            products={filtered}
+            filterKey="all"
+            products={products}
             flipPairs={flipPairs}
             onOpenProduct={modal.openProductModal}
             wishlistIds={wishlist.ids}
@@ -387,41 +393,43 @@ function DingryShopPageInner() {
           >
             <AtelierCustomSection onOpenCustom={openCustom} />
           </LazyWhenVisible>
-          <LazyWhenVisible
-            scrollRootRef={pageScrollRef}
-            id="heritage"
-            prefetch={prefetchHeritageSection}
-            rootMargin="420px 0px 48px 0px"
-            placeholderClassName="dingry-gold-rule-top min-h-[14rem] [contain-intrinsic-size:auto_14rem]"
-          >
-            <HeritageSection />
-          </LazyWhenVisible>
-          <LazyWhenVisible
-            scrollRootRef={pageScrollRef}
-            id="lookbook"
-            prefetch={prefetchLookbookStrip}
-            rootMargin="520px 0px 48px 0px"
-            placeholderClassName="dingry-gold-rule-top min-h-[18rem] [contain-intrinsic-size:auto_18rem]"
-          >
-            <LookbookCatalogStrip />
-          </LazyWhenVisible>
-          <LazyWhenVisible
-            scrollRootRef={pageScrollRef}
-            prefetch={prefetchShopFooter}
-            rootMargin="320px 0px 32px 0px"
-            placeholderClassName="min-h-32 [contain-intrinsic-size:auto_8rem]"
-          >
-            <ShopFooter
-              shopBasePath={shopBasePath}
-              onScrollToCatalogue={() => scrollToSection("catalogue")}
-              onScrollToSection={scrollToSection}
-              onSelectCatalogFilter={(filter) => {
-                selectFilter(filter);
-                scrollToSection("catalogue");
-              }}
-              onOpenAtelierCustom={scrollToAtelierLanding}
-            />
-          </LazyWhenVisible>
+          <div className={DINGRY_SHOP_LOWER_BAND_CLASS}>
+            <LazyWhenVisible
+              scrollRootRef={pageScrollRef}
+              id="heritage"
+              prefetch={prefetchHeritageSection}
+              rootMargin="420px 0px 48px 0px"
+              placeholderClassName="dingry-gold-rule-top min-h-[14rem] [contain-intrinsic-size:auto_14rem]"
+            >
+              <HeritageSection />
+            </LazyWhenVisible>
+            <LazyWhenVisible
+              scrollRootRef={pageScrollRef}
+              id="lookbook"
+              prefetch={prefetchLookbookStrip}
+              rootMargin="520px 0px 48px 0px"
+              placeholderClassName="dingry-gold-rule-top min-h-[18rem] [contain-intrinsic-size:auto_18rem]"
+            >
+              <LookbookCatalogStrip />
+            </LazyWhenVisible>
+            <LazyWhenVisible
+              scrollRootRef={pageScrollRef}
+              prefetch={prefetchShopFooter}
+              rootMargin="320px 0px 32px 0px"
+              placeholderClassName="min-h-32 [contain-intrinsic-size:auto_8rem]"
+            >
+              <ShopFooter
+                shopBasePath={shopBasePath}
+                onScrollToCatalogue={() => scrollToSection("catalogue")}
+                onScrollToSection={scrollToSection}
+                onSelectCatalogFilter={(filter) => {
+                  selectFilter(filter);
+                  scrollToSection("catalogue");
+                }}
+                onOpenAtelierCustom={scrollToAtelierLanding}
+              />
+            </LazyWhenVisible>
+          </div>
         </div>
       </div>
 
@@ -466,7 +474,7 @@ function DingryShopPageInner() {
         checkoutDisabled={catalogState === "error"}
         onDiscoverCollection={() => {
           cart.setOpen(false);
-          scrollToSection("catalogue");
+          scrollToCatalogueWithNavMagnet();
         }}
         catalogProducts={products}
       />
@@ -481,7 +489,7 @@ function DingryShopPageInner() {
         onToggleWishlist={toggleWishlistWithAuth}
         onDiscoverCollection={() => {
           setWishlistOpen(false);
-          scrollToSection("catalogue");
+          scrollToCatalogueWithNavMagnet();
         }}
         onAddToCart={(product, size, from) => {
           if (catalogState === "error") return;

@@ -2,7 +2,7 @@
 
 import { startTransition, useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { parseCatalogFilter, type CatalogFilter } from "@/lib/shop-catalog";
+import { catalogScrollIdForFilter, parseCatalogFilter, type CatalogFilter } from "@/lib/shop-catalog";
 import { shopBasePathFromPathname } from "@/lib/shop-base-path";
 
 /** Filtre catalogue piloté par ?category= ; fait défiler vers le catalogue à chaque changement. */
@@ -31,11 +31,13 @@ export function useCatalogFilter(scrollToSection: (id: string) => void) {
 
   const skipFirstScroll = useRef(true);
   useEffect(() => {
+    const targetId = catalogScrollIdForFilter(activeFilter);
     if (skipFirstScroll.current) {
       skipFirstScroll.current = false;
+      if (activeFilter !== "all") scrollToSection(targetId);
       return;
     }
-    scrollToSection("catalogue-landing");
+    scrollToSection(targetId);
   }, [activeFilter, scrollToSection]);
 
   return { activeFilter, selectFilter };

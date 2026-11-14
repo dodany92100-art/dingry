@@ -22,5 +22,20 @@ export const CATALOG_SECTION_SURFACE_CLASS = "dingry-catalog-surface pb-20 md:pb
 /** Compense le padding CRM admin pour caler la grille sur la vitrine. */
 export const ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS = "-mx-6 md:-mx-10";
 
-export const CATALOG_SECTION_HEADING_CLASS =
-  "dingry-gold-rule-bottom pb-3 text-sm font-medium uppercase tracking-[0.28em] text-white md:pb-4 md:text-base";
+/** Titre de famille catalogue — Anton (display), ancrage scroll sous nav + barre onglets. */
+export const CATALOG_SCROLL_OFFSET_CLASS =
+  "scroll-mt-[calc(var(--dingry-nav-h)+var(--dingry-catalog-bar-h)+0.75rem)]";
+
+/** Sections plein écran (atelier, heritage…) — calage sous la nav fixe. */
+export const DINGRY_SECTION_SCROLL_OFFSET_CLASS = "scroll-mt-[calc(var(--dingry-nav-h)+0.5rem)]";
+
+/** Fond dégradé sombre : heritage → lookbook → pied de page. */
+export const DINGRY_SHOP_LOWER_BAND_CLASS = "dingry-shop-lower-band";
+
+export const CATALOG_SECTION_HEADING_CLASS = [
+  "dingry-typo-street",
+  "dingry-typo-street--md",
+  "dingry-gold-rule-bottom",
+  CATALOG_SCROLL_OFFSET_CLASS,
+  "pb-3 text-white md:pb-4",
+].join(" ");

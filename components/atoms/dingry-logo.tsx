@@ -97,7 +97,7 @@ export function DingryLogo({
       alt="DINGRY Paris"
       draggable={false}
       className={cn(
-        "relative z-[1] h-7 w-auto max-md:max-h-7 md:h-11",
+        "relative z-[1] h-[2.875rem] w-auto max-md:max-h-[2.875rem] md:h-14",
         tone === "on-light" && "dingry-logo-on-light",
         animate && !interactive && !shimmer && "dingry-logo-flip",
         className,

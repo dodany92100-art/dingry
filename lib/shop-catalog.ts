@@ -129,11 +129,12 @@ export type CatalogMenuSection = {
   products: ShopProduct[];
 };
 
-function keepCatalogMenuSection(section: CatalogMenuSection): boolean {
-  return section.products.length > 0;
+/** Id d’ancrage scroll pour une section catalogue (ou tête de vitrine). */
+export function catalogScrollIdForFilter(filter: CatalogFilter): string {
+  return filter === "all" ? "catalogue-landing" : `catalog-section-${filter}`;
 }
 
-/** Vue « Collection » : blocs produits dans l’ordre du menu (Hoodies → Caps). */
+/** Vue « Collection » : blocs produits dans l’ordre du menu (Hoodies → Caps), y compris familles vides. */
 export function buildCatalogMenuSections(products: readonly ShopProduct[]): CatalogMenuSection[] {
   const cards = toCatalogCards(products);
   return CATALOG_CATEGORIES.map((category) => ({
@@ -143,7 +144,7 @@ export function buildCatalogMenuSections(products: readonly ShopProduct[]): Cata
       cards.filter((product) => normalizeCatalogCategory(product.category) === category),
       "featured",
     ),
-  })).filter(keepCatalogMenuSection);
+  }));
 }
 
 /** Onglets catalogue (hors « custom ») pour lesquels au moins une fiche est visible. */

@@ -1,4 +1,6 @@
+import type { AdminImageUploadResponse } from "@/lib/client/admin-upload-image";
 import type { AdminProduct } from "@/lib/admin/types";
+import { isDraftPlaceholderImage } from "@/lib/admin/types";
 import { sortAdminProductsForDisplay } from "@/lib/admin/product-display-order";
 import {
   normalizeCatalogMakerLabel,
@@ -37,6 +39,39 @@ function adminProductToMakerTemplate(product: AdminProduct): CatalogMakerTemplat
     createdAt: now,
     updatedAt: now,
   };
+}
+
+export function colorDeclinationsFromAdminProduct(product: AdminProduct): string[] {
+  const fromField = product.colorDeclinations.map((c) => c.trim()).filter(Boolean);
+  if (fromField.length > 0) return fromField;
+  const fromOptions = (product.options ?? [])
+    .map((opt) => opt.label.trim() || opt.color.trim())
+    .filter(Boolean);
+  if (fromOptions.length === 0) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const label of fromOptions) {
+    const key = label.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(label);
+  }
+  return out;
+}
+
+/** Réutilise les URLs R2/CRM pour pré-enregistrer recto / verso sur une nouvelle fiche. */
+export function adminProductPreuploadedImage(
+  product: AdminProduct,
+  face: "recto" | "verso",
+): AdminImageUploadResponse | null {
+  if (face === "recto") {
+    const url = (product.blobUrl ?? product.imageUrl).trim();
+    if (!url || isDraftPlaceholderImage(url)) return null;
+    return { url, pathname: product.blobPathname };
+  }
+  const url = (product.imageBackBlobUrl ?? product.imageBackUrl).trim();
+  if (!url || isDraftPlaceholderImage(url)) return null;
+  return { url, pathname: product.imageBackBlobPathname };
 }
 
 export function catalogProductMakerOptionLabel(

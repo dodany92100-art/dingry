@@ -35,8 +35,8 @@ function FooterNavColumn({
 }) {
   return (
     <div className={`flex flex-col items-start text-left ${className}`}>
-      <p className="dingry-footer-eyebrow mb-3">{title}</p>
-      <ul className="space-y-2">{children}</ul>
+      <p className="dingry-footer-eyebrow mb-2">{title}</p>
+      <ul className="space-y-1.5">{children}</ul>
     </div>
   );
 }
@@ -163,19 +163,19 @@ export function ShopFooter({
 
   return (
     <>
-      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-8 md:py-10">
+      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-6 md:py-7">
         <div className="w-full">
-          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 sm:gap-y-10 lg:grid-cols-4 lg:items-start lg:gap-8 xl:gap-10">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-5 sm:gap-x-8 sm:gap-y-6 lg:grid-cols-4 lg:items-start lg:gap-6 xl:gap-8">
             <div className="col-span-2 flex flex-col items-start text-left sm:col-span-1">
               <DingryLogo animate={false} tone="on-light" className="h-11 w-auto max-md:max-h-none md:h-[3.35rem]" />
-              <p className={`dingry-typo-manifesto mt-3 max-w-[14rem] text-[10px] text-[#161616]/52`}>
+              <p className={`dingry-typo-manifesto mt-2 max-w-[14rem] text-[10px] text-[#161616]/52`}>
                 {t("footer.manifesto")}
               </p>
               <a
                 href={DINGRY_INSTAGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="dingry-footer-instagram-cta dingry-footer-instagram-plaque dingry-footer-instagram-plaque--footer mt-4"
+                className="dingry-footer-instagram-cta dingry-footer-instagram-plaque dingry-footer-instagram-plaque--footer mt-3"
               >
                 <InstagramIcon />
                 <span className="dingry-footer-instagram-cta__handle dingry-footer-instagram-plaque__handle">
@@ -211,7 +211,7 @@ export function ShopFooter({
             </FooterNavColumn>
 
             <div id="mentions-legales" className="flex flex-col items-start text-left">
-              <div className="dingry-footer-legal-head mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <div className="dingry-footer-legal-head mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
                 <button
                   type="button"
                   onClick={() => setLegalDoc("mentions")}
@@ -227,7 +227,7 @@ export function ShopFooter({
                   {t("footer.legalLinks.cgv")}
                 </button>
               </div>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {FOOTER_LEGAL_LINKS.map(({ id, labelKey }) => (
                   <li key={id}>
                     <button type="button" onClick={() => setLegalDoc(id)} className={boutiqueLinkClass}>
@@ -244,20 +244,20 @@ export function ShopFooter({
             </div>
           </div>
 
-          <div className="dingry-footer-newsletter-stage mt-8 flex w-full justify-center md:mt-10">
+          <div className="dingry-footer-newsletter-stage mt-5 flex w-full justify-center md:mt-6">
             <div className="w-full max-w-[22rem] sm:max-w-[26rem]">
               <DingryNewsletterForm align="center" />
             </div>
           </div>
 
           <section
-            className="dingry-gold-rule-top mt-10 flex w-full flex-col gap-6 pt-8 md:mt-12"
+            className="dingry-gold-rule-top mt-6 flex w-full flex-col gap-4 pt-5 md:mt-7"
             aria-label={t("footer.paymentSectionAria")}
           >
-            <div className="flex w-full flex-col items-center gap-6 text-center">
+            <div className="flex w-full flex-col items-center gap-4 text-center">
               <div className="flex w-full flex-col items-center">
                 <p className="dingry-footer-eyebrow m-0 text-[#161616]/60">{t("footer.paymentEyebrow")}</p>
-                <div className="mt-3 flex w-full justify-center">
+                <div className="mt-2 flex w-full justify-center">
                   <PaymentMarks paymentAria={t("cart.paymentMethodsAria")} />
                 </div>
               </div>

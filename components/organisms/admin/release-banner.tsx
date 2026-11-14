@@ -28,7 +28,7 @@ export function ReleaseBanner() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-3xl">
           <p className="text-sm font-medium text-[#8ec0ff]">
-            Mise à jour · {adminCrmReleaseTitle()}
+            Nouveautés · {adminCrmReleaseTitle()}
             {deployedAt ? (
               <span className="font-normal text-white/50">
                 {" "}

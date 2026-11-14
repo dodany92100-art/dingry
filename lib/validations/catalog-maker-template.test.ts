@@ -38,4 +38,19 @@ describe("validateCatalogMakerTemplate", () => {
     );
     expect(r.ok).toBe(false);
   });
+
+  it("rejette un modèle identique avec un autre libellé", () => {
+    const r = validateCatalogMakerTemplate(
+      {
+        label: "SWEAT",
+        category: "Hoodies",
+        priceTtc: 50,
+        sizes: ["L", "S", "M"],
+        sizeGuide: "400 g/m²",
+      },
+      [hoodie],
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain("identique");
+  });
 });

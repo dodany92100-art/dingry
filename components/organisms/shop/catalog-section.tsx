@@ -4,7 +4,11 @@ import { memo } from "react";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import type { ShopProduct } from "@/lib/catalog";
 import type { FlipPair } from "@/lib/shop-view";
-import { CATALOG_VITRINE_SHELL_CLASS, CATALOG_SECTION_SURFACE_CLASS } from "./catalog-layout";
+import {
+  CATALOG_SCROLL_OFFSET_CLASS,
+  CATALOG_SECTION_SURFACE_CLASS,
+  CATALOG_VITRINE_SHELL_CLASS,
+} from "./catalog-layout";
 import { CatalogFilterBar, type CatalogTabValue } from "./catalog-filter-bar";
 import { CatalogGrid } from "./catalog-grid";
 import type { CatalogState } from "./hooks/use-shop-catalog";
@@ -28,7 +32,7 @@ function CatalogSectionInner({ tabValue, onTabChange, ...grid }: CatalogSectionP
   const { t } = useTranslation();
 
   return (
-    <section id="catalogue" className={CATALOG_SECTION_SURFACE_CLASS}>
+    <section id="catalogue" className={`${CATALOG_SECTION_SURFACE_CLASS} ${CATALOG_SCROLL_OFFSET_CLASS}`}>
       <div className={CATALOG_VITRINE_SHELL_CLASS}>
         <CatalogFilterBar value={tabValue} onChange={onTabChange} products={grid.products} />
 

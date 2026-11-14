@@ -17,7 +17,13 @@ export function usePageScroll() {
         target.getBoundingClientRect().top -
         scroller.getBoundingClientRect().top +
         scroller.scrollTop;
-      scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      const shopRoot = scroller.closest(".dingry-shop");
+      const vars = shopRoot ? getComputedStyle(shopRoot) : getComputedStyle(document.documentElement);
+      const navH = parseFloat(vars.getPropertyValue("--dingry-nav-h")) || 0;
+      const barH = parseFloat(vars.getPropertyValue("--dingry-catalog-bar-h")) || 0;
+      const scrollMarginTop =
+        parseFloat(window.getComputedStyle(target).scrollMarginTop) || navH + barH + 12;
+      scroller.scrollTo({ top: Math.max(0, top - scrollMarginTop), behavior: "smooth" });
     });
   }, []);
 

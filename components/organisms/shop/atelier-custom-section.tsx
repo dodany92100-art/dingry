@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import type { OpenCustomOptions } from "@/lib/shop/atelier-open-options";
-import { DINGRY_ATELIER_HERO_SRC } from "@/lib/dingry-brand";
-import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
+import { DINGRY_SECTION_SCROLL_OFFSET_CLASS } from "@/components/organisms/shop/catalog-layout";
+import { DINGRY_ATELIER_HERO_SRC, DINGRY_LOGO_MONDE_CITIES_SRC } from "@/lib/dingry-brand";
 import { useTranslation } from "@/hooks/use-translation";
 
 type AtelierCustomSectionProps = {
@@ -26,7 +26,7 @@ export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps
   return (
     <section
       id="atelier-custom-hero"
-      className="dingry-gold-rule-top dingry-atelier-hero scroll-mt-28 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen max-w-[100vw] overflow-hidden bg-black text-white"
+      className={`dingry-gold-rule-top dingry-atelier-hero ${DINGRY_SECTION_SCROLL_OFFSET_CLASS} relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen max-w-[100vw] overflow-hidden bg-black text-white`}
       aria-labelledby="dingry-atelier-hero-title"
     >
       <div className="relative flex min-h-[min(100dvh,56rem)] w-full flex-col justify-end">
@@ -35,19 +35,30 @@ export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/25"
           aria-hidden
         />
-        <div className="relative z-20 mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 pb-10 pt-24 sm:px-6 md:pb-14 md:pt-28 pointer-events-auto">
-          <p className="dingry-section-eyebrow">{eyebrow}</p>
-          <h2
-            id="dingry-atelier-hero-title"
-            className="dingry-atelier-hero__title gold-text dingry-typo-street max-w-2xl text-[clamp(1.75rem,5vw,3.25rem)] leading-[1.05]"
-          >
-            {title}
-          </h2>
-          <p className="max-w-xl text-base text-white/90 md:text-lg">{lead}</p>
-          <p className="text-sm font-medium tracking-wide text-[#d4af37]">
-            Supplément personnalisation&nbsp;: +{PERSONALIZATION_SURCHARGE_EUR}&nbsp;€
-          </p>
-          <AtelierHeroCta cta={cta} onOpen={() => onOpenCustom()} />
+        <p className="dingry-section-eyebrow dingry-atelier-hero__eyebrow pointer-events-none absolute inset-x-0 top-12 z-30 mx-auto w-full max-w-[1400px] px-4 sm:top-14 sm:px-6 md:top-16">
+          {eyebrow}
+        </p>
+        <div className="dingry-atelier-hero__copy relative z-20 mx-auto flex w-full max-w-[1400px] flex-col justify-end px-4 pb-10 pt-20 sm:px-6 md:pb-14 pointer-events-auto">
+          <div className="dingry-atelier-hero__mark-wrap">
+            <Image
+              src={DINGRY_LOGO_MONDE_CITIES_SRC}
+              alt={title}
+              width={500}
+              height={500}
+              priority={false}
+              className="dingry-custom-banner-mark dingry-atelier-hero__mark object-contain object-left"
+            />
+          </div>
+          <div className="flex w-full max-w-3xl flex-col gap-4 md:gap-5">
+            <AtelierHeroCta cta={cta} onOpen={() => onOpenCustom()} />
+            <h2
+              id="dingry-atelier-hero-title"
+              className="dingry-atelier-hero__title gold-text dingry-typo-street text-[clamp(1.75rem,5vw,3.25rem)] leading-[1.05]"
+            >
+              {title}
+            </h2>
+            <p className="max-w-xl text-base text-white/90 md:text-lg">{lead}</p>
+          </div>
         </div>
       </div>
     </section>
@@ -76,7 +87,7 @@ function AtelierHeroCta({ cta, onOpen }: { cta: string; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="dingry-gold-pill-btn relative z-20 mt-2 h-11 w-fit min-w-[10rem] cursor-pointer rounded-full px-8 text-sm font-semibold uppercase tracking-[0.12em]"
+      className="dingry-atelier-hero__cta-dock dingry-gold-pill-btn z-20 w-fit self-start cursor-pointer rounded-full"
     >
       <span className="gold-text">{cta}</span>
     </button>

@@ -26,10 +26,14 @@ describe("catalog pants", () => {
     expect(resolveShopCategory(24, "T-shirts")).toBe("T-shirts");
   });
 
-  it("masque les familles sans fiche visible", () => {
+  it("affiche toutes les familles du menu, y compris sans fiche", () => {
     const sections = buildCatalogMenuSections([]);
-    expect(sections.some((s) => s.category === "pants")).toBe(false);
-    expect(sections.some((s) => s.category === "crop-top")).toBe(false);
+    const pants = sections.find((s) => s.category === "pants");
+    const crop = sections.find((s) => s.category === "crop-top");
+    expect(pants).toBeDefined();
+    expect(crop).toBeDefined();
+    expect(pants?.products).toHaveLength(0);
+    expect(crop?.products).toHaveLength(0);
   });
 
   it("normalise Crop Top vers crop-top", () => {

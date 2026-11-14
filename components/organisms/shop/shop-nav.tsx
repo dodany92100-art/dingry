@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CircleUser, Heart, Menu, X } from "lucide-react";
-import { motion, useAnimation, useReducedMotion } from "motion/react";
+import { LayoutGroup, motion, useAnimation, useReducedMotion } from "motion/react";
 import { useFlyAnimationOptional } from "@/hooks/use-fly-animation";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
@@ -21,6 +21,38 @@ const SECTIONS = [
 ] as const;
 
 type ShopNavSectionId = (typeof SECTIONS)[number][0];
+type ShopNavActiveSection = ShopNavSectionId | "custom";
+
+const NAV_MENU_INDICATOR_LAYOUT_ID = "dingry-shop-nav-menu-indicator";
+
+export type ShopNavMagnet = { section: ShopNavActiveSection; at: number };
+
+const NAV_SCROLL_TARGETS: { section: ShopNavActiveSection; elementId: string }[] = [
+  { section: "catalogue", elementId: "catalogue" },
+  { section: "heritage", elementId: "heritage" },
+  { section: "lookbook", elementId: "lookbook" },
+  { section: "custom", elementId: "atelier-custom-hero" },
+];
+
+function activeSectionFromScroll(scroller: HTMLElement): ShopNavActiveSection {
+  const shop = scroller.closest(".dingry-shop");
+  const navH = shop
+    ? parseFloat(getComputedStyle(shop).getPropertyValue("--dingry-nav-h")) || 0
+    : 0;
+  const probeY = scroller.getBoundingClientRect().top + navH + 48;
+  let pick: ShopNavActiveSection = "catalogue";
+  let bestTop = Number.NEGATIVE_INFINITY;
+  for (const target of NAV_SCROLL_TARGETS) {
+    const node = document.getElementById(target.elementId);
+    if (!node) continue;
+    const top = node.getBoundingClientRect().top;
+    if (top <= probeY && top > bestTop) {
+      bestTop = top;
+      pick = target.section;
+    }
+  }
+  return pick;
+}
 
 function ShopNavActions({
   cartCount,
@@ -139,6 +171,8 @@ type ShopNavProps = {
   onScrollToSection: (id: string) => void;
   /** Ouvre le configurateur tee (bouton doré CUSTOM). */
   onOpenCustom?: () => void;
+  /** Impulsion « aimantée » sur la barre (ex. CTA hero → catalogue). */
+  navMagnet?: ShopNavMagnet;
   /** Aperçu CRM : même chrome, sans `position: fixed` sur la page admin. */
   embedded?: boolean;
   /** `/` ou `/websitedx` — logo renvoie au sommet de la boutique courante. */
@@ -154,6 +188,7 @@ export function ShopNav({
   onOpenCart,
   onScrollToSection,
   onOpenCustom,
+  navMagnet,
   embedded = false,
   shopBasePath = "/",
 }: ShopNavProps) {
@@ -165,51 +200,50 @@ export function ShopNav({
   const reduceMotion = useReducedMotion();
   const favorisControls = useAnimation();
   const cartControls = useAnimation();
+  const navMenuControls = useAnimation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<ShopNavSectionId | "custom" | null>(null);
+  const [activeSection, setActiveSection] = useState<ShopNavActiveSection | null>(null);
+  const [navMagnetFlash, setNavMagnetFlash] = useState(false);
 
   useEffect(() => {
     if (embedded || onHeritagePage) return;
-    const root = document.querySelector<HTMLElement>(".dingry-page");
-    if (!root) return;
+    const scroller = document.querySelector<HTMLElement>(".dingry-page");
+    if (!scroller) return;
 
-    const observed: { id: string; section: ShopNavSectionId | "custom" }[] = [
-      { id: "catalogue", section: "catalogue" },
-      { id: "heritage", section: "heritage" },
-      { id: "lookbook", section: "lookbook" },
-      { id: "atelier-custom", section: "custom" },
-    ];
+    let rafId = 0;
+    const sync = () => {
+      rafId = 0;
+      setActiveSection(activeSectionFromScroll(scroller));
+    };
+    const onScroll = () => {
+      if (rafId !== 0) return;
+      rafId = window.requestAnimationFrame(sync);
+    };
 
-    const visible = new Map<string, number>();
+    sync();
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const key = entry.target.id;
-          if (entry.isIntersecting) {
-            visible.set(key, entry.intersectionRatio);
-          } else {
-            visible.delete(key);
-          }
-        }
-        let best: { id: string; ratio: number } | null = null;
-        for (const [id, ratio] of visible) {
-          if (!best || ratio > best.ratio) best = { id, ratio };
-        }
-        if (!best) return;
-        const match = observed.find((item) => item.id === best!.id);
-        if (match) setActiveSection(match.section);
-      },
-      { root, threshold: [0.12, 0.28, 0.45], rootMargin: "-12% 0px -52% 0px" },
-    );
-
-    for (const { id } of observed) {
-      const node = document.getElementById(id);
-      if (node) observer.observe(node);
-    }
-
-    return () => observer.disconnect();
+    return () => {
+      scroller.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (rafId !== 0) window.cancelAnimationFrame(rafId);
+    };
   }, [embedded, onHeritagePage]);
+
+  useEffect(() => {
+    if (!navMagnet?.at) return;
+    setActiveSection(navMagnet.section);
+    setNavMagnetFlash(true);
+    const flashTimer = window.setTimeout(() => setNavMagnetFlash(false), 560);
+    if (!reduceMotion) {
+      void navMenuControls.start({
+        y: [0, 4, 0],
+        transition: { type: "spring", stiffness: 380, damping: 26, mass: 0.8 },
+      });
+    }
+    return () => window.clearTimeout(flashTimer);
+  }, [navMagnet?.at, navMagnet?.section, navMenuControls, reduceMotion]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -230,6 +264,7 @@ export function ShopNav({
   }, [fly?.pulse, cartControls, favorisControls, reduceMotion]);
 
   function goSection(id: ShopNavSectionId) {
+    setActiveSection(id);
     if (id === "heritage") {
       if (onHeritagePage) {
         onScrollToSection("heritage-top");
@@ -249,11 +284,12 @@ export function ShopNav({
 
   return (
     <nav
-      className={
+      className={cn(
         embedded
           ? "dingry-shop-nav-bar dingry-gold-rule-bottom relative z-10"
-          : "dingry-shop-nav-bar dingry-gold-rule-bottom fixed top-0 left-0 right-0 z-50"
-      }
+          : "dingry-shop-nav-bar dingry-gold-rule-bottom fixed top-0 left-0 right-0 z-50",
+        navMagnetFlash && "dingry-shop-nav-bar--magnet",
+      )}
     >
       <svg className="pointer-events-none absolute h-0 w-0" aria-hidden focusable="false">
         <defs>
@@ -304,33 +340,54 @@ export function ShopNav({
               <span className="dingry-typo-street dingry-nav-tagline__street">{t("brand.streetLine")}</span>
             </div>
           </div>
-          <div className="dingry-nav-menu hidden shrink-0 items-center justify-center gap-3 justify-self-center md:flex lg:gap-5">
-            {SECTIONS.map(([id, labelKey]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => goSection(id)}
-                className={cn(
-                  "dingry-nav-menu-link dingry-interactive-luxe relative min-h-11 px-1.5 text-xs tracking-[0.26em] text-white/45 uppercase hover:text-white lg:px-2 lg:text-[0.8125rem] lg:tracking-[0.28em]",
-                  activeSection === id && "dingry-nav-menu-link--active",
-                )}
-              >
-                {t(labelKey)}
-              </button>
-            ))}
+          <motion.div
+            animate={navMenuControls}
+            className="dingry-nav-menu hidden shrink-0 items-center justify-center gap-3 justify-self-center md:flex lg:gap-5"
+          >
+            <LayoutGroup id="dingry-shop-nav-menu">
+              {SECTIONS.map(([id, labelKey]) => {
+                const isActive = activeSection === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => goSection(id)}
+                    className={cn(
+                      "dingry-nav-menu-link dingry-interactive-luxe relative min-h-11 px-1.5 text-xs tracking-[0.26em] text-white/45 uppercase hover:text-white lg:px-2 lg:text-[0.8125rem] lg:tracking-[0.28em]",
+                      isActive && "dingry-nav-menu-link--active",
+                    )}
+                  >
+                    {isActive && !reduceMotion ? (
+                      <motion.span
+                        layoutId={NAV_MENU_INDICATOR_LAYOUT_ID}
+                        className="dingry-nav-menu-link-indicator"
+                        transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.78 }}
+                        aria-hidden
+                      />
+                    ) : isActive && reduceMotion ? (
+                      <span className="dingry-nav-menu-link-indicator" aria-hidden />
+                    ) : null}
+                    <span className="relative z-[1]">{t(labelKey)}</span>
+                  </button>
+                );
+              })}
+            </LayoutGroup>
             {onOpenCustom ? (
               <button
                 type="button"
-                onClick={() => onOpenCustom()}
+                onClick={() => {
+                  setActiveSection("custom");
+                  onOpenCustom();
+                }}
                 className={cn(
-                  "dingry-catalog-custom-tab dingry-interactive-luxe min-h-11 shrink-0 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.28em] lg:px-5 lg:text-[11px]",
-                  activeSection === "custom" && "ring-1 ring-[#d4af37]/55",
+                  "dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe min-h-11 shrink-0 px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] lg:px-4 lg:text-[10px] lg:tracking-[0.18em]",
+                  activeSection === "custom" && "dingry-nav-custom-tab--active",
                 )}
               >
                 <span className="gold-text">{t("nav.custom")}</span>
               </button>
             ) : null}
-          </div>
+          </motion.div>
           <div className="relative z-10 ml-auto flex shrink-0 items-center gap-2 justify-self-end md:ml-0 md:gap-3">
             <DingryLocaleToggle className="max-md:hidden" />
             <ShopNavActions
@@ -400,11 +457,12 @@ export function ShopNav({
                   <button
                     type="button"
                     onClick={() => {
+                      setActiveSection("custom");
                       onOpenCustom();
                       setMobileMenuOpen(false);
                     }}
                     className={cn(
-                      "dingry-catalog-custom-tab dingry-interactive-luxe w-full px-4 py-3 text-left text-[10px] font-medium uppercase tracking-[0.26em]",
+                      "dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe w-full px-4 py-3 text-left text-[10px] font-medium uppercase tracking-[0.2em]",
                     )}
                   >
                     <span className="gold-text">{t("nav.custom")}</span>

@@ -34,6 +34,9 @@
   -webkit-overflow-scrolling: touch;
   border: 1px solid rgb(0 0 0 / 0.1);
   background: rgb(255 255 255 / 0.82);
+  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
   color: #161616;
   box-shadow: 0 24px 80px rgb(0 0 0 / 0.28);
   scrollbar-width: thin;
@@ -356,11 +359,14 @@
 
 .title {
   margin-bottom: 0.5rem;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: 0.025em;
+  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
+  font-size: clamp(1.35rem, 3.6vw, 1.85rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  color: #161616;
 }
 
 .description {
@@ -510,9 +516,9 @@
   margin: 0;
   flex: 1 1 auto;
   min-width: 0;
-  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(1.5rem, 3.2vw, 1.85rem);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
@@ -540,8 +546,10 @@
 .qtyValue {
   width: 2.5rem;
   text-align: center;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .sizeLabel {

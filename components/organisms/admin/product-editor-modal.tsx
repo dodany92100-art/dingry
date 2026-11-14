@@ -70,10 +70,15 @@ import {
   displaySemanticBlocksForCrm,
   syncStoryFieldsFromSavedProduct,
 } from "@/lib/admin/smart-product-auto-attributes";
-import { applyMakerTemplateToFormState } from "@/lib/admin/catalog-maker-prefill";
 import {
+  applyCatalogProductMakerPrefill,
+  applyMakerTemplateToFormState,
+} from "@/lib/admin/catalog-maker-prefill";
+import {
+  adminProductPreuploadedImage,
   catalogProductMakerOptionLabel,
   catalogProductMakerTemplates,
+  isCatalogProductMakerTemplateId,
 } from "@/lib/admin/catalog-product-maker-bridge";
 import { adminBulkSelectSizesForCategory } from "@/lib/admin/standard-sizes";
 import {
@@ -81,6 +86,7 @@ import {
   makerLabelHintForCategory,
   makerTemplateFromFormDefaults,
   normalizeCatalogMakerLabel,
+  validateCatalogMakerTemplate,
   type CatalogMakerTemplate,
 } from "@/lib/validations/catalog-maker-template";
 import {
@@ -218,6 +224,26 @@ export function ProductEditorModal({
     }
     return merged;
   }, [makerTemplates, catalogMakerFromProducts]);
+
+  const makerMemorizeDuplicateMessage = useMemo(() => {
+    const label = normalizeCatalogMakerLabel(
+      makerTemplateLabelDraft || makerLabelHintForCategory(form.category),
+    );
+    const price = Number(form.price);
+    if (!label || label.length < 2 || !Number.isFinite(price) || price <= 0 || form.sizes.length === 0) {
+      return null;
+    }
+    const sizeGuide = form.sizeGuide.trim() || categoryStandardGrammage(form.category) || "";
+    const payload = makerTemplateFromFormDefaults({
+      label,
+      category: form.category,
+      price,
+      sizes: form.sizes,
+      sizeGuide,
+    });
+    const check = validateCatalogMakerTemplate(payload, makerTemplates);
+    return check.ok ? null : check.error;
+  }, [form.category, form.price, form.sizeGuide, form.sizes, makerTemplateLabelDraft, makerTemplates]);
   const bootstrapSessionRef = useRef<string | null>(null);
   const productNameInputRef = useRef<HTMLInputElement>(null);
   const smartPasteInputRef = useRef<HTMLTextAreaElement>(null);
@@ -511,25 +537,49 @@ export function ProductEditorModal({
     if (!templateId.trim()) return;
     const template = makerTemplateOptions.find((item) => item.id === templateId);
     if (!template) return;
-    setForm((prev) => {
-      const next = applyMakerTemplateToFormState(prev, template, {
-        editingId,
-        existingSkus: existingSkusForGeneration,
-      });
-      setWaistListDraft(
-        isPantsCategory(next.category)
-          ? waistDeclinationsLabel(next.sizes, next.variant)
-          : "",
-      );
-      setColorListDraft(
-        isPantsCategory(next.category) ? "" : colorDeclinationsLabel(next.colorDeclinations),
-      );
-      return next;
-    });
-    showFormSuccess(
-      `Modèle ${template.label} — catégorie, prix, tailles${(template.sizeGuide ?? "").trim() ? `, grammage ${(template.sizeGuide ?? "").trim()}` : ""} (nom / couleur libres).`,
-      "neutral",
+
+    const catalogProduct = isCatalogProductMakerTemplateId(templateId)
+      ? catalogProductsById.get(templateId.replace(/^catalog-product:/, ""))
+      : undefined;
+
+    const next = catalogProduct
+      ? applyCatalogProductMakerPrefill(
+          form,
+          catalogProduct,
+          { editingId, existingSkus: existingSkusForGeneration },
+        )
+      : applyMakerTemplateToFormState(form, template, {
+          editingId,
+          existingSkus: existingSkusForGeneration,
+        });
+
+    setForm(next);
+    setWaistListDraft(
+      isPantsCategory(next.category) ? waistDeclinationsLabel(next.sizes, next.variant) : "",
     );
+    setColorListDraft(
+      isPantsCategory(next.category) ? "" : colorDeclinationsLabel(next.colorDeclinations),
+    );
+
+    if (catalogProduct) {
+      setImageRectoFile(null);
+      setImageVersoFile(null);
+      setImageRectoCleared(false);
+      setImageVersoCleared(false);
+      const rectoPre = adminProductPreuploadedImage(catalogProduct, "recto");
+      const versoPre = adminProductPreuploadedImage(catalogProduct, "verso");
+      setPreuploadedRecto(rectoPre);
+      setPreuploadedVerso(versoPre);
+      setImageRectoPreview(rectoPre?.url ?? "");
+      setImageVersoPreview(versoPre?.url ?? "");
+    }
+
+    const successDetail = catalogProduct
+      ? `Fiche ${catalogProduct.name} — données, stock, couleurs et visuels repris (nouveau SKU à l’enregistrement).`
+      : `Modèle ${template.label} — catégorie, prix, tailles${
+          (template.sizeGuide ?? "").trim() ? `, grammage ${(template.sizeGuide ?? "").trim()}` : ""
+        } (nom / couleur libres).`;
+    showFormSuccess(successDetail, "neutral");
   }
 
   async function memorizeMakerTemplate() {
@@ -559,6 +609,11 @@ export function ProductEditorModal({
       sizes: form.sizes,
       sizeGuide,
     });
+    const clientCheck = validateCatalogMakerTemplate(payload, makerTemplates);
+    if (!clientCheck.ok) {
+      setFormError(clientCheck.error);
+      return;
+    }
     try {
       const response = await fetch("/api/admin/catalog-maker-templates", {
         method: "POST",
@@ -567,7 +622,12 @@ export function ProductEditorModal({
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        setFormError(data.error ?? "Impossible d'enregistrer le modèle.");
+        setFormError(
+          data.error ??
+            (response.status === 409
+              ? "Ce modèle existe déjà dans la base catalogue."
+              : "Impossible d'enregistrer le modèle."),
+        );
         return;
       }
       onMakerTemplatesChange?.();
@@ -1452,13 +1512,19 @@ export function ProductEditorModal({
                             <button
                               type="button"
                               onClick={() => void memorizeMakerTemplate()}
-                              disabled={saving || convertingImage}
+                              disabled={saving || convertingImage || Boolean(makerMemorizeDuplicateMessage)}
+                              title={makerMemorizeDuplicateMessage ?? undefined}
                               className={ADMIN_BTN}
                             >
                               Ajouter au catalogue
                             </button>
                           </div>
                           </motion.div>
+                          {makerMemorizeDuplicateMessage ? (
+                            <p className="text-[11px] font-normal text-amber-200/90" role="status">
+                              {makerMemorizeDuplicateMessage}
+                            </p>
+                          ) : null}
                           <span className="block text-[11px] font-normal text-white/45">
                             Modèles mémorisés (HOODIE / TEE-SHIRT…) ou fiches CRM existantes — la liste « Produits
                             déjà en catalogue » reprend catégorie, prix, tailles et grammage. Le nom, la couleur et les

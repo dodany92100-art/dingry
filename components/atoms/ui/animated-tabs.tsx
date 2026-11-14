@@ -23,6 +23,8 @@ type AnimatedTabsProps = {
   endAction?: ReactNode;
   labelForTab?: (tab: string) => string;
   classNameForTab?: (tab: string) => string | undefined;
+  /** Centre l’onglet actif dans le bandeau horizontal (défaut : true). */
+  scrollActiveIntoView?: boolean;
 };
 
 export function AnimatedTabs({
@@ -37,6 +39,7 @@ export function AnimatedTabs({
   endAction,
   labelForTab,
   classNameForTab,
+  scrollActiveIntoView = true,
 }: AnimatedTabsProps) {
   const [internalValue, setInternalValue] = useState(defaultValue ?? tabs[0] ?? "");
   const active = controlledValue ?? internalValue;
@@ -59,16 +62,16 @@ export function AnimatedTabs({
         setInternalValue(tab);
       }
       onValueChange?.(tab);
-      requestAnimationFrame(() => scrollTabIntoView(tab));
+      if (scrollActiveIntoView) requestAnimationFrame(() => scrollTabIntoView(tab));
     },
-    [controlledValue, onValueChange, scrollTabIntoView],
+    [controlledValue, onValueChange, scrollActiveIntoView, scrollTabIntoView],
   );
 
   useEffect(() => {
-    if (!active) return;
+    if (!scrollActiveIntoView || !active) return;
     const id = requestAnimationFrame(() => scrollTabIntoView(active));
     return () => cancelAnimationFrame(id);
-  }, [active, scrollTabIntoView]);
+  }, [active, scrollActiveIntoView, scrollTabIntoView]);
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
