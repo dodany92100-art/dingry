@@ -1,21 +1,37 @@
-/* Page Héritage — lecture magazine, fond shop noir. */
+/* Page Héritage — lecture magazine, fond noir · texte blanc (y compris thème light sur .dingry-heritage-route). */
 
 .page {
+  --dh-ink: rgb(255 255 255 / 0.92);
+  --dh-ink-strong: rgb(255 255 255 / 0.96);
+  --dh-ink-title: rgb(255 255 255 / 0.94);
+  --dh-ink-body: rgb(255 255 255 / 0.78);
+  --dh-ink-sub: rgb(255 255 255 / 0.58);
+  --dh-ink-soft: rgb(255 255 255 / 0.62);
+  --dh-ink-heading: rgb(255 255 255 / 0.82);
+  --dh-ink-meta: rgb(255 255 255 / 0.4);
+  --dh-ink-faint: rgb(255 255 255 / 0.48);
+  --dh-ink-placeholder: rgb(255 255 255 / 0.38);
+  --dh-surface-hero: rgb(255 255 255 / 0.04);
+  --dh-surface-card: rgb(255 255 255 / 0.03);
+  --dh-border: rgb(255 255 255 / 0.1);
+  --dh-border-soft: rgb(255 255 255 / 0.08);
+  --dh-chronology-ring: #0a0a0a;
+
   margin-inline: auto;
   width: 100%;
   max-width: 56rem;
-  padding: 1.5rem 1.25rem 3rem;
-  color: rgb(255 255 255 / 0.92);
+  padding: 1rem 1.25rem 2rem;
+  color: var(--dh-ink);
 }
 
 @media (min-width: 768px) {
   .page {
-    padding: 2.25rem 2rem 4rem;
+    padding: 1.5rem 2rem 2.5rem;
   }
 }
 
 .hero {
-  margin-bottom: 2.75rem;
+  margin-bottom: 1.5rem;
   border: 1px solid rgb(179 135 40 / 0.35);
   border-radius: 0.875rem;
   background: rgb(255 255 255 / 0.04);
@@ -26,8 +42,8 @@
 
 @media (min-width: 768px) {
   .hero {
-    margin-bottom: 3.5rem;
-    padding: 2.25rem 2rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem 2rem;
   }
 }
 
@@ -48,7 +64,7 @@
   line-height: 1.05;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.96);
+  color: var(--dh-ink-strong);
 }
 
 .heroLead {
@@ -56,18 +72,18 @@
   max-width: 34rem;
   font-size: 0.9375rem;
   line-height: 1.75;
-  color: rgb(255 255 255 / 0.62);
+  color: var(--dh-ink-soft);
 }
 
 .stream {
   display: flex;
   flex-direction: column;
-  gap: 3.5rem;
+  gap: 2rem;
 }
 
 @media (min-width: 768px) {
   .stream {
-    gap: 4.5rem;
+    gap: 2.5rem;
   }
 }
 
@@ -76,8 +92,8 @@
 }
 
 .chapterEyebrow {
-  margin: 0 0 1.25rem;
-  padding-bottom: 0.65rem;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.45rem;
   border-bottom: 1px solid rgb(179 135 40 / 0.45);
   font-size: 10px;
   font-weight: 700;
@@ -114,12 +130,12 @@
 }
 
 .articleBody {
-  padding: 1.5rem 1.25rem;
+  padding: 1.15rem 1.25rem 1.35rem;
 }
 
 @media (min-width: 768px) {
   .articleBody {
-    padding: 1.85rem 1.75rem;
+    padding: 1.35rem 1.5rem 1.5rem;
   }
 }
 
@@ -153,46 +169,46 @@
   line-height: 1.22;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.94);
+  color: var(--dh-ink-title);
 }
 
 .articleSubtitle {
-  margin: 0 0 1.25rem;
-  padding-bottom: 1.1rem;
-  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  margin: 0 0 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--dh-border-soft);
   font-size: 0.9375rem;
   line-height: 1.65;
-  color: rgb(255 255 255 / 0.58);
+  color: var(--dh-ink-sub);
 }
 
 .blockHeading {
-  margin: 1.65rem 0 0.75rem;
+  margin: 1.1rem 0 0.4rem;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.82);
+  color: var(--dh-ink-heading);
 }
 
 .prose {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 0.55rem;
 }
 
 .prose p {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.85;
+  font-size: 0.9375rem;
+  line-height: 1.62;
   color: rgb(255 255 255 / 0.78);
 }
 
 .visual {
-  margin: 1.5rem 0;
+  margin: 0.85rem 0;
   overflow: hidden;
   border-radius: 0.65rem;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background: rgb(255 255 255 / 0.03);
+  border: 1px solid var(--dh-border);
+  background: var(--dh-surface-card);
 }
 
 .visualMedia {
@@ -218,7 +234,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: rgb(255 255 255 / 0.04);
+  background: var(--dh-surface-hero);
   padding: 1.5rem;
   text-align: center;
 }
@@ -227,7 +243,7 @@
   font-size: 9px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.38);
+  color: var(--dh-ink-placeholder);
 }
 
 .caption {
@@ -236,14 +252,14 @@
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 0.48);
-  border-top: 1px solid rgb(255 255 255 / 0.08);
-  background: rgb(255 255 255 / 0.03);
+  color: var(--dh-ink-faint);
+  border-top: 1px solid var(--dh-border-soft);
+  background: var(--dh-surface-card);
 }
 
 .chronology {
-  margin-top: 1rem;
-  padding-top: 2rem;
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
   border-top: 1px solid rgb(255 255 255 / 0.1);
 }
 

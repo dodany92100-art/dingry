@@ -25,7 +25,7 @@ export function HeritageEditorial() {
   }, [tabs]);
 
   return (
-    <div className={`${styles.page} dingry-below-hero-surface`}>
+    <div className={`${styles.page} dingry-heritage-editorial`}>
       <header className={styles.hero}>
         <p className={styles.heroEyebrow}>{t("heritageTeaser.eyebrow")}</p>
         <h1 className={styles.heroTitle}>{heritage.baseline}</h1>

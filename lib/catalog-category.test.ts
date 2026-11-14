@@ -26,10 +26,10 @@ describe("catalog pants", () => {
     expect(resolveShopCategory(24, "T-shirts")).toBe("T-shirts");
   });
 
-  it("inclut Pants et Crop tops dans Collection même vide", () => {
+  it("masque les familles sans fiche visible", () => {
     const sections = buildCatalogMenuSections([]);
-    expect(sections.some((s) => s.category === "pants")).toBe(true);
-    expect(sections.some((s) => s.category === "crop-top")).toBe(true);
+    expect(sections.some((s) => s.category === "pants")).toBe(false);
+    expect(sections.some((s) => s.category === "crop-top")).toBe(false);
   });
 
   it("normalise Crop Top vers crop-top", () => {

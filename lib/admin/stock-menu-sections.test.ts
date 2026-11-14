@@ -41,7 +41,7 @@ describe("buildAdminStockMenuSections", () => {
       admin({ id: "101", category: "Caps", name: "Cap" }),
       admin({ id: "102", category: "Hoodies", name: "Hoodie" }),
     ]);
-    expect(sections.map((s) => s.category)).toEqual(["hoodies", "pants", "crop-top", "caps"]);
+    expect(sections.map((s) => s.category)).toEqual(["hoodies", "caps"]);
     expect(sections[0]?.products[0]?.id).toBe("102");
   });
 

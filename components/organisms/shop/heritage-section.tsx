@@ -14,12 +14,7 @@ export function HeritageSection() {
 
   return (
     <section className="dingry-below-hero-surface dingry-gold-rule-top py-10 md:py-14">
-      <div className="mb-4 md:mb-5">
-        <p className="dingry-section-eyebrow">{t("heritageTeaser.eyebrow")}</p>
-        <h2 className="dingry-typo-street dingry-typo-street--md mt-1.5 max-w-3xl leading-tight">
-          {heritage.baseline}
-        </h2>
-      </div>
+      <p className="dingry-section-eyebrow mb-4 md:mb-5">{t("heritageTeaser.eyebrow")}</p>
 
       <div className="dingry-heritage-teaser group relative isolate mx-auto w-full max-w-5xl overflow-hidden rounded-2xl">
         <img
@@ -29,7 +24,10 @@ export function HeritageSection() {
           className="absolute inset-0 h-full w-full object-cover object-center"
         />
 
-        <div className="relative z-10 flex min-h-[12.5rem] flex-col justify-end gap-4 px-5 py-8 sm:min-h-[14rem] md:min-h-[16.5rem] md:px-10 md:py-11 lg:max-w-[48rem]">
+        <div className="dingry-heritage-teaser-panel relative z-10 flex min-h-[12.5rem] flex-col justify-end gap-4 px-5 py-8 sm:min-h-[14rem] md:min-h-[16.5rem] md:px-10 md:py-11 lg:max-w-[48rem]">
+          <h2 className="dingry-sticky-editorial-title text-2xl uppercase leading-tight text-white md:text-4xl">
+            {heritage.baseline}
+          </h2>
           <p className="dingry-heritage-teaser-hook max-w-md text-sm leading-relaxed text-white md:text-base">
             {heritage.homepageHook}
           </p>

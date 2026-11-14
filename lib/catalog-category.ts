@@ -106,7 +106,7 @@ export function catalogMenuTabLabel(tab: string): string {
 export const CATALOG_FILTER_LABEL: Record<CatalogFilter, string> = {
   all: "Collection",
   hoodies: "Hoodies",
-  "hoodie-zip": "Hoodzip",
+  "hoodie-zip": "Hoodies zippés",
   sweats: "Crewnecks",
   "t-shirts": "T-shirts",
   jersey: "Jerseys",

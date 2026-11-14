@@ -2,6 +2,7 @@
 
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
 import type { AtelierCustomModel } from "@/lib/atelier-custom-config";
+import { deliveryImageUrl } from "@/lib/media/delivery-image-url";
 import styles from "./personalize-preview-stage.module.css";
 
 export type PersonalizePreviewStageProps = {
@@ -36,6 +37,7 @@ export function PersonalizePreviewStage({
   rootClassName = "",
 }: PersonalizePreviewStageProps) {
   const flatTee = isFlatAtelierTee(model.id);
+  const safeImageUrl = deliveryImageUrl(imageUrl);
 
   const openFromStage = () => {
     onOpenZoom?.();
@@ -75,10 +77,10 @@ export function PersonalizePreviewStage({
         </button>
       ) : null}
       {flatTee ? (
-        <img src={imageUrl} alt="" aria-hidden className={styles.backdrop} />
+        <img src={safeImageUrl} alt="" aria-hidden className={styles.backdrop} />
       ) : null}
       <img
-        src={imageUrl}
+        src={safeImageUrl}
         alt={`${model.label} — ${sideLabel.toLowerCase().includes("verso") ? "vue verso" : "vue recto"}`}
         className={flatTee ? styles.photo : styles.photoCover}
         draggable={false}

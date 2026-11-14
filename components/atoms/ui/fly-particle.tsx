@@ -4,8 +4,9 @@ import { useEffect } from "react";
 import { Heart } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
-const FLY_ARC_PX = 110;
-const FLY_DURATION_S = 0.6;
+const FLY_ARC_PX = 120;
+const FLY_DURATION_S = 1.15;
+const FLY_STAGGER_S = 0.055;
 
 type FlyPoint = { x: number; y: number };
 
@@ -13,6 +14,7 @@ type FlyParticleProps = {
   from: FlyPoint;
   to: FlyPoint;
   variant: "heart" | "cart";
+  staggerIndex?: number;
   onComplete: () => void;
 };
 

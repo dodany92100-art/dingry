@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
-import type { Locale } from "@/lib/i18n/messages";
+import { DINGRY_BOUTIQUE_EN_LOCALE_ENABLED, type Locale } from "@/lib/i18n/messages";
 
 type DingryLocaleToggleProps = {
   className?: string;
@@ -15,6 +15,7 @@ function nextLocale(locale: Locale): Locale {
 
 export function DingryLocaleToggle({ className, variant = "pill" }: DingryLocaleToggleProps) {
   const { locale, setLocale, t } = useTranslation();
+  if (!DINGRY_BOUTIQUE_EN_LOCALE_ENABLED) return null;
   const target = nextLocale(locale);
   const label = target === "fr" ? t("nav.localeFr") : t("nav.localeEn");
   const ariaLabel = target === "en" ? t("nav.switchToEn") : t("nav.switchToFr");

@@ -1,6 +1,7 @@
 /** Textes panier / checkout (FR). */
 export const DINGRY_SHIPPING_LABEL = "Frais de livraison";
-export const DINGRY_SHIPPING_AMOUNT_HINT = "Selon destination";
+/** Montant livraison facturé dans le total affiché (aucun frais ajouté côté DINGRY aujourd’hui). */
+export const DINGRY_SHIPPING_AMOUNT_HINT = "0 € — non ajouté au total affiché";
 export const DINGRY_DELIVERY_ESTIMATE =
   "Tarif et délai confirmés avant paiement (estimation France : 3 à 7 jours ouvrés).";
 

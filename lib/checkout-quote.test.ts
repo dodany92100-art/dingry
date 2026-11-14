@@ -13,6 +13,10 @@ vi.mock("@/lib/stock", () => ({
   StockCheckoutError: class StockCheckoutError extends Error {},
 }));
 
+vi.mock("@/lib/atelier-custom-server", () => ({
+  loadPersonalizationProductIds: vi.fn(async () => [11, 21, 25, 27, 35, 29, 7, 24]),
+}));
+
 import { loadStoreReadOnly } from "@/lib/admin/store";
 
 describe("parsePaypalCents", () => {

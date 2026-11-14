@@ -1,4 +1,10 @@
-import { DINGRY_HERITAGE_EDITORIAL_SRC, DINGRY_HERITAGE_FOUNDER_SRC } from "@/lib/dingry-brand";
+import {
+  DINGRY_HERITAGE_EDITORIAL_SRC,
+  DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC,
+  DINGRY_HERITAGE_FOUNDER_SRC,
+  DINGRY_HERITAGE_MUSIC_VISUAL_SRC,
+  DINGRY_HERITAGE_MODE_VISUAL_SRC,
+} from "@/lib/dingry-brand";
 import type { HeritageLocaleBundle } from "@/lib/i18n/heritage-types";
 import type {
   HeritageEditorialArticle,
@@ -49,7 +55,7 @@ function philosophieArticle(bundle: HeritageLocaleBundle): HeritageEditorialArti
     title: meta.title,
     subtitle: meta.subtitle,
     date: "2026",
-    cover: { src: DINGRY_HERITAGE_EDITORIAL_SRC, alt: meta.coverAlt },
+    cover: { src: DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC, alt: meta.coverAlt },
     blocks,
   };
 }
@@ -66,6 +72,7 @@ function founderArticle(bundle: HeritageLocaleBundle): HeritageEditorialArticle 
     if (chapter.title.startsWith(musicPrefix)) {
       blocks.push({
         kind: "visual",
+        src: DINGRY_HERITAGE_MUSIC_VISUAL_SRC,
         alt: bundle.visuals.musicAlt,
         caption: bundle.visuals.musicCaption,
         ratio: "16/9",
@@ -74,6 +81,7 @@ function founderArticle(bundle: HeritageLocaleBundle): HeritageEditorialArticle 
     if (chapter.title.startsWith(modePrefix)) {
       blocks.push({
         kind: "visual",
+        src: DINGRY_HERITAGE_MODE_VISUAL_SRC,
         alt: bundle.visuals.modeAlt,
         caption: bundle.visuals.modeCaption,
         ratio: "4/5",

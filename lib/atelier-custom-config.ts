@@ -1,7 +1,12 @@
 import type { CSSProperties } from "react";
 import type { ShopProduct } from "@/lib/catalog";
 import { CUSTOM_BANNER_SUGGESTED_CITIES } from "@/lib/custom-city-banner";
-import { DINGRY_PRODUCT_MEDIA, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
+import {
+  DINGRY_PRODUCT_MEDIA,
+  DINGRY_SWEAT_PRODUCT_IDS,
+  DINGRY_TEE_PRODUCT_IDS,
+} from "@/lib/dingry-product-media";
+import { isShopTeeCategory, resolveShopCategory } from "@/lib/shop-catalog";
 import { IMAGES, PRODUCTS } from "@/lib/shop-data";
 
 /** Grille atelier tee — XS → 3XL (hors TU). */
@@ -202,17 +207,131 @@ export const SHOP_ATELIER_CUSTOM_DEFAULT: AdminAtelierCustomConfig = {
       previewTextStyle: "light",
       previewCityColor: "#ffffff",
     },
+    {
+      id: "hoodie-noir-paris",
+      label: "Hoodie noir",
+      catalogRef: "#25",
+      productId: 25,
+      enabled: true,
+      basePriceEur: 80,
+      sizes: ATELIER_CUSTOM_SIZES,
+      previewImageUrl: DINGRY_PRODUCT_MEDIA.hoodieParisBlackRecto,
+      swatch: "#161616",
+      swatchText: "#ffffff",
+      cityTop: "46%",
+      citySize: "clamp(0.38rem, 1.85vw, 0.56rem)",
+      previewTextStyle: "light",
+      previewCityColor: "#ffffff",
+    },
+    {
+      id: "hoodie-gris",
+      label: "Hoodie gris",
+      catalogRef: "#27",
+      productId: 27,
+      enabled: true,
+      basePriceEur: 80,
+      sizes: ATELIER_CUSTOM_SIZES,
+      previewImageUrl: DINGRY_PRODUCT_MEDIA.hoodieParisGreyRecto,
+      swatch: "#b8b8b8",
+      swatchText: "#161616",
+      cityTop: "46%",
+      citySize: "clamp(0.38rem, 1.85vw, 0.56rem)",
+      previewTextStyle: "dark",
+      previewCityColor: "#000000",
+    },
+    {
+      id: "hoodie-blanc",
+      label: "Hoodie blanc",
+      catalogRef: "#35",
+      productId: 35,
+      enabled: true,
+      basePriceEur: 80,
+      sizes: ATELIER_CUSTOM_SIZES,
+      previewImageUrl: DINGRY_PRODUCT_MEDIA.hoodieParisWhiteRecto,
+      swatch: "#f4f4f2",
+      swatchText: "#161616",
+      cityTop: "46%",
+      citySize: "clamp(0.38rem, 1.85vw, 0.56rem)",
+      previewTextStyle: "dark",
+      previewCityColor: "#000000",
+    },
+    {
+      id: "hoodie-chocolat",
+      label: "Hoodie chocolat",
+      catalogRef: "#29",
+      productId: 29,
+      enabled: true,
+      basePriceEur: 80,
+      sizes: ATELIER_CUSTOM_SIZES,
+      previewImageUrl: DINGRY_PRODUCT_MEDIA.hoodieRoyalBlueRecto,
+      swatch: "#4a3228",
+      swatchText: "#ffffff",
+      cityTop: "46%",
+      citySize: "clamp(0.38rem, 1.85vw, 0.56rem)",
+      previewTextStyle: "light",
+      previewCityColor: "#ffffff",
+    },
+    {
+      id: "hoodie-vert",
+      label: "Hoodie vert",
+      catalogRef: "#7",
+      productId: 7,
+      enabled: true,
+      basePriceEur: 80,
+      sizes: ATELIER_CUSTOM_SIZES,
+      previewImageUrl: IMAGES.hoodie7,
+      swatch: "#1f4d2a",
+      swatchText: "#ffffff",
+      cityTop: "46%",
+      citySize: "clamp(0.38rem, 1.85vw, 0.56rem)",
+      previewTextStyle: "light",
+      previewCityColor: "#ffffff",
+    },
   ],
 };
 
-/** Tees personnalisables vitrine (#11 blanc, #21 noir — pas hoodie / fiche #24). */
+/** Tees personnalisables vitrine (#11 blanc, #21 noir — pas fiche perso #24). */
 export const SHOP_ATELIER_ALLOWED_PRODUCT_IDS = new Set<number>([11, 21]);
 
-export function isShopAtelierModel(model: AtelierCustomModel): boolean {
+const ATELIER_EXCLUDED_PRODUCT_IDS = new Set<number>([24]);
+
+function isAtelierTunnelShopCategory(category: string): boolean {
   return (
-    SHOP_ATELIER_ALLOWED_PRODUCT_IDS.has(model.productId) ||
-    (DINGRY_TEE_PRODUCT_IDS.has(model.productId) && model.productId !== 24)
+    isShopTeeCategory(category) ||
+    category === "Hoodie" ||
+    category === "Hoodie zippé" ||
+    category === "Sweats"
   );
+}
+
+export function isShopAtelierModel(model: AtelierCustomModel): boolean {
+  if (ATELIER_EXCLUDED_PRODUCT_IDS.has(model.productId)) return false;
+  if (SHOP_ATELIER_ALLOWED_PRODUCT_IDS.has(model.productId)) return true;
+  if (DINGRY_TEE_PRODUCT_IDS.has(model.productId)) return true;
+  if (DINGRY_SWEAT_PRODUCT_IDS.has(model.productId)) return true;
+  const seed = PRODUCTS.find((p) => p.id === model.productId);
+  if (!seed) return false;
+  const shopCat = String(resolveShopCategory(seed.id, seed.category));
+  return isAtelierTunnelShopCategory(shopCat);
+}
+
+export function findAtelierModelForProduct(
+  config: ShopAtelierCustomConfig,
+  productId: number,
+): AtelierCustomModel | undefined {
+  return enabledAtelierModels(config).find((m) => m.productId === productId);
+}
+
+export function isShopProductAtelierEligible(
+  product: Pick<ShopProduct, "id" | "category">,
+  config: ShopAtelierCustomConfig,
+): boolean {
+  if (!config.enabled) return false;
+  if (ATELIER_EXCLUDED_PRODUCT_IDS.has(product.id)) return false;
+  const shopCat = String(resolveShopCategory(product.id, String(product.category)));
+  if (!isAtelierTunnelShopCategory(shopCat)) return false;
+  if (findAtelierModelForProduct(config, product.id)) return true;
+  return enabledAtelierModels(config).length > 0;
 }
 
 export function enabledAtelierModels(config: ShopAtelierCustomConfig): AtelierCustomModel[] {
@@ -247,6 +366,52 @@ export function resolvePersonalizationShopProduct(
   };
 }
 
+export type AtelierModelPickerGroupId = "tees" | "hoodies" | "sweats";
+
+const ATELIER_MODEL_GROUP_LABEL: Record<AtelierModelPickerGroupId, string> = {
+  tees: "T-shirts",
+  hoodies: "Hoodies",
+  sweats: "Sweats",
+};
+
+export function atelierModelPickerGroupForProduct(productId: number): AtelierModelPickerGroupId {
+  const seed = PRODUCTS.find((p) => p.id === productId);
+  if (!seed) {
+    if (DINGRY_TEE_PRODUCT_IDS.has(productId)) return "tees";
+    if (DINGRY_SWEAT_PRODUCT_IDS.has(productId)) return "sweats";
+    return "hoodies";
+  }
+  const shopCat = String(resolveShopCategory(seed.id, seed.category));
+  if (isShopTeeCategory(shopCat)) return "tees";
+  if (shopCat === "Sweats" || seed.category === "Crewnecks") return "sweats";
+  return "hoodies";
+}
+
+export type AtelierModelPickerGroup = {
+  id: AtelierModelPickerGroupId;
+  label: string;
+  models: AtelierCustomModel[];
+};
+
+export function groupAtelierModelsForPicker(models: readonly AtelierCustomModel[]): AtelierModelPickerGroup[] {
+  const buckets: Record<AtelierModelPickerGroupId, AtelierCustomModel[]> = {
+    tees: [],
+    hoodies: [],
+    sweats: [],
+  };
+  for (const model of models) {
+    buckets[atelierModelPickerGroupForProduct(model.productId)].push(model);
+  }
+  const order: AtelierModelPickerGroupId[] = ["tees", "hoodies", "sweats"];
+  return order
+    .filter((id) => buckets[id].length > 0)
+    .map((id) => ({
+      id,
+      label: ATELIER_MODEL_GROUP_LABEL[id],
+      models: buckets[id]!,
+    }));
+}
+
 const RETIRED_ATELIER_CITIES = new Set(["MADININA", "MILAN"]);
 
 function mergeAtelierSuggestedCities(stored: readonly string[]): readonly string[] {
@@ -259,6 +424,37 @@ function mergeAtelierSuggestedCities(stored: readonly string[]): readonly string
     ordered.push(city);
   }
   return ordered.filter((city) => !RETIRED_ATELIER_CITIES.has(city));
+}
+
+export function sanitizeAtelierPreviewImageUrl(value: string, fallback: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  if (/^(https?:\/\/|\/)/i.test(trimmed)) return trimmed;
+  return fallback;
+}
+
+export function sanitizeAtelierCityTop(value: string, fallback: string): string {
+  const match = /^([\d.]+)\s*%$/.exec(value.trim());
+  if (!match) return fallback;
+  return formatCityTopPercent(parseCityTopPercent(value));
+}
+
+export function sanitizeAtelierCitySize(value: string, fallback: string): string {
+  if (!value.trim().toLowerCase().includes("clamp(")) return fallback;
+  return formatCitySizeClamp(parseCitySizeMaxRem(value));
+}
+
+function mergeAtelierModelsWithShopDefaults(stored: readonly AtelierCustomModel[]): AtelierCustomModel[] {
+  const byId = new Map<string, AtelierCustomModel>();
+  for (const model of SHOP_ATELIER_CUSTOM_DEFAULT.models) {
+    byId.set(model.id, model);
+  }
+  for (const model of stored) {
+    const id = model.id.trim();
+    if (!id) continue;
+    byId.set(id, model);
+  }
+  return [...byId.values()].filter((model) => model.enabled && isShopAtelierModel(model));
 }
 
 const LEGACY_TEE_WHITE_RECTO_PREVIEW =
@@ -322,10 +518,11 @@ export function resolveShopAtelierCustomConfig(
   return {
     enabled: stored.enabled,
     models: (() => {
-      const fromStore =
-        stored.models.length > 0 ? stored.models : SHOP_ATELIER_CUSTOM_DEFAULT.models;
-      const tees = fromStore.filter((model) => isShopAtelierModel(model));
-      const resolved = tees.length > 0 ? tees : [...SHOP_ATELIER_CUSTOM_DEFAULT.models];
+      const merged =
+        stored.models.length > 0
+          ? mergeAtelierModelsWithShopDefaults(stored.models)
+          : [...SHOP_ATELIER_CUSTOM_DEFAULT.models];
+      const resolved = merged.length > 0 ? merged : [...SHOP_ATELIER_CUSTOM_DEFAULT.models];
       return resolved.map(upgradeAtelierModelPreview);
     })(),
     suggestedCities: mergeAtelierSuggestedCities(stored.suggestedCities),

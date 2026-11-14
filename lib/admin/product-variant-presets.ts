@@ -6,6 +6,7 @@ export const ADMIN_COLOR_PRESETS_CANONICAL = [
   "BLANC",
   "VERT",
   "ROUGE",
+  "ORANGE",
   "GRIS",
   "GRIS CHINÉ",
   "ROYAL BLUE",

@@ -3,3 +3,9 @@ set -e
 echo "→ verify:anti-regression + vitest (garde-fou push)"
 npm run verify:anti-regression
 npx vitest run
+if [ "${SKIP_E2E:-}" != "1" ]; then
+  echo "→ e2e boutique (Playwright) — SKIP_E2E=1 pour ignorer"
+  npm run test:e2e
+else
+  echo "→ e2e ignoré (SKIP_E2E=1)"
+fi

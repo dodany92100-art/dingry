@@ -15,16 +15,18 @@ import { useProductModal } from "@/components/organisms/shop/hooks/use-product-m
 import { useShopCart } from "@/components/organisms/shop/hooks/use-shop-cart";
 import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catalog";
 import { useShopAtelierCustom } from "@/components/organisms/shop/hooks/use-shop-atelier-custom";
-import { useShopPersoBanner } from "@/components/organisms/shop/hooks/use-shop-perso-banner";
 import { FlyAnimationProvider, useFlyAnimation } from "@/hooks/use-fly-animation";
 import { useAdminSessionProbe } from "@/components/organisms/admin/hooks/use-admin-session";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useShopAuth } from "@/hooks/use-shop-auth";
-import type { PersonalizedLineInput } from "@/components/organisms/shop/personalize-modal";
+import {
+  PersonalizeModal,
+  type PersonalizedLineInput,
+} from "@/components/organisms/shop/personalize-modal";
 import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
 import { DingryI18nProvider } from "@/hooks/use-translation";
-import { isShopProductInStock } from "@/lib/catalog";
+import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { parseCatalogFilter } from "@/lib/shop-catalog";
 import {
   enabledAtelierModels,
@@ -42,12 +44,6 @@ import {
 
 const ProductModal = dynamic(
   () => import("@/components/organisms/shop/product-modal").then((m) => ({ default: m.ProductModal })),
-  { ssr: false },
-);
-
-const PersonalizeModal = dynamic(
-  () =>
-    import("@/components/organisms/shop/personalize-modal").then((m) => ({ default: m.PersonalizeModal })),
   { ssr: false },
 );
 
@@ -122,9 +118,6 @@ function DingryShopPageInner() {
   const { products, catalogState, retry } = useShopCatalog();
   const { config: atelierConfig } = useShopAtelierCustom({
     enabled: catalogState !== "loading",
-  });
-  const { banner: persoBanner } = useShopPersoBanner({
-    enabled: catalogState === "ready",
   });
   const cart = useShopCart();
   const modal = useProductModal({ products, catalogState });
@@ -247,15 +240,63 @@ function DingryShopPageInner() {
   );
 
   const [bannerSeedLabel, setBannerSeedLabel] = useState<string | null>(null);
+  const [customProductId, setCustomProductId] = useState<number | null>(null);
+  const [customSize, setCustomSize] = useState<string | null>(null);
   const consumeBannerSeed = useCallback(() => setBannerSeedLabel(null), []);
+  const consumeCustomProductSeed = useCallback(() => {
+    setCustomProductId(null);
+    setCustomSize(null);
+  }, []);
 
-  const openCustom = useCallback((options?: { initialLabel?: string }) => {
+  const openCustom = useCallback((options?: import("@/lib/shop/atelier-open-options").OpenCustomOptions) => {
     const raw = options?.initialLabel?.trim();
     if (raw) {
       setBannerSeedLabel(bannerConfiguratorInitialLabel(raw));
     }
+    const productId = options?.initialProductId;
+    const size = options?.initialSize?.trim();
+    setCustomProductId(typeof productId === "number" && productId > 0 ? productId : null);
+    setCustomSize(size || null);
     setPersonalizeOpen(true);
   }, []);
+
+  useEffect(() => {
+    if (typeof requestIdleCallback === "undefined") return;
+    const id = requestIdleCallback(() => {
+      void import("@/components/organisms/shop/personalize-modal");
+    });
+    return () => cancelIdleCallback(id);
+  }, []);
+
+  const scrollToAtelierLanding = useCallback(() => {
+    scrollToSection("atelier-custom");
+    window.setTimeout(() => {
+      const scroller = pageScrollRef.current;
+      const hero = document.getElementById("atelier-custom-hero");
+      if (!scroller || !hero) return;
+      const top =
+        hero.getBoundingClientRect().top -
+        scroller.getBoundingClientRect().top +
+        scroller.scrollTop;
+      scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }, 500);
+  }, [scrollToSection]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash.replace(/^#/, "");
+    if (hash !== "atelier-custom") return;
+    const timer = window.setTimeout(() => scrollToAtelierLanding(), 200);
+    return () => window.clearTimeout(timer);
+  }, [scrollToAtelierLanding]);
+
+  const openCustomFromProduct = useCallback(
+    (product: ShopProduct, size: string) => {
+      modal.closeProductModal();
+      openCustom({ initialProductId: product.id, initialSize: size });
+    },
+    [modal, openCustom],
+  );
 
   function addToCart(from: HTMLElement) {
     const { selectedProduct, selectedSize, selectedQuantity, jerseyColor } = modal;
@@ -315,13 +356,13 @@ function DingryShopPageInner() {
         onOpenFavorites={() => setWishlistOpen(true)}
         onOpenCart={openCart}
         onScrollToSection={scrollToSection}
-        onOpenCustom={() => openCustom()}
+        onOpenCustom={scrollToAtelierLanding}
       />
       <div
         ref={pageScrollRef}
         className="dingry-page relative z-10 h-full overflow-x-hidden overflow-y-auto overscroll-y-contain bg-transparent [overflow-anchor:none]"
       >
-        <ShopHero />
+        <ShopHero onDiscoverCollection={() => scrollToSection("catalogue")} />
         <div className={DINGRY_SHOP_SHELL_CLASS}>
           <div id="catalogue-landing" />
           <CatalogSection
@@ -342,9 +383,9 @@ function DingryShopPageInner() {
             id="atelier-custom"
             prefetch={prefetchAtelierCustomSection}
             rootMargin="480px 0px 48px 0px"
-            placeholderClassName="dingry-gold-rule-top min-h-[18rem] [contain-intrinsic-size:auto_18rem]"
+            placeholderClassName="dingry-gold-rule-top min-h-[min(100dvh,56rem)] [contain-intrinsic-size:auto_56rem]"
           >
-            <AtelierCustomSection onOpenCustom={openCustom} persoBanner={persoBanner} />
+            <AtelierCustomSection onOpenCustom={openCustom} />
           </LazyWhenVisible>
           <LazyWhenVisible
             scrollRootRef={pageScrollRef}
@@ -378,10 +419,7 @@ function DingryShopPageInner() {
                 selectFilter(filter);
                 scrollToSection("catalogue");
               }}
-              onOpenAtelierCustom={() => {
-                scrollToSection("atelier-custom");
-                openCustom();
-              }}
+              onOpenAtelierCustom={scrollToAtelierLanding}
             />
           </LazyWhenVisible>
         </div>
@@ -394,6 +432,9 @@ function DingryShopPageInner() {
         fallbackProduct={personalizationProduct}
         bannerSeedLabel={bannerSeedLabel}
         onBannerSeedConsumed={consumeBannerSeed}
+        initialProductId={customProductId}
+        initialSize={customSize}
+        onProductSeedConsumed={consumeCustomProductSeed}
         onClose={() => setPersonalizeOpen(false)}
         onSubmit={addPersonalized}
       />
@@ -404,6 +445,8 @@ function DingryShopPageInner() {
         wishlistIds={wishlist.ids}
         onToggleWishlist={toggleWishlistWithAuth}
         onAddToCart={addToCart}
+        atelierConfig={atelierConfig}
+        onOpenCustom={openCustomFromProduct}
         purchaseDisabled={catalogState === "error"}
       />
       <PaymentToast visible={cart.toastVisible} />
@@ -425,6 +468,7 @@ function DingryShopPageInner() {
           cart.setOpen(false);
           scrollToSection("catalogue");
         }}
+        catalogProducts={products}
       />
       <WishlistDrawer
         open={wishlistOpen}

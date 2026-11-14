@@ -6,6 +6,9 @@ export const DINGRY_LOCALE_STORAGE_KEY = "dingry-locale";
 
 export const DINGRY_LOCALES: readonly Locale[] = ["fr", "en"];
 
+/** Boutique : anglais non prêt en production — masquer le sélecteur EN. */
+export const DINGRY_BOUTIQUE_EN_LOCALE_ENABLED = false;
+
 export type { Messages };
 
 export const messages: Record<Locale, Messages> = mergedMessages;

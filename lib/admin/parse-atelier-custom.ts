@@ -2,6 +2,9 @@ import type { AdminAtelierCustomConfig, AtelierCustomModel } from "@/lib/atelier
 import {
   ATELIER_CUSTOM_SIZES,
   normalizeAtelierCityColor,
+  sanitizeAtelierCitySize,
+  sanitizeAtelierCityTop,
+  sanitizeAtelierPreviewImageUrl,
   SHOP_ATELIER_CUSTOM_DEFAULT,
 } from "@/lib/atelier-custom-config";
 
@@ -20,6 +23,15 @@ function parseModel(raw: unknown, fallback: AtelierCustomModel): AtelierCustomMo
       ? previewTextStyle
       : fallback.previewTextStyle;
 
+  const rawPreview =
+    typeof row.previewImageUrl === "string" && row.previewImageUrl.trim()
+      ? row.previewImageUrl.trim()
+      : fallback.previewImageUrl;
+  const rawCityTop =
+    typeof row.cityTop === "string" && row.cityTop.trim() ? row.cityTop.trim() : fallback.cityTop;
+  const rawCitySize =
+    typeof row.citySize === "string" && row.citySize.trim() ? row.citySize.trim() : fallback.citySize;
+
   return {
     id: typeof row.id === "string" && row.id.trim() ? row.id.trim() : fallback.id,
     label: typeof row.label === "string" && row.label.trim() ? row.label.trim() : fallback.label,
@@ -30,15 +42,12 @@ function parseModel(raw: unknown, fallback: AtelierCustomModel): AtelierCustomMo
     basePriceEur:
       Number.isFinite(basePriceEur) && basePriceEur >= 0 ? Math.round(basePriceEur) : fallback.basePriceEur,
     sizes: sizes.length > 0 ? sizes : [...ATELIER_CUSTOM_SIZES],
-    previewImageUrl:
-      typeof row.previewImageUrl === "string" && row.previewImageUrl.trim()
-        ? row.previewImageUrl.trim()
-        : fallback.previewImageUrl,
+    previewImageUrl: sanitizeAtelierPreviewImageUrl(rawPreview, fallback.previewImageUrl),
     swatch: typeof row.swatch === "string" && row.swatch.trim() ? row.swatch.trim() : fallback.swatch,
     swatchText:
       typeof row.swatchText === "string" && row.swatchText.trim() ? row.swatchText.trim() : fallback.swatchText,
-    cityTop: typeof row.cityTop === "string" && row.cityTop.trim() ? row.cityTop.trim() : fallback.cityTop,
-    citySize: typeof row.citySize === "string" && row.citySize.trim() ? row.citySize.trim() : fallback.citySize,
+    cityTop: sanitizeAtelierCityTop(rawCityTop, fallback.cityTop),
+    citySize: sanitizeAtelierCitySize(rawCitySize, fallback.citySize),
     previewTextStyle: styleOk,
     previewCityColor:
       typeof row.previewCityColor === "string" && normalizeAtelierCityColor(row.previewCityColor)

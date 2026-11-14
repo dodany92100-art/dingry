@@ -34,12 +34,14 @@ function ProductColorVariantGridInner({
               disabled={disabled}
               onClick={() => onPickVariant(item.product)}
               className={`${styles.card} ${item.isActive ? styles.cardActive : ""} ${disabled ? styles.cardDisabled : ""}`}
+              title={item.label}
+              aria-label={item.label}
             >
               <DingryProductImage
                 src={item.product.image}
-                alt=""
+                alt={item.label}
                 width={80}
-                height={106}
+                height={80}
                 deliveryWidth={160}
                 className={styles.thumb}
               />

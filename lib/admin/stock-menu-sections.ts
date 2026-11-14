@@ -2,7 +2,6 @@ import type { AdminProduct } from "@/lib/admin/types";
 import { CATALOG_CATEGORIES, CATALOG_FILTER_LABEL, type CatalogCategory } from "@/lib/catalog-category";
 import { catalogSlugForAdminProduct, sortAdminProductsLikeShop } from "@/lib/admin/product-display-order";
 import {
-  CATALOG_SECTION_ALWAYS_VISIBLE,
   DINGRY_HOODIE_BLACK_ORIGINAL_ID,
   DINGRY_HOODIE_BLACK_PARIS_ID,
   DINGRY_RETIRED_PRODUCT_IDS,
@@ -54,7 +53,5 @@ export function buildAdminStockMenuSections(
     products: sortAdminProductsLikeShop(
       cards.filter((product) => adminProductCatalogSlug(product) === category),
     ),
-  })).filter(
-    (section) => section.products.length > 0 || CATALOG_SECTION_ALWAYS_VISIBLE.has(section.category),
-  );
+  })).filter((section) => section.products.length > 0);
 }

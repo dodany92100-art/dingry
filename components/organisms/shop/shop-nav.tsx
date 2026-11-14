@@ -16,7 +16,6 @@ import { useTranslation } from "@/hooks/use-translation";
 
 const SECTIONS = [
   ["catalogue", "nav.collection"],
-  ["atelier-custom", "nav.atelier"],
   ["heritage", "nav.heritage"],
   ["lookbook", "nav.lookbook"],
 ] as const;
@@ -78,7 +77,9 @@ function ShopNavActions({
               size={20}
               strokeWidth={1.75}
               className={
-                favoriteCount > 0 ? "dingry-nav-favoris-heart--on" : "fill-none stroke-current text-white/75"
+                favoriteCount > 0
+                  ? "dingry-nav-favoris-heart--on"
+                  : "dingry-nav-favoris-heart-idle fill-none"
               }
               aria-hidden
             />
@@ -165,6 +166,50 @@ export function ShopNav({
   const favorisControls = useAnimation();
   const cartControls = useAnimation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<ShopNavSectionId | "custom" | null>(null);
+
+  useEffect(() => {
+    if (embedded || onHeritagePage) return;
+    const root = document.querySelector<HTMLElement>(".dingry-page");
+    if (!root) return;
+
+    const observed: { id: string; section: ShopNavSectionId | "custom" }[] = [
+      { id: "catalogue", section: "catalogue" },
+      { id: "heritage", section: "heritage" },
+      { id: "lookbook", section: "lookbook" },
+      { id: "atelier-custom", section: "custom" },
+    ];
+
+    const visible = new Map<string, number>();
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const key = entry.target.id;
+          if (entry.isIntersecting) {
+            visible.set(key, entry.intersectionRatio);
+          } else {
+            visible.delete(key);
+          }
+        }
+        let best: { id: string; ratio: number } | null = null;
+        for (const [id, ratio] of visible) {
+          if (!best || ratio > best.ratio) best = { id, ratio };
+        }
+        if (!best) return;
+        const match = observed.find((item) => item.id === best!.id);
+        if (match) setActiveSection(match.section);
+      },
+      { root, threshold: [0.12, 0.28, 0.45], rootMargin: "-12% 0px -52% 0px" },
+    );
+
+    for (const { id } of observed) {
+      const node = document.getElementById(id);
+      if (node) observer.observe(node);
+    }
+
+    return () => observer.disconnect();
+  }, [embedded, onHeritagePage]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -179,8 +224,8 @@ export function ShopNav({
     if (!fly?.pulse || reduceMotion) return;
     const controls = fly.pulse.target === "cart" ? cartControls : favorisControls;
     void controls.start({
-      scale: [1, 1.25, 1],
-      transition: { duration: 0.35, ease: "easeOut" },
+      scale: [1, 1.22, 1],
+      transition: { duration: 0.55, ease: "easeOut" },
     });
   }, [fly?.pulse, cartControls, favorisControls, reduceMotion]);
 
@@ -212,6 +257,12 @@ export function ShopNav({
     >
       <svg className="pointer-events-none absolute h-0 w-0" aria-hidden focusable="false">
         <defs>
+          <linearGradient id="dingry-silver-gradient-nav" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#e8eaed" />
+            <stop offset="35%" stopColor="#ffffff" />
+            <stop offset="55%" stopColor="#cbd5e1" />
+            <stop offset="100%" stopColor="#94a3b8" />
+          </linearGradient>
           <linearGradient id="dingry-gold-gradient-nav" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#bf953f" />
             <stop offset="38%" stopColor="#fcf6ba" />
@@ -259,7 +310,10 @@ export function ShopNav({
                 key={id}
                 type="button"
                 onClick={() => goSection(id)}
-                className="dingry-nav-menu-link dingry-interactive-luxe min-h-11 px-1.5 text-xs tracking-[0.26em] text-white/45 uppercase hover:text-white lg:px-2 lg:text-[0.8125rem] lg:tracking-[0.28em]"
+                className={cn(
+                  "dingry-nav-menu-link dingry-interactive-luxe relative min-h-11 px-1.5 text-xs tracking-[0.26em] text-white/45 uppercase hover:text-white lg:px-2 lg:text-[0.8125rem] lg:tracking-[0.28em]",
+                  activeSection === id && "dingry-nav-menu-link--active",
+                )}
               >
                 {t(labelKey)}
               </button>
@@ -270,6 +324,7 @@ export function ShopNav({
                 onClick={() => onOpenCustom()}
                 className={cn(
                   "dingry-catalog-custom-tab dingry-interactive-luxe min-h-11 shrink-0 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.28em] lg:px-5 lg:text-[11px]",
+                  activeSection === "custom" && "ring-1 ring-[#d4af37]/55",
                 )}
               >
                 <span className="gold-text">{t("nav.custom")}</span>

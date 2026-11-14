@@ -30,7 +30,7 @@ function CatalogSectionInner({ tabValue, onTabChange, ...grid }: CatalogSectionP
   return (
     <section id="catalogue" className={CATALOG_SECTION_SURFACE_CLASS}>
       <div className={CATALOG_VITRINE_SHELL_CLASS}>
-        <CatalogFilterBar value={tabValue} onChange={onTabChange} />
+        <CatalogFilterBar value={tabValue} onChange={onTabChange} products={grid.products} />
 
         {grid.catalogState === "error" ? (
           <div

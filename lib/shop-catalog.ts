@@ -1,6 +1,8 @@
 import {
   CATALOG_CATEGORIES,
   CATALOG_FILTER_LABEL,
+  CATALOG_MENU_TABS,
+  CATALOG_MENU_TAB_CUSTOM,
   filterByCategory,
   normalizeCatalogCategory,
   type CatalogCategory,
@@ -127,11 +129,8 @@ export type CatalogMenuSection = {
   products: ShopProduct[];
 };
 
-/** Blocs Collection visibles même sans fiche (famille lancée progressivement). */
-export const CATALOG_SECTION_ALWAYS_VISIBLE = new Set<CatalogCategory>(["pants", "crop-top"]);
-
 function keepCatalogMenuSection(section: CatalogMenuSection): boolean {
-  return section.products.length > 0 || CATALOG_SECTION_ALWAYS_VISIBLE.has(section.category);
+  return section.products.length > 0;
 }
 
 /** Vue « Collection » : blocs produits dans l’ordre du menu (Hoodies → Caps). */
@@ -145,6 +144,23 @@ export function buildCatalogMenuSections(products: readonly ShopProduct[]): Cata
       "featured",
     ),
   })).filter(keepCatalogMenuSection);
+}
+
+/** Onglets catalogue (hors « custom ») pour lesquels au moins une fiche est visible. */
+export function catalogCategoryTabsWithProducts(products: readonly ShopProduct[]): CatalogCategory[] {
+  return buildCatalogMenuSections(products).map((section) => section.category);
+}
+
+/** Barre catalogue : « Collection » + catégories avec produits + onglet Custom. */
+export function catalogMenuTabsForStorefront(
+  products: readonly ShopProduct[],
+): readonly (CatalogFilter | typeof CATALOG_MENU_TAB_CUSTOM)[] {
+  const withProducts = new Set(catalogCategoryTabsWithProducts(products));
+  return CATALOG_MENU_TABS.filter((tab) => {
+    if (tab === CATALOG_MENU_TAB_CUSTOM) return true;
+    if (tab === "all") return true;
+    return withProducts.has(tab);
+  });
 }
 
 /** Fiche produit avec bascule recto / verso (hoodies, sweats ; tees via meta dédiée). */

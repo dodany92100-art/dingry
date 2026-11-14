@@ -1,5 +1,13 @@
 {
   "cart": {
+    "reassuranceEyebrow": "Information",
+    "reassuranceItems": [
+      "Indicative lead time: 3–7 business days in metropolitan France unless stated otherwise at checkout.",
+      "Shipping fees charged to you, depending on destination and carrier — amount shown before payment (PayPal).",
+      "Right of withdrawal: 14 days after delivery. Return shipping at your expense unless defective item or DINGRY error.",
+      "Payment via PayPal (account or card when offered by PayPal). Order is firm after payment confirmation."
+    ],
+    "paymentMethodsAria": "Accepted payment methods",
     "drawer": {
       "title": "Cart",
       "confirmedTitle": "Order confirmed",
@@ -93,7 +101,8 @@
   },
   "atelier": {
     "sectionEyebrow": "Custom atelier",
-    "sectionTitle": "Personalized t-shirt",
+    "sectionTitle": "Every city its own DINGRY",
+    "sectionLead": "Personalize your piece — free text, no advanced tuning. Confirm the surcharge before adding to cart.",
     "banner": {
       "eyebrow": "CUSTOM • CONFIGURATOR",
       "title": "Every city its own Dingry",

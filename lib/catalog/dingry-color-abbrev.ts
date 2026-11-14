@@ -2,6 +2,7 @@
  * Abréviations couleur DINGRY (3–4 lettres, majuscules, sans chiffres) · SKU / R2.
  */
 
+import { abbrevSourceFromColorDeclination } from "@/lib/catalog/dingry-color-custom";
 import { normalizeOptionKey } from "@/lib/catalog/product-options";
 
 /** Clés = `colorDeclinations` / presets admin (`NOIR`, `ROYAL BLUE`, …). */
@@ -17,6 +18,7 @@ const OFFICIAL_COLOR_ABBREV: Record<string, string> = {
   "ROYAL BLUE": "ROY",
   "BLEU ROI": "ROY",
   ROUGE: "RED",
+  ORANGE: "ORG",
   VERT: "GRN",
   "JAUNE FLUO": "YLW",
   PURPLE: "VIO",
@@ -35,8 +37,9 @@ function fallbackAbbrevFromLabel(raw: string): string {
 
 /** Abréviation officielle si preset connu ; sinon 3–4 premières lettres du libellé normalisé. */
 export function colorAbbrevFromDeclinationLabel(raw: string): string {
-  const key = normalizeOptionKey(raw);
-  const hit = OFFICIAL_COLOR_ABBREV[key] ?? OFFICIAL_COLOR_ABBREV[raw.trim().toUpperCase()];
+  const source = abbrevSourceFromColorDeclination(raw);
+  const key = normalizeOptionKey(source);
+  const hit = OFFICIAL_COLOR_ABBREV[key] ?? OFFICIAL_COLOR_ABBREV[source.trim().toUpperCase()];
   if (hit && ABBREV_PATTERN.test(hit)) return hit;
   const fb = fallbackAbbrevFromLabel(raw);
   return ABBREV_PATTERN.test(fb) ? fb : "STD";

@@ -10,6 +10,7 @@ type OrderFulfillmentControlsProps = {
   onCycle: () => void;
   onSetStatus: (status: OrderStatus) => void;
   onSaveTracking: (trackingNumber: string) => void;
+  onResendConfirmation?: () => void;
 };
 
 export function OrderFulfillmentControls({
@@ -18,6 +19,7 @@ export function OrderFulfillmentControls({
   onCycle,
   onSetStatus,
   onSaveTracking,
+  onResendConfirmation,
 }: OrderFulfillmentControlsProps) {
   const [trackingDraft, setTrackingDraft] = useState(order.trackingNumber ?? "");
 
@@ -65,6 +67,16 @@ export function OrderFulfillmentControls({
           <span className="text-[10px] text-white/45">Actuel · {order.trackingNumber}</span>
         ) : null}
       </div>
+      {onResendConfirmation && order.source === "paypal" ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onResendConfirmation}
+          className="h-8 border border-emerald-500/35 px-3 text-[9px] uppercase tracking-[0.14em] text-emerald-200/90 disabled:opacity-40"
+        >
+          Renvoyer confirmation
+        </button>
+      ) : null}
     </div>
   );
 }

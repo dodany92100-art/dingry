@@ -15,6 +15,7 @@ import {
 import { formatClientCheckoutError } from "@/lib/checkout-diagnostic";
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
 import { isPayPalOrderId } from "@/lib/paypal-order-id";
+import { notifyPayPalCheckoutOpener, PAYPAL_CHECKOUT_MSG } from "@/lib/paypal-checkout-popup";
 
 function eurosFromTotal(total: number): string {
   const cents = Math.round(total * 100);
@@ -31,6 +32,7 @@ function CheckoutSuccessInner() {
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [saving, setSaving] = useState(true);
+  const [popupHandoff, setPopupHandoff] = useState(false);
 
   const orderId = (searchParams.get("token") ?? "").trim();
 
@@ -47,6 +49,17 @@ function CheckoutSuccessInner() {
     if (!isPayPalOrderId(orderId)) {
       setSaving(false);
       setError("Référence PayPal invalide ou absente.");
+      return;
+    }
+
+    const notified = notifyPayPalCheckoutOpener({
+      type: PAYPAL_CHECKOUT_MSG.approved,
+      orderId,
+    });
+    if (notified) {
+      setPopupHandoff(true);
+      setSaving(false);
+      window.close();
       return;
     }
 
@@ -138,6 +151,14 @@ function CheckoutSuccessInner() {
       cancelled = true;
     };
   }, [orderId]);
+
+  if (popupHandoff) {
+    return (
+      <main className="dingry-checkout-page min-h-screen bg-[#f6f6f4] px-4 py-14 text-[#9ca3af]">
+        <p className="text-center text-[11px] tracking-[0.22em] uppercase">Validation…</p>
+      </main>
+    );
+  }
 
   return (
     <main className="dingry-checkout-page min-h-screen bg-[#f6f6f4] text-[#4b5563]">

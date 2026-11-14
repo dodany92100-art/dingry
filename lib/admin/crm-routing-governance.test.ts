@@ -35,8 +35,8 @@ describe("CRM routing governance", () => {
     expect(DEFAULT_SHOP_PRODUCT_STOCK).toBe(10);
   });
 
-  it("12 pastilles canoniques · pas de BLACK/WHITE en grille", () => {
-    expect(DINGRY_COLOR_PRESETS).toHaveLength(12);
+  it("pastilles canoniques · pas de BLACK/WHITE en grille", () => {
+    expect(DINGRY_COLOR_PRESETS).toHaveLength(ADMIN_COLOR_PRESETS_CANONICAL.length);
     expect(DINGRY_COLOR_PRESETS.map((p) => p.presetKey)).toEqual([...ADMIN_COLOR_PRESETS_CANONICAL]);
     expect(DINGRY_COLOR_PRESETS.some((p) => p.presetKey === "BLACK")).toBe(false);
   });

@@ -19,6 +19,7 @@ import { bannerObjectPosition } from "@/lib/catalog-perso-banner-focus";
 import { DINGRY_LOGO_MONDE_CITIES_SRC } from "@/lib/dingry-brand";
 import { CATALOG_MENU_TAB_CUSTOM, catalogMenuTabLabel } from "@/lib/shop-catalog";
 import { cn } from "@/lib/utils";
+import type { OpenCustomOptions } from "@/lib/shop/atelier-open-options";
 import { useCallback, useMemo, useState, type CSSProperties } from "react";
 
 const ATELIER_BANNER_CITY_TAB_IDS = CUSTOM_BANNER_CITIES.map((city) => city.id);
@@ -27,10 +28,6 @@ function atelierBannerTabLabel(tab: string): string {
   const city = CUSTOM_BANNER_CITIES.find((entry) => entry.id === tab);
   return city?.suggestion ?? tab;
 }
-
-export type OpenCustomOptions = {
-  initialLabel?: string;
-};
 
 type CustomConfiguratorBannerProps = {
   content: ShopCatalogPersoBanner;

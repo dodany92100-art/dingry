@@ -114,6 +114,37 @@ export function useAdminOrders({ onUnauthorized }: Options) {
     [patchOrderFields],
   );
 
+  const resendConfirmation = useCallback(
+    async (order: AdminOrder) => {
+      setOrderError("");
+      setBusyOrderId(order.id);
+      try {
+        const response = await fetch(`/api/admin/orders/${order.id}/resend-confirmation`, {
+          method: "POST",
+        });
+        if (response.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        const data = (await response.json().catch(() => ({}))) as {
+          sent?: boolean;
+          to?: string;
+          error?: string;
+        };
+        if (response.ok && data.sent) {
+          setOrderError(`Confirmation renvoyée · ${data.to ?? order.email}`);
+          return;
+        }
+        setOrderError(data.error || "Impossible de renvoyer la confirmation.");
+      } catch {
+        setOrderError("Impossible de renvoyer la confirmation.");
+      } finally {
+        setBusyOrderId(null);
+      }
+    },
+    [onUnauthorized],
+  );
+
   const resolveReview = useCallback(
     async (order: AdminOrder, reason: OrderReviewReason) => {
       setOrderError("");
@@ -147,5 +178,16 @@ export function useAdminOrders({ onUnauthorized }: Options) {
     [onUnauthorized],
   );
 
-  return { orders, busyOrderId, orderError, load, reset, cycleStatus, setStatus, saveTracking, resolveReview };
+  return {
+    orders,
+    busyOrderId,
+    orderError,
+    load,
+    reset,
+    cycleStatus,
+    setStatus,
+    saveTracking,
+    resolveReview,
+    resendConfirmation,
+  };
 }

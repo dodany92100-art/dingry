@@ -26,6 +26,7 @@ import { clientRateLimitMessage } from "@/lib/client/rate-limit-ui";
 import { normalizeCustomerPhone } from "@/lib/checkout-phone";
 import { formatClientCheckoutError } from "@/lib/checkout-diagnostic";
 import { PAYPAL_ORDER_FINALIZING_MESSAGE } from "@/lib/paypal-messages";
+import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
 
 const PayPalPaymentButton = dynamic(
   () =>
@@ -199,7 +200,13 @@ export default function CheckoutPage() {
         ? "Calcul du total…"
         : saving
           ? "Enregistrement…"
-          : "Paiement indisponible";
+          : !phoneForPay
+            ? customerPhone.trim()
+              ? "Numéro invalide"
+              : "Saisissez votre mobile"
+            : !token
+              ? "Valider la vérification"
+              : "Paiement indisponible";
 
   function syncPendingOrder(orderId: string, status: number) {
     if (shouldPersistPendingCapture(status)) {
@@ -375,10 +382,17 @@ export default function CheckoutPage() {
                         />
                       ) : null}
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm tracking-wide text-[#4b5563] uppercase">{item?.product.name ?? line.label}</p>
-                        {item?.product.variant ? (
-                          <p className="mt-1 text-xs tracking-wider text-[#9ca3af] uppercase">{item.product.variant}</p>
-                        ) : null}
+                        <p className="text-sm tracking-wide text-[#4b5563] uppercase">
+                          {item ? storefrontProductTitle(item.product) : line.label}
+                        </p>
+                        {item
+                          ? (() => {
+                              const colorLine = storefrontProductSubtitle(item.product);
+                              return colorLine ? (
+                                <p className="mt-1 text-xs tracking-wider text-[#9ca3af] uppercase">{colorLine}</p>
+                              ) : null;
+                            })()
+                          : null}
                         {item?.personalization ? (
                           <p className="mt-1 text-xs tracking-wider text-[#6b7280] uppercase">« {item.personalization} »</p>
                         ) : null}
@@ -412,7 +426,7 @@ export default function CheckoutPage() {
             <section className="dingry-checkout-pay-surface border p-4 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto md:p-8">
               <p className="dingry-checkout-pay-eyebrow">Sécurisé</p>
               <p className="dingry-checkout-pay-lead mt-3">
-                Après validation du contrôle, vous serez redirigé vers PayPal puis renvoyé ici pour confirmer la commande.
+                Après validation du contrôle, PayPal s&apos;ouvre dans une fenêtre : vous restez sur DINGRY pendant le paiement.
               </p>
               <label className="mt-6 block text-[10px] tracking-[0.18em] text-[#6b7280] uppercase">
                 Mobile (livraison)
@@ -468,6 +482,9 @@ export default function CheckoutPage() {
                     tone="light"
                     getTurnstileToken={() => tokenRef.current}
                     onAfterCreateFailure={refreshTurnstileAfterCreate}
+                    onApproved={(orderId) => {
+                      void registerOrder(orderId);
+                    }}
                   />
                 ) : (
                   <button
@@ -487,7 +504,7 @@ export default function CheckoutPage() {
                     : !phoneForPay
                       ? "Saisissez votre mobile avant de payer."
                       : token
-                        ? "Vérification confirmée. Paiement PayPal sur leur site sécurisé."
+                        ? "Vérification confirmée. PayPal s’ouvre dans une fenêtre sécurisée, sans quitter DINGRY."
                         : "Le paiement reste bloqué tant que le contrôle n’est pas validé."}
               </p>
               {error ? (

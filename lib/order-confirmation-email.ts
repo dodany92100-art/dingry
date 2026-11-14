@@ -5,7 +5,11 @@ import { loadPersonalizationProductIds } from "@/lib/atelier-custom-server";
 import { resolveCheckoutLine } from "@/lib/checkout-line-resolve";
 import type { CheckoutLine, CheckoutQuote } from "@/lib/checkout-quote";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
-import { DINGRY_ORDERS_INBOX, DINGRY_ORDER_FROM } from "@/lib/dingry-orders-email";
+import {
+  DINGRY_CUSTOMER_REPLY_TO,
+  DINGRY_ORDERS_INBOX,
+  DINGRY_ORDER_FROM,
+} from "@/lib/dingry-orders-email";
 import { isShippingAddressMissing } from "@/lib/order-review";
 import { sendOpsAlertOnce, sendResendEmail } from "@/lib/ops-alert";
 import type { VerifiedPayPalPayment } from "@/lib/paypal-server";
@@ -28,6 +32,14 @@ export function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+/** Corps texte brut — pas de retours ligne ni caractères de contrôle. */
+export function sanitizePlainEmailText(value: string): string {
+  return value
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
 }
 
 function formatEuroFromCents(cents: number): string {
@@ -169,7 +181,7 @@ export function renderOrderConfirmationHtml(params: RenderParams): string {
     })
     .join("");
 
-  const contact = escapeHtml(DINGRY_ORDERS_INBOX);
+  const contact = escapeHtml(DINGRY_CUSTOMER_REPLY_TO);
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -249,36 +261,49 @@ export function renderOrderConfirmationHtml(params: RenderParams): string {
 
 export function renderOrderConfirmationText(params: RenderParams): string {
   const { order, lines } = params;
+  const customerName = sanitizePlainEmailText(order.customerName);
+  const orderId = sanitizePlainEmailText(order.id);
+  const createdAt = sanitizePlainEmailText(order.createdAt);
   const parts = [
-    `Bonjour ${order.customerName},`,
+    `Bonjour ${customerName},`,
     "",
     "Confirmation de commande DINGRY",
-    `Commande : ${order.id}`,
-    `Date : ${order.createdAt}`,
+    `Commande : ${orderId}`,
+    `Date : ${createdAt}`,
     "Paiement : PayPal",
   ];
 
   if (customerEmailUsable(order.email)) {
-    parts.push(`E-mail : ${order.email}`);
+    parts.push(`E-mail : ${sanitizePlainEmailText(order.email)}`);
   }
 
   const address = params.order.shippingAddress?.trim() || params.payment.shippingAddress?.trim();
   if (address && !isShippingAddressMissing(address)) {
-    parts.push("", "Livraison :", params.order.shippingName || params.payment.shippingName || order.customerName, address);
+    const shipName = sanitizePlainEmailText(
+      params.order.shippingName || params.payment.shippingName || order.customerName,
+    );
+    parts.push("", "Livraison :", shipName, sanitizePlainEmailText(address));
   }
 
   parts.push("", "Articles :");
   for (const line of lines) {
     if (line.kind === "fallback") {
-      parts.push(`- ${line.text}`);
+      parts.push(`- ${sanitizePlainEmailText(line.text)}`);
     } else {
-      let row = `- ${line.description} · Taille ${line.size} · Qté ${line.qty} · ${line.unitPriceLabel}`;
-      if (line.personalization) row += ` · Ville : ${line.personalization}`;
+      let row = `- ${sanitizePlainEmailText(line.description)} · Taille ${sanitizePlainEmailText(line.size)} · Qté ${line.qty} · ${sanitizePlainEmailText(line.unitPriceLabel)}`;
+      if (line.personalization) {
+        row += ` · Perso : ${sanitizePlainEmailText(line.personalization)}`;
+      }
       parts.push(row);
     }
   }
 
-  parts.push("", `Total payé : ${formatEuroFromCents(Math.round(order.total * 100))}`, "", `Contact : ${DINGRY_ORDERS_INBOX}`);
+  parts.push(
+    "",
+    `Total payé : ${formatEuroFromCents(Math.round(order.total * 100))}`,
+    "",
+    `Contact : ${DINGRY_CUSTOMER_REPLY_TO}`,
+  );
   return parts.join("\n");
 }
 
@@ -352,11 +377,17 @@ export async function sendCustomerOrderConfirmationForPersist(
   }
 }
 
+export type SendCustomerOrderConfirmationOptions = {
+  /** Lève la dédup Redis (renvoi manuel admin). */
+  forceResend?: boolean;
+};
+
 export async function sendCustomerOrderConfirmation(
   order: AdminOrder,
   payment: VerifiedPayPalPayment,
   quote: CheckoutQuote,
-): Promise<void> {
+  options?: SendCustomerOrderConfirmationOptions,
+): Promise<boolean> {
   try {
     if (!customerEmailUsable(order.email)) {
       console.error("[order-confirmation] email client absent", { orderId: order.id });
@@ -364,16 +395,20 @@ export async function sendCustomerOrderConfirmation(
         orderId: order.id,
         reason: "e-mail client absent ou placeholder — pas d’envoi confirmation",
       });
-      return;
+      return false;
+    }
+
+    if (options?.forceResend) {
+      await releaseConfirmationClaim(order.id);
     }
 
     const claim = await claimConfirmationSend(order.id);
-    if (claim === "duplicate") return;
+    if (claim === "duplicate") return false;
 
     const from = resendFromAddress();
     if (!from) {
       await releaseConfirmationClaim(order.id);
-      return;
+      return false;
     }
 
     const lines = await buildOrderConfirmationLines(order, quote);
@@ -385,14 +420,14 @@ export async function sendCustomerOrderConfirmation(
     const sent = await sendResendEmail({
       from,
       to: [order.email.trim()],
-      replyTo: [DINGRY_ORDERS_INBOX],
+      replyTo: [DINGRY_CUSTOMER_REPLY_TO],
       bcc: [DINGRY_ORDERS_INBOX],
       subject,
       html,
       text,
     });
 
-    if (sent) return;
+    if (sent) return true;
 
     await releaseConfirmationClaim(order.id);
     console.error("[order-confirmation] Resend refusé", { orderId: order.id });
@@ -400,6 +435,7 @@ export async function sendCustomerOrderConfirmation(
       orderId: order.id,
       reason: "Resend a refusé la confirmation client",
     });
+    return false;
   } catch (error) {
     await releaseConfirmationClaim(order.id);
     console.error("[order-confirmation]", error instanceof Error ? error.message : "erreur", { orderId: order.id });
@@ -407,5 +443,6 @@ export async function sendCustomerOrderConfirmation(
       orderId: order.id,
       reason: error instanceof Error ? error.message : "erreur inconnue",
     });
+    return false;
   }
 }

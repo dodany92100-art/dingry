@@ -170,6 +170,34 @@ describe("order-confirmation-email", () => {
     );
   });
 
+  it("forceResend contourne la dédup Redis", async () => {
+    process.env.OPS_ALERT_FROM = "DINGRY <orders@dingry.com>";
+    const redis = await import("@/lib/ratelimit");
+    const ops = await import("@/lib/ops-alert");
+    const redisSet = vi.fn().mockResolvedValue("OK");
+    const redisDel = vi.fn();
+    vi.mocked(redis.getSharedRedis).mockReturnValue({
+      set: redisSet,
+      del: redisDel,
+    } as unknown as ReturnType<typeof redis.getSharedRedis>);
+    vi.mocked(ops.sendResendEmail).mockResolvedValue(true);
+
+    const quote: CheckoutQuote = {
+      lines: [{ productId: 11, size: "M", qty: 1 }],
+      totalCents: 1000,
+      currency: "EUR",
+      items: ["x"],
+      paypalItems: [],
+      digest: "h".repeat(64),
+    };
+
+    await sendCustomerOrderConfirmation(baseOrder(), payment, quote);
+    await sendCustomerOrderConfirmation(baseOrder(), payment, quote, { forceResend: true });
+
+    expect(redisDel).toHaveBeenCalledWith(confirmationSentRedisKey("ORD-99"));
+    expect(ops.sendResendEmail).toHaveBeenCalledTimes(2);
+  });
+
   it("deuxième envoi bloqué par clé Redis", async () => {
     process.env.OPS_ALERT_FROM = "DINGRY <orders@dingry.com>";
     const redis = await import("@/lib/ratelimit");
@@ -202,8 +230,8 @@ describe("order-confirmation-email", () => {
     expect(ops.sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         from: "DINGRY <orders@dingry.com>",
-        replyTo: ["dingry@gmail.com"],
-        bcc: ["dingry@gmail.com"],
+        replyTo: ["dingryofficiel@gmail.com"],
+        bcc: ["dingryofficiel@gmail.com"],
       }),
     );
     expect(redisSet).toHaveBeenCalledWith(confirmationSentRedisKey("ORD-99"), "1", expect.objectContaining({ nx: true }));

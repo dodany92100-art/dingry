@@ -16,6 +16,7 @@ type OrdersTabProps = {
   onSetStatus: (order: AdminOrder, status: OrderStatus) => void;
   onSaveTracking: (order: AdminOrder, trackingNumber: string) => void;
   onResolveReview: (order: AdminOrder, reason: OrderReviewReason) => void;
+  onResendConfirmation: (order: AdminOrder) => void;
 };
 
 const RESOLVE_LABEL: Record<OrderReviewReason, string> = {
@@ -43,10 +44,14 @@ export function OrdersTab({
   onSetStatus,
   onSaveTracking,
   onResolveReview,
+  onResendConfirmation,
 }: OrdersTabProps) {
+  const errorIsSuccess = error.startsWith("Confirmation renvoyée");
   return (
     <div>
-      {error ? <p className="mb-3 text-sm text-red-400">{error}</p> : null}
+      {error ? (
+        <p className={`mb-3 text-sm ${errorIsSuccess ? "text-emerald-300" : "text-red-400"}`}>{error}</p>
+      ) : null}
       <div className="border border-white/10">
         {orders.length === 0 ? (
           <p className="px-4 py-10 text-sm text-white/40">Aucune commande PayPal.</p>
@@ -81,6 +86,7 @@ export function OrdersTab({
                         onCycle={() => onCycleStatus(order)}
                         onSetStatus={(status) => onSetStatus(order, status)}
                         onSaveTracking={(tracking) => onSaveTracking(order, tracking)}
+                        onResendConfirmation={() => onResendConfirmation(order)}
                       />
                     </div>
                     {order.reviewReasons?.length ? (

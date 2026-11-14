@@ -76,6 +76,8 @@ const nextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  /** Playwright / outils E2E souvent en 127.0.0.1 — évite le blocage HMR (Next 16). */
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   experimental: {
     optimizePackageImports: ["motion/react"],
   },

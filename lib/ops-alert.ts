@@ -34,9 +34,11 @@ export type ResendEmailPayload = {
 export async function sendResendEmail(payload: ResendEmailPayload): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY?.trim() ?? "";
   if (!apiKey || !payload.from || payload.to.length === 0) {
-    if (isProductionDeploy()) {
-      console.error("[resend] RESEND_API_KEY ou expéditeur/destinataire manquant");
-    }
+    console.error("[resend] RESEND_API_KEY ou expéditeur/destinataire manquant", {
+      hasKey: Boolean(apiKey),
+      hasFrom: Boolean(payload.from),
+      toCount: payload.to.length,
+    });
     return false;
   }
 

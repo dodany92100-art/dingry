@@ -5,6 +5,11 @@ import { cldOpt } from "@/components/molecules/product-card";
 import type { CheckoutConfirmation } from "@/lib/checkout-draft";
 import { DINGRY_PRODUCT_MODAL_AMBIENCE_SRC } from "@/lib/dingry-brand";
 import { useTranslation } from "@/hooks/use-translation";
+import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
+import {
+  DINGRY_SHIPPING_AMOUNT_HINT,
+  DINGRY_SHIPPING_LABEL,
+} from "@/lib/dingry-checkout-copy";
 import { lineUnitPrice, cartLineKey, modalSizesFor, type CartLine } from "@/lib/shop-view";
 import { CartReassurance } from "@/components/cart/cart-reassurance";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "./motion";
@@ -24,6 +29,7 @@ type CartDrawerProps = {
   onCheckout: () => void;
   checkoutDisabled: boolean;
   onDiscoverCollection: () => void;
+  catalogProducts?: readonly CartLine["product"][];
 };
 
 export function CartDrawer({
@@ -41,6 +47,7 @@ export function CartDrawer({
   onCheckout,
   checkoutDisabled,
   onDiscoverCollection,
+  catalogProducts,
 }: CartDrawerProps) {
   const { t } = useTranslation();
 
@@ -136,8 +143,8 @@ export function CartDrawer({
             {items.length === 0 ? (
               <div className="flex-1 flex items-center justify-center px-8 overflow-y-auto">
                 {confirmation ? (
-                  <div data-cart-confirm className="w-full border border-[#FF3D00]/40 bg-[#FF3D00]/10 p-6">
-                    <p className="text-[10px] tracking-[0.35em] text-[#FF3D00] uppercase">{t("cart.drawer.orderValidated")}</p>
+                  <div data-cart-confirm className="w-full border border-white/[0.08] bg-[#080808] p-6">
+                    <p className="text-[10px] tracking-[0.35em] text-white/45 uppercase">{t("cart.drawer.orderValidated")}</p>
                     <p className="mt-4 text-sm leading-relaxed text-white">
                       {t("cart.drawer.thanksPaypal", { name: confirmation.payerName })}
                     </p>
@@ -161,7 +168,7 @@ export function CartDrawer({
                     <button
                       type="button"
                       onClick={onDismissConfirmation}
-                      className="mt-6 w-full py-4 bg-white text-[#050505] text-xs font-bold tracking-[0.3em] uppercase hover:bg-[#FF3D00] hover:text-white transition-colors"
+                      className="mt-6 w-full py-4 bg-white text-[#050505] text-xs font-bold tracking-[0.3em] uppercase hover:bg-white/90 transition-colors"
                     >
                       {t("cart.drawer.continue")}
                     </button>
@@ -200,8 +207,15 @@ export function CartDrawer({
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase">{item.product.name}</p>
-                      <p className="text-sm font-medium tracking-widest uppercase truncate">{item.product.variant}</p>
+                      <p className="text-sm font-medium tracking-widest uppercase truncate">
+                        {storefrontProductTitle(item.product, catalogProducts)}
+                      </p>
+                      {(() => {
+                        const colorLine = storefrontProductSubtitle(item.product, catalogProducts);
+                        return colorLine ? (
+                          <p className="mt-0.5 text-[10px] tracking-[0.22em] text-white/45 uppercase">{colorLine}</p>
+                        ) : null;
+                      })()}
                       {item.personalization && (
                         <p className="text-xs text-[#FF3D00] mt-1 tracking-wider uppercase">« {item.personalization} »</p>
                       )}
@@ -292,9 +306,9 @@ export function CartDrawer({
                     <span className="dingry-cart-recap-amount shrink-0 tabular-nums text-white/75">{total} €</span>
                   </div>
                   <div className="flex justify-between items-baseline gap-4">
-                    <span>{t("cart.shippingLabel")}</span>
+                    <span>{DINGRY_SHIPPING_LABEL}</span>
                     <span className="shrink-0 text-xs tracking-wide text-white/45 uppercase">
-                      {t("cart.shippingHint")}
+                      {DINGRY_SHIPPING_AMOUNT_HINT}
                     </span>
                   </div>
                   <div className="relative z-[1] flex justify-between items-baseline gap-4 border-t border-white/15 pt-3">

@@ -48,13 +48,16 @@ export function WishlistIconButton({
         }
       }}
       className={cn(
-        "dingry-interactive-luxe flex items-center justify-center rounded-md transition-[color,opacity,transform] duration-200",
+        "dingry-interactive-luxe flex items-center justify-center rounded-md transition-[color,opacity,transform,border-color,box-shadow] duration-200",
         hit,
+        tone === "on-light" && "dingry-product-wishlist-btn",
         active
           ? "text-transparent"
           : tone === "on-dark"
             ? "text-white/40 hover:text-white/75"
-            : "text-white/35 hover:text-white/70",
+            : tone === "on-light"
+              ? ""
+              : "text-white/35 hover:text-white/70",
         className,
       )}
     >
@@ -62,11 +65,11 @@ export function WishlistIconButton({
         size={iconSize}
         strokeWidth={1.5}
         className={cn(
-          "shrink-0",
+          "shrink-0 dingry-wishlist-heart",
           active
-            ? "dingry-nav-favoris-heart--on"
-            : tone === "on-dark"
-              ? "fill-none stroke-current"
+            ? "dingry-nav-favoris-heart--on dingry-wishlist-heart--filled"
+            : tone === "on-light"
+              ? "dingry-wishlist-heart--gold-outline"
               : "fill-none stroke-current",
         )}
         aria-hidden

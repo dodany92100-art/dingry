@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatClientCheckoutError } from "@/lib/checkout-diagnostic";
+import {
+  listenPayPalCheckoutPopup,
+  openPayPalApprovalPopup,
+  PAYPAL_CHECKOUT_MSG,
+} from "@/lib/paypal-checkout-popup";
 
 export type PayPalCartLine = {
   productId: number;
@@ -18,6 +23,10 @@ type PayPalPaymentButtonProps = {
   getTurnstileToken: () => string | null;
   /** `create` refusé : jeton Turnstile déjà consommé côté Cloudflare → renouveler le widget. */
   onAfterCreateFailure?: () => void;
+  /** PayPal validé dans la fenêtre : finalisation capture côté checkout. */
+  onApproved?: (orderId: string) => void;
+  /** Fenêtre fermée sans payer. */
+  onCancelled?: () => void;
   disabled?: boolean;
   tone?: "dark" | "light";
 };
@@ -40,13 +49,52 @@ export function PayPalPaymentButton({
   customerPhone,
   getTurnstileToken,
   onAfterCreateFailure,
+  onApproved,
+  onCancelled,
   disabled = false,
   tone = "dark",
 }: PayPalPaymentButtonProps) {
   const isLight = tone === "light";
   const [error, setError] = useState<string | null>(null);
-  const [redirecting, setRedirecting] = useState(false);
-  const busy = disabled || redirecting;
+  const [paying, setPaying] = useState(false);
+  const popupRef = useRef<Window | null>(null);
+  const pollRef = useRef<number | null>(null);
+  const busy = disabled || paying;
+
+  function clearPopupPoll() {
+    if (pollRef.current !== null) {
+      window.clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    popupRef.current = null;
+  }
+
+  function endPayFlow() {
+    clearPopupPoll();
+    setPaying(false);
+  }
+
+  useEffect(() => {
+    return listenPayPalCheckoutPopup((event) => {
+      if (event.type === PAYPAL_CHECKOUT_MSG.approved) {
+        endPayFlow();
+        setError(null);
+        onApproved?.(event.orderId);
+        return;
+      }
+      if (event.type === PAYPAL_CHECKOUT_MSG.cancelled) {
+        endPayFlow();
+        setError(null);
+        onCancelled?.();
+      }
+    });
+  }, [onApproved, onCancelled]);
+
+  useEffect(() => {
+    return () => {
+      clearPopupPoll();
+    };
+  }, []);
 
   async function startCheckout() {
     if (busy || lines.length === 0) return;
@@ -58,7 +106,7 @@ export function PayPalPaymentButton({
       return;
     }
 
-    setRedirecting(true);
+    setPaying(true);
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -67,6 +115,7 @@ export function PayPalPaymentButton({
       });
       const payload = (await response.json().catch(() => null)) as {
         approvalUrl?: string;
+        orderId?: string;
         error?: string;
         code?: string;
       } | null;
@@ -77,14 +126,26 @@ export function PayPalPaymentButton({
         );
         setError(message);
         onAfterCreateFailure?.();
-        setRedirecting(false);
+        setPaying(false);
         return;
       }
-      window.location.href = payload.approvalUrl;
+
+      const popup = openPayPalApprovalPopup(payload.approvalUrl);
+      if (!popup) {
+        window.location.assign(payload.approvalUrl);
+        return;
+      }
+
+      popupRef.current = popup;
+      pollRef.current = window.setInterval(() => {
+        if (!popupRef.current || popupRef.current.closed) {
+          endPayFlow();
+        }
+      }, 400);
     } catch {
       setError("La commande PayPal n'a pas pu être ouverte.");
       onAfterCreateFailure?.();
-      setRedirecting(false);
+      setPaying(false);
     }
   }
 
@@ -99,7 +160,37 @@ export function PayPalPaymentButton({
   if (lines.length === 0) return null;
 
   return (
-    <div>
+    <div className="relative">
+      {paying ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-[#0e1118]/55 p-4 backdrop-blur-[2px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="dingry-paypal-overlay-title"
+        >
+          <div
+            className={`w-full max-w-md border p-6 shadow-xl ${
+              isLight ? "border-[#e5e7eb] bg-white text-[#4b5563]" : "border-white/15 bg-[#0a0a0a] text-white"
+            }`}
+          >
+            <p
+              id="dingry-paypal-overlay-title"
+              className="text-center text-[10px] tracking-[0.28em] uppercase text-[#9ca3af]"
+            >
+              Paiement sécurisé
+            </p>
+            <div className="mt-5 flex flex-col items-center gap-4">
+              <Spinner light={isLight} />
+              <p className="text-center text-sm leading-relaxed">
+                Finalisez le paiement dans la fenêtre PayPal. Cette page DINGRY reste ouverte en arrière-plan.
+              </p>
+              <p className="text-center text-[10px] leading-relaxed tracking-wide text-[#9ca3af]">
+                Fenêtre masquée ? Autorisez les pop-ups pour ce site, puis réessayez.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div
         className={`border p-4 ${isLight ? "border-[#0e1118]/10 bg-white" : "border-white/10 bg-[#0a0a0a]"}`}
       >
@@ -115,8 +206,8 @@ export function PayPalPaymentButton({
               : "bg-[#ffc439] text-[#0e1118] hover:bg-[#f2ba36] disabled:bg-white/10 disabled:text-white/40"
           }`}
         >
-          {redirecting ? <Spinner light /> : null}
-          {redirecting ? "Redirection vers PayPal…" : "Payer avec PayPal"}
+          {paying ? <Spinner light /> : null}
+          {paying ? "Paiement PayPal…" : "Payer avec PayPal"}
         </button>
       </div>
       <p
@@ -124,7 +215,7 @@ export function PayPalPaymentButton({
           isLight ? "text-[#0e1118]/45" : "text-white/40"
         }`}
       >
-        Vous serez redirigé vers PayPal pour valider le paiement, puis renvoyé sur DINGRY.
+        PayPal s&apos;ouvre dans une fenêtre sécurisée : vous restez sur dingry.com pendant le paiement.
       </p>
       {error ? (
         <p

@@ -21,6 +21,7 @@ import { SimilarProductsStrip } from "@/components/molecules/similar-products-st
 import { isJerseyShopProduct, JERSEY_COLOR_OPTIONS } from "@/lib/jersey-shop";
 import { colorSwatchChipStyle } from "@/lib/storefront/color-swatch-chip";
 import { isShopTeeCategory, resolveShopCategory } from "@/lib/shop-catalog";
+import { isShopProductAtelierEligible, type ShopAtelierCustomConfig } from "@/lib/atelier-custom-config";
 import { IMAGES, TEE_VERSO_BY_RECTO_ID } from "@/lib/shop-data";
 import {
   findActiveFlipPair,
@@ -43,6 +44,8 @@ type ShopProductModalProps = {
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
   onAddToCart: (from: HTMLElement) => void;
+  atelierConfig?: ShopAtelierCustomConfig;
+  onOpenCustom?: (product: ShopProduct, size: string) => void;
   purchaseDisabled?: boolean;
 };
 
@@ -76,6 +79,8 @@ function ProductModalContent({
   wishlistIds,
   onToggleWishlist,
   onAddToCart,
+  atelierConfig,
+  onOpenCustom,
   purchaseDisabled = false,
 }: ContentProps) {
   const { modalSide, jerseyColor, selectedSize, selectedQuantity, selectedOptionKey, switchParentOption, modalHeroImage } =
@@ -92,6 +97,10 @@ function ProductModalContent({
   const saleProduct = resolveSaleProduct(product, products, jerseyColor);
   const outOfStock = !isShopProductInStock(saleProduct);
   const cannotPurchase = purchaseDisabled || outOfStock;
+  const atelierEligible =
+    Boolean(atelierConfig?.enabled) &&
+    Boolean(onOpenCustom) &&
+    isShopProductAtelierEligible(product, atelierConfig!);
   const displayProduct = isJersey ? saleProduct : product;
 
   const activeView: Pick<ShopProduct, "image" | "name"> = activeFlipPair
@@ -352,7 +361,9 @@ function ProductModalContent({
               </div>
             ) : null}
             <div className={styles.purchaseStack}>
-              <p className={styles.sizeLabel}>Sélectionnez une taille</p>
+              <p className={styles.sizeLabel}>
+                {selectedSize ? "Taille" : "Choisissez une taille"}
+              </p>
               <div className={styles.sizeGrid} style={sizeGridVars}>
                 {sizes.map((s) => (
                   <button
@@ -370,6 +381,19 @@ function ProductModalContent({
                 ))}
               </div>
               <div className={styles.ctaRow}>
+                {atelierEligible ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!selectedSize || !onOpenCustom) return;
+                      onOpenCustom(product, selectedSize);
+                    }}
+                    disabled={!selectedSize || cannotPurchase}
+                    className={`dingry-gold-pill-btn ${styles.addBtn} ${selectedSize && !cannotPurchase ? styles.addBtnOn : styles.addBtnOff}`}
+                  >
+                    <span className="gold-text">CUSTOM</span>
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={(event) => onAddToCart(event.currentTarget)}

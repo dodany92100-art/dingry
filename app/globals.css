@@ -992,6 +992,24 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   text-shadow: none;
 }
 
+@media (max-width: 767px) {
+  .dingry-catalog-bar--silver.dingry-catalog-bar--vitrine [role="tablist"] button[role="tab"] {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    padding-inline: 0.7rem;
+    padding-block: 0.65rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .dingry-catalog-bar--silver.dingry-catalog-bar--vitrine [role="tablist"] button[role="tab"] {
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    padding-inline: 0.85rem;
+  }
+}
+
 .dingry-catalog-bar--silver .dingry-catalog-bar__chrome::after {
   opacity: 0.55;
   background: linear-gradient(
@@ -1301,6 +1319,21 @@ html[data-theme="light"] .dingry-shop .dingry-typo-street {
   color: rgb(14 17 24 / 0.92);
 }
 
+/* Atelier CUSTOM : hero — dégradé or (pas le noir typo-street thème clair) */
+html[data-theme="light"] .dingry-shop .dingry-atelier-hero .dingry-atelier-hero__title.gold-text,
+.dingry-atelier-hero .dingry-atelier-hero__title.gold-text {
+  background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 22%, #fbf5b7 38%, #b38728 52%, #fcf6ba 68%, #aa771c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 1px 12px rgb(0 0 0 / 0.55));
+}
+
+html[data-theme="light"] .dingry-shop .dingry-atelier-hero p {
+  color: rgb(255 255 255 / 0.9);
+}
+
 html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
   color: rgb(14 17 24 / 0.52);
 }
@@ -1597,6 +1630,63 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
   fill: url(#dingry-gold-gradient-nav);
   stroke: url(#dingry-gold-gradient-nav);
   filter: drop-shadow(0 0 6px rgb(252 246 186 / 0.4));
+}
+
+.dingry-product-wishlist-btn {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dingry-product-wishlist-btn:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.dingry-wishlist-heart--gold-outline {
+  fill: transparent;
+  stroke: url(#dingry-gold-gradient-nav);
+  stroke-width: 1.65;
+  filter: drop-shadow(0 0 5px rgb(212 175 55 / 0.35));
+}
+
+.dingry-wishlist-heart--filled {
+  fill: url(#dingry-gold-gradient-nav);
+  fill-opacity: 0.38;
+  stroke: url(#dingry-gold-gradient-nav);
+}
+
+.dingry-locale-toggle {
+  font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+
+.dingry-nav-menu-link--active {
+  color: rgb(252 246 186) !important;
+  text-shadow: 0 0 14px rgb(191 149 63 / 0.35);
+}
+
+.dingry-nav-menu-link--active::after {
+  content: "";
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.45rem;
+  left: 0.35rem;
+  height: 1px;
+  background: var(--dingry-gold-rule-gradient);
+  box-shadow: 0 0 8px rgb(191 149 63 / 0.45);
+  pointer-events: none;
+}
+
+.dingry-nav-favoris-btn .dingry-nav-favoris-heart-idle {
+  fill: transparent;
+  stroke: url(#dingry-silver-gradient-nav);
+  filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.35));
+}
+
+.dingry-nav-favoris-btn:hover .dingry-nav-favoris-heart-idle {
+  filter: drop-shadow(0 0 10px rgb(252 246 186 / 0.45));
 }
 
 .dingry-fly-particle {
@@ -3190,6 +3280,15 @@ html[data-theme="light"] .dingry-shop .dingry-auth-drawer .text-white\/45 {
   box-shadow: 0 24px 64px rgb(0 0 0 / 0.35);
 }
 
+.dingry-heritage-teaser-panel {
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0) 0%,
+    rgb(0 0 0 / 0.55) 42%,
+    rgb(0 0 0 / 0.82) 100%
+  );
+}
+
 .dingry-heritage-teaser .dingry-sticky-editorial-title,
 .dingry-heritage-teaser .dingry-typo-street,
 .dingry-heritage-teaser .dingry-heritage-teaser-hook {
@@ -3197,11 +3296,11 @@ html[data-theme="light"] .dingry-shop .dingry-auth-drawer .text-white\/45 {
   text-shadow: 0 1px 12px rgb(0 0 0 / 0.45);
 }
 
-html[data-theme="light"] .dingry-shop .dingry-heritage-teaser [class*="text-white"],
 html[data-theme="light"] .dingry-shop .dingry-heritage-teaser .dingry-sticky-editorial-title,
 html[data-theme="light"] .dingry-shop .dingry-heritage-teaser .dingry-typo-street,
 html[data-theme="light"] .dingry-shop .dingry-heritage-teaser .dingry-heritage-teaser-hook {
   color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
 }
 
 .dingry-heritage-teaser .dingry-heritage-teaser-cta,
@@ -3230,10 +3329,32 @@ html[data-theme="light"] .dingry-shop .dingry-heritage-teaser .dingry-heritage-t
   max-width: 52rem;
 }
 
-/* Page /heritage : surface sombre même en thème clair (évite texte blanc sur fond #f6f6f4). */
+/* Page /heritage : fond noir même en thème clair (texte blanc éditorial). */
 html[data-theme="light"] .dingry-shop.dingry-heritage-route {
   background: #050505 !important;
   color: #fff;
+}
+
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-page {
+  background-color: #050505 !important;
+}
+
+html[data-theme="light"] .dingry-shop.dingry-heritage-route #heritage-top,
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-heritage-editorial {
+  background-color: #050505 !important;
+}
+
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-footer-classic {
+  background-color: #050505 !important;
+}
+
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-footer-classic .dingry-typo-street,
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-footer-classic .dingry-footer-link,
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-footer-classic .dingry-footer-legal-link,
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-footer-classic .dingry-footer-chip,
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-footer-classic p,
+html[data-theme="light"] .dingry-shop.dingry-heritage-route .dingry-footer-classic .dingry-footer-eyebrow {
+  color: rgb(255 255 255 / 0.72);
 }
 
 html[data-theme="light"] .dingry-shop.dingry-heritage-route [class*="text-white"] {

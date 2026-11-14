@@ -419,6 +419,7 @@ function AdminDashboard() {
         key={editor.product?.id ?? "new"}
         initial={editor.product}
         makerTemplates={productsApi.makerTemplates}
+        catalogProducts={productsApi.products}
         onMakerTemplatesChange={() => void productsApi.refreshMakerTemplates()}
         existingSkus={existingProductSkus}
         busyProductId={productsApi.busyProductId}
@@ -591,6 +592,7 @@ function AdminDashboard() {
             onSetStatus={(order, status) => void ordersApi.setStatus(order, status)}
             onSaveTracking={(order, tracking) => void ordersApi.saveTracking(order, tracking)}
             onResolveReview={(order, reason) => void ordersApi.resolveReview(order, reason)}
+            onResendConfirmation={(order) => void ordersApi.resendConfirmation(order)}
           />
         ) : (
           <p className="text-sm text-white/50">Section inconnue.</p>

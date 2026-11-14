@@ -3,6 +3,7 @@ import { ADMIN_COLOR_PRESETS_CANONICAL } from "@/lib/admin/product-variant-prese
 import { VARIANT_SWATCH_HEX } from "@/lib/admin/smart-crm";
 import {
   buildColorDeclinationBackendFields,
+  buildCustomColorDeclination,
   DINGRY_COLOR_PRESETS,
   canonicalColorDeclinationValue,
   colorDeclinationsCanonicallyEqual,
@@ -50,5 +51,14 @@ describe("dingry-color-palette", () => {
     expect(techCodeForColorPreset("ROYAL BLUE")).toBe("ROY");
     expect(techCodeForColorPreset("GRIS CHINÉ")).toBe("HGY");
     expect(techCodeForColorPreset("PINK")).toBe("PNK");
+    expect(techCodeForColorPreset("ORANGE")).toBe("ORG");
+  });
+
+  it("couleur personnalisée nommée (roue chromatique)", () => {
+    const decl = buildCustomColorDeclination("Corail", "#ea580c")!;
+    expect(canonicalColorDeclinationValue(decl)).toBe("Corail · #EA580C");
+    expect(colorDeclinationsCanonicallyEqual(decl, "corail · #ea580c")).toBe(true);
+    expect(frenchLabelForColorPreset(decl)).toBe("Corail");
+    expect(techCodeForColorPreset(decl)).toBe("CORA");
   });
 });

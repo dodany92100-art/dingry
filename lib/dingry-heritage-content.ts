@@ -3,7 +3,7 @@
 export const DINGRY_HERITAGE_BASELINE = "LE LUXE EST DANS L'ATTITUDE";
 
 export const DINGRY_HERITAGE_HOMEPAGE_HOOK =
-  "DINGRY redéfinit le luxe : le caractère, l'indépendance et l'attitude avant le statut.";
+  "DINGRY s'affranchit des codes traditionnels pour imposer sa propre définition du luxe.";
 
 export type HeritageChronologyMilestone = {
   year: string;
@@ -29,7 +29,7 @@ export type HeritageStoryChapter = {
 };
 
 export const DINGRY_HERITAGE_MANIFESTE_INTRO: readonly string[] = [
-  "DINGRY est une marque streetwear qui se permet de redéfinir la définition du luxe.",
+  "DINGRY est une marque streetwear audacieuse qui s'affranchit des codes traditionnels pour imposer sa propre définition du luxe.",
   "Le véritable luxe ne se résume pas à ce que l'on possède ou à ce que l'on porte mais à ce que l'on est et à la manière dont on se comporte.",
   "Nous croyons en une élégance libre, en une esthétique qui traverse les tendances et en une identité qui ne se négocie pas. Nous préférons le caractère à l'apparence, la personnalité à la conformité, l'expression de soi à la validation des autres.",
   "Nous ne suivons pas les codes pour appartenir. Nous choisissons nos propres codes pour exister.",

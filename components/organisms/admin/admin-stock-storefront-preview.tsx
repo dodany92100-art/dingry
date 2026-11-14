@@ -333,7 +333,7 @@ export function AdminStockStorefrontPreview({
             </p>
           ) : null}
         </div>
-        <CatalogFilterBar value={catalogTab} onChange={handleCatalogTabChange} />
+        <CatalogFilterBar value={catalogTab} onChange={handleCatalogTabChange} products={scopedProducts} />
         {loadState === "loading" ? (
           <p className="py-16 text-center text-sm text-white/40">Chargement du catalogue en ligne…</p>
         ) : loadState === "error" ? (

@@ -13,6 +13,7 @@ import {
 import { AdminColorDeclinationSelector } from "@/components/organisms/admin/admin-color-declination-selector";
 import {
   adminSwatchStyle,
+  buildCustomColorDeclination,
   canonicalColorDeclinationValue,
   colorDeclinationsCanonicallyEqual,
 } from "@/lib/admin/dingry-color-palette";
@@ -70,6 +71,10 @@ import {
   syncStoryFieldsFromSavedProduct,
 } from "@/lib/admin/smart-product-auto-attributes";
 import { applyMakerTemplateToFormState } from "@/lib/admin/catalog-maker-prefill";
+import {
+  catalogProductMakerOptionLabel,
+  catalogProductMakerTemplates,
+} from "@/lib/admin/catalog-product-maker-bridge";
 import { adminBulkSelectSizesForCategory } from "@/lib/admin/standard-sizes";
 import {
   catalogMakerTemplateOptionLabel,
@@ -102,7 +107,6 @@ import {
   formStateMatchesBaseline,
   formWithSkuForSave,
   hydrateProductEditorModalUi,
-  parseColorDeclinationsInput,
   parseWaistDeclinationsInput,
   pickPantActiveVariant,
   productEditorFormFrom,
@@ -134,6 +138,8 @@ type ProductEditorModalProps = {
   initial: AdminProduct | null;
   /** Modèles maker (HOODIE, TEE-SHIRT…). */
   makerTemplates?: readonly CatalogMakerTemplate[];
+  /** Fiches CRM — sources « déjà en catalogue » pour le sélecteur maker. */
+  catalogProducts?: readonly AdminProduct[];
   onMakerTemplatesChange?: () => void;
   /** SKU déjà enregistrés (prochain `DGRY-XX-##`). */
   existingSkus?: readonly string[];
@@ -151,6 +157,7 @@ type ProductEditorModalProps = {
 export function ProductEditorModal({
   initial,
   makerTemplates = [],
+  catalogProducts = [],
   onMakerTemplatesChange,
   existingSkus = [],
   busyProductId,
@@ -195,6 +202,22 @@ export function ProductEditorModal({
   const [makerTemplateLabelDraft, setMakerTemplateLabelDraft] = useState("");
 
   const editingId = current?.id ?? null;
+  const catalogMakerFromProducts = useMemo(
+    () => catalogProductMakerTemplates(catalogProducts, { excludeProductId: editingId }),
+    [catalogProducts, editingId],
+  );
+  const catalogProductsById = useMemo(
+    () => new Map(catalogProducts.map((product) => [product.id, product])),
+    [catalogProducts],
+  );
+  const makerTemplateOptions = useMemo(() => {
+    const merged = [...makerTemplates];
+    const ids = new Set(merged.map((item) => item.id));
+    for (const entry of catalogMakerFromProducts) {
+      if (!ids.has(entry.id)) merged.push(entry);
+    }
+    return merged;
+  }, [makerTemplates, catalogMakerFromProducts]);
   const bootstrapSessionRef = useRef<string | null>(null);
   const productNameInputRef = useRef<HTMLInputElement>(null);
   const smartPasteInputRef = useRef<HTMLTextAreaElement>(null);
@@ -369,22 +392,6 @@ export function ProductEditorModal({
     });
   }
 
-  function onColorListDraftChange(raw: string) {
-    setColorListDraft(raw);
-    const next = parseColorDeclinationsInput(raw);
-    setForm((previous) => {
-      const variantTrim = previous.variant.trim();
-      const variantStillListed =
-        variantTrim.length > 0 &&
-        next.some((color) => color.trim().toUpperCase() === variantTrim.toUpperCase());
-      return {
-        ...previous,
-        colorDeclinations: next,
-        variant: variantStillListed ? previous.variant : "",
-      };
-    });
-  }
-
   function showFormSuccess(message: string, tone: "draft" | "live" | "neutral") {
     setFormSuccess({ kind: "plain", message, tone });
   }
@@ -502,7 +509,7 @@ export function ProductEditorModal({
   function loadMakerTemplate(templateId: string) {
     setMakerTemplateId(templateId);
     if (!templateId.trim()) return;
-    const template = makerTemplates.find((item) => item.id === templateId);
+    const template = makerTemplateOptions.find((item) => item.id === templateId);
     if (!template) return;
     setForm((prev) => {
       const next = applyMakerTemplateToFormState(prev, template, {
@@ -1392,15 +1399,39 @@ export function ProductEditorModal({
                             aria-label="Charger un modèle catalogue générique"
                           >
                             <option value="">— Nouveau sans base —</option>
-                            {makerTemplates.map((template) => (
-                              <option
-                                key={template.id}
-                                value={template.id}
-                                className="bg-zinc-950 text-white"
-                              >
-                                {catalogMakerTemplateOptionLabel(template)}
-                              </option>
-                            ))}
+                            {makerTemplates.length > 0 ? (
+                              <optgroup label="Modèles mémorisés">
+                                {makerTemplates.map((template) => (
+                                  <option
+                                    key={template.id}
+                                    value={template.id}
+                                    className="bg-zinc-950 text-white"
+                                  >
+                                    {catalogMakerTemplateOptionLabel(template)}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ) : null}
+                            {catalogMakerFromProducts.length > 0 ? (
+                              <optgroup label="Produits déjà en catalogue (CRM)">
+                                {catalogMakerFromProducts.map((template) => {
+                                  const productId = template.id.replace(/^catalog-product:/, "");
+                                  const product = catalogProductsById.get(productId);
+                                  const label = product
+                                    ? catalogProductMakerOptionLabel(product, template)
+                                    : catalogMakerTemplateOptionLabel(template);
+                                  return (
+                                    <option
+                                      key={template.id}
+                                      value={template.id}
+                                      className="bg-zinc-950 text-white"
+                                    >
+                                      {label}
+                                    </option>
+                                  );
+                                })}
+                              </optgroup>
+                            ) : null}
                           </select>
                           <motion.div layout="position">
                           <span className="block text-[13px] font-medium tracking-tight text-white/55">
@@ -1429,9 +1460,9 @@ export function ProductEditorModal({
                           </div>
                           </motion.div>
                           <span className="block text-[11px] font-normal text-white/45">
-                            Modèles type HOODIE / TEE-SHIRT — anti-doublon sur le libellé seulement. Sélection =
-                            défauts tarifaires ; nom produit, prix, composition et couleur restent libres à
-                            l&apos;enregistrement.
+                            Modèles mémorisés (HOODIE / TEE-SHIRT…) ou fiches CRM existantes — la liste « Produits
+                            déjà en catalogue » reprend catégorie, prix, tailles et grammage. Le nom, la couleur et les
+                            visuels restent libres à l&apos;enregistrement.
                           </span>
                         </div>
                       ) : null}
@@ -1690,6 +1721,7 @@ export function ProductEditorModal({
                         <div>
                           <AdminColorDeclinationSelector
                             selected={form.colorDeclinations}
+                            activeVariant={form.variant}
                             onToggle={(preset) => {
                               const active = form.colorDeclinations.some((c) =>
                                 colorDeclinationsCanonicallyEqual(c, preset),
@@ -1697,17 +1729,21 @@ export function ProductEditorModal({
                               if (active) removeColorDeclination(preset);
                               else addColorDeclination(preset);
                             }}
+                            onActivateColor={(color) => {
+                              const canon = canonicalColorDeclinationValue(color);
+                              if (!canon) return;
+                              setForm((previous) => ({ ...previous, variant: canon }));
+                            }}
+                            onAddCustomColor={(name, hex) => {
+                              const built = buildCustomColorDeclination(name, hex);
+                              if (built) addColorDeclination(built);
+                            }}
+                            onRemoveColor={removeColorDeclination}
                             onSelectAll={selectAllColorDeclinations}
                             onClearAll={clearAllColorDeclinations}
                             productId={editingId ?? ""}
                             productName={form.name}
                             parentSku={form.sku}
-                          />
-                          <input
-                            value={colorListDraft}
-                            onChange={(event) => onColorListDraftChange(event.target.value)}
-                            placeholder="Saisie libre · couleurs hors palette (presets existants)"
-                            className={`${FIELD_INPUT} mt-3`}
                           />
                         </div>
                       )}

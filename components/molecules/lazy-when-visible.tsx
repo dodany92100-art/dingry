@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 type LazyWhenVisibleProps = {
   children: ReactNode;
   scrollRootRef?: RefObject<HTMLElement | null>;
+  /** Monte tout de suite (sections critiques : atelier, héritage). */
+  eager?: boolean;
   /** Marge d’approche (viewport ou root scroll). */
   rootMargin?: string;
   /** Précharge le chunk JS avant le montage (évite le pic au scroll). */
@@ -53,6 +55,7 @@ function scheduleAfterPaint(activate: () => void) {
 export function LazyWhenVisible({
   children,
   scrollRootRef,
+  eager = false,
   rootMargin = DEFAULT_ROOT_MARGIN,
   prefetch,
   className,
@@ -60,10 +63,18 @@ export function LazyWhenVisible({
   id,
 }: LazyWhenVisibleProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(false);
+  const [active, setActive] = useState(eager);
   const prefetchStartedRef = useRef(false);
 
   useEffect(() => {
+    if (eager) {
+      if (prefetch && !prefetchStartedRef.current) {
+        prefetchStartedRef.current = true;
+        void prefetch();
+      }
+      startTransition(() => setActive(true));
+      return;
+    }
     if (active) return;
     const node = sentinelRef.current;
     if (!node) return;
@@ -72,31 +83,46 @@ export function LazyWhenVisible({
       startTransition(() => setActive(true));
     };
 
-    const root = scrollRootRef?.current ?? null;
     const safeRootMargin = sanitizeRootMargin(rootMargin);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
+    const observe = (root: Element | Document | null) => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((e) => e.isIntersecting)) return;
+          observer.disconnect();
+
+          const run = () => {
+            scheduleAfterPaint(activate);
+          };
+
+          if (prefetch && !prefetchStartedRef.current) {
+            prefetchStartedRef.current = true;
+            void prefetch().finally(run);
+          } else {
+            run();
+          }
+        },
+        { root, rootMargin: safeRootMargin, threshold: 0 },
+      );
+
+      observer.observe(node);
+      return observer;
+    };
+
+    let observer = observe(scrollRootRef?.current ?? null);
+    let rafId = 0;
+    if (scrollRootRef && !scrollRootRef.current) {
+      rafId = requestAnimationFrame(() => {
         observer.disconnect();
+        observer = observe(scrollRootRef.current);
+      });
+    }
 
-        const run = () => {
-          scheduleAfterPaint(activate);
-        };
-
-        if (prefetch && !prefetchStartedRef.current) {
-          prefetchStartedRef.current = true;
-          void prefetch().finally(run);
-        } else {
-          run();
-        }
-      },
-      { root, rootMargin: safeRootMargin, threshold: 0 },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [active, prefetch, rootMargin, scrollRootRef]);
+    return () => {
+      observer.disconnect();
+      if (rafId !== 0) cancelAnimationFrame(rafId);
+    };
+  }, [active, eager, prefetch, rootMargin, scrollRootRef]);
 
   return (
     <div

@@ -110,7 +110,7 @@ function DingryHeritagePageInner() {
   );
 
   return (
-    <div className="dingry-shop relative h-dvh w-full overflow-x-hidden overflow-hidden bg-black text-white">
+    <div className="dingry-shop dingry-heritage-route relative h-dvh w-full overflow-x-hidden overflow-hidden bg-black text-white">
       <BackgroundGradientAnimation interactive={false} paused={cart.open || wishlistOpen || authOpen} />
       <ShopNav
         shopBasePath={shopBasePath}

@@ -1,4 +1,10 @@
-import { DINGRY_HERITAGE_EDITORIAL_SRC, DINGRY_HERITAGE_FOUNDER_SRC } from "@/lib/dingry-brand";
+import {
+  DINGRY_HERITAGE_EDITORIAL_SRC,
+  DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC,
+  DINGRY_HERITAGE_FOUNDER_SRC,
+  DINGRY_HERITAGE_MUSIC_VISUAL_SRC,
+  DINGRY_HERITAGE_MODE_VISUAL_SRC,
+} from "@/lib/dingry-brand";
 import {
   DINGRY_HERITAGE_BASELINE,
   DINGRY_HERITAGE_MANIFESTE_INTRO,
@@ -72,7 +78,7 @@ function philosophieArticle(): HeritageEditorialArticle {
     title: "Attitude & signature",
     subtitle: "Timeless by nature — le luxe comme présence.",
     date: "2026",
-    cover: { src: DINGRY_HERITAGE_EDITORIAL_SRC, alt: "DINGRY — philosophie éditoriale" },
+    cover: { src: DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC, alt: "DINGRY — philosophie éditoriale" },
     blocks,
   };
 }
@@ -86,6 +92,7 @@ function founderArticle(): HeritageEditorialArticle {
     if (chapter.title.startsWith("LA MUSIQUE")) {
       blocks.push({
         kind: "visual",
+        src: DINGRY_HERITAGE_MUSIC_VISUAL_SRC,
         alt: "Musique et culture hip-hop",
         caption: "Les premières expressions — illustration",
         ratio: "16/9",
@@ -94,6 +101,7 @@ function founderArticle(): HeritageEditorialArticle {
     if (chapter.title.startsWith("LA MODE")) {
       blocks.push({
         kind: "visual",
+        src: DINGRY_HERITAGE_MODE_VISUAL_SRC,
         alt: "Streetwear et entrepreneuriat",
         caption: "Royal Wear · Rock The Street — illustration",
         ratio: "4/5",

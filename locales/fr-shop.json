@@ -1,5 +1,13 @@
 {
   "cart": {
+    "reassuranceEyebrow": "Informations",
+    "reassuranceItems": [
+      "Délais indicatifs : 3 à 7 jours ouvrés en France métropolitaine, sauf indication contraire à la commande.",
+      "Frais de livraison à votre charge, selon destination et transporteur — montant communiqué avant validation (PayPal).",
+      "Droit de rétractation : 14 jours après réception. Frais de retour à votre charge sauf article défectueux ou erreur DINGRY.",
+      "Paiement via PayPal (compte ou carte lorsque proposé par PayPal). Commande ferme après confirmation du paiement."
+    ],
+    "paymentMethodsAria": "Moyens de paiement acceptés",
     "drawer": {
       "title": "Panier",
       "confirmedTitle": "Commande confirmée",
@@ -93,7 +101,8 @@
   },
   "atelier": {
     "sectionEyebrow": "Atelier custom",
-    "sectionTitle": "T-shirt personnalisé",
+    "sectionTitle": "À chaque ville sa DINGRY",
+    "sectionLead": "Personnalise ta pièce — texte libre, sans réglages avancés. Valide le supplément avant d’ajouter au panier.",
     "banner": {
       "eyebrow": "CUSTOM • CONFIGURATEUR",
       "title": "À chaque ville sa Dingry",

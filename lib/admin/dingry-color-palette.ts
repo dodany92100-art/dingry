@@ -5,6 +5,14 @@
 
 import { colorAbbrevFromDeclinationLabel } from "@/lib/catalog/dingry-color-abbrev";
 import {
+  buildCustomColorDeclination,
+  canonicalCustomColorDeclination,
+  displayLabelFromColorDeclination,
+  hexFromColorDeclination,
+  normalizeHexColor,
+  parseCustomColorDeclination,
+} from "@/lib/catalog/dingry-color-custom";
+import {
   buildDingryVariantSku,
   buildVariantAltText,
   dingryR2VariantObjectKey,
@@ -48,6 +56,7 @@ const FRENCH_LABEL_BY_PRESET: Record<AdminColorVariant, string> = {
   WHITE: "Blanc",
   VERT: "Vert",
   ROUGE: "Rouge",
+  ORANGE: "Orange",
   GRIS: "Gris",
   "GRIS CHINÉ": "Gris chiné",
   "KING BLUE": "Bleu roi",
@@ -71,9 +80,13 @@ export type DingryColorPresetRow = {
   techCode: string;
 };
 
+export { buildCustomColorDeclination } from "@/lib/catalog/dingry-color-custom";
+
 /** Valeur stockée en `colorDeclinations` — toujours clé canonique si alias connu. */
 export function canonicalColorDeclinationValue(raw: string): string {
-  return normalizeCanonicalColorPreset(raw) ?? raw.trim();
+  const preset = normalizeCanonicalColorPreset(raw);
+  if (preset) return preset;
+  return canonicalCustomColorDeclination(raw);
 }
 
 export function colorDeclinationsCanonicallyEqual(a: string, b: string): boolean {
@@ -124,7 +137,12 @@ export const DINGRY_COLOR_PRESETS: readonly DingryColorPresetRow[] = ADMIN_COLOR
 );
 
 export function frenchLabelForColorPreset(raw: string): string {
-  const key = raw.trim().toUpperCase() as AdminColorVariant;
+  const trimmed = raw.trim();
+  const named = parseCustomColorDeclination(trimmed);
+  if (named) return named.name;
+  const hexOnly = normalizeHexColor(trimmed);
+  if (hexOnly) return `Perso · ${hexOnly}`;
+  const key = trimmed.toUpperCase() as AdminColorVariant;
   const row = DINGRY_COLOR_PRESETS.find((p) => p.presetKey === key);
   if (row) return row.labelFr;
   const hex = adminSwatchHex(raw);
@@ -132,10 +150,12 @@ export function frenchLabelForColorPreset(raw: string): string {
     const match = DINGRY_COLOR_PRESETS.find((p) => p.hex.toLowerCase() === hex.toLowerCase());
     if (match) return match.labelFr;
   }
-  return raw.trim();
+  return displayLabelFromColorDeclination(trimmed);
 }
 
 export function adminSwatchHex(raw: string): string | null {
+  const fromCustom = hexFromColorDeclination(raw);
+  if (fromCustom) return fromCustom;
   const fromCore = swatchHexForVariant(raw);
   if (fromCore) return fromCore;
   const key = raw.trim().toUpperCase().replace(/\s+/g, " ");

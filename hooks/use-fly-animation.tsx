@@ -21,12 +21,15 @@ export type FlyVariant = "heart" | "cart";
 
 type FlyPoint = { x: number; y: number };
 
+const FLY_HEART_BURST = 11;
+
 type ActiveFly = {
   id: string;
   from: FlyPoint;
   to: FlyPoint;
   target: FlyTarget;
   variant: FlyVariant;
+  staggerIndex: number;
 };
 
 export type FlyPulse = {
@@ -63,24 +66,38 @@ export function FlyAnimationProvider({ children }: { children: ReactNode }) {
     if (!targetRect) return;
 
     const fromRect = from.getBoundingClientRect();
-    const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const baseId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const fromCenter = centerOfRect(fromRect);
+    const to = centerOfRect(targetRect);
+    const burst = variant === "heart" ? FLY_HEART_BURST : 1;
 
-    setParticles((prev) => [
-      ...prev,
-      {
-        id,
-        from: centerOfRect(fromRect),
-        to: centerOfRect(targetRect),
+    const created: ActiveFly[] = [];
+    for (let i = 0; i < burst; i += 1) {
+      const angle = (i / burst) * Math.PI * 2;
+      const spread = variant === "heart" ? 10 : 0;
+      created.push({
+        id: `${baseId}-${i}`,
+        from: {
+          x: fromCenter.x + Math.cos(angle) * spread,
+          y: fromCenter.y + Math.sin(angle) * spread * 0.65,
+        },
+        to,
         target,
         variant,
-      },
-    ]);
+        staggerIndex: i,
+      });
+    }
+
+    setParticles((prev) => [...prev, ...created]);
   }, []);
 
   const onParticleComplete = useCallback(
-    (id: string, target: FlyTarget) => {
+    (id: string, target: FlyTarget, staggerIndex: number, variant: FlyVariant) => {
       removeParticle(id);
-      setPulse({ target, at: Date.now() });
+      const burstEnd = variant === "heart" ? FLY_HEART_BURST - 1 : 0;
+      if (staggerIndex === burstEnd) {
+        setPulse({ target, at: Date.now() });
+      }
     },
     [removeParticle],
   );
@@ -115,7 +132,10 @@ export function FlyAnimationProvider({ children }: { children: ReactNode }) {
                   from={particle.from}
                   to={particle.to}
                   variant={particle.variant}
-                  onComplete={() => onParticleComplete(particle.id, particle.target)}
+                  staggerIndex={particle.staggerIndex}
+                  onComplete={() =>
+                    onParticleComplete(particle.id, particle.target, particle.staggerIndex, particle.variant)
+                  }
                 />
               ))}
             </AnimatePresence>

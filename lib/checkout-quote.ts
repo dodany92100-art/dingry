@@ -105,13 +105,15 @@ export function checkoutDigest(lines: CheckoutLine[]): string {
 export async function quoteCheckout(lines: CheckoutLine[]): Promise<CheckoutQuote | null> {
   const store = await loadStoreReadOnly();
   const snapshot = buildShopCatalogSnapshot(store);
+  const personalizationProductIds = await loadPersonalizationProductIds();
+  const resolveOptions = { personalizationProductIds };
 
   let totalCents = 0;
   const items: string[] = [];
   const paypalItems: CheckoutQuote["paypalItems"] = [];
 
   for (const line of lines) {
-    const resolved = resolveCheckoutLine(line, snapshot);
+    const resolved = resolveCheckoutLine(line, snapshot, resolveOptions);
     if (!resolved.ok) return null;
 
     const { unitCents, qty, label, paypalName } = resolved.line;

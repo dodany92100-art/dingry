@@ -12,6 +12,7 @@ function formatDate(iso: string): string {
   if (Number.isNaN(date.getTime())) return iso;
   return new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "medium",
+    timeStyle: "short",
     timeZone: "Europe/Paris",
   }).format(date);
 }

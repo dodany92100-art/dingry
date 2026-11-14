@@ -2,6 +2,10 @@
 
 import { colorAbbrevFromDeclinationLabel } from "@/lib/catalog/dingry-color-abbrev";
 import {
+  abbrevSourceFromColorDeclination,
+  displayLabelFromColorDeclination,
+} from "@/lib/catalog/dingry-color-custom";
+import {
   buildDingryVariantSku,
   buildVariantAltText,
   DINGRY_BRAND,
@@ -65,13 +69,14 @@ export function buildVariantSku(parentSku: string, option: Pick<ShopProductOptio
 }
 
 function dingryOptionMeta(parentSku: string, productName: string, label: string) {
-  const color = normalizeOptionKey(label);
+  const display = displayLabelFromColorDeclination(label);
+  const color = normalizeOptionKey(abbrevSourceFromColorDeclination(label));
   const abbrev = colorAbbrevFromDeclinationLabel(label);
   return {
     brand: DINGRY_BRAND,
     color,
     variantSku: buildDingryVariantSku(parentSku, abbrev),
-    altText: buildVariantAltText(productName, label),
+    altText: buildVariantAltText(productName, display),
   };
 }
 
@@ -88,12 +93,13 @@ export function shopOptionsFromColorDeclinations(
   for (const raw of colors) {
     const label = raw.trim();
     if (!label) continue;
-    const optionKey = normalizeOptionKey(label);
+    const optionKey = normalizeOptionKey(abbrevSourceFromColorDeclination(label));
     if (!optionKey || seen.has(optionKey)) continue;
     seen.add(optionKey);
+    const display = displayLabelFromColorDeclination(label);
     options.push({
       optionKey,
-      label: label.toUpperCase(),
+      label: display.toUpperCase(),
       skuSuffix: colorAbbrevFromDeclinationLabel(label),
       ...dingryOptionMeta(parentSku, productName, label),
       priceDelta: 0,

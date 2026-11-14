@@ -8,6 +8,7 @@ export const VARIANT_SWATCH_HEX: Record<string, string> = {
   WHITE: "#f4f4f5",
   VERT: "#15803d",
   ROUGE: "#b91c1c",
+  ORANGE: "#ea580c",
   GRIS: "#71717a",
   "GRIS CHINÉ": "#a1a1aa",
   "KING BLUE": "#1e3a8a",

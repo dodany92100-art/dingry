@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
 import {
   enabledAtelierModels,
+  findAtelierModelForProduct,
   formatCitySizeClamp,
+  type AtelierCustomModel,
   fallbackAtelierCityColorForModel,
   isAtelierCityColorAllowedForModel,
   normalizeAtelierCityColor,
@@ -16,12 +18,9 @@ import {
   resolvePersonalizationShopProduct,
   type ShopAtelierCustomConfig,
 } from "@/lib/atelier-custom-config";
-import { AtelierCityColorControl } from "@/components/molecules/shop/atelier-city-color-control";
-import { AtelierCitySizeSlider } from "@/components/molecules/shop/atelier-city-size-slider";
-import { AtelierCityTopSlider } from "@/components/molecules/shop/atelier-city-top-slider";
+import { AtelierModelPicker } from "@/components/molecules/shop/atelier-model-picker";
 import { PersonalizePreviewStage } from "@/components/molecules/shop/personalize-preview-stage";
 import { PersonalizePreviewZoom } from "@/components/molecules/shop/personalize-preview-zoom";
-import { DEFAULT_ATELIER_CONFIGURATOR_LABEL } from "@/lib/custom-city-banner";
 import { PERSONALIZATION_MAX_LABEL_LENGTH, PRODUCTS } from "@/lib/shop-data";
 import {
   clampPersonalizationLabel,
@@ -54,6 +53,9 @@ type PersonalizeModalProps = {
   fallbackProduct?: ShopProduct;
   bannerSeedLabel?: string | null;
   onBannerSeedConsumed?: () => void;
+  initialProductId?: number | null;
+  initialSize?: string | null;
+  onProductSeedConsumed?: () => void;
   onClose: () => void;
   onSubmit: (line: PersonalizedLineInput) => void;
 };
@@ -66,12 +68,16 @@ export function PersonalizeModal({
   fallbackProduct,
   bannerSeedLabel,
   onBannerSeedConsumed,
+  initialProductId,
+  initialSize,
+  onProductSeedConsumed,
   onClose,
   onSubmit,
 }: PersonalizeModalProps) {
   const models = useMemo(() => enabledAtelierModels(atelierConfig), [atelierConfig]);
   const [label, setLabel] = useState("");
   const [size, setSize] = useState("");
+  const [surchargeAccepted, setSurchargeAccepted] = useState(false);
   const [qty, setQty] = useState(1);
   const [modelId, setModelId] = useState("");
   const [cityTopTune, setCityTopTune] = useState<string | null>(null);
@@ -93,7 +99,11 @@ export function PersonalizeModal({
   }, [open]);
 
   useEffect(() => {
-    if (open) setStep("model");
+    if (!open) {
+      setSurchargeAccepted(false);
+      return;
+    }
+    setStep("model");
   }, [open]);
 
   useEffect(() => {
@@ -113,11 +123,13 @@ export function PersonalizeModal({
   }, [bannerSeedLabel, onBannerSeedConsumed, open]);
 
   useEffect(() => {
-    if (!open || bannerSeedLabel?.trim()) return;
-    setLabel((prev) =>
-      prev.trim() ? prev : clampPersonalizationLabel(DEFAULT_ATELIER_CONFIGURATOR_LABEL),
-    );
-  }, [open, bannerSeedLabel]);
+    if (!open || initialProductId == null || initialProductId <= 0) return;
+    const fromProduct = findAtelierModelForProduct(atelierConfig, initialProductId);
+    if (fromProduct) setModelId(fromProduct.id);
+    const seededSize = initialSize?.trim();
+    if (seededSize) setSize(seededSize);
+    onProductSeedConsumed?.();
+  }, [atelierConfig, initialProductId, initialSize, onProductSeedConsumed, open]);
 
   const model = models.find((m) => m.id === modelId) ?? models[0];
 
@@ -154,7 +166,12 @@ export function PersonalizeModal({
 
   const previewLabel = label.trim() ? personalizationPreviewLabel(label) : "";
   const inStock = saleProduct ? isShopProductInStock(saleProduct) : false;
-  const canSubmit = Boolean(model) && Boolean(size) && Boolean(label.trim()) && inStock;
+  const canSubmit =
+    Boolean(model) &&
+    Boolean(size) &&
+    Boolean(label.trim()) &&
+    surchargeAccepted &&
+    inStock;
   const unitPrice = (saleProduct?.price ?? 0) + PERSONALIZATION_SURCHARGE_EUR;
   const cityPresentation = model
     ? resolveAtelierCityTextStyle(model, previewCityColor)
@@ -162,20 +179,6 @@ export function PersonalizeModal({
 
   const sizeOptions = model?.sizes.length ? model.sizes : [];
   const sizeGridVars = { "--size-cols": String(sizeOptions.length || ATELIER_CUSTOM_SIZES.length) } as CSSProperties;
-
-  const previewTuningDirty = Boolean(
-    model &&
-      (previewCityTop !== model.cityTop ||
-        normalizeAtelierCityColor(previewCityColor) !== normalizeAtelierCityColor(model.previewCityColor) ||
-        previewCitySize !== model.citySize),
-  );
-
-  function resetPreviewTuning() {
-    if (!model) return;
-    setCityTopTune(model.cityTop);
-    setCityColorTune(model.previewCityColor);
-    setCitySizeTune(model.citySize);
-  }
 
   function handleAdd() {
     if (!model || !saleProduct || !size || !isShopProductInStock(saleProduct)) return;
@@ -201,98 +204,30 @@ export function PersonalizeModal({
   const addBtnClass = `${modalStyles.addBtn} dingry-add-to-cart-btn w-full ${canSubmit ? modalStyles.addBtnOn : modalStyles.addBtnOff}`;
   const addLabel = saleProduct && !inStock ? "Épuisé" : "Ajouter au panier";
 
-  const advancedTuneBlock = model ? (
-    <details className={styles.advancedTune} open>
-      <summary>Réglages avancés</summary>
-      <div className={styles.advancedTuneBody}>
-        <AtelierCitySizeSlider
-          id="personalize-city-size"
-          citySize={previewCitySize}
-          onChange={setCitySizeTune}
-          className="mt-2"
-          tone="light"
-        />
-        <AtelierCityTopSlider
-          id="personalize-city-top"
-          value={previewCityTop}
-          onChange={setCityTopTune}
-          className="mt-3"
-          tone="light"
-        />
-        <button
-          type="button"
-          onClick={resetPreviewTuning}
-          disabled={!previewTuningDirty}
-          className={styles.previewTuneReset}
-        >
-          Réinitialiser les réglages
-        </button>
-      </div>
-    </details>
-  ) : null;
+  const surchargeField = (
+    <label className={`${styles.fieldInputWrap} flex items-start gap-3`}>
+      <input
+        type="checkbox"
+        checked={surchargeAccepted}
+        onChange={(event) => setSurchargeAccepted(event.target.checked)}
+        className="mt-1 h-4 w-4 shrink-0 accent-[#d4af37]"
+      />
+      <span className="text-sm leading-snug text-neutral-800">
+        J&apos;accepte le supplément personnalisation de{" "}
+        <strong className="text-[#a88420]">+{PERSONALIZATION_SURCHARGE_EUR}&nbsp;€</strong> par pièce
+        (en plus du prix affiché).
+      </span>
+    </label>
+  );
 
-  const modelChipRow =
-    models.length === 0 ? (
-      <p className="text-sm text-neutral-500">Atelier temporairement indisponible.</p>
-    ) : (
-      <div className={`${modalStyles.chipRow} ${styles.sheetChipRow}`}>
-        {models.map((option) => {
-          const active = model?.id === option.id;
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => {
-                setModelId(option.id);
-                if (size && !option.sizes.includes(size)) setSize("");
-              }}
-              className={`${modalStyles.chip} ${styles.modelChip} ${
-                active
-                  ? option.id === "tee-blanc"
-                    ? styles.modelChipWhiteOn
-                    : option.id === "tee-noir"
-                      ? styles.modelChipBlackOn
-                      : styles.colorChipActive
-                  : ""
-              }`}
-              style={
-                active && option.id !== "tee-blanc" && option.id !== "tee-noir"
-                  ? ({
-                      "--shirt-swatch": option.swatch,
-                      "--shirt-swatch-text": option.swatchText,
-                    } as CSSProperties)
-                  : undefined
-              }
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
-    );
+  function pickModel(option: AtelierCustomModel) {
+    setModelId(option.id);
+    if (size && !option.sizes.includes(size)) setSize("");
+  }
 
-  const cityChipRow =
-    atelierConfig.suggestedCities.length > 0 ? (
-      <div className={`${modalStyles.chipRow} ${styles.cityChipRow} ${styles.sheetChipRow}`}>
-        {atelierConfig.suggestedCities.map((city) => {
-          const active = personalizationPreviewLabel(label) === personalizationPreviewLabel(city);
-          return (
-            <button
-              key={city}
-              type="button"
-              onClick={() => setLabel(clampPersonalizationLabel(city))}
-              onPointerDown={(event) => {
-                if (event.pointerType === "touch") setLabel(clampPersonalizationLabel(city));
-              }}
-              className={`${modalStyles.chip} ${styles.cityChip} ${active ? styles.cityChipActive : ""}`}
-              aria-pressed={active}
-            >
-              {city}
-            </button>
-          );
-        })}
-      </div>
-    ) : null;
+  const modelPicker = (
+    <AtelierModelPicker models={models} activeModelId={modelId} onSelect={pickModel} />
+  );
 
   const labelField = (
     <label className={`block ${styles.fieldInputWrap}`}>
@@ -301,7 +236,7 @@ export function PersonalizeModal({
         type="text"
         value={label}
         onChange={(e) => setLabel(clampPersonalizationLabel(e.target.value))}
-        placeholder="Ville, pays ou texte libre"
+        placeholder="Texte libre (sans ville imposée)"
         className={styles.fieldInput}
         aria-label="Texte personnalisé"
         maxLength={PERSONALIZATION_MAX_LABEL_LENGTH}
@@ -312,28 +247,24 @@ export function PersonalizeModal({
 
   const modelTextDesktopSection = (
     <div className={`${modalStyles.section} ${styles.sheetStepSection} ${styles.sheetDesktopModelText}`}>
-      <p className={`${modalStyles.sectionLabel} ${styles.sheetDesktopGroupTitle}`}>Modèle &amp; texte</p>
-      <div className={styles.sheetDesktopChipRow}>
-        {modelChipRow}
-        {cityChipRow ? <span className={styles.sheetDesktopChipDivider} aria-hidden /> : null}
-        {cityChipRow}
-      </div>
+      <p className={`${modalStyles.sectionLabel} ${styles.sheetDesktopGroupTitle}`}>Texte &amp; validation</p>
       {labelField}
+      <div className="mt-4">{surchargeField}</div>
     </div>
   );
 
   const modelSection = (
     <div className={`${modalStyles.section} ${styles.sheetStepSection}`}>
       <p className={`${modalStyles.sectionLabel} ${styles.mobileOnlyBlock}`}>1 — Modèle</p>
-      {modelChipRow}
+      {modelPicker}
     </div>
   );
 
   const textSection = (
     <div className={`${modalStyles.section} ${styles.sheetStepSection}`}>
       <p className={`${modalStyles.sectionLabel} ${styles.mobileOnlyBlock}`}>2 — Texte</p>
-      {cityChipRow}
-      <div className="mt-3">{labelField}</div>
+      <div>{labelField}</div>
+      <div className="mt-4">{surchargeField}</div>
     </div>
   );
 
@@ -408,7 +339,7 @@ export function PersonalizeModal({
             transition={MODAL_PANEL_SPRING}
             role="dialog"
             aria-modal="true"
-            aria-label="Configurateur atelier"
+            aria-label="Personnalise ta pièce"
           >
             <header className={`${styles.sheetHeader} ${styles.mobileOnlyBlock}`}>
               <p className={styles.sheetHeaderTitle}>{mobileStepTitle}</p>
@@ -436,18 +367,15 @@ export function PersonalizeModal({
                   onOpenZoom={() => setPreviewZoomOpen(true)}
                 />
               ) : null}
-              {model ? (
-                <div className={styles.cityTopSlider}>
-                  <AtelierCityColorControl
-                    id="personalize-city-color"
-                    value={previewCityColor}
-                    onChange={setCityColorTune}
-                    modelId={model.id}
-                    tone="light"
-                    centered={mobileStepMount}
-                    className={styles.cityColorControl}
+              {!mobileStepMount ? (
+                <div className={`${styles.desktopOnlyBlock} ${styles.photoModelPicker}`}>
+                  <p className={styles.photoModelPickerLabel}>Choisis ton modèle</p>
+                  <AtelierModelPicker
+                    models={models}
+                    activeModelId={modelId}
+                    onSelect={pickModel}
+                    compact
                   />
-                  <div className={styles.photoAdvancedTune}>{advancedTuneBlock}</div>
                 </div>
               ) : null}
                 </div>
@@ -475,10 +403,11 @@ export function PersonalizeModal({
                           </button>
                         </div>
                         <h2 className={`${modalStyles.title} ${styles.sheetDesktopTitle}`}>
-                          Configurateur T-shirt custom
+                          Personnalise ta pièce
                         </h2>
                         <p className={`${modalStyles.description} ${styles.sheetDesktopDescription}`}>
-                          Tee blanc ou noir, texte, taille, puis panier.
+                          Choisis le modèle, ton texte et ta taille. Supplément +{PERSONALIZATION_SURCHARGE_EUR}&nbsp;€
+                          par pièce.
                         </p>
                       </div>
                     ) : null}
