@@ -87,7 +87,7 @@ export function roundPriceHtFromTtc(ttc: number): number {
 export function makerLabelHintForCategory(category: ProductCategory): string {
   const hints: Partial<Record<ProductCategory, string>> = {
     Hoodies: "HOODIE",
-    "Hoodies zippés": "HOODIE ZIPPE",
+    Hoodzip: "HOODZIP",
     Crewnecks: "CREWNECK",
     "T-shirts": "TEE-SHIRT",
     Jerseys: "JERSEY",

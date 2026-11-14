@@ -18,7 +18,7 @@ const PERSONALIZABLE_PRODUCT_ID = 24;
 export const VITRINE_ONLY: Record<number, { name: string; variant: string; price: number }> = {
   1: { name: "Hoodie DINGRY Original KING BLUE / PINK", variant: "VERSO", price: 80 },
   3: { name: "Hoodie DINGRY Original VERT", variant: "VERSO", price: 80 },
-  5: { name: "Hoodie zippé DINGRY Outline / BLACK", variant: "VERSO", price: 90 },
+  5: { name: "Hoodzip DINGRY Outline / BLACK", variant: "VERSO", price: 90 },
   8: { name: "Hoodie DINGRY Original BLACK", variant: "VERSO", price: 80 },
   18: { name: "DINGRY TEE", variant: "COLLECTION 08 — VERSO", price: 35 },
   20: { name: "DINGRY TEE", variant: "COLLECTION 10 — VERSO", price: 35 },

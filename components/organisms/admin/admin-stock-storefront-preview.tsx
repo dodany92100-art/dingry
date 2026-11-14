@@ -36,7 +36,7 @@ const ADMIN_CATEGORY_FROM_CATALOG: Record<
   Exclude<AdminProductCategoryFilter, "Collection">
 > = {
   hoodies: "Hoodies",
-  "hoodie-zip": "Hoodies zippés",
+  "hoodie-zip": "Hoodzip",
   sweats: "Crewnecks",
   "t-shirts": "T-shirts",
   jersey: "Jerseys",
@@ -310,6 +310,7 @@ export function AdminStockStorefrontPreview({
   const scopedGhostCount = scopedProducts.filter((product) => product.ghost).length;
 
   return (
+    <DingryI18nProvider>
     <div className={`dingry-shop text-white ${ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS}`}>
       <ShopNav
         embedded
@@ -348,5 +349,6 @@ export function AdminStockStorefrontPreview({
         )}
       </section>
     </div>
+    </DingryI18nProvider>
   );
 }

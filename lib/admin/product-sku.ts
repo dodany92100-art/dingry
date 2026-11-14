@@ -2,7 +2,7 @@ import type { ProductCategory } from "@/lib/admin/types";
 
 const SKU_CATEGORY_TOKEN: Record<ProductCategory, string> = {
   Hoodies: "HD",
-  "Hoodies zippés": "HZ",
+  Hoodzip: "HZ",
   Crewnecks: "CR",
   "T-shirts": "TS",
   Jerseys: "JE",

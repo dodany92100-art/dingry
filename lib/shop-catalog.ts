@@ -25,7 +25,7 @@ export type { CatalogCategory, CatalogFilter } from "@/lib/catalog-category";
 export type ShopCategory =
   | "T-shirts"
   | "Hoodie"
-  | "Hoodie zippé"
+  | "Hoodzip"
   | "Sweats"
   | "Caps"
   | "Jersey"
@@ -37,7 +37,7 @@ export const SHOP_TEE_CATEGORY = "T-shirts" satisfies ShopCategory;
 /** Onglets catégorie (sans « Tout ») — même ordre que le menu catalogue. */
 const SHOP_CATEGORY_BY_MENU_SLUG: Record<CatalogCategory, ShopCategory> = {
   hoodies: "Hoodie",
-  "hoodie-zip": "Hoodie zippé",
+  "hoodie-zip": "Hoodzip",
   sweats: "Sweats",
   "t-shirts": SHOP_TEE_CATEGORY,
   jersey: "Jersey",
@@ -67,7 +67,7 @@ export function isActiveShopProduct(product: { id: number }): boolean {
 }
 
 export function shopCatalogTabLabel(tab: ShopCatalogTab): string {
-  return tab === "Hoodie zippé" ? "Zip" : tab;
+  return tab;
 }
 
 export function isShopTeeCategory(category: string): boolean {

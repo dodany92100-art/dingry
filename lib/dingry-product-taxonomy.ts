@@ -1,7 +1,7 @@
 /** Catégories produit officielles DINGRY (CRM + fiches statiques). */
 export const OFFICIAL_PRODUCT_CATEGORIES = [
   "Hoodies",
-  "Hoodies zippés",
+  "Hoodzip",
   "Crewnecks",
   "T-shirts",
   "Jerseys",

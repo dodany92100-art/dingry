@@ -98,7 +98,7 @@ const STORY_BY_RECTO: Partial<Record<number, ProductStoryBlock>> = {
   },
   4: {
     lead:
-      "Hoodie zippé outline : silhouette structurée, fermeture YKK, détails contrastés. Le layering streetwear haut de gamme.",
+      "Hoodzip outline : silhouette structurée, fermeture YKK, détails contrastés. Le layering streetwear haut de gamme.",
     materials: "Coton 450 g/m², zip YKK, broderies outline.",
     fabrication: "Patron oversize, broderies positionnées, contrôle zip.",
     limitedEdition: "Ligne Outline — variantes BLACK en stock, autres coloris annoncés.",

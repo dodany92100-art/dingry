@@ -299,6 +299,7 @@ function isAtelierTunnelShopCategory(category: string): boolean {
   return (
     isShopTeeCategory(category) ||
     category === "Hoodie" ||
+    category === "Hoodzip" ||
     category === "Hoodie zippé" ||
     category === "Sweats"
   );

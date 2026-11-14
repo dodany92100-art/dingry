@@ -5,7 +5,7 @@ import { detectCategoryFromText } from "@/lib/admin/smart-product-text-parser";
 export const SUGGESTED_PRICE_EUR_BY_CATEGORY: Readonly<Record<ProductCategory, number>> = {
   "T-shirts": 45,
   Hoodies: 90,
-  "Hoodies zippés": 95,
+  Hoodzip: 95,
   Crewnecks: 85,
   Jerseys: 75,
   Pants: 110,
@@ -16,7 +16,7 @@ export const SUGGESTED_PRICE_EUR_BY_CATEGORY: Readonly<Record<ProductCategory, n
 export const PRODUCT_FAMILY_LABEL: Readonly<Record<ProductCategory, string>> = {
   "T-shirts": "T-shirt",
   Hoodies: "Hoodie",
-  "Hoodies zippés": "Hoodie zippé",
+  Hoodzip: "Hoodzip",
   Crewnecks: "Crewneck",
   Jerseys: "Jersey",
   Pants: "Pantalon cargo",

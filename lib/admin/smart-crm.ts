@@ -34,7 +34,7 @@ export function swatchHexForVariant(label: string): string | null {
 
 const CATEGORY_PRICE_HINT: Partial<Record<ProductCategory, number>> = {
   Hoodies: 80,
-  "Hoodies zippés": 90,
+  Hoodzip: 90,
   Crewnecks: 50,
   "T-shirts": 35,
   Jerseys: 129,

@@ -71,8 +71,8 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     "BLACK OUTLINE — RECTO",
     90,
     "",
-    "Hoodie zippé noir, silhouette structurée et détails outline.",
-    "Hoodies zippés",
+    "Hoodzip noir, silhouette structurée et détails outline.",
+    "Hoodzip",
     8,
   ),
   product(

@@ -49,7 +49,8 @@ import { normalizeCatalogCategory, type CatalogCategory } from "@/lib/catalog-ca
 const LEGACY_PRODUCT_CATEGORY: Record<string, ProductCategory> = {
   Tee: "T-shirts",
   Hoodie: "Hoodies",
-  "Hoodie zippé": "Hoodies zippés",
+  "Hoodie zippé": "Hoodzip",
+  "Hoodies zippés": "Hoodzip",
   Sweats: "Crewnecks",
   Jersey: "Jerseys",
   Pant: "Pants",
@@ -61,7 +62,7 @@ const LEGACY_PRODUCT_CATEGORY: Record<string, ProductCategory> = {
 
 const CATALOG_SLUG_TO_OFFICIAL: Record<CatalogCategory, ProductCategory> = {
   hoodies: "Hoodies",
-  "hoodie-zip": "Hoodies zippés",
+  "hoodie-zip": "Hoodzip",
   sweats: "Crewnecks",
   "t-shirts": "T-shirts",
   jersey: "Jerseys",
@@ -87,7 +88,7 @@ export function normalizeProductCategory(value: string): ProductCategory {
 /** Tailles proposées dans le formulaire admin par catégorie. */
 export const ADMIN_CATEGORY_SIZES: Record<ProductCategory, readonly ProductSize[]> = {
   Hoodies: PRODUCT_SIZES,
-  "Hoodies zippés": PRODUCT_SIZES,
+  Hoodzip: PRODUCT_SIZES,
   Crewnecks: PRODUCT_SIZES,
   "T-shirts": PRODUCT_SIZES,
   Jerseys: PRODUCT_SIZES,

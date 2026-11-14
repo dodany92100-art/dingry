@@ -22,6 +22,9 @@ export function parseAdminCategoryParam(raw: string | null): AdminProductCategor
   if ((ADMIN_PRODUCT_CATEGORY_NAV as readonly string[]).includes(decoded)) {
     return decoded as AdminProductCategoryFilter;
   }
+  if (decoded === "Hoodies zippés" || decoded === "Hoodie zippé") {
+    return "Hoodzip";
+  }
   return "Collection";
 }
 

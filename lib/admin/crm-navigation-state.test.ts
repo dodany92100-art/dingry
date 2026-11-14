@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { adminCategoryQueryValue, parseAdminCategoryParam, parseAdminProductParam } from "@/lib/admin/crm-navigation-state";
 
 describe("parseAdminCategoryParam", () => {
-  it("décode Hoodies zippés", () => {
-    expect(parseAdminCategoryParam(encodeURIComponent("Hoodies zippés"))).toBe("Hoodies zippés");
+  it("décode Hoodzip (et ancien libellé)", () => {
+    expect(parseAdminCategoryParam(encodeURIComponent("Hoodzip"))).toBe("Hoodzip");
+    expect(parseAdminCategoryParam(encodeURIComponent("Hoodies zippés"))).toBe("Hoodzip");
   });
 
   it("défaut Collection", () => {

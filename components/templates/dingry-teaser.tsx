@@ -172,15 +172,14 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           </header>
         </section>
 
-        {/* Mobile : bloc unique titre + compteur + texte */}
+        {/* Mobile : ouverture + compteur en haut à droite (tête / fumée du visuel) */}
         <section
           aria-label="Ouverture et compte à rebours"
-          className="mt-auto shrink-0 space-y-3 pb-1 text-center max-md:translate-y-10 sm:max-md:translate-y-12 sm:space-y-3.5 md:hidden"
+          className="pointer-events-none absolute top-[clamp(17.25rem,50vh,19.5rem)] -right-5 z-20 w-[min(62vw,248px)] space-y-2.5 text-center sm:-right-3 sm:top-[clamp(17.75rem,52vh,20rem)] sm:space-y-3 md:hidden"
         >
           <TeaserOpeningTitles displayClassName={displayClassName} />
           <TeaserOpeningDateRow />
           <TeaserCountdownDigits displayClassName={displayClassName} parts={parts} />
-          <p className={`${displayClassName} ${TEASER_MESSAGE_PAD_CLASS}`}>{DINGRY_TEASER_MESSAGE}</p>
         </section>
 
         <div className="hidden w-full flex-col items-center gap-4 text-center md:col-start-2 md:row-start-1 md:ml-auto md:mt-24 md:flex md:max-w-md md:self-start">
@@ -199,11 +198,18 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
         {DINGRY_TEASER_MESSAGE}
       </p>
 
+      {/* Mobile : texte au-dessus de l’e-mail (plus masqué par la barre) */}
+      <p
+        className={`${displayClassName} ${TEASER_MESSAGE_PAD_CLASS} relative z-20 mb-3 w-full shrink-0 md:hidden`}
+      >
+        {DINGRY_TEASER_MESSAGE}
+      </p>
+
       {/* Bloc 4 : e-mail */}
       <form
         noValidate
         onSubmit={onSubmit}
-        className="mx-auto w-full max-w-xs shrink-0 sm:max-w-sm md:max-w-md"
+        className="relative z-20 mx-auto w-full max-w-xs shrink-0 sm:max-w-sm md:max-w-md"
       >
         <label htmlFor="teaser-email" className="sr-only">
           Inscrivez-vous pour être informé

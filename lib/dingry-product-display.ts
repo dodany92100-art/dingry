@@ -49,7 +49,7 @@ const ORIGINAL_HOODIE_LINE: ProductLine = {
 
 const ZIP_OUTLINE_LINE: ProductLine = {
   lineId: "hoodie-zip-outline",
-  familyLabel: "Hoodie zippé DINGRY Outline",
+  familyLabel: "Hoodzip DINGRY Outline",
   price: 90,
   materials: "Coton 450 g/m², fermeture YKK, broderies outline contrastées.",
   sizeGuide: DINGRY_SIZE_GUIDE,

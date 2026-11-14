@@ -135,7 +135,7 @@ function profileForCategory(category: ProductCategory): CategoryDefaultProfile {
         defaultSizeGuide: "400 g/m²",
         taxonomyTags: ["sweat", "heavyweight", "hoodie"],
       };
-    case "Hoodies zippés":
+    case "Hoodzip":
       return {
         ...base,
         defaultSizeGuide: "400 g/m²",
@@ -185,7 +185,7 @@ export const CATEGORY_DEFAULT_PROFILES: Record<ProductCategory, CategoryDefaultP
     (
       [
         "Hoodies",
-        "Hoodies zippés",
+        "Hoodzip",
         "Crewnecks",
         "T-shirts",
         "Jerseys",

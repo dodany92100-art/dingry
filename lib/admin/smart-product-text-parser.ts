@@ -122,7 +122,7 @@ const RE_TAILLE = /\btailles?\b/i;
 
 /** Scan univers produit si pas de ligne `catégorie:` / `produit:`. */
 const CATEGORY_KEYWORDS: readonly { category: ProductCategory; patterns: readonly RegExp[]; weight: number }[] = [
-  { category: "Hoodies zippés", patterns: [/\bhoodies?\s+zipp[ée]s?\b/i, /\bzip\s*hoodie\b/i], weight: 3 },
+  { category: "Hoodzip", patterns: [/\bhoodzip\b/i, /\bhoodies?\s+zipp[ée]s?\b/i, /\bzip\s*hoodie\b/i], weight: 3 },
   { category: "Hoodies", patterns: [/\bhoodies?\b/i], weight: 2 },
   { category: "Crewnecks", patterns: [/\bcrew\s*necks?\b/i, /\bcrewneck\b/i], weight: 2 },
   { category: "Crop tops", patterns: [/\bcrop\s*tops?\b/i], weight: 2 },
@@ -273,7 +273,7 @@ function categoryFromLineValue(raw: string): ProductCategory | undefined {
     for (const cat of [
       "Crewnecks",
       "Hoodies",
-      "Hoodies zippés",
+      "Hoodzip",
       "T-shirts",
       "Pants",
       "Crop tops",

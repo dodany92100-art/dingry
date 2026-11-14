@@ -58,7 +58,7 @@ export function sortAdminProductsNewest(products: readonly AdminProduct[]): Admi
 
 const CRM_CATEGORY_SLUG: Record<ProductCategory, CatalogCategory> = {
   Hoodies: "hoodies",
-  "Hoodies zippés": "hoodie-zip",
+  Hoodzip: "hoodie-zip",
   Crewnecks: "sweats",
   "T-shirts": "t-shirts",
   Jerseys: "jersey",
