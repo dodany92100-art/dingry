@@ -38,11 +38,17 @@ export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps
         <p className="dingry-section-eyebrow dingry-atelier-hero__eyebrow pointer-events-none absolute inset-x-0 top-12 z-30 mx-auto w-full max-w-[1400px] px-4 sm:top-14 sm:px-6 md:top-16">
           {eyebrow}
         </p>
-        <div className="dingry-atelier-hero__copy relative z-20 mx-auto flex w-full max-w-[1400px] flex-col justify-end px-4 pb-10 pt-20 sm:px-6 md:pb-14 pointer-events-auto">
-          <div className="dingry-atelier-hero__mark-wrap">
+        <button
+          type="button"
+          onClick={() => onOpenCustom()}
+          className="dingry-atelier-hero__copy relative z-20 mx-auto flex w-full max-w-[1400px] cursor-pointer flex-col justify-end border-0 bg-transparent px-4 pb-10 pt-20 text-left sm:px-6 md:pb-14 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d8b96a]"
+          aria-label={`${cta} — ${title}. ${lead}`}
+        >
+          <div className="dingry-atelier-hero__mark-wrap pointer-events-none">
             <Image
               src={DINGRY_LOGO_MONDE_CITIES_SRC}
-              alt={title}
+              alt=""
+              aria-hidden
               width={500}
               height={500}
               priority={false}
@@ -50,7 +56,9 @@ export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps
             />
           </div>
           <div className="flex w-full max-w-3xl flex-col gap-4 md:gap-5">
-            <AtelierHeroCta cta={cta} onOpen={() => onOpenCustom()} />
+            <span className="dingry-atelier-hero__cta-dock dingry-gold-pill-btn z-20 w-fit self-start rounded-full">
+              <span className="gold-text">{cta}</span>
+            </span>
             <h2
               id="dingry-atelier-hero-title"
               className="dingry-atelier-hero__title gold-text dingry-typo-street text-[clamp(1.75rem,5vw,3.25rem)] leading-[1.05]"
@@ -59,7 +67,7 @@ export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps
             </h2>
             <p className="max-w-xl text-base text-white/90 md:text-lg">{lead}</p>
           </div>
-        </div>
+        </button>
       </div>
     </section>
   );
@@ -82,14 +90,3 @@ function AtelierHeroImage() {
   );
 }
 
-function AtelierHeroCta({ cta, onOpen }: { cta: string; onOpen: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="dingry-atelier-hero__cta-dock dingry-gold-pill-btn z-20 w-fit self-start cursor-pointer rounded-full"
-    >
-      <span className="gold-text">{cta}</span>
-    </button>
-  );
-}

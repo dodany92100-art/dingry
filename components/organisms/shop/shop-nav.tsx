@@ -369,7 +369,7 @@ export function ShopNav({
               className="dingry-nav-logo dingry-nav-logo--mobile-center flex shrink-0 items-center [perspective:900px] max-md:absolute max-md:left-1/2 max-md:top-1/2 max-md:z-10 max-md:-translate-x-1/2 max-md:-translate-y-1/2"
               aria-label="DINGRY Paris"
             >
-              <DingryLogo animate={false} />
+              <DingryLogo animate={false} interactive />
             </a>
             <div className="dingry-nav-tagline hidden lg:block" aria-hidden="true">
               <span className="dingry-typo-manifesto">{t("brand.manifesto")}</span>
@@ -381,7 +381,7 @@ export function ShopNav({
             className="dingry-nav-menu hidden shrink-0 items-center justify-center gap-3 justify-self-center md:flex lg:gap-5"
           >
             <LayoutGroup id="dingry-shop-nav-menu">
-              {NAV_SECTION_LINKS.map((entry) => renderDesktopNavSection(entry))}
+              {renderDesktopNavSection(NAV_SECTION_LINKS[0])}
               {onOpenCustom ? (
                 <button
                   type="button"
@@ -397,6 +397,7 @@ export function ShopNav({
                   <span className="gold-text">{t("nav.custom")}</span>
                 </button>
               ) : null}
+              {NAV_SECTION_LINKS.slice(1).map((entry) => renderDesktopNavSection(entry))}
               {renderDesktopNavSection(NAV_LOOKBOOK_LINK)}
             </LayoutGroup>
           </motion.div>
@@ -453,17 +454,6 @@ export function ShopNav({
                   {t("brand.streetLine")}
                 </button>
               </li>
-              {NAV_SECTION_LINKS.filter(([id]) => id !== "catalogue").map(([id, labelKey]) => (
-                <li key={id}>
-                  <button
-                    type="button"
-                    onClick={() => goSection(id)}
-                    className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
-                  >
-                    {t(labelKey)}
-                  </button>
-                </li>
-              ))}
               {onOpenCustom ? (
                 <li>
                   <button
@@ -481,6 +471,17 @@ export function ShopNav({
                   </button>
                 </li>
               ) : null}
+              {NAV_SECTION_LINKS.filter(([id]) => id !== "catalogue").map(([id, labelKey]) => (
+                <li key={id}>
+                  <button
+                    type="button"
+                    onClick={() => goSection(id)}
+                    className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
+                  >
+                    {t(labelKey)}
+                  </button>
+                </li>
+              ))}
               <li key={NAV_LOOKBOOK_LINK[0]}>
                 <button
                   type="button"

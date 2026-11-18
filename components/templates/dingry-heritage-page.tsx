@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BackgroundGradientAnimation } from "@/components/atoms/ui/background-gradient-animation";
-import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
+import { DINGRY_SHOP_LOWER_BAND_CLASS, DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
 import { HeritageEditorial } from "@/components/organisms/shop/heritage-editorial";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
 import { usePageScroll } from "@/components/organisms/shop/hooks/use-page-scroll";
@@ -130,12 +130,14 @@ function DingryHeritagePageInner() {
         <TopNavSpacer />
         <div id="heritage-top" className={`${DINGRY_SHOP_SHELL_CLASS} pt-2 md:pt-4`}>
           <HeritageEditorial />
-          <ShopFooter
-            shopBasePath={shopBasePath}
-            onScrollToCatalogue={() => navigateToShopSection("catalogue")}
-            onScrollToSection={scrollOnPage}
-            onOpenAtelierCustom={() => navigateToShopSection("atelier-custom")}
-          />
+          <div className={DINGRY_SHOP_LOWER_BAND_CLASS}>
+            <ShopFooter
+              shopBasePath={shopBasePath}
+              onScrollToCatalogue={() => navigateToShopSection("catalogue")}
+              onScrollToSection={scrollOnPage}
+              onOpenAtelierCustom={() => navigateToShopSection("atelier-custom")}
+            />
+          </div>
         </div>
       </div>
 

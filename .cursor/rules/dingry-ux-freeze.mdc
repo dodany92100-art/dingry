@@ -1,0 +1,34 @@
+---
+description: Gel UX DINGRY — aucune modification sans accord explicite de l'utilisateur
+alwaysApply: true
+---
+
+# DINGRY — gel UX (priorité absolue)
+
+## Principe
+
+**Aucun changement de code, styles, contenus ni comportement boutique** sans que l'utilisateur l'ait **nommé explicitement** dans le message courant (fichier, zone UI, ou action précise).
+
+## Interdit sans accord explicite
+
+- Ajouter ou supprimer un élément UI (bouton, lien, section, texte, effet, animation, zone cliquable).
+- Modifier layout, ordre nav, couleurs, typo, espacements, interactions « pour améliorer » ou par cohérence.
+- Refactor, renommage, déplacement de composants, « bonus » ou correctifs opportunistes.
+- Revert non demandé des changements de la session.
+- `git commit`, `git push`, déploiement.
+
+## Autorisé sans demander à chaque ligne
+
+- Lire / diagnostiquer / expliquer (y compris cause d'une erreur).
+- Proposer un plan ou un diff **décrit** sans l'appliquer tant que l'utilisateur n'a pas dit d'appliquer.
+- Modification **uniquement** sur les fichiers et le périmètre **cités mot pour mot** dans la requête, avec le **diff minimal** nécessaire.
+
+## En cas de doute
+
+S'arrêter et **poser une question courte** (une clarification) au lieu d'éditer.
+
+## Formulations qui valent accord
+
+Exemples : « modifie shop-nav », « remets l'effet logo », « push », « annule le dernier changement sur heritage-section ».
+
+Formulations qui **ne valent pas** accord : silence, « continue », question ouverte, screenshot seul, sélection navigateur sans consigne d'édition.

@@ -2789,6 +2789,7 @@ html[data-theme="light"] .dingry-shop .dingry-shop-lower-band .dingry-footer-cla
 }
 
 .dingry-custom-banner-dock--catalog .dingry-custom-banner-dock__open.dingry-catalog-custom-tab:hover,
+.dingry-heritage-teaser:hover .dingry-heritage-teaser-cta,
 .dingry-heritage-teaser .dingry-heritage-teaser-cta:hover,
 .dingry-custom-banner-dock--catalog .dingry-heritage-teaser-cta:hover {
   border-color: rgb(179 135 40 / 1);
