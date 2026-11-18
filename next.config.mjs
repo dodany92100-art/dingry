@@ -95,6 +95,7 @@ const nextConfig = {
       process.env.CRM_BUILD_AT ??
       new Date().toISOString(),
     NEXT_PUBLIC_CRM_VERSION_PATCH: crmVersionPatch(),
+    NEXT_PUBLIC_DINGRY_TEASER_GATE: process.env.DINGRY_TEASER_GATE ?? "",
     NEXT_PUBLIC_DINGRY_PREVIEW_UI:
       process.env.DINGRY_CRM_HOST?.trim() && process.env.DINGRY_PREVIEW_SECRET?.trim()
         ? "1"
@@ -123,7 +124,6 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     remotePatterns: buildImageRemotePatterns(),
   },

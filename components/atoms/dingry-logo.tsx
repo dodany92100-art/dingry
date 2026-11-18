@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
+import Image from "next/image";
+import { DINGRY_LOGO_HEIGHT, DINGRY_LOGO_URL, DINGRY_LOGO_WIDTH } from "@/lib/dingry-brand";
 
 type DingryLogoProps = {
   className?: string;
@@ -92,9 +93,12 @@ export function DingryLogo({
   tone = "on-dark",
 }: DingryLogoProps) {
   const img = (
-    <img
+    <Image
       src={DINGRY_LOGO_URL}
       alt="DINGRY Paris"
+      width={DINGRY_LOGO_WIDTH}
+      height={DINGRY_LOGO_HEIGHT}
+      sizes="(max-width: 768px) 140px, 180px"
       draggable={false}
       className={cn(
         "relative z-[1] h-[2.875rem] w-auto max-md:max-h-[2.875rem] md:h-14",
@@ -102,7 +106,7 @@ export function DingryLogo({
         animate && !interactive && !shimmer && "dingry-logo-flip",
         className,
       )}
-      decoding="async"
+      priority={false}
     />
   );
 

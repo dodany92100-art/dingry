@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { shouldClientProbeAdminSession } from "@/lib/shop-api-client-access";
 
 export const DINGRY_ADMIN_SESSION_EVENT = "dingry:admin-session";
 
@@ -29,6 +30,11 @@ export function useAdminSessionProbe() {
   }, []);
 
   useEffect(() => {
+    if (!shouldClientProbeAdminSession()) {
+      setAuthenticated(false);
+      setBooting(false);
+      return;
+    }
     let cancelled = false;
     async function boot() {
       try {

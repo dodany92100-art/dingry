@@ -9,6 +9,10 @@ export const DINGRY_ATELIER_HERO_SRC = "/dingry-atelier-hero-marseille.jpg";
 export const DINGRY_LOGO_URL =
   "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/logo/1794331149733-i49txc-wordmark-navbar.webp";
 
+/** Dimensions intrinsèques du wordmark navbar (ratio layout / Lighthouse). */
+export const DINGRY_LOGO_WIDTH = 723;
+export const DINGRY_LOGO_HEIGHT = 345;
+
 /** Wordmark ROCK THE STREET (Heritage). */
 export const DINGRY_STREET_WORDMARK_URL =
   "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/brand/wordmark/1794331150553-kfhl5x-rock-the-street-title.webp";

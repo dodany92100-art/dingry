@@ -231,6 +231,8 @@ export function ProductImageFlip({
           fallbackSrc={imageFallback}
           alt={alt}
           deliveryWidth={cardW}
+          width={cardW}
+          height={Math.round((cardW * 4) / 3)}
           priority={priority}
           className={cn(
             "h-full w-full object-cover transition-[filter] duration-300 ease-out motion-reduce:transition-none",
@@ -285,6 +287,8 @@ export function ProductImageFlip({
           fallbackSrc={imageFallback}
           alt={alt}
           deliveryWidth={cardW}
+          width={cardW}
+          height={Math.round((cardW * 4) / 3)}
           priority={priority}
           className={cn(
             "h-full w-1/2 shrink-0 object-cover",
@@ -296,6 +300,8 @@ export function ProductImageFlip({
           src={backImage ?? frontImage}
           alt={`${alt} — verso`}
           deliveryWidth={cardW}
+          width={cardW}
+          height={Math.round((cardW * 4) / 3)}
           className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
         />
       </div>

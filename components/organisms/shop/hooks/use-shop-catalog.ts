@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { overlayShopCatalog, shopProductFromUnknown, type ShopProduct } from "@/lib/catalog";
+import { shouldClientFetchGatedShopApi } from "@/lib/shop-api-client-access";
 import { PRODUCTS } from "@/lib/shop-data";
 
 export type CatalogState = "loading" | "ready" | "error";
@@ -27,14 +28,26 @@ function parseLiveProducts(value: unknown) {
     .filter((item): item is NonNullable<typeof item> => item !== null);
 }
 
-export function useShopCatalog() {
+type UseShopCatalogOptions = {
+  /** Quand false, catalogue seed local sans fetch CRM. */
+  enabled?: boolean;
+};
+
+export function useShopCatalog(options?: UseShopCatalogOptions) {
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [catalogState, setCatalogState] = useState<CatalogState>("loading");
   const [retryCount, setRetryCount] = useState(0);
+  const enabledOverride = options?.enabled;
 
   useEffect(() => {
     let cancelled = false;
     async function loadCatalog() {
+      const enabled = enabledOverride ?? shouldClientFetchGatedShopApi();
+      if (!enabled) {
+        setProducts(PRODUCTS);
+        setCatalogState("ready");
+        return;
+      }
       setCatalogState((state) => (state === "ready" ? state : "loading"));
       try {
         const response = await fetch("/api/catalog");
@@ -69,8 +82,8 @@ export function useShopCatalog() {
         }
       } catch {
         if (!cancelled) {
-          setProducts([]);
-          setCatalogState("error");
+          setProducts(PRODUCTS);
+          setCatalogState("ready");
         }
       }
     }
@@ -78,7 +91,7 @@ export function useShopCatalog() {
     return () => {
       cancelled = true;
     };
-  }, [retryCount]);
+  }, [enabledOverride, retryCount]);
 
   const retry = useCallback(() => setRetryCount((value) => value + 1), []);
 

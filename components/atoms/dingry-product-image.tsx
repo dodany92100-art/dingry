@@ -38,8 +38,31 @@ export function DingryProductImage({
 }: DingryProductImageProps) {
   const [activeSrc, setActiveSrc] = useState(src);
   useEffect(() => {
-    setActiveSrc(src);
-  }, [src]);
+    const primary = src.trim();
+    const fallback = fallbackSrc?.trim() ?? "";
+    if (!primary) {
+      setActiveSrc(fallback || "");
+      return;
+    }
+    if (!fallback || fallback === primary) {
+      setActiveSrc(primary);
+      return;
+    }
+    setActiveSrc(primary);
+    let cancelled = false;
+    const probe = new window.Image();
+    const probeUrl = deliveryImageUrl(primary, deliveryWidth);
+    probe.onload = () => {
+      if (!cancelled) setActiveSrc(primary);
+    };
+    probe.onerror = () => {
+      if (!cancelled) setActiveSrc(fallback);
+    };
+    probe.src = probeUrl;
+    return () => {
+      cancelled = true;
+    };
+  }, [src, fallbackSrc, deliveryWidth]);
   const onError = useCallback(() => {
     const next = fallbackSrc?.trim() ?? "";
     if (next && next !== activeSrc) setActiveSrc(next);
@@ -75,6 +98,7 @@ export function DingryProductImage({
 
   return (
     <Image
+      key={safeSrc}
       src={safeSrc}
       alt={alt}
       width={width}
@@ -83,7 +107,6 @@ export function DingryProductImage({
       priority={priority}
       loading={priority ? undefined : "lazy"}
       decoding="async"
-      unoptimized
       draggable={false}
       onError={onError}
       className={cn(className)}

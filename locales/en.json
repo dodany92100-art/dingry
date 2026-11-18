@@ -56,8 +56,8 @@
   "newsletter": {
     "title": "Newsletter",
     "subtitle": "Drops & exclusives — join us.",
-    "emailPlaceholder": "Email",
-    "emailSrOnly": "Newsletter email",
+    "emailPlaceholder": "NEWSLETTER · DROPS & EXCLUSIVES — JOIN US.",
+    "emailSrOnly": "Newsletter · drops & exclusives — join us, email address",
     "submit": "Subscribe",
     "thanks": "Thanks. Confirm sending in your mail client.",
     "mailtoSubject": "DINGRY Newsletter",

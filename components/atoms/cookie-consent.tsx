@@ -48,7 +48,7 @@ export function CookieConsent() {
             role="dialog"
             aria-labelledby="dingry-cookie-title"
             aria-describedby="dingry-cookie-desc"
-            className="dingry-gold-rule-top fixed inset-x-0 bottom-0 z-[100] bg-[#0a0a0a]/92 px-4 py-4 md:px-8 md:py-5"
+            className="dingry-gold-rule-top fixed inset-x-0 bottom-0 z-[100] bg-[#0a0a0a]/95 px-4 py-4 md:px-8 md:py-5"
           >
             <div className="mx-auto flex max-w-5xl flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8">
               <div className="min-w-0">
@@ -58,14 +58,14 @@ export function CookieConsent() {
                 >
                   Cookies DINGRY
                 </p>
-                <p id="dingry-cookie-desc" className="mt-2 text-xs leading-relaxed text-white/60 md:text-sm">
+                <p id="dingry-cookie-desc" className="mt-2 text-xs leading-relaxed text-white/80 md:text-sm">
                   Nous utilisons des cookies essentiels au fonctionnement du site et, si vous acceptez, des cookies de
                   mesure d&apos;audience (Vercel Analytics) pour améliorer l&apos;expérience. Refuser n&apos;empêche pas
                   la navigation ni les commandes.
                 </p>
                 <Link
                   href="/#mentions-legales"
-                  className="mt-2 inline-block text-[10px] uppercase tracking-[0.2em] text-white/45 underline-offset-4 transition-colors hover:text-[#ff8a4d] hover:underline"
+                  className="mt-2 inline-block text-[10px] uppercase tracking-[0.2em] text-white/80 underline-offset-4 transition-colors hover:text-[#ff8a4d] hover:underline"
                   onClick={() => setVisible(false)}
                 >
                   Politique de confidentialité
@@ -82,7 +82,7 @@ export function CookieConsent() {
                 <button
                   type="button"
                   onClick={() => choose("accepted")}
-                  className="h-10 bg-[#FF3D00] px-5 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-[#e03500]"
+                  className="h-10 bg-[#FF3D00] px-5 text-[10px] font-extrabold uppercase tracking-[0.2em] text-black transition-colors hover:bg-[#e03500]"
                 >
                   Accepter
                 </button>

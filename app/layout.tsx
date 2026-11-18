@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 
-import { AdminSwitcherBarScope } from '@/components/molecules/admin-switcher-bar-scope'
+import { AdminSwitcherBarLayoutGate } from '@/components/molecules/admin-switcher-bar-layout-gate'
+import { R2_DEFAULT_PUBLIC_BASE } from '@/lib/r2/config'
 import { CookieConsentLazy } from '@/components/atoms/cookie-consent-lazy'
 import { DINGRY_APPLE_ICON_URL, DINGRY_FAVICON_URL, DINGRY_OPEN_GRAPH_IMAGE } from '@/lib/dingry-brand'
 import { anton, inter } from '@/lib/dingry-fonts'
@@ -49,9 +50,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" data-theme="light" className={`${inter.variable} ${anton.variable} overflow-x-hidden`}>
+      <head>
+        <link rel="preconnect" href={R2_DEFAULT_PUBLIC_BASE} crossOrigin="anonymous" />
+      </head>
       <body className="overflow-x-hidden antialiased">
         {children}
-        <AdminSwitcherBarScope />
+        <AdminSwitcherBarLayoutGate />
         <CookieConsentLazy />
       </body>
     </html>

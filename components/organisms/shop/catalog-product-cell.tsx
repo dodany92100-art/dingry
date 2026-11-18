@@ -6,6 +6,13 @@ import { ProductCard } from "@/components/molecules/product-card";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { catalogRectoId, storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
 import { CATALOG_CANONICAL_IMAGE_BY_ID } from "@/lib/dingry-product-media";
+import { PRODUCTS } from "@/lib/shop-data";
+
+function catalogGridImageFallback(productId: number): string | undefined {
+  const canonical = CATALOG_CANONICAL_IMAGE_BY_ID[productId]?.trim();
+  if (canonical) return canonical;
+  return PRODUCTS.find((item) => item.id === productId)?.image.trim() || undefined;
+}
 import { prefetchShopProductMedia } from "@/lib/shop-prefetch";
 
 export const CatalogProductCell = memo(function CatalogProductCell({
@@ -40,7 +47,7 @@ export const CatalogProductCell = memo(function CatalogProductCell({
       name={storefrontProductTitle(product, catalog)}
       variant={storefrontProductSubtitle(product, catalog)}
       image={product.image}
-      imageFallback={CATALOG_CANONICAL_IMAGE_BY_ID[product.id]}
+      imageFallback={catalogGridImageFallback(product.id)}
       price={product.price}
       priority={globalIndex === 0}
       soldOut={!isShopProductInStock(product)}

@@ -79,6 +79,8 @@ export const CATALOG_CANONICAL_IMAGE_BY_ID: Readonly<Record<number, string>> = {
   22: DINGRY_PRODUCT_MEDIA.teeFemmeRecto,
   41: DINGRY_PRODUCT_MEDIA.jerseyWhite,
   42: DINGRY_PRODUCT_MEDIA.jerseyBlack,
+  37: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/99459ef5-5357-4aa7-adce-8ab461ca0370_obzc2o.jpg",
+  38: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/acb2c9c8-a7d8-4a1b-96bb-c9d6bd131857_qfnvcu.jpg",
 };
 
 /** Paires Sweats (col rond) — visuels legacy R2. */

@@ -83,7 +83,7 @@ function AtelierHeroImage() {
         priority={false}
         fill
         sizes="100vw"
-        unoptimized
+        loading="lazy"
         className="object-cover object-[62%_50%] opacity-95"
       />
     </div>

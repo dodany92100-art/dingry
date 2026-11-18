@@ -36,31 +36,17 @@ export function DingryNewsletterForm({ align = "start" }: DingryNewsletterFormPr
       className={`dingry-newsletter flex w-full max-w-full flex-col ${
         centered ? "items-center text-center" : "items-start text-left"
       }`}
-      aria-labelledby="dingry-newsletter-title"
     >
-      <p
-        id="dingry-newsletter-title"
-        className={`dingry-newsletter-headline m-0 max-w-full ${
-          centered ? "text-center" : "text-left"
-        }`}
-      >
-        <span className="dingry-newsletter-headline__title">{t("newsletter.title")}</span>
-        <span className="dingry-newsletter-headline__sep" aria-hidden>
-          {" "}
-          ·{" "}
-        </span>
-        <span className="dingry-newsletter-headline__drop">{t("newsletter.subtitle")}</span>
-      </p>
       {status === "sent" ? (
-        <p className="mt-3 text-[10px] tracking-[0.1em] text-[#161616]/65" role="status">
+        <p className="text-[10px] tracking-[0.1em] text-[#161616]/65" role="status">
           {t("newsletter.thanks")}
         </p>
       ) : (
         <form
           onSubmit={handleSubmit}
-          className={`mt-3 flex w-full ${centered ? "justify-center" : "justify-start"}`}
+          className={`flex w-full ${centered ? "justify-center" : "justify-start"}`}
         >
-          <div className="dingry-newsletter-field relative w-full max-w-[16rem] sm:max-w-[18rem]">
+          <div className="dingry-newsletter-field relative w-full max-w-full sm:max-w-[22rem]">
             <label className="sr-only" htmlFor="dingry-newsletter-email-input">
               {t("newsletter.emailSrOnly")}
             </label>
@@ -74,7 +60,7 @@ export function DingryNewsletterForm({ align = "start" }: DingryNewsletterFormPr
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("newsletter.emailPlaceholder")}
-              className="dingry-contact-field dingry-newsletter-email dingry-newsletter-email--with-send w-full"
+              className="dingry-contact-field dingry-newsletter-email dingry-newsletter-email--with-send dingry-newsletter-email--long-cta w-full"
             />
             <button
               type="submit"

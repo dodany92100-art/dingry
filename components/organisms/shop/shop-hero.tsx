@@ -22,7 +22,6 @@ export function ShopHero({ onDiscoverCollection }: ShopHeroProps) {
           priority
           fill
           sizes="100vw"
-          unoptimized
           className="object-cover object-[50%_38%] md:object-contain md:object-center"
         />
       </div>

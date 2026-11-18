@@ -2462,6 +2462,12 @@ html[data-theme="light"] .dingry-shop .dingry-shop-lower-band .dingry-footer-cla
   background-clip: unset;
   -webkit-text-fill-color: #d8b96a;
   color: #d8b96a;
+  font-size: 0.75rem;
+}
+
+.dingry-shop-lower-band .dingry-footer-classic .dingry-footer-link,
+.dingry-shop-lower-band .dingry-footer-classic .dingry-footer-legal-link {
+  font-size: 0.75rem;
 }
 
 .dingry-shop-lower-band .dingry-footer-classic .dingry-footer-legal-head__title {
@@ -3849,6 +3855,25 @@ html[data-theme="light"] .dingry-shop .dingry-auth-drawer {
   padding-right: 2.35rem;
 }
 
+.dingry-newsletter-email--long-cta {
+  font-size: clamp(0.5rem, 2.15vw, 0.75rem);
+  letter-spacing: 0.04em;
+}
+
+.dingry-newsletter-email--long-cta::placeholder {
+  letter-spacing: 0.05em;
+}
+
+@media (min-width: 640px) {
+  .dingry-newsletter-email--long-cta {
+    letter-spacing: 0.08em;
+  }
+
+  .dingry-newsletter-email--long-cta::placeholder {
+    letter-spacing: 0.08em;
+  }
+}
+
 .dingry-newsletter-field {
   display: block;
 }
@@ -4370,22 +4395,20 @@ html[data-theme="light"] .dingry-shop .dingry-footer-stage {
 }
 
 .dingry-shop-lower-band .dingry-footer-payment-band__copy {
-  color: rgb(255 255 255 / 0.55);
+  color: #d8b96a;
 }
 
 .dingry-shop-lower-band .dingry-footer-payment-band__rights {
-  color: #d8b96a;
+  color: inherit;
 }
 
 .dingry-shop-lower-band .dingry-footer-payment-band .dingry-pay-badge {
   min-height: 2rem;
   padding: 0.3rem 0.55rem;
-  border: 1px solid rgb(216 185 106 / 0.88);
+  border: 0.5px solid rgb(216 185 106 / 0.42);
   border-radius: 2px;
   background: rgb(5 5 5 / 0.72);
-  box-shadow:
-    inset 0 1px 0 rgb(252 246 186 / 0.14),
-    0 0 0 1px rgb(139 105 20 / 0.22);
+  box-shadow: inset 0 0.5px 0 rgb(252 246 186 / 0.08);
 }
 
 .dingry-shop-lower-band .dingry-footer-payment-band .dingry-pay-badge--apple {

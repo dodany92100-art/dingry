@@ -56,8 +56,8 @@
   "newsletter": {
     "title": "Newsletter",
     "subtitle": "Drops & exclus — inscris-toi.",
-    "emailPlaceholder": "E-mail",
-    "emailSrOnly": "E-mail newsletter",
+    "emailPlaceholder": "NEWSLETTER · DROPS & EXCLUS — INSCRIS-TOI.",
+    "emailSrOnly": "Newsletter · Drops & exclus — inscris-toi, adresse e-mail",
     "submit": "S'inscrire",
     "thanks": "Merci. Confirme l'envoi dans ton client mail.",
     "mailtoSubject": "Newsletter DINGRY",

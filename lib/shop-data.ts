@@ -34,8 +34,10 @@ export const IMAGES = {
   cargo2: "https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800&h=1000&fit=crop&auto=format",
   bomber1: "https://images.unsplash.com/photo-1660486044177-45cd45bb5e99?w=800&h=1000&fit=crop&auto=format",
   bomber2: "https://images.unsplash.com/photo-1577471444692-4e7c23b51ce4?w=800&h=1000&fit=crop&auto=format",
-  cap1: "",
-  cap2: "",
+  cap1:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/99459ef5-5357-4aa7-adce-8ab461ca0370_obzc2o.jpg",
+  cap2:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/acb2c9c8-a7d8-4a1b-96bb-c9d6bd131857_qfnvcu.jpg",
   jersey1: DINGRY_PRODUCT_MEDIA.jerseyWhite,
   sneaker1: "https://images.unsplash.com/photo-1568153487049-4431a8c15c20?w=800&h=1000&fit=crop&auto=format",
   sneaker2: "https://images.unsplash.com/photo-1763750581767-b367bcd6c117?w=800&h=1000&fit=crop&auto=format",
