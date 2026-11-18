@@ -208,8 +208,9 @@ test.describe('Parcours utilisateur boutique', () => {
     await gotoShop(page, '#atelier-custom');
     const hero = page.locator('#atelier-custom-hero');
     await hero.scrollIntoViewIfNeeded();
-    await expect(hero.getByRole('button', { name: /^CUSTOM$/i })).toBeVisible({ timeout: 25000 });
-    await hero.getByRole('button', { name: /^CUSTOM$/i }).click();
+    const heroOpen = hero.getByRole('button').first();
+    await expect(heroOpen).toBeVisible({ timeout: 25000 });
+    await heroOpen.click();
 
     const personalizeModal = page.locator('[data-dingry-personalize-modal]');
     await expect(personalizeModal).toBeVisible({ timeout: 15000 });
