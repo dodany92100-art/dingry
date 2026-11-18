@@ -7,6 +7,12 @@ import {
   isTeaserGatedPath,
 } from "@/lib/dingry-teaser-gate";
 import { ADMIN_COOKIE_NAME, sessionSecretFromEnv, verifyAdminSession } from "@/lib/admin/session-token";
+import {
+  PREVIEW_COOKIE_NAME,
+  isPreviewFeatureEnabled,
+  previewSecretFromEnv,
+  verifyPreviewCookie,
+} from "@/lib/preview-cookie";
 import { jsonRateLimited } from "@/lib/rate-limit-response";
 import { clientIp } from "@/lib/request-ip";
 import {
@@ -113,6 +119,14 @@ async function hasValidAdminSession(request: NextRequest): Promise<boolean> {
   return verifyAdminSession(token, secret);
 }
 
+async function hasValidPreviewCookie(request: NextRequest): Promise<boolean> {
+  if (!isPreviewFeatureEnabled()) return false;
+  const secret = previewSecretFromEnv();
+  if (!secret) return false;
+  const token = request.cookies.get(PREVIEW_COOKIE_NAME)?.value ?? "";
+  return verifyPreviewCookie(token, secret);
+}
+
 /** Logique proxy Next 16 — testable (admin inchangé + gate teaser). */
 export async function handleProxyRequest(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
@@ -162,5 +176,6 @@ export async function handleProxyRequest(request: NextRequest): Promise<NextResp
   if (await isCheckoutCaptureRequest(request)) return NextResponse.next();
 
   if (await hasValidAdminSession(request)) return NextResponse.next();
+  if (await hasValidPreviewCookie(request)) return NextResponse.next();
   return teaserDenied(request);
 }

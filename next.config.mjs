@@ -95,6 +95,25 @@ const nextConfig = {
       process.env.CRM_BUILD_AT ??
       new Date().toISOString(),
     NEXT_PUBLIC_CRM_VERSION_PATCH: crmVersionPatch(),
+    NEXT_PUBLIC_DINGRY_PREVIEW_UI:
+      process.env.DINGRY_CRM_HOST?.trim() && process.env.DINGRY_PREVIEW_SECRET?.trim()
+        ? "1"
+        : "",
+    NEXT_PUBLIC_DINGRY_SHOP_PREVIEW_URL: (() => {
+      const explicit =
+        process.env.NEXT_PUBLIC_DINGRY_SHOP_PREVIEW_URL?.trim() ??
+        process.env.DINGRY_SHOP_PREVIEW_URL?.trim();
+      if (explicit) return explicit.replace(/\/$/, "");
+      const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+      if (site) return site.replace(/\/$/, "");
+      const shops = (process.env.DINGRY_SHOP_HOSTS ?? "")
+        .split(/[,\s]+/)
+        .map((h) => h.trim().toLowerCase())
+        .filter(Boolean);
+      if (shops.includes("www.dingry.com")) return "https://www.dingry.com";
+      if (shops[0]) return `https://${shops[0]}`;
+      return "";
+    })(),
   },
   typescript: {
     ignoreBuildErrors: false,

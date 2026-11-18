@@ -7,18 +7,23 @@ import {
   pathMatchesProxyMatcher,
 } from "@/lib/proxy-gate";
 import { signAdminSession } from "@/lib/admin/session-token";
+import { signPreviewCookie } from "@/lib/preview-cookie";
 
 const SESSION_SECRET = "a".repeat(32);
+const PREVIEW_SECRET = "v".repeat(32);
 
 function requestFor(
   path: string,
   cookieToken?: string,
-  init?: { method?: string; body?: string; host?: string },
+  init?: { method?: string; body?: string; host?: string; cookieName?: "admin" | "preview" },
 ): NextRequest {
   const originHost = init?.host ?? "www.dingry.com";
   const url = new URL(path, `https://${originHost}`);
   const headers: Record<string, string> = { "x-vercel-forwarded-for": "203.0.113.1" };
-  if (cookieToken) headers.cookie = `dingry_admin=${cookieToken}`;
+  if (cookieToken) {
+    const name = init?.cookieName === "preview" ? "dingry_preview" : "dingry_admin";
+    headers.cookie = `${name}=${cookieToken}`;
+  }
   if (init?.body) headers["Content-Type"] = "application/json";
   return new NextRequest(url, { headers, method: init?.method ?? "GET", body: init?.body });
 }
@@ -116,6 +121,67 @@ describe("handleProxyRequest host split", () => {
     const response = await handleProxyRequest(requestFor("/websitedx", undefined, { host: "www.dingry.com" }));
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toContain("/admin");
+  });
+});
+
+describe("handleProxyRequest preview cookie", () => {
+  beforeEach(() => {
+    vi.stubEnv("DINGRY_CRM_HOST", "crm.dingry.com");
+    vi.stubEnv("DINGRY_SHOP_HOSTS", "dingry.com,www.dingry.com");
+    vi.stubEnv("DINGRY_PREVIEW_SECRET", PREVIEW_SECRET);
+    vi.stubEnv("DINGRY_TEASER_GATE", "");
+    vi.stubEnv("ADMIN_SESSION_SECRET", SESSION_SECRET);
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.spyOn(edgeApiRateLimit, "limitEdgeApiWrite").mockResolvedValue({
+      ok: true,
+      limit: 20,
+      remaining: 19,
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("cookie preview + /admin → 404 (ordre host avant teaser)", async () => {
+    const { token } = await signPreviewCookie(PREVIEW_SECRET);
+    const response = await handleProxyRequest(
+      requestFor("/admin", token, { host: "www.dingry.com", cookieName: "preview" }),
+    );
+    expect(response.status).toBe(404);
+  });
+
+  it("cookie preview + /api/admin/login → 404", async () => {
+    const { token } = await signPreviewCookie(PREVIEW_SECRET);
+    const response = await handleProxyRequest(
+      requestFor("/api/admin/login", token, { host: "www.dingry.com", cookieName: "preview" }),
+    );
+    expect(response.status).toBe(404);
+  });
+
+  it("cookie preview + /api/upload → 404", async () => {
+    const { token } = await signPreviewCookie(PREVIEW_SECRET);
+    const response = await handleProxyRequest(
+      requestFor("/api/upload", token, { host: "www.dingry.com", cookieName: "preview" }),
+    );
+    expect(response.status).toBe(404);
+  });
+
+  it("cookie preview + /websitedx et /api/catalog → passe le teaser", async () => {
+    const { token } = await signPreviewCookie(PREVIEW_SECRET);
+    for (const path of ["/websitedx", "/api/catalog"]) {
+      const response = await handleProxyRequest(
+        requestFor(path, token, { host: "www.dingry.com", cookieName: "preview" }),
+      );
+      expect(response.status).toBe(200);
+    }
+  });
+
+  it("sans cookie preview → teaser sur /websitedx", async () => {
+    const response = await handleProxyRequest(requestFor("/websitedx", undefined, { host: "www.dingry.com" }));
+    expect(response.status).toBe(307);
   });
 });
 

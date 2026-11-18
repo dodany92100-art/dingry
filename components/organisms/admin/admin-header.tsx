@@ -4,6 +4,7 @@ import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { ExternalLink, Power } from "lucide-react";
 import { formatCrmBuildLabel } from "@/lib/admin/crm-build-label";
 import { adminCrmVersion } from "@/lib/admin/crm-version";
+import { useAdminShopPreview } from "@/components/organisms/admin/hooks/use-admin-shop-preview";
 
 type AdminHeaderProps = {
   pendingOrders: number;
@@ -24,6 +25,7 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const deployedAt = formatCrmBuildLabel();
   const version = adminCrmVersion();
+  const { openPreview, closePreview, busy, previewUiEnabled } = useAdminShopPreview();
 
   return (
     <header className="dingry-admin-glass dingry-admin-header sticky top-0 z-30 border-b-0 border-white/10 px-4 py-2 sm:px-6 sm:py-2.5 md:px-10 md:py-3 [--dingry-admin-header-offset:2.5rem] sm:[--dingry-admin-header-offset:2.65rem] md:[--dingry-admin-header-offset:3.25rem]">
@@ -91,21 +93,49 @@ export function AdminHeader({
               {lowStockCount} bas
             </span>
           ) : null}
-          <a
-            href="/websitedx"
-            target="_blank"
-            rel="noreferrer"
-            className="dingry-admin-preview-link dingry-shimmer-logo-img dingry-gpu-layer relative inline-flex h-7 shrink-0 items-center gap-1 overflow-hidden rounded-full border border-white/12 bg-white/[0.04] px-2 text-[10px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] ring-1 ring-white/10 backdrop-blur-md sm:h-8 sm:px-2.5 md:h-9 md:gap-1.5 md:px-3.5 md:text-[12px]"
-          >
-            <span className="dingry-shimmer-logo relative z-[1] md:hidden">Vitrine</span>
-            <span className="dingry-shimmer-logo relative z-[1] hidden md:inline">Aperçu du site</span>
-            <ExternalLink
-              size={13}
-              strokeWidth={1.75}
-              className="dingry-admin-preview-link__icon relative z-[1] shrink-0 text-white/55 transition-colors duration-300"
-              aria-hidden
-            />
-          </a>
+          {previewUiEnabled ? (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void openPreview()}
+                className="dingry-admin-preview-link dingry-shimmer-logo-img dingry-gpu-layer relative inline-flex h-7 shrink-0 items-center gap-1 overflow-hidden rounded-full border border-white/12 bg-white/[0.04] px-2 text-[10px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] ring-1 ring-white/10 backdrop-blur-md disabled:opacity-50 sm:h-8 sm:px-2.5 md:h-9 md:gap-1.5 md:px-3.5 md:text-[12px]"
+              >
+                <span className="dingry-shimmer-logo relative z-[1] md:hidden">Vitrine</span>
+                <span className="dingry-shimmer-logo relative z-[1] hidden md:inline">Ouvrir la preview</span>
+                <ExternalLink
+                  size={13}
+                  strokeWidth={1.75}
+                  className="dingry-admin-preview-link__icon relative z-[1] shrink-0 text-white/55 transition-colors duration-300"
+                  aria-hidden
+                />
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void closePreview()}
+                className="hidden shrink-0 rounded-full border border-white/12 bg-white/[0.04] px-2 py-1 text-[10px] text-zinc-400 ring-1 ring-white/10 transition hover:text-white disabled:opacity-50 sm:inline md:text-[11px]"
+              >
+                Quitter la preview
+              </button>
+            </>
+          ) : (
+            <a
+              href="/websitedx"
+              target="_blank"
+              rel="noreferrer"
+              className="dingry-admin-preview-link dingry-shimmer-logo-img dingry-gpu-layer relative inline-flex h-7 shrink-0 items-center gap-1 overflow-hidden rounded-full border border-white/12 bg-white/[0.04] px-2 text-[10px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] ring-1 ring-white/10 backdrop-blur-md sm:h-8 sm:px-2.5 md:h-9 md:gap-1.5 md:px-3.5 md:text-[12px]"
+            >
+              <span className="dingry-shimmer-logo relative z-[1] md:hidden">Vitrine</span>
+              <span className="dingry-shimmer-logo relative z-[1] hidden md:inline">Aperçu du site</span>
+              <ExternalLink
+                size={13}
+                strokeWidth={1.75}
+                className="dingry-admin-preview-link__icon relative z-[1] shrink-0 text-white/55 transition-colors duration-300"
+                aria-hidden
+              />
+            </a>
+          )}
         </div>
 
         <button

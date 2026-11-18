@@ -140,6 +140,8 @@ Si un ancien déploiement utilisait encore `access: "private"` alors que le blob
 
 **Test local `next start` avec split actif :** retirer `DINGRY_CRM_HOST` de `.env.local` ou pointer le host vers `crm.dingry.com`.
 
+**Aperçu vitrine (cookie `dingry_preview`) :** nécessite `DINGRY_CRM_HOST` + `DINGRY_PREVIEW_SECRET` (≥ 32 car.). Depuis le CRM : **Ouvrir la preview** → cookie `Domain=.dingry.com` (via `DINGRY_COOKIE_DOMAIN`) → vitrine hors teaser sur `www` uniquement — **pas** d’accès `/admin` sur la boutique. **Rotation :** changer `DINGRY_PREVIEW_SECRET` invalide toutes les previews. **Sous-domaines :** le cookie partage `.dingry.com` — supprimer les DNS orphelins (ex. `ftp`). **Local :** sans `DINGRY_COOKIE_DOMAIN`, tester via hosts file ou sans split.
+
 ---
 
 ## Teaser public + boutique privée (`DINGRY_TEASER_GATE`)
