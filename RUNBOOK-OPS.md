@@ -123,6 +123,25 @@ Si un ancien déploiement utilisait encore `access: "private"` alors que le blob
 
 ---
 
+## Routage hostname boutique / CRM
+
+**Variables (Production + Preview si tu veux le même cloisonnement sur `*.vercel.app`) :**
+
+- `DINGRY_SHOP_HOSTS` = `dingry.com,www.dingry.com`
+- `DINGRY_CRM_HOST` = `crm.dingry.com`
+
+**Comportement :** si `DINGRY_CRM_HOST` est **absent**, le proxy reste inchangé (non-régression). Sinon :
+
+- **Boutique** : `/admin`, `/api/admin/*`, `/api/upload` → **404** (stealth, `X-Robots-Tag: noindex, nofollow`).
+- **CRM** : uniquement admin, `/api/upload`, `/.well-known/*`, assets Next ; vitrine (`/`, checkout, catalog…) → **404**.
+- **Hosts inconnus** (ex. preview Vercel) : admin + upload → **404** (sauf `localhost` en dev hors production).
+
+**Infra :** `crm.dingry.com` derrière **Cloudflare Access** ; TOTP applicatif ensuite. Vérification `Cf-Access-Jwt-Assertion` = ticket séparé (pas en app aujourd’hui).
+
+**Test local `next start` avec split actif :** retirer `DINGRY_CRM_HOST` de `.env.local` ou pointer le host vers `crm.dingry.com`.
+
+---
+
 ## Teaser public + boutique privée (`DINGRY_TEASER_GATE`)
 
 **Comportement (défaut) :** `DINGRY_TEASER_GATE` absent ou non reconnu → gate **actif** — `/websitedx`, `/checkout`, `/api/catalog`, `/api/checkout`, `/api/lookbook`, `/api/catalog-perso-banner` exigent le cookie admin (TOTP). L’accueil `/` reste géré par `DINGRY_PUBLIC_HOME` + date d’ouverture (`lib/dingry-teaser-opening.ts`).

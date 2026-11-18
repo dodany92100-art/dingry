@@ -4,20 +4,7 @@ export async function proxy(request: Parameters<typeof handleProxyRequest>[0]) {
   return handleProxyRequest(request);
 }
 
+/** Aligné sur `PROXY_MATCHER` dans `lib/proxy-gate.ts` (analyse statique Turbopack). */
 export const config = {
-  matcher: [
-    "/admin",
-    "/admin/:path*",
-    "/api/admin/:path*",
-    "/websitedx",
-    "/checkout",
-    "/checkout/:path*",
-    "/api/catalog",
-    "/api/catalog/:path*",
-    "/api/checkout",
-    "/api/lookbook",
-    "/api/catalog-perso-banner",
-    "/api/teaser",
-    "/api/upload",
-  ],
+  matcher: ["/", "/((?!_next/static|_next/image|favicon.ico).*)"],
 };

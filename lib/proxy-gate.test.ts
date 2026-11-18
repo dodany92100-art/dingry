@@ -13,13 +13,14 @@ const SESSION_SECRET = "a".repeat(32);
 function requestFor(
   path: string,
   cookieToken?: string,
-  init?: { method?: string; body?: string },
+  init?: { method?: string; body?: string; host?: string },
 ): NextRequest {
-  const url = new URL(path, "https://www.dingry.com");
+  const originHost = init?.host ?? "www.dingry.com";
+  const url = new URL(path, `https://${originHost}`);
   const headers: Record<string, string> = { "x-vercel-forwarded-for": "203.0.113.1" };
   if (cookieToken) headers.cookie = `dingry_admin=${cookieToken}`;
   if (init?.body) headers["Content-Type"] = "application/json";
-  return new NextRequest(url, { headers, method: init?.method, body: init?.body });
+  return new NextRequest(url, { headers, method: init?.method ?? "GET", body: init?.body });
 }
 
 describe("pathMatchesProxyMatcher", () => {
@@ -30,15 +31,91 @@ describe("pathMatchesProxyMatcher", () => {
     expect(pathMatchesProxyMatcher("/admin/lookbook")).toBe(true);
   });
 
-  it("n'inclut pas webhook ni cron", () => {
-    expect(pathMatchesProxyMatcher("/api/paypal/webhook")).toBe(false);
-    expect(pathMatchesProxyMatcher("/api/cron/stock-reconcile")).toBe(false);
+  it("couvre webhook et cron (catch-all)", () => {
+    expect(pathMatchesProxyMatcher("/api/paypal/webhook")).toBe(true);
+    expect(pathMatchesProxyMatcher("/api/cron/stock-reconcile")).toBe(true);
     expect(pathMatchesProxyMatcher("/api/teaser")).toBe(true);
   });
 
+  it("exclut les assets Next statiques", () => {
+    expect(pathMatchesProxyMatcher("/_next/static/chunk.js")).toBe(false);
+    expect(pathMatchesProxyMatcher("/favicon.ico")).toBe(false);
+  });
+
   it("matcher exporté cohérent", () => {
-    expect(PROXY_MATCHER).not.toContain("/api/paypal/webhook");
-    expect(PROXY_MATCHER).not.toContain("/api/cron/stock-reconcile");
+    expect(PROXY_MATCHER).toEqual(["/", "/((?!_next/static|_next/image|favicon.ico).*)"]);
+  });
+});
+
+describe("handleProxyRequest host split", () => {
+  const SPLIT_ENVS = {
+    DINGRY_CRM_HOST: "crm.dingry.com",
+    DINGRY_SHOP_HOSTS: "dingry.com,www.dingry.com",
+    DINGRY_TEASER_GATE: "",
+    ADMIN_SESSION_SECRET: SESSION_SECRET,
+    NODE_ENV: "production",
+    VERCEL_ENV: "production",
+  } as const;
+
+  beforeEach(() => {
+    vi.stubEnv("DINGRY_CRM_HOST", SPLIT_ENVS.DINGRY_CRM_HOST);
+    vi.stubEnv("DINGRY_SHOP_HOSTS", SPLIT_ENVS.DINGRY_SHOP_HOSTS);
+    vi.stubEnv("DINGRY_TEASER_GATE", SPLIT_ENVS.DINGRY_TEASER_GATE);
+    vi.stubEnv("ADMIN_SESSION_SECRET", SPLIT_ENVS.ADMIN_SESSION_SECRET);
+    vi.stubEnv("NODE_ENV", SPLIT_ENVS.NODE_ENV);
+    vi.stubEnv("VERCEL_ENV", SPLIT_ENVS.VERCEL_ENV);
+    vi.spyOn(edgeApiRateLimit, "limitEdgeApiWrite").mockResolvedValue({
+      ok: true,
+      limit: 20,
+      remaining: 19,
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("boutique + /admin → 404", async () => {
+    const response = await handleProxyRequest(requestFor("/admin", undefined, { host: "www.dingry.com" }));
+    expect(response.status).toBe(404);
+    expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
+  });
+
+  it("boutique + /api/upload → 404", async () => {
+    const response = await handleProxyRequest(requestFor("/api/upload", undefined, { host: "dingry.com" }));
+    expect(response.status).toBe(404);
+  });
+
+  it("vercel.app + /admin → 404", async () => {
+    const response = await handleProxyRequest(
+      requestFor("/admin", undefined, { host: "dingry-git-main.vercel.app" }),
+    );
+    expect(response.status).toBe(404);
+  });
+
+  it("boutique + webhook → next()", async () => {
+    const response = await handleProxyRequest(
+      requestFor("/api/paypal/webhook", undefined, { host: "www.dingry.com" }),
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it("CRM + / → 404", async () => {
+    const response = await handleProxyRequest(requestFor("/", undefined, { host: "crm.dingry.com" }));
+    expect(response.status).toBe(404);
+  });
+
+  it("CRM + /admin → login page (next)", async () => {
+    const response = await handleProxyRequest(requestFor("/admin", undefined, { host: "crm.dingry.com" }));
+    expect(response.status).toBe(200);
+  });
+
+  it("split inactif : /admin sur boutique → redirect legacy", async () => {
+    vi.stubEnv("DINGRY_CRM_HOST", "");
+    const response = await handleProxyRequest(requestFor("/websitedx", undefined, { host: "www.dingry.com" }));
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toContain("/admin");
   });
 });
 

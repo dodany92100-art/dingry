@@ -69,6 +69,14 @@ const securityHeaders = [
 const noStore = [{ key: "Cache-Control", value: "no-store" }];
 const noIndex = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
 
+function crmHostHeaderValue() {
+  const raw = (process.env.DINGRY_CRM_HOST ?? "").trim().toLowerCase();
+  if (!raw) return "";
+  const portIdx = raw.lastIndexOf(":");
+  if (portIdx > 0 && /^\d+$/.test(raw.slice(portIdx + 1))) return raw.slice(0, portIdx);
+  return raw;
+}
+
 const nextConfig = {
   reactStrictMode: false,
   productionBrowserSourceMaps: false,
@@ -121,6 +129,15 @@ const nextConfig = {
         source: "/legal/:path*",
         headers: noIndex,
       },
+      ...(crmHostHeaderValue()
+        ? [
+            {
+              source: "/:path*",
+              has: [{ type: "host", value: crmHostHeaderValue() }],
+              headers: noIndex,
+            },
+          ]
+        : []),
     ];
   },
 };

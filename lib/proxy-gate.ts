@@ -9,43 +9,60 @@ import {
 import { ADMIN_COOKIE_NAME, sessionSecretFromEnv, verifyAdminSession } from "@/lib/admin/session-token";
 import { jsonRateLimited } from "@/lib/rate-limit-response";
 import { clientIp } from "@/lib/request-ip";
+import {
+  isCrmHost,
+  isCrmOnlyPath,
+  isCrmPermittedPath,
+  isDevHost,
+  isHostSplitActive,
+  isShopCriticalOpenPath,
+  requestHostname,
+} from "@/lib/host-routing";
 
 const ADMIN_PUBLIC_API = new Set(["/api/admin/login", "/api/admin/logout", "/api/admin/totp"]);
 
 /** Doit rester aligné sur le tableau littéral `config.matcher` de `proxy.ts` (analyse statique Turbopack). */
-export const PROXY_MATCHER = [
-  "/admin",
-  "/admin/:path*",
-  "/api/admin/:path*",
-  "/websitedx",
-  "/checkout",
-  "/checkout/:path*",
-  "/api/catalog",
-  "/api/catalog/:path*",
-  "/api/checkout",
-  "/api/lookbook",
-  "/api/banners",
-  "/api/catalog-perso-banner",
-  "/api/teaser",
-  "/api/upload",
-] as const;
+export const PROXY_MATCHER = ["/", "/((?!_next/static|_next/image|favicon.ico).*)"] as const;
 
 const GATE_DENY_HEADERS = {
   "Cache-Control": "no-store",
   "X-Robots-Tag": "noindex",
 } as const;
 
-/** Aligné sur les motifs `config.matcher` du proxy (sans invoquer Next). */
+const HOST_STEALTH_HEADERS = {
+  "Cache-Control": "no-store",
+  "X-Robots-Tag": "noindex, nofollow",
+} as const;
+
+function hostIsolationDenied(): NextResponse {
+  return new NextResponse(null, { status: 404, headers: HOST_STEALTH_HEADERS });
+}
+
+/** Équivalent du catch-all `proxy.ts` (hors assets Next statiques). */
 export function pathMatchesProxyMatcher(pathname: string): boolean {
-  for (const pattern of PROXY_MATCHER) {
-    if (pattern.endsWith("/:path*")) {
-      const base = pattern.slice(0, pattern.length - "/:path*".length);
-      if (pathname === base || pathname.startsWith(`${base}/`)) return true;
-      continue;
-    }
-    if (pathname === pattern) return true;
+  if (pathname === "/") return true;
+  if (pathname.startsWith("/_next/static") || pathname.startsWith("/_next/image")) return false;
+  if (pathname === "/favicon.ico") return false;
+  return true;
+}
+
+function applyHostSplitIsolation(request: NextRequest, pathname: string): NextResponse | null {
+  if (!isHostSplitActive()) return null;
+
+  const hostname = requestHostname(request);
+
+  if (isCrmHost(hostname)) {
+    if (!isCrmPermittedPath(pathname)) return hostIsolationDenied();
+    return null;
   }
-  return false;
+
+  if (!isDevHost(hostname)) {
+    if (!isShopCriticalOpenPath(pathname) && isCrmOnlyPath(pathname)) {
+      return hostIsolationDenied();
+    }
+  }
+
+  return null;
 }
 
 function adminDenied(request: NextRequest) {
@@ -103,6 +120,9 @@ export async function handleProxyRequest(request: NextRequest): Promise<NextResp
   if (!pathMatchesProxyMatcher(pathname)) {
     return NextResponse.next();
   }
+
+  const hostDenied = applyHostSplitIsolation(request, pathname);
+  if (hostDenied) return hostDenied;
 
   if (pathname === "/admin" || pathname === "/admin/") return NextResponse.next();
   if (ADMIN_PUBLIC_API.has(pathname)) return NextResponse.next();
