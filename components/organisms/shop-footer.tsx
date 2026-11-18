@@ -258,7 +258,8 @@ export function ShopFooter({
               </p>
               <PaymentMarks paymentAria={t("cart.paymentMethodsAria")} />
               <p className="dingry-footer-payment-band__copy w-full pb-1 text-center text-[10px] tracking-[0.08em]">
-                {t("footer.copyright", { year: new Date().getFullYear() })}
+                {t("footer.copyrightLead", { year: new Date().getFullYear() })}{" "}
+                <span className="dingry-footer-payment-band__rights">{t("footer.copyrightRights")}</span>
               </p>
             </div>
           </section>

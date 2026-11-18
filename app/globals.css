@@ -875,6 +875,10 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   font-weight: 600;
 }
 
+.dingry-catalog-bar--vitrine:not(.dingry-catalog-bar--silver) [role="tablist"] button[role="tab"] {
+  font-size: 0.6875rem;
+}
+
 .dingry-catalog-bar--vitrine:not(.dingry-catalog-bar--silver) .dingry-catalog-tabs-scroll > .absolute:first-child {
   background-image: linear-gradient(to right, rgb(0 0 0 / 0.98) 0%, transparent 100%) !important;
 }
@@ -894,6 +898,7 @@ html[data-theme="light"] .dingry-shop #catalogue-landing * {
   .dingry-catalog-bar--vitrine:not(.dingry-catalog-bar--silver) [role="tablist"] button[role="tab"] {
     padding-inline: 0.85rem;
     letter-spacing: 0.2em;
+    font-size: 0.75rem;
   }
 }
 
@@ -1706,6 +1711,11 @@ html[data-theme="light"] .dingry-shop .dingry-typo-body-alt {
 }
 
 /** Libellés de section boutique (Lookbook, Heritage, Collection…). */
+.dingry-catalog-collection-eyebrow {
+  font-size: clamp(17px, 1.75vw, 22px);
+  letter-spacing: 0.26em;
+}
+
 .dingry-section-eyebrow {
   font-size: clamp(14px, 1.35vw, 18px);
   font-weight: 600;
@@ -4361,6 +4371,21 @@ html[data-theme="light"] .dingry-shop .dingry-footer-stage {
 
 .dingry-shop-lower-band .dingry-footer-payment-band__copy {
   color: rgb(255 255 255 / 0.55);
+}
+
+.dingry-shop-lower-band .dingry-footer-payment-band__rights {
+  color: #d8b96a;
+}
+
+.dingry-shop-lower-band .dingry-footer-payment-band .dingry-pay-badge {
+  min-height: 2rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgb(216 185 106 / 0.88);
+  border-radius: 2px;
+  background: rgb(5 5 5 / 0.72);
+  box-shadow:
+    inset 0 1px 0 rgb(252 246 186 / 0.14),
+    0 0 0 1px rgb(139 105 20 / 0.22);
 }
 
 .dingry-shop-lower-band .dingry-footer-payment-band .dingry-pay-badge--apple {

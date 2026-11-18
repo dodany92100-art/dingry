@@ -53,7 +53,7 @@ export function CollectionFeed({
           <div key={section.category} className="space-y-4 md:space-y-5">
             {section.category === "hoodies" ? (
               <div className="pb-4 md:pb-5">
-                <p className="dingry-section-eyebrow">{t("collection.eyebrow")}</p>
+                <p className="dingry-section-eyebrow dingry-catalog-collection-eyebrow">{t("collection.eyebrow")}</p>
               </div>
             ) : null}
             <h3 id={`catalog-section-${section.category}`} className={CATALOG_SECTION_HEADING_CLASS}>

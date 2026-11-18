@@ -79,6 +79,8 @@
     "paymentSectionAria": "Paiement",
     "paymentEyebrow": "Paiement",
     "copyright": "© {{year}} DINGRY · Tous droits réservés",
+    "copyrightLead": "© {{year}} DINGRY ·",
+    "copyrightRights": "Tous droits réservés",
     "legalModalEyebrow": "Légal",
     "legalLinks": {
       "cgv": "CGV",
