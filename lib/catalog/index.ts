@@ -128,6 +128,35 @@ function mergeStoryOverlay(
   };
 }
 
+function isDeliverableCatalogImageUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed || isDraftPlaceholderImage(trimmed)) return false;
+  if (trimmed.startsWith("/")) return true;
+  try {
+    const host = new URL(trimmed).hostname.toLowerCase();
+    return (
+      host.includes("r2.dev") ||
+      host.includes("res.cloudinary.com") ||
+      host.includes("blob.vercel-storage.com") ||
+      host.endsWith(".supabase.co")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Recto vitrine : CRM si URL livrable, sinon repli canonique / seed. */
+export function resolveRectoCatalogImage(productId: number, liveImage: string, seedImage: string): string {
+  const canonical = CATALOG_CANONICAL_IMAGE_BY_ID[productId]?.trim() ?? "";
+  const seed = seedImage.trim();
+  const fallback =
+    canonical || (seed && !isDraftPlaceholderImage(seed) ? seed : "");
+  const live = liveImage.trim();
+  if (!live || isDraftPlaceholderImage(live)) return fallback || live;
+  if (isDeliverableCatalogImageUrl(live)) return live;
+  return fallback || live;
+}
+
 function applyCatalogOverlay(
   product: ShopProduct,
   overlay: CatalogProduct,
@@ -139,10 +168,7 @@ function applyCatalogOverlay(
       ? versoSkuFromRecto(overlay.sku)
       : overlay.sku;
   const overlayBack = overlay.imageBack?.trim();
-  const crmImage =
-    liveImage && !isDraftPlaceholderImage(liveImage)
-      ? liveImage
-      : (CATALOG_CANONICAL_IMAGE_BY_ID[product.id] ?? product.image);
+  const crmImage = resolveRectoCatalogImage(product.id, liveImage, product.image);
   return {
     ...product,
     name: overlay.name,

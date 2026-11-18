@@ -2,18 +2,19 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
-import { useAdminSessionProbe } from "@/components/organisms/admin/hooks/use-admin-session";
+import { useAltoSwitcherEligibility } from "@/hooks/use-alto-switcher-eligibility";
 import {
   buildRelativeUrl,
   isAdminAppPath,
   readAltoLastPublicUrl,
   saveAltoLastPublicUrl,
 } from "@/lib/alto-last-public-url";
+import { altoAbsolutePublicUrl, altoCrmAdminUrl, isAltoHostSplitEnabled } from "@/lib/alto-switch-urls";
 
 export function AdminSwitcherBar() {
-  const { booting, authenticated } = useAdminSessionProbe();
-  const router = useRouter();
   const pathname = usePathname() ?? "/";
+  const { booting, showAlto } = useAltoSwitcherEligibility(pathname);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const onAdmin = isAdminAppPath(pathname);
 
@@ -23,11 +24,21 @@ export function AdminSwitcherBar() {
   );
 
   const onSwitch = useCallback(() => {
+    const split = isAltoHostSplitEnabled();
     if (onAdmin) {
-      router.push(readAltoLastPublicUrl());
+      const target = readAltoLastPublicUrl();
+      if (split) {
+        window.location.assign(altoAbsolutePublicUrl(target));
+        return;
+      }
+      router.push(target);
       return;
     }
     saveAltoLastPublicUrl(publicHref);
+    if (split) {
+      window.location.assign(altoCrmAdminUrl());
+      return;
+    }
     router.push("/admin");
   }, [onAdmin, publicHref, router]);
 
@@ -36,7 +47,7 @@ export function AdminSwitcherBar() {
     ? "Revenir à la dernière page boutique mémorisée"
     : "Ouvrir le panneau d'administration";
 
-  if (booting || !authenticated) {
+  if (booting || !showAlto) {
     return null;
   }
 

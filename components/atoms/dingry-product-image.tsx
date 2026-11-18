@@ -1,11 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
 import { deliveryImageUrl } from "@/lib/media/delivery-image-url";
 import { cn } from "@/lib/utils";
 
 type DingryProductImageProps = {
   src: string;
+  /** Si le CRM renvoie une URL cassée, repli catalogue (ex. legacy Cloudinary). */
+  fallbackSrc?: string;
   alt: string;
   width?: number;
   height?: number;
@@ -23,6 +26,7 @@ const DEFAULT_SIZES =
 
 export function DingryProductImage({
   src,
+  fallbackSrc,
   alt,
   width = 600,
   height = 800,
@@ -32,9 +36,18 @@ export function DingryProductImage({
   deliveryWidth,
   fitContent = false,
 }: DingryProductImageProps) {
-  if (!src.trim()) return null;
+  const [activeSrc, setActiveSrc] = useState(src);
+  useEffect(() => {
+    setActiveSrc(src);
+  }, [src]);
+  const onError = useCallback(() => {
+    const next = fallbackSrc?.trim() ?? "";
+    if (next && next !== activeSrc) setActiveSrc(next);
+  }, [activeSrc, fallbackSrc]);
 
-  const safeSrc = deliveryImageUrl(src, deliveryWidth);
+  if (!activeSrc.trim() && !src.trim()) return null;
+
+  const safeSrc = deliveryImageUrl(activeSrc.trim() ? activeSrc : src, deliveryWidth);
   const naturalFit = {
     width: "auto",
     height: "auto",
@@ -53,6 +66,7 @@ export function DingryProductImage({
         fetchPriority={priority ? "high" : "auto"}
         decoding="async"
         draggable={false}
+        onError={onError}
         className={cn(className)}
         style={naturalFit}
       />
@@ -71,6 +85,7 @@ export function DingryProductImage({
       decoding="async"
       unoptimized
       draggable={false}
+      onError={onError}
       className={cn(className)}
     />
   );

@@ -10,6 +10,7 @@ type ProductCardMediaProps = {
   /** Badge #ID réservé à l’admin (aperçu CRM / stock), jamais sur la boutique publique. */
   showAdminIdBadge?: boolean;
   image: string;
+  imageFallback?: string;
   alt: string;
   priority?: boolean;
   soldOut?: boolean;
@@ -21,6 +22,7 @@ function ProductCardMediaInner({
   productId,
   showAdminIdBadge = false,
   image,
+  imageFallback,
   alt,
   priority = false,
   soldOut = false,
@@ -39,6 +41,7 @@ function ProductCardMediaInner({
       ) : null}
       <ProductImageFlip
         frontImage={image}
+        imageFallback={imageFallback}
         side="recto"
         priority={priority}
         soldOut={soldOut}

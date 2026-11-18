@@ -106,6 +106,13 @@ describe("handleProxyRequest host split", () => {
     expect(response.status).toBe(200);
   });
 
+  it("boutique + /api/shop/alto-context → next() (barre Alto)", async () => {
+    const response = await handleProxyRequest(
+      requestFor("/api/shop/alto-context", undefined, { host: "www.dingry.com" }),
+    );
+    expect(response.status).toBe(200);
+  });
+
   it("CRM + / → 404", async () => {
     const response = await handleProxyRequest(requestFor("/", undefined, { host: "crm.dingry.com" }));
     expect(response.status).toBe(404);

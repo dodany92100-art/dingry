@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { toCatalogProduct, type AdminProduct, type CatalogProduct } from "@/lib/admin/types";
 import { SEEDED_PRODUCTS } from "@/lib/admin/seed";
-import { overlayShopCatalog, shopProductFromUnknown, type ShopProduct } from "@/lib/catalog";
+import {
+  overlayShopCatalog,
+  resolveRectoCatalogImage,
+  shopProductFromUnknown,
+  type ShopProduct,
+} from "@/lib/catalog";
+import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 import { sortCatalogProducts } from "@/lib/catalog-sort";
 import { PRODUCTS } from "@/lib/shop-data";
 
@@ -74,7 +80,8 @@ describe("overlayShopCatalog", () => {
   });
 
   it("prend la photo CRM plutôt que l’image canonique figée", () => {
-    const crmPhoto = "https://cdn.example.com/fiche-admin.webp";
+    const crmPhoto =
+      "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/products/11/recto.webp";
     const merged = overlayShopCatalog(
       [fallbackProduct(11, 80)],
       [liveProduct({ id: 11, sku: "DINGRY-T01", price: 80, image: crmPhoto })],
@@ -225,6 +232,19 @@ describe("SEEDED_PRODUCTS → catalogue public", () => {
       expect(catalog?.price).toBe(product.price);
       expect(catalog?.sku).toBe(product.sku);
     }
+  });
+
+  it("tee #17 : repli legacy si URL CRM absente ou invalide", () => {
+    const seed = PRODUCTS.find((p) => p.id === 17);
+    expect(seed).toBeDefined();
+    const merged = overlayShopCatalog(
+      [seed!],
+      [liveProduct({ id: 17, sku: "DINGRY-T07", price: 119, image: "not-a-url" })],
+    );
+    expect(merged[0]?.image).toBe(DINGRY_PRODUCT_MEDIA.teeCollection07Recto);
+    expect(
+      resolveRectoCatalogImage(17, "", seed!.image),
+    ).toBe(DINGRY_PRODUCT_MEDIA.teeCollection07Recto);
   });
 
   it("overlay seed sur fallback aligne prix et SKU (ex. crewneck 39)", () => {

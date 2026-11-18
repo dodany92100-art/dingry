@@ -99,6 +99,10 @@ const nextConfig = {
       process.env.DINGRY_CRM_HOST?.trim() && process.env.DINGRY_PREVIEW_SECRET?.trim()
         ? "1"
         : "",
+    NEXT_PUBLIC_DINGRY_CRM_URL: (() => {
+      const crm = crmHostHeaderValue();
+      return crm ? `https://${crm}` : "";
+    })(),
     NEXT_PUBLIC_DINGRY_SHOP_PREVIEW_URL: (() => {
       const explicit =
         process.env.NEXT_PUBLIC_DINGRY_SHOP_PREVIEW_URL?.trim() ??

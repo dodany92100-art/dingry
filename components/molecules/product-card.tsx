@@ -18,6 +18,7 @@ type ProductCardData = {
 type ProductCardProps = ProductCardData & {
   /** Id fiche CRM — n’affiche le badge #ID que si {@link showAdminIdBadge} est vrai (admin uniquement). */
   productId?: string | number;
+  imageFallback?: string;
   showAdminIdBadge?: boolean;
   onClick?: (side: ProductFlipSide) => void;
   className?: string;
@@ -36,6 +37,7 @@ function ProductCardInner({
   name,
   variant,
   image,
+  imageFallback,
   price,
   onClick,
   className,
@@ -87,6 +89,7 @@ function ProductCardInner({
         productId={productId}
         showAdminIdBadge={showAdminIdBadge}
         image={image}
+        imageFallback={imageFallback}
         alt={alt}
         priority={priority}
         soldOut={soldOut}

@@ -5,6 +5,7 @@ import type { ProductFlipSide } from "@/components/molecules/product-image-flip"
 import { ProductCard } from "@/components/molecules/product-card";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { catalogRectoId, storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
+import { CATALOG_CANONICAL_IMAGE_BY_ID } from "@/lib/dingry-product-media";
 import { prefetchShopProductMedia } from "@/lib/shop-prefetch";
 
 export const CatalogProductCell = memo(function CatalogProductCell({
@@ -39,6 +40,7 @@ export const CatalogProductCell = memo(function CatalogProductCell({
       name={storefrontProductTitle(product, catalog)}
       variant={storefrontProductSubtitle(product, catalog)}
       image={product.image}
+      imageFallback={CATALOG_CANONICAL_IMAGE_BY_ID[product.id]}
       price={product.price}
       priority={globalIndex === 0}
       soldOut={!isShopProductInStock(product)}

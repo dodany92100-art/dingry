@@ -35,6 +35,13 @@ export const DINGRY_PRODUCT_MEDIA = {
   teeBlackRecto: "/dingry/atelier/tee-black-recto-preview.jpg",
   teeBlackVerso:
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/teeBlackVerso/1794331778974-wzglyv-teeBlackVerso.webp",
+  /** Collections 07 / 09 + tee femme (#17, #19, #22) — assets catalogue historiques. */
+  teeCollection07Recto:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_6_dhs3l2.jpg",
+  teeCollection09Recto:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793124727/PHOTO-2026-06-26-22-50-56_7_iowqbr.jpg",
+  teeFemmeRecto:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_19.33.25_yzr0fb.jpg",
   customConfiguratorBanner:
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/customConfiguratorBanner/1794331850163-emon5w-customConfiguratorBanner.webp",
   jerseyWhite:
@@ -66,7 +73,10 @@ export const CATALOG_CANONICAL_IMAGE_BY_ID: Readonly<Record<number, string>> = {
   39: DINGRY_PRODUCT_MEDIA.sweatPurpleRecto,
   40: DINGRY_PRODUCT_MEDIA.sweatPurpleVerso,
   11: DINGRY_PRODUCT_MEDIA.teeWhiteRecto,
+  17: DINGRY_PRODUCT_MEDIA.teeCollection07Recto,
+  19: DINGRY_PRODUCT_MEDIA.teeCollection09Recto,
   21: DINGRY_PRODUCT_MEDIA.teeBlackRecto,
+  22: DINGRY_PRODUCT_MEDIA.teeFemmeRecto,
   41: DINGRY_PRODUCT_MEDIA.jerseyWhite,
   42: DINGRY_PRODUCT_MEDIA.jerseyBlack,
 };

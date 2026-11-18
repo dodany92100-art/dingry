@@ -24,6 +24,7 @@ export type ProductFlipSide = "recto" | "verso";
 
 type ProductImageFlipProps = {
   frontImage: string;
+  imageFallback?: string;
   backImage?: string;
   side: ProductFlipSide;
   alt: string;
@@ -52,6 +53,7 @@ type ProductImageFlipProps = {
 
 export function ProductImageFlip({
   frontImage,
+  imageFallback,
   backImage,
   side,
   alt,
@@ -226,6 +228,7 @@ export function ProductImageFlip({
       >
         <DingryProductImage
           src={frontImage}
+          fallbackSrc={imageFallback}
           alt={alt}
           deliveryWidth={cardW}
           priority={priority}
@@ -279,6 +282,7 @@ export function ProductImageFlip({
       >
         <DingryProductImage
           src={frontImage}
+          fallbackSrc={imageFallback}
           alt={alt}
           deliveryWidth={cardW}
           priority={priority}
