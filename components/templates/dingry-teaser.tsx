@@ -1,30 +1,10 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { DINGRY_LOGO_URL } from "@/lib/dingry-brand";
-import {
-  COUNTDOWN_UNITS,
-  DINGRY_COUNTDOWN_LABEL,
-  DINGRY_COUNTDOWN_TARGET_AT,
-  DINGRY_TEASER_MESSAGE,
-  countdownParts,
-  type CountdownParts,
-} from "@/lib/dingry-countdown";
+import { DINGRY_COUNTDOWN_LABEL, DINGRY_TEASER_MESSAGE } from "@/lib/dingry-countdown";
 
 const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
-
-const OPENING_AT = DINGRY_COUNTDOWN_TARGET_AT;
-const UNITS = COUNTDOWN_UNITS.map((u) => ({
-  ...u,
-  label:
-    u.key === "days"
-      ? "Jours"
-      : u.key === "hours"
-        ? "Heures"
-        : u.key === "minutes"
-          ? "Minutes"
-          : "Secondes",
-}));
 
 type TeaserProps = {
   displayClassName: string;
@@ -34,40 +14,6 @@ const TEASER_MESSAGE_PAD_CLASS =
   "m-0 w-full max-w-md rounded-lg bg-black/40 px-4 py-3 text-pretty text-left text-sm leading-relaxed tracking-normal text-white backdrop-blur-sm normal-case sm:text-[0.95rem] md:text-base";
 const TEASER_MESSAGE_PAD_MOBILE_CLASS =
   "max-md:bg-black/20 max-md:backdrop-blur-[2px]";
-
-function TeaserCountdownDigits({
-  displayClassName,
-  parts,
-}: {
-  displayClassName: string;
-  parts: CountdownParts | null;
-}) {
-  return (
-    <div className="flex items-start justify-center gap-0" aria-live="polite">
-      {UNITS.map((unit, index) => (
-        <div key={unit.key} className="flex items-start">
-          {index > 0 ? (
-            <span
-              className={`${displayClassName} mx-2 mt-1 text-xl text-white/35 sm:mx-3 sm:text-2xl md:mx-4`}
-            >
-              |
-            </span>
-          ) : null}
-          <div className="min-w-[2.65rem] text-center sm:min-w-[3.1rem] md:min-w-[3.6rem]">
-            <p
-              className={`${displayClassName} text-[clamp(1.45rem,2.8vw,2.35rem)] leading-none tabular-nums text-white`}
-            >
-              {parts ? parts[unit.key] : "––"}
-            </p>
-            <p className="mt-1 text-[8px] tracking-[0.16em] text-white/70 uppercase sm:mt-2 sm:text-[9px] md:text-[10px]">
-              {unit.label}
-            </p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function TeaserOpeningTitles({ displayClassName }: { displayClassName: string }) {
   return (
@@ -109,20 +55,10 @@ function InstagramIcon() {
 }
 
 export function DingryTeaser({ displayClassName }: TeaserProps) {
-  const [now, setNow] = useState<number | null>(null);
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "saved" | "already" | "error">("idle");
   const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    const tick = () => setNow(Date.now());
-    tick();
-    const timer = window.setInterval(tick, 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const parts: CountdownParts | null = now === null ? null : countdownParts(OPENING_AT, now);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -158,7 +94,7 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
 
   return (
     <div className="relative z-10 flex min-h-[100dvh] w-full max-w-lg flex-col items-center justify-between px-5 py-6 sm:max-w-none sm:px-8 sm:py-8 md:px-12 lg:px-16">
-      {/* Mobile : logo haut · compte à rebours bas · desktop : grille 2 col */}
+      {/* Mobile : logo haut · ouverture à droite · desktop : grille 2 col */}
       <div className="relative flex w-full min-h-0 flex-1 flex-col md:grid md:grid-cols-2 md:items-stretch md:gap-8">
         <section
           aria-label="DINGRY Paris"
@@ -174,26 +110,22 @@ export function DingryTeaser({ displayClassName }: TeaserProps) {
           </header>
         </section>
 
-        {/* Mobile : ouverture + compteur en haut à droite (tête / fumée du visuel) */}
+        {/* Mobile : ouverture en haut à droite (tête / fumée du visuel) */}
         <section
-          aria-label="Ouverture et compte à rebours"
+          aria-label="Ouverture"
           className="pointer-events-none absolute top-[clamp(12.25rem,38vh,14.5rem)] -right-5 z-20 w-[min(62vw,248px)] space-y-2.5 text-center sm:-right-3 sm:top-[clamp(12.75rem,40vh,15rem)] sm:space-y-3 md:hidden"
         >
           <TeaserOpeningTitles displayClassName={displayClassName} />
           <TeaserOpeningDateRow />
-          <TeaserCountdownDigits displayClassName={displayClassName} parts={parts} />
         </section>
 
         <div className="hidden w-full flex-col items-center gap-4 text-center md:col-start-2 md:row-start-1 md:ml-auto md:mt-24 md:flex md:max-w-md md:self-start">
           <TeaserOpeningTitles displayClassName={displayClassName} />
-          <div className="w-full space-y-3">
-            <TeaserOpeningDateRow />
-            <TeaserCountdownDigits displayClassName={displayClassName} parts={parts} />
-          </div>
+          <TeaserOpeningDateRow />
         </div>
       </div>
 
-      {/* Desktop : bloc 3 texte — position seule, ne déplace pas le compteur */}
+      {/* Desktop : bloc message — position absolue bas droite */}
       <p
         className={`${displayClassName} ${TEASER_MESSAGE_PAD_CLASS} pointer-events-auto hidden md:absolute md:bottom-28 md:right-12 md:z-20 md:block lg:bottom-32 lg:right-16`}
       >

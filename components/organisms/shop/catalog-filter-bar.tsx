@@ -19,7 +19,7 @@ export function CatalogFilterBar({ value, onChange, products: _products }: Catal
   const categoryValue = value === CATALOG_MENU_TAB_CUSTOM ? categoryTabs[0] ?? "all" : value;
 
   return (
-    <div className="dingry-catalog-bar dingry-catalog-bar--vitrine dingry-catalog-bar--mobile-bleed -mt-px mb-4 w-full border-b border-white/15 bg-[#12151c]/95 py-2.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.16)] backdrop-blur-2xl backdrop-saturate-150 md:mb-6 md:py-3">
+    <div className="dingry-catalog-bar dingry-catalog-bar--vitrine dingry-catalog-bar--mobile-bleed -mt-px mb-4 w-full border-b border-white/15 bg-black py-2.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] md:mb-6 md:py-3">
       <AnimatedTabs
         className="dingry-catalog-tabs-scroll"
         tabs={[...categoryTabs]}

@@ -167,17 +167,19 @@ export function ShopFooter({
     <>
       <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative -mx-4 bg-[#050505] px-4 py-5 sm:-mx-6 sm:px-6 md:py-6 lg:-mx-8 lg:px-8">
         <div className="w-full">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:gap-x-8 lg:grid-cols-4 lg:items-start lg:gap-x-8 lg:gap-y-5 xl:gap-x-10">
-            <div className="col-span-2 flex flex-col items-start text-left sm:col-span-1">
-              <DingryLogo animate={false} tone="on-dark" className="h-10 w-auto max-md:max-h-none md:h-[3.1rem]" />
-              <p className={`dingry-typo-manifesto mt-1.5 max-w-[14rem] text-[10px] text-[#161616]/52`}>
-                {t("footer.manifesto")}
-              </p>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:gap-x-8 lg:grid-cols-4 lg:items-stretch lg:gap-x-8 lg:gap-y-5 xl:gap-x-10">
+            <div className="dingry-footer-brand col-span-2 flex flex-col items-center text-center sm:col-span-1 lg:self-stretch lg:justify-between">
+              <div className="flex w-full flex-col items-center">
+                <DingryLogo animate={false} tone="on-dark" className="h-10 w-auto max-md:max-h-none md:h-[3.1rem]" />
+                <p className="dingry-typo-manifesto mt-1.5 max-w-[14rem] text-center text-[10px] text-[#161616]/52">
+                  {t("footer.manifesto")}
+                </p>
+              </div>
               <a
                 href={DINGRY_INSTAGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe mt-2 inline-flex min-h-11 shrink-0 items-center gap-2 px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] lg:px-4 lg:text-[10px] lg:tracking-[0.18em]"
+                className="dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe mt-6 inline-flex min-h-11 shrink-0 items-center gap-2 px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] sm:mt-8 md:mt-10 lg:mt-0 lg:px-4 lg:text-[10px] lg:tracking-[0.18em]"
               >
                 <InstagramIcon />
                 <span className="gold-text normal-case">@dingry_officiel</span>
@@ -208,6 +210,11 @@ export function ShopFooter({
                   {t("nav.lookbook")}
                 </button>
               </li>
+              <li>
+                <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
+                  {t("footer.navContact")}
+                </button>
+              </li>
             </FooterNavColumn>
 
             <FooterNavColumn
@@ -232,11 +239,6 @@ export function ShopFooter({
                   </button>
                 </li>
               ))}
-              <li>
-                <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
-                  {t("footer.navContact")}
-                </button>
-              </li>
             </FooterNavColumn>
           </div>
 

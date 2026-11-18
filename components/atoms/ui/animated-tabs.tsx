@@ -108,7 +108,7 @@ export function AnimatedTabs({
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[#12151c]/40 to-transparent md:w-10"
+        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-black/90 to-transparent md:w-10"
         aria-hidden
       />
       <div
