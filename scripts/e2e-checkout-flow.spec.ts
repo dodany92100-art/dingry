@@ -207,7 +207,8 @@ test.describe('Parcours utilisateur boutique', () => {
 
     await gotoShop(page, '#atelier-custom');
     const hero = page.locator('#atelier-custom-hero');
-    await hero.scrollIntoViewIfNeeded();
+    await page.locator('#atelier-custom').scrollIntoViewIfNeeded({ timeout: 30000 });
+    await expect(hero).toBeVisible({ timeout: 45000 });
     const heroOpen = hero.getByRole('button').first();
     await expect(heroOpen).toBeVisible({ timeout: 25000 });
     await heroOpen.click();
