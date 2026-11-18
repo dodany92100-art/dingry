@@ -369,7 +369,7 @@ export function ShopNav({
               className="dingry-nav-logo dingry-nav-logo--mobile-center flex shrink-0 items-center [perspective:900px] max-md:absolute max-md:left-1/2 max-md:top-1/2 max-md:z-10 max-md:-translate-x-1/2 max-md:-translate-y-1/2"
               aria-label="DINGRY Paris"
             >
-              <DingryLogo interactive shimmer animate={false} />
+              <DingryLogo animate={false} />
             </a>
             <div className="dingry-nav-tagline hidden lg:block" aria-hidden="true">
               <span className="dingry-typo-manifesto">{t("brand.manifesto")}</span>

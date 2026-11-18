@@ -201,7 +201,7 @@ export function AuthModal({
   }
 
   const inputClass =
-    "w-full rounded-full border border-white/15 bg-white/[0.04] px-5 py-3 text-sm text-white placeholder:text-white/35 outline-none transition-colors focus:border-white/35";
+    "w-full rounded-full border border-[#161616]/14 bg-[#f4f4f2] px-5 py-3 text-sm text-[#161616] placeholder:text-[#161616]/38 outline-none transition-colors focus:border-[#161616]/35";
 
   return (
     <AnimatePresence>
@@ -223,19 +223,19 @@ export function AuthModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="dingry-auth-title"
-            className="dingry-auth-drawer relative z-10 flex h-full w-full max-w-md flex-col border-l border-white/[0.08] bg-[#0a0a0a] text-white shadow-[-24px_0_80px_rgba(0,0,0,0.5)]"
+            className="dingry-sale-ui dingry-auth-drawer relative z-10 flex h-full w-full max-w-md flex-col border-l border-[#161616]/10 bg-white text-[#161616] shadow-[-24px_0_80px_rgba(0,0,0,0.14)]"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={DRAWER_PANEL_SPRING}
           >
-            <div className="dingry-gold-rule-bottom flex items-start justify-between gap-4 p-8">
+            <div className="dingry-gold-rule-bottom flex shrink-0 items-start justify-between gap-4 p-6 md:p-8">
               <div className={isAccountView ? "dingry-auth-account" : undefined}>
                 <p
                   className={
                     isAccountView
                       ? "dingry-auth-account-eyebrow"
-                      : "text-[10px] tracking-[0.32em] text-white/35 uppercase"
+                      : "text-sm font-bold tracking-[0.28em] text-[#161616]/42 uppercase"
                   }
                 >
                   Espace client
@@ -245,27 +245,27 @@ export function AuthModal({
                   className={
                     isAccountView
                       ? "dingry-auth-account-title mt-2"
-                      : "mt-2 text-sm font-bold tracking-[0.28em] uppercase"
+                      : "mt-1 text-sm font-bold tracking-[0.3em] uppercase"
                   }
                 >
                   {isAccountView ? "Mon compte" : "Connexion"}
                 </h2>
                 {reason ? (
-                  <p className="mt-3 max-w-xs text-[11px] leading-relaxed tracking-wide text-white/45">{reason}</p>
+                  <p className="mt-3 max-w-xs text-[11px] leading-relaxed tracking-wide text-[#161616]/55">{reason}</p>
                 ) : null}
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={Boolean(busy)}
-                className="flex h-10 w-10 items-center justify-center text-white/40 transition-colors hover:text-white disabled:opacity-40"
+                className="flex h-10 w-10 items-center justify-center text-[#161616]/40 transition-colors hover:text-[#161616] disabled:opacity-40"
                 aria-label="Fermer"
               >
                 <X size={18} strokeWidth={1.5} />
               </button>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-8 pb-10">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-10 pt-7 md:px-8 md:pt-8">
               {!configured ? (
                 <p className="text-sm leading-relaxed text-white/50">
                   Configurez <span className="text-white/80">NEXT_PUBLIC_SUPABASE_URL</span> et{" "}
@@ -321,7 +321,7 @@ export function AuthModal({
                       type="button"
                       disabled={busy !== null}
                       onClick={() => void oauthGoogle()}
-                      className="flex w-full items-center justify-center gap-3 rounded-full border border-white/15 bg-white py-3.5 text-[11px] font-medium tracking-[0.2em] text-[#0a0a0a] uppercase transition-opacity hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex w-full items-center justify-center gap-3 rounded-full border border-[#161616]/14 bg-white py-3.5 text-[11px] font-medium tracking-[0.2em] text-[#161616] uppercase transition-opacity hover:bg-[#f4f4f2] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {busy === "google" ? (
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0a0a0a]/20 border-t-[#0a0a0a]" />
@@ -441,10 +441,10 @@ export function AuthModal({
                       <button
                         type="submit"
                         disabled={busy !== null}
-                        className="flex w-full items-center justify-center gap-2 rounded-full bg-white py-3.5 text-[11px] font-medium tracking-[0.22em] text-[#0a0a0a] uppercase transition-opacity hover:bg-white/90 disabled:opacity-50"
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#161616] py-3.5 text-[11px] font-medium tracking-[0.22em] text-white uppercase transition-opacity hover:bg-[#161616]/90 disabled:opacity-50"
                       >
                         {busy === "password" ? (
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0a0a0a]/20 border-t-[#0a0a0a]" />
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white" />
                         ) : null}
                         Se connecter
                       </button>
@@ -469,7 +469,7 @@ export function AuthModal({
                   )}
 
                   {error ? (
-                    <p className="mt-6 text-center text-[11px] leading-relaxed text-[#ffb4b4]" role="alert">
+                    <p className="mt-6 text-center text-[11px] leading-relaxed text-[#c53030]" role="alert">
                       {error}
                     </p>
                   ) : null}

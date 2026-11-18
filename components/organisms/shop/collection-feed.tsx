@@ -54,7 +54,6 @@ export function CollectionFeed({
             {section.category === "hoodies" ? (
               <div className="pb-4 md:pb-5">
                 <p className="dingry-section-eyebrow">{t("collection.eyebrow")}</p>
-                <p className="dingry-typo-street dingry-typo-street--sm mt-1 text-white/85">{t("footer.streetLine")}</p>
               </div>
             ) : null}
             <h3 id={`catalog-section-${section.category}`} className={CATALOG_SECTION_HEADING_CLASS}>

@@ -25,16 +25,18 @@ const FOOTER_LEGAL_LINKS: { id: LegalDocId; labelKey: "privacy" | "shipping" | "
 ];
 
 function FooterNavColumn({
+  id,
   title,
   children,
   className = "",
 }: {
+  id?: string;
   title: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={`flex flex-col items-start text-left ${className}`}>
+    <div id={id} className={`flex flex-col items-start text-left ${className}`}>
       <p className="dingry-footer-eyebrow mb-2 flex min-h-[2.125rem] items-end lg:min-h-[1.875rem]">{title}</p>
       <ul className="space-y-1.5">{children}</ul>
     </div>
@@ -43,7 +45,7 @@ function FooterNavColumn({
 
 function PaymentMarks({ paymentAria }: { paymentAria: string }) {
   return (
-    <ul className="mt-0 flex flex-wrap items-center justify-center gap-2" aria-label={paymentAria}>
+    <ul className="m-0 flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-2" aria-label={paymentAria}>
       <li className="dingry-pay-badge" title="PayPal">
         <svg viewBox="0 0 88 24" width="72" height="20" role="img" aria-label="PayPal">
           <text x="0" y="18" fill="#003087" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="700" fontStyle="italic">
@@ -68,13 +70,13 @@ function PaymentMarks({ paymentAria }: { paymentAria: string }) {
           <path d="M20 6.2a8 8 0 0 1 0 11.6 8 8 0 0 1 0-11.6z" fill="#ff5f00" />
         </svg>
       </li>
-      <li className="dingry-pay-badge" title="Apple Pay">
+      <li className="dingry-pay-badge dingry-pay-badge--apple" title="Apple Pay">
         <svg viewBox="0 0 78 24" width="68" height="20" role="img" aria-label="Apple Pay">
           <path
-            fill="#111"
+            fill="currentColor"
             d="M14.2 6.3c.6-.8 1-1.8.9-2.8-1 .1-2.1.6-2.8 1.4-.6.7-1.1 1.8-.9 2.8 1.1.1 2.1-.5 2.8-1.4zM16.4 8c-1.5-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-.1 2.9-2.3c.6-1.1.9-2.2 1.1-2.3-.1 0-2.3-.9-2.3-3.5 0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-.1 0-.2 0-.2.1z"
           />
-          <text x="22" y="17" fill="#111" fontFamily="Arial, Helvetica, sans-serif" fontSize="13" fontWeight="600">
+          <text x="22" y="17" fill="currentColor" fontFamily="Arial, Helvetica, sans-serif" fontSize="13" fontWeight="600">
             Pay
           </text>
         </svg>
@@ -163,11 +165,11 @@ export function ShopFooter({
 
   return (
     <>
-      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative py-5 md:py-6">
+      <footer className="dingry-footer-stage dingry-footer-classic dingry-below-hero-surface dingry-gold-rule-top relative -mx-4 bg-[#050505] px-4 py-5 sm:-mx-6 sm:px-6 md:py-6 lg:-mx-8 lg:px-8">
         <div className="w-full">
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:gap-x-8 lg:grid-cols-4 lg:items-start lg:gap-x-8 lg:gap-y-5 xl:gap-x-10">
             <div className="col-span-2 flex flex-col items-start text-left sm:col-span-1">
-              <DingryLogo animate={false} tone="on-light" className="h-10 w-auto max-md:max-h-none md:h-[3.1rem]" />
+              <DingryLogo animate={false} tone="on-dark" className="h-10 w-auto max-md:max-h-none md:h-[3.1rem]" />
               <p className={`dingry-typo-manifesto mt-1.5 max-w-[14rem] text-[10px] text-[#161616]/52`}>
                 {t("footer.manifesto")}
               </p>
@@ -175,12 +177,10 @@ export function ShopFooter({
                 href={DINGRY_INSTAGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="dingry-footer-instagram-cta dingry-footer-instagram-plaque dingry-footer-instagram-plaque--footer mt-2"
+                className="dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe mt-2 inline-flex min-h-11 shrink-0 items-center gap-2 px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] lg:px-4 lg:text-[10px] lg:tracking-[0.18em]"
               >
                 <InstagramIcon />
-                <span className="dingry-footer-instagram-cta__handle dingry-footer-instagram-plaque__handle">
-                  <span className="gold-text">@dingry_officiel</span>
-                </span>
+                <span className="gold-text normal-case">@dingry_officiel</span>
               </a>
             </div>
 
@@ -197,7 +197,7 @@ export function ShopFooter({
               </li>
             </FooterNavColumn>
 
-            <FooterNavColumn title={t("footer.brandColumn")} className="max-sm:col-span-2">
+            <FooterNavColumn title={t("footer.brandColumn")} className="max-sm:col-span-1 max-sm:row-start-3">
               <li>
                 <button type="button" onClick={() => goHeritage()} className={boutiqueLinkClass}>
                   {t("nav.heritage")}
@@ -210,58 +210,52 @@ export function ShopFooter({
               </li>
             </FooterNavColumn>
 
-            <div id="mentions-legales" className="flex flex-col items-start text-left">
-              <div className="dingry-footer-legal-head mb-2 flex min-h-[2.125rem] flex-wrap items-end gap-x-3 gap-y-0.5 lg:min-h-[1.875rem] lg:items-baseline">
-                <button
-                  type="button"
-                  onClick={() => setLegalDoc("mentions")}
-                  className="dingry-footer-eyebrow dingry-footer-legal-head__title m-0"
-                >
+            <FooterNavColumn
+              id="mentions-legales"
+              title={t("footer.legalModalEyebrow")}
+              className="max-sm:col-span-1 max-sm:col-start-2 max-sm:row-start-3"
+            >
+              <li>
+                <button type="button" onClick={() => setLegalDoc("mentions")} className={boutiqueLinkClass}>
                   {t("footer.infoColumn")}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setLegalDoc("cgv")}
-                  className="dingry-footer-eyebrow dingry-footer-legal-head__title m-0"
-                >
+              </li>
+              <li>
+                <button type="button" onClick={() => setLegalDoc("cgv")} className={boutiqueLinkClass}>
                   {t("footer.legalLinks.cgv")}
                 </button>
-              </div>
-              <ul className="space-y-1.5">
-                {FOOTER_LEGAL_LINKS.map(({ id, labelKey }) => (
-                  <li key={id}>
-                    <button type="button" onClick={() => setLegalDoc(id)} className={boutiqueLinkClass}>
-                      {t(`footer.legalLinks.${labelKey}`)}
-                    </button>
-                  </li>
-                ))}
-                <li>
-                  <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
-                    {t("footer.navContact")}
+              </li>
+              {FOOTER_LEGAL_LINKS.map(({ id, labelKey }) => (
+                <li key={id}>
+                  <button type="button" onClick={() => setLegalDoc(id)} className={boutiqueLinkClass}>
+                    {t(`footer.legalLinks.${labelKey}`)}
                   </button>
                 </li>
-              </ul>
-            </div>
+              ))}
+              <li>
+                <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
+                  {t("footer.navContact")}
+                </button>
+              </li>
+            </FooterNavColumn>
           </div>
 
           <div className="dingry-footer-newsletter-stage mt-6 flex w-full justify-center md:mt-7">
-            <div className="w-full max-w-[22rem] sm:max-w-[26rem]">
+            <div className="mx-auto w-full max-w-md px-1">
               <DingryNewsletterForm align="center" />
             </div>
           </div>
 
           <section
-            className="dingry-gold-rule-top mt-5 flex w-full flex-col gap-3 pt-4 md:mt-6"
+            className="dingry-footer-payment-band dingry-gold-rule-top -mx-4 mt-4 flex w-full flex-col items-center bg-[#050505] px-4 pt-4 sm:-mx-6 sm:px-6 md:mt-5 lg:-mx-8 lg:px-8"
             aria-label={t("footer.paymentSectionAria")}
           >
-            <div className="flex w-full flex-col items-center gap-3 text-center">
-              <div className="flex w-full flex-col items-center">
-                <p className="dingry-footer-eyebrow m-0 text-[#161616]/60">{t("footer.paymentEyebrow")}</p>
-                <div className="mt-2 flex w-full justify-center">
-                  <PaymentMarks paymentAria={t("cart.paymentMethodsAria")} />
-                </div>
-              </div>
-              <p className="pb-1 text-[10px] tracking-[0.08em] text-[#161616]/55">
+            <div className="mx-auto flex w-full max-w-md flex-col items-center gap-3 text-center">
+              <p className="dingry-footer-eyebrow dingry-footer-payment-band__eyebrow m-0 w-full text-center tracking-[0.22em]">
+                {t("footer.paymentEyebrow")}
+              </p>
+              <PaymentMarks paymentAria={t("cart.paymentMethodsAria")} />
+              <p className="dingry-footer-payment-band__copy w-full pb-1 text-center text-[10px] tracking-[0.08em]">
                 {t("footer.copyright", { year: new Date().getFullYear() })}
               </p>
             </div>

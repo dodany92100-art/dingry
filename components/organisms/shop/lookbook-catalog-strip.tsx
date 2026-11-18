@@ -44,9 +44,7 @@ export function LookbookCatalogStrip() {
   }, []);
 
   return (
-    <section className="dingry-gold-rule-top scroll-mt-28 py-16 md:py-20">
-      <p className="dingry-section-eyebrow mb-5 md:mb-6">Lookbook</p>
-
+    <section className="dingry-lookbook-band dingry-gold-rule-top scroll-mt-28 -mx-4 bg-[#050505] px-4 py-16 sm:-mx-6 sm:px-6 md:py-20 lg:-mx-8 lg:px-8">
       <div className="relative -mx-1 md:-mx-0">
         <div
           ref={scrollerRef}
@@ -65,10 +63,6 @@ export function LookbookCatalogStrip() {
                 decoding="async"
                 className="aspect-[3/4] w-full object-cover"
               />
-              <figcaption className="mt-3">
-                <p className="line-clamp-2 text-sm uppercase tracking-wide">{slide.title}</p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-white/45">{slide.caption}</p>
-              </figcaption>
             </figure>
           ))}
         </div>

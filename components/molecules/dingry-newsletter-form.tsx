@@ -38,11 +38,18 @@ export function DingryNewsletterForm({ align = "start" }: DingryNewsletterFormPr
       }`}
       aria-labelledby="dingry-newsletter-title"
     >
-      <p id="dingry-newsletter-title" className="dingry-footer-eyebrow m-0 text-[#161616]/50">
-        {t("newsletter.title")}
-      </p>
-      <p className="mt-1.5 max-w-[18rem] text-[10px] leading-relaxed tracking-[0.06em] text-[#161616]/48">
-        {t("newsletter.subtitle")}
+      <p
+        id="dingry-newsletter-title"
+        className={`dingry-newsletter-headline m-0 max-w-full ${
+          centered ? "text-center" : "text-left"
+        }`}
+      >
+        <span className="dingry-newsletter-headline__title">{t("newsletter.title")}</span>
+        <span className="dingry-newsletter-headline__sep" aria-hidden>
+          {" "}
+          ·{" "}
+        </span>
+        <span className="dingry-newsletter-headline__drop">{t("newsletter.subtitle")}</span>
       </p>
       {status === "sent" ? (
         <p className="mt-3 text-[10px] tracking-[0.1em] text-[#161616]/65" role="status">

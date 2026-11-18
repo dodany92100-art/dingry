@@ -107,7 +107,14 @@ export function DingryLogo({
   );
 
   let node: ReactNode = img;
-  if (shimmer) node = <span className="dingry-shimmer-logo-img dingry-gpu-layer">{node}</span>;
+  if (shimmer) {
+    node = (
+      <span className="dingry-shimmer-logo-img dingry-gpu-layer">
+        {img}
+        <span className="dingry-shimmer-logo-img__glimmer" aria-hidden />
+      </span>
+    );
+  }
   if (interactive) node = <DingryLogoInteractive>{node}</DingryLogoInteractive>;
   return node;
 }

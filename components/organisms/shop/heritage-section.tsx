@@ -13,7 +13,7 @@ export function HeritageSection() {
   const heritage = dict.heritage;
 
   return (
-    <section className="dingry-below-hero-surface dingry-gold-rule-top py-10 md:py-14">
+    <section className="dingry-heritage-band dingry-below-hero-surface dingry-gold-rule-top -mx-4 bg-[#050505] px-4 py-10 sm:-mx-6 sm:px-6 md:py-14 lg:-mx-8 lg:px-8">
       <p className="dingry-section-eyebrow mb-4 md:mb-5">{t("heritageTeaser.eyebrow")}</p>
 
       <div className="dingry-heritage-teaser group relative isolate mx-auto w-full max-w-5xl overflow-hidden rounded-2xl">
