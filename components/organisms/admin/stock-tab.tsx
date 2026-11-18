@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
 import { normalizeProductCategory } from "@/lib/admin/types";
+import { AdminStockPublishToggle } from "@/components/organisms/admin/admin-stock-publish-toggle";
 import { AdminStockStickyFilters } from "@/components/organisms/admin/admin-stock-sticky-filters";
+import type { TabId } from "@/components/organisms/admin/tab-nav";
 import { AdminStockListRow } from "@/components/organisms/admin/admin-stock-list-row";
 import { AdminStockProductCard } from "@/components/organisms/admin/admin-stock-product-card";
 import type { AdminStockViewMode } from "@/components/organisms/admin/admin-stock-view-toggle";
@@ -51,6 +53,8 @@ type StockTabProps = {
   mobileContextSlot?: ReactNode;
   /** Aperçu + grille/liste dans la barre sticky (md+). */
   desktopToolbarSlot?: ReactNode;
+  stockContextTab: "produits" | "brouillons";
+  onStockContextTabChange: (tab: TabId) => void;
 };
 
 function filterByAdminCategory(
@@ -111,6 +115,8 @@ export function StockTab({
   onStorefrontPreviewChange,
   mobileContextSlot,
   desktopToolbarSlot,
+  stockContextTab,
+  onStockContextTabChange,
 }: StockTabProps) {
   const stockControlsBusy = productEditorOpen;
   const [pendingDelete, setPendingDelete] = useState<AdminProduct | null>(null);
@@ -187,24 +193,29 @@ export function StockTab({
         onCategoryChange={onCategoryFilterChange}
         mobileContextSlot={mobileContextSlot}
       >
-        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-2.5">
-          <div className="dingry-admin-glass flex h-9 w-full min-w-0 items-center gap-2 rounded-full px-3 py-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 transition-[box-shadow] duration-200 focus-within:shadow-[0_0_0_1px_rgba(167,139,250,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] focus-within:ring-violet-400/30 md:w-auto md:max-w-sm md:flex-none lg:max-w-md">
-            <label htmlFor="dingry-admin-stock-search" className="sr-only">
-              Rechercher un produit
-            </label>
-            <input
-              id="dingry-admin-stock-search"
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Rechercher…"
-              title="Nom, SKU, id, variante…"
-              autoComplete="off"
-              className="min-w-0 flex-1 border-0 bg-transparent py-0 text-[10px] tracking-[0.08em] text-white placeholder:text-white/35 focus:outline-none"
-            />
+        <div className="flex min-w-0 flex-col gap-2 min-[450px]:flex-row min-[450px]:flex-wrap min-[450px]:items-center min-[450px]:justify-between min-[450px]:gap-2.5">
+          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5">
+            <AdminStockPublishToggle tab={stockContextTab} onChange={onStockContextTabChange} />
+            <div className="dingry-admin-glass flex h-9 w-full min-w-0 items-center gap-2 rounded-full px-3 py-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 transition-[box-shadow] duration-200 focus-within:shadow-[0_0_0_1px_rgba(167,139,250,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] focus-within:ring-violet-400/30 sm:min-w-[12rem] sm:flex-1 lg:max-w-md">
+              <label htmlFor="dingry-admin-stock-search" className="sr-only">
+                Rechercher un produit
+              </label>
+              <input
+                id="dingry-admin-stock-search"
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Rechercher…"
+                title="Nom, SKU, id, variante…"
+                autoComplete="off"
+                className="min-w-0 flex-1 border-0 bg-transparent py-0 text-[10px] tracking-[0.08em] text-white placeholder:text-white/35 focus:outline-none"
+              />
+            </div>
           </div>
           {desktopToolbarSlot ? (
-            <div className="hidden shrink-0 items-center gap-2.5 md:flex">{desktopToolbarSlot}</div>
+            <div className="hidden shrink-0 items-center justify-end gap-2.5 min-[450px]:flex">
+              {desktopToolbarSlot}
+            </div>
           ) : null}
         </div>
       </AdminStockStickyFilters>

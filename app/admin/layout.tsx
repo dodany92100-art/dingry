@@ -21,7 +21,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="dingry-admin min-h-dvh text-[15px] antialiased">
+    <div className="dingry-admin dingry-admin-crm-shell min-h-dvh text-[15px] antialiased">
       {children}
     </div>
   );

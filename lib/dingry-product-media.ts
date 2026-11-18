@@ -52,12 +52,21 @@ export const DINGRY_PRODUCT_MEDIA = {
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodieZipOutlineRecto/1794331875451-l79oku-hoodieZipOutlineRecto.webp",
   hoodieZipOutlineVerso:
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodieZipOutlineVerso/1794331905079-rcoe6f-hoodieZipOutlineVerso.webp",
+  hoodie6Recto:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie6/1794331715578-wrsnh3-hoodie6.webp",
+  hoodie7Recto:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie7/1794331750008-72kewj-hoodie7.webp",
+  hoodie8Verso:
+    "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie8/1794331769827-e2bgg6-hoodie8.webp",
 } as const;
 
 /** Images catalogue de repli (flip verso / fiche CRM incomplète). */
 export const CATALOG_CANONICAL_IMAGE_BY_ID: Readonly<Record<number, string>> = {
   4: DINGRY_PRODUCT_MEDIA.hoodieZipOutlineRecto,
   5: DINGRY_PRODUCT_MEDIA.hoodieZipOutlineVerso,
+  6: DINGRY_PRODUCT_MEDIA.hoodie6Recto,
+  7: DINGRY_PRODUCT_MEDIA.hoodie7Recto,
+  8: DINGRY_PRODUCT_MEDIA.hoodie8Verso,
   25: DINGRY_PRODUCT_MEDIA.hoodieParisBlackRecto,
   26: DINGRY_PRODUCT_MEDIA.hoodieParisBlackVerso,
   27: DINGRY_PRODUCT_MEDIA.hoodieParisGreyRecto,

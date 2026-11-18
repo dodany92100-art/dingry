@@ -59,7 +59,7 @@ export function AdminStockViewToggle({ mode, onChange }: AdminStockViewTogglePro
         <List
           size={16}
           strokeWidth={1.75}
-          className={`relative z-10 ${mode === "list" ? "text-[#0a0f18]" : "text-white/45"}`}
+          className={`relative z-10 shrink-0 ${mode === "list" ? "text-[#0a0f18]" : "text-white/45"}`}
           aria-hidden
         />
       </button>

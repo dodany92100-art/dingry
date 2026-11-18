@@ -41,6 +41,7 @@ import { hasSupabaseOAuthQuery, searchWithoutOAuthQuery } from "@/lib/auth/scrub
 import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import { bannerConfiguratorInitialLabel } from "@/lib/custom-city-banner";
 import { buildFlipPairs, resolveSaleProduct } from "@/lib/shop-view";
+import { toggleCatalogWishlistFavorite } from "@/lib/shop/catalog-wishlist-toggle";
 
 const ProductModal = dynamic(
   () => import("@/components/organisms/shop/product-modal").then((m) => ({ default: m.ProductModal })),
@@ -159,15 +160,14 @@ function DingryShopPageInner() {
     }
   }, [openAuth, pathname, router, searchParams, shopBasePath]);
 
-  const toggleWishlistWithAuth = useCallback(
+  const onToggleCatalogWishlist = useCallback(
     (productId: number) => {
-      const adding = !wishlist.isFavorite(productId);
-      wishlist.toggleFavorite(productId);
-      if (adding && !shopAuth.user) {
-        openAuth("Connectez-vous pour retrouver votre sélection sur tous vos appareils.");
-      }
+      toggleCatalogWishlistFavorite(productId, {
+        isFavorite: wishlist.isFavorite,
+        toggleFavorite: wishlist.toggleFavorite,
+      });
     },
-    [openAuth, shopAuth.user, wishlist],
+    [wishlist],
   );
 
   const flipPairs = useMemo(() => buildFlipPairs(products), [products]);
@@ -384,7 +384,7 @@ function DingryShopPageInner() {
             flipPairs={flipPairs}
             onOpenProduct={modal.openProductModal}
             wishlistIds={wishlist.ids}
-            onToggleWishlist={toggleWishlistWithAuth}
+            onToggleWishlist={onToggleCatalogWishlist}
             showAdminIdBadge={adminSession}
           />
           <LazyWhenVisible
@@ -394,7 +394,7 @@ function DingryShopPageInner() {
             rootMargin="480px 0px 48px 0px"
             placeholderClassName="dingry-gold-rule-top min-h-[min(100dvh,56rem)] [contain-intrinsic-size:auto_56rem]"
           >
-            <AtelierCustomSection onOpenCustom={openCustom} />
+            <AtelierCustomSection config={atelierConfig} onOpenCustom={openCustom} />
           </LazyWhenVisible>
           <div className={DINGRY_SHOP_LOWER_BAND_CLASS}>
             <LazyWhenVisible
@@ -454,7 +454,7 @@ function DingryShopPageInner() {
         products={products}
         flipPairs={flipPairs}
         wishlistIds={wishlist.ids}
-        onToggleWishlist={toggleWishlistWithAuth}
+        onToggleWishlist={onToggleCatalogWishlist}
         onAddToCart={addToCart}
         atelierConfig={atelierConfig}
         onOpenCustom={openCustomFromProduct}
@@ -489,7 +489,7 @@ function DingryShopPageInner() {
         shopBasePath={shopBasePath}
         purchaseDisabled={catalogState === "error"}
         onOpenProduct={modal.openProductModal}
-        onToggleWishlist={toggleWishlistWithAuth}
+        onToggleWishlist={onToggleCatalogWishlist}
         onDiscoverCollection={() => {
           setWishlistOpen(false);
           scrollToCatalogueWithNavMagnet();

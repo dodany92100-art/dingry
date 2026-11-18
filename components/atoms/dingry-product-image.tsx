@@ -24,6 +24,19 @@ type DingryProductImageProps = {
 const DEFAULT_SIZES =
   "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw";
 
+function trimUrl(url: string): string {
+  return url.trim();
+}
+
+/** Affiche le repli tant que l’URL CRM n’est pas vérifiée (évite icône cassée + swap agressif). */
+function initialActiveSrc(primary: string, fallback?: string): string {
+  const p = trimUrl(primary);
+  const f = trimUrl(fallback ?? "");
+  if (!p) return f;
+  if (!f || f === p) return p;
+  return f;
+}
+
 export function DingryProductImage({
   src,
   fallbackSrc,
@@ -36,19 +49,19 @@ export function DingryProductImage({
   deliveryWidth,
   fitContent = false,
 }: DingryProductImageProps) {
-  const [activeSrc, setActiveSrc] = useState(src);
+  const [activeSrc, setActiveSrc] = useState(() => initialActiveSrc(src, fallbackSrc));
   useEffect(() => {
-    const primary = src.trim();
-    const fallback = fallbackSrc?.trim() ?? "";
+    const primary = trimUrl(src);
+    const fallback = trimUrl(fallbackSrc ?? "");
     if (!primary) {
-      setActiveSrc(fallback || "");
+      setActiveSrc(fallback);
       return;
     }
     if (!fallback || fallback === primary) {
       setActiveSrc(primary);
       return;
     }
-    setActiveSrc(primary);
+    setActiveSrc(fallback);
     let cancelled = false;
     const probe = new window.Image();
     const probeUrl = deliveryImageUrl(primary, deliveryWidth);
@@ -98,7 +111,6 @@ export function DingryProductImage({
 
   return (
     <Image
-      key={safeSrc}
       src={safeSrc}
       alt={alt}
       width={width}

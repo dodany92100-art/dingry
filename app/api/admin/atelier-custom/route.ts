@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin/admin-crm-route";
 import { parseAtelierCustomJson, serializeAtelierCustomConfig } from "@/lib/admin/parse-atelier-custom";
 import {
+  resolveAtelierSectionHero,
   resolveShopAtelierCustomConfig,
   SHOP_ATELIER_CUSTOM_DEFAULT,
   type AdminAtelierCustomConfig,
@@ -77,6 +78,9 @@ export async function PATCH(request: Request) {
       incoming.suggestedCities && incoming.suggestedCities.length > 0
         ? incoming.suggestedCities
         : SHOP_ATELIER_CUSTOM_DEFAULT.suggestedCities,
+    sectionHero: resolveAtelierSectionHero(
+      incoming.sectionHero ?? SHOP_ATELIER_CUSTOM_DEFAULT.sectionHero,
+    ),
     updatedAt: new Date().toISOString(),
   };
   const serialized = serializeAtelierCustomConfig(merged);

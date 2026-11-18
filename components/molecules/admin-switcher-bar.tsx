@@ -10,6 +10,7 @@ import {
   saveAltoLastPublicUrl,
 } from "@/lib/alto-last-public-url";
 import { altoAbsolutePublicUrl, altoCrmAdminUrl, isAltoHostSplitEnabled } from "@/lib/alto-switch-urls";
+import { startDingryRouteProgress } from "@/lib/dingry-route-progress";
 
 export function AdminSwitcherBar() {
   const pathname = usePathname() ?? "/";
@@ -24,6 +25,7 @@ export function AdminSwitcherBar() {
   );
 
   const onSwitch = useCallback(() => {
+    startDingryRouteProgress();
     const split = isAltoHostSplitEnabled();
     if (onAdmin) {
       const target = readAltoLastPublicUrl();

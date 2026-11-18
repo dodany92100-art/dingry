@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 
+import { DingryRouteProgressBar } from '@/components/atoms/dingry-route-progress-bar'
 import { AdminSwitcherBarLayoutGate } from '@/components/molecules/admin-switcher-bar-layout-gate'
 import { R2_DEFAULT_PUBLIC_BASE } from '@/lib/r2/config'
 import { CookieConsentLazy } from '@/components/atoms/cookie-consent-lazy'
@@ -54,6 +55,7 @@ export default function RootLayout({
         <link rel="preconnect" href={R2_DEFAULT_PUBLIC_BASE} crossOrigin="anonymous" />
       </head>
       <body className="overflow-x-hidden antialiased">
+        <DingryRouteProgressBar />
         {children}
         <AdminSwitcherBarLayoutGate />
         <CookieConsentLazy />

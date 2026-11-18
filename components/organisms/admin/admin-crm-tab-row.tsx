@@ -17,15 +17,15 @@ export function AdminCrmTabRow({
   hideStockTabsOnNarrow = false,
 }: AdminCrmTabRowProps) {
   return (
-    <div className="mb-3 flex min-w-0 flex-col gap-2 md:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <div className="mb-2 flex min-w-0 w-full flex-col items-center gap-2 md:mb-3">
       <TabNav
         tab={tab}
         onChange={onChange}
         hideStockTabsOnNarrow={hideStockTabsOnNarrow}
-        className="mb-0 w-fit max-w-full"
+        className="w-fit max-w-full shrink-0"
       />
       {trailing ? (
-        <div className="flex shrink-0 items-center justify-center gap-2.5 max-[449px]:w-full sm:justify-end">
+        <div className="flex w-full max-w-full shrink-0 items-center justify-center gap-2.5 md:w-auto md:justify-end">
           {trailing}
         </div>
       ) : null}

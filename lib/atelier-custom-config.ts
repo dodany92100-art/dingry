@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import type { ShopProduct } from "@/lib/catalog";
+import { DINGRY_ATELIER_HERO_SRC } from "@/lib/dingry-brand";
 import { CUSTOM_BANNER_SUGGESTED_CITIES } from "@/lib/custom-city-banner";
+import { clampBannerFocusPercent } from "@/lib/catalog-perso-banner-focus";
 import {
   DINGRY_PRODUCT_MEDIA,
   DINGRY_SWEAT_PRODUCT_IDS,
@@ -35,10 +37,21 @@ export type AtelierCustomModel = {
   previewCityColor: string;
 };
 
+/** Visuel plein écran #atelier-custom-hero (bas de page boutique). */
+export type AtelierSectionHero = {
+  imageUrl: string;
+  imageFocusX: number;
+  imageFocusY: number;
+};
+
+export const DEFAULT_ATELIER_SECTION_HERO_FOCUS_X = 62;
+export const DEFAULT_ATELIER_SECTION_HERO_FOCUS_Y = 50;
+
 export type ShopAtelierCustomConfig = {
   enabled: boolean;
   models: readonly AtelierCustomModel[];
   suggestedCities: readonly string[];
+  sectionHero: AtelierSectionHero;
 };
 
 export type AdminAtelierCustomConfig = ShopAtelierCustomConfig & {
@@ -139,6 +152,23 @@ export function normalizeAtelierCityColor(value: string): string {
   return trimmed.toLowerCase();
 }
 
+/** CRM atelier : contour / fond du bloc modèle (swatch configurateur). */
+export function atelierAdminModelPanelStyle(swatch: string): CSSProperties {
+  const color = normalizeAtelierCityColor(swatch) || "#8a8a8a";
+  const body = color.slice(1, 7);
+  const r = Number.parseInt(body.slice(0, 2), 16);
+  const g = Number.parseInt(body.slice(2, 4), 16);
+  const b = Number.parseInt(body.slice(4, 6), 16);
+  const ring = `rgba(${r}, ${g}, ${b}, 0.62)`;
+  const glow = `rgba(${r}, ${g}, ${b}, 0.1)`;
+  const wash = `rgba(${r}, ${g}, ${b}, 0.16)`;
+  return {
+    borderLeft: `4px solid ${color}`,
+    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px ${ring}, 0 12px 36px ${glow}`,
+    backgroundImage: `linear-gradient(118deg, ${wash} 0%, transparent 44%)`,
+  };
+}
+
 function hexLuminance(hex: string): number {
   const normalized = normalizeAtelierCityColor(hex);
   if (!normalized) return 0;
@@ -174,6 +204,11 @@ export const SHOP_ATELIER_CUSTOM_DEFAULT: AdminAtelierCustomConfig = {
   enabled: true,
   updatedAt: "",
   suggestedCities: [...CUSTOM_BANNER_SUGGESTED_CITIES],
+  sectionHero: {
+    imageUrl: DINGRY_ATELIER_HERO_SRC,
+    imageFocusX: DEFAULT_ATELIER_SECTION_HERO_FOCUS_X,
+    imageFocusY: DEFAULT_ATELIER_SECTION_HERO_FOCUS_Y,
+  },
   models: [
     {
       id: "tee-blanc",
@@ -434,6 +469,20 @@ export function sanitizeAtelierPreviewImageUrl(value: string, fallback: string):
   return fallback;
 }
 
+export function resolveAtelierSectionHero(
+  hero: Partial<AtelierSectionHero> | null | undefined,
+): AtelierSectionHero {
+  const imageUrl = sanitizeAtelierPreviewImageUrl(
+    hero?.imageUrl?.trim() ?? "",
+    DINGRY_ATELIER_HERO_SRC,
+  );
+  return {
+    imageUrl,
+    imageFocusX: clampBannerFocusPercent(hero?.imageFocusX ?? DEFAULT_ATELIER_SECTION_HERO_FOCUS_X),
+    imageFocusY: clampBannerFocusPercent(hero?.imageFocusY ?? DEFAULT_ATELIER_SECTION_HERO_FOCUS_Y),
+  };
+}
+
 export function sanitizeAtelierCityTop(value: string, fallback: string): string {
   const match = /^([\d.]+)\s*%$/.exec(value.trim());
   if (!match) return fallback;
@@ -514,10 +563,12 @@ export function resolveShopAtelierCustomConfig(
       enabled: SHOP_ATELIER_CUSTOM_DEFAULT.enabled,
       models: SHOP_ATELIER_CUSTOM_DEFAULT.models,
       suggestedCities: SHOP_ATELIER_CUSTOM_DEFAULT.suggestedCities,
+      sectionHero: SHOP_ATELIER_CUSTOM_DEFAULT.sectionHero,
     };
   }
   return {
     enabled: stored.enabled,
+    sectionHero: resolveAtelierSectionHero(stored.sectionHero),
     models: (() => {
       const merged =
         stored.models.length > 0

@@ -29,7 +29,10 @@ export function useAdminAtelierCustom({ onUnauthorized }: Options) {
       if (response.status === 401) return "unauthorized";
       if (!response.ok) return "error";
       const data = (await response.json()) as { config: AdminAtelierCustomConfig; customized?: boolean };
-      setConfig(data.config);
+      setConfig({
+        ...resolveShopAtelierCustomConfig(data.config),
+        updatedAt: data.config.updatedAt ?? "",
+      });
       setCustomized(Boolean(data.customized));
       return "ok";
     } catch {
@@ -65,7 +68,10 @@ export function useAdminAtelierCustom({ onUnauthorized }: Options) {
           const err = data.error || "Impossible d'enregistrer l'atelier CUSTOM.";
           return { error: err };
         }
-        setConfig(data.config);
+        setConfig({
+          ...resolveShopAtelierCustomConfig(data.config),
+          updatedAt: data.config.updatedAt ?? "",
+        });
         setCustomized(true);
         setToast({
           variant: "success",

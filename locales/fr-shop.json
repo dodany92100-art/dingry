@@ -117,6 +117,10 @@
   "heritageTeaser": {
     "eyebrow": "Héritage"
   },
+  "lookbookTeaser": {
+    "eyebrow": "Lookbook",
+    "title": "Édito & campagnes"
+  },
   "heritageReader": {
     "overlayCloseAria": "Fermer le lecteur Héritage",
     "tabsAria": "Chapitres Héritage",

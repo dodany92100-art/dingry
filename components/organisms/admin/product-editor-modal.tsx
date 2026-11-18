@@ -39,6 +39,7 @@ import {
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
+import { pinProductToCrmAdminMemo } from "@/lib/admin/crm-admin-memo";
 import { EMPTY_PRODUCT_STORY } from "@/lib/admin/product-story";
 import {
   uploadAdminImageToR2,
@@ -1291,6 +1292,21 @@ export function ProductEditorModal({
                     + Nouvelle fiche
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() =>
+                    pinProductToCrmAdminMemo({
+                      id: editingId,
+                      name: form.name,
+                      sku: form.sku,
+                    })
+                  }
+                  className="shrink-0 rounded-full border border-[#e8d87a]/45 bg-[#fff9c4]/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[#f5e6a8] transition hover:bg-[#fff9c4]/20 hover:text-[#fffef0] disabled:opacity-40"
+                  title="Ajouter cette fiche au mémo « À ne pas oublier »"
+                >
+                  Mémo
+                </button>
                 <span className="hidden h-3.5 w-px shrink-0 bg-zinc-700 md:block" aria-hidden />
                 <h1 className="min-w-0 truncate text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl">
                   {form.name.trim() || (editingId ? "Modifier" : "Nouveau produit")}

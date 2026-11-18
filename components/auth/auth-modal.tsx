@@ -13,8 +13,6 @@ import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "@/components/orga
 import { useShopOrders } from "@/hooks/use-shop-orders";
 import { isFulfillmentOwnerClient } from "@/lib/shop/fulfillment-owner-client";
 import Link from "next/link";
-import { DINGRY_LOGO_URL, DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
-
 type AuthModalProps = {
   open: boolean;
   onClose: () => void;
@@ -221,22 +219,13 @@ export function AuthModal({
             }}
           />
           <motion.div
-            className="dingry-auth-drawer-visual relative z-[1] hidden min-h-0 min-w-0 flex-1 overflow-hidden md:block"
+            className="dingry-auth-drawer-visual relative z-[1] hidden min-h-0 min-w-0 flex-1 overflow-hidden bg-black/50 backdrop-blur-md md:block"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={MODAL_OVERLAY_TRANSITION}
             aria-hidden
           >
-            <img
-              src={DINGRY_TEASING_HERO_SRC}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover object-[center_38%]"
-            />
-            <div
-              className="absolute inset-0 bg-gradient-to-r from-black/25 via-black/55 to-black/88"
-              aria-hidden
-            />
             <button
               type="button"
               className="absolute inset-0 z-0"
@@ -246,17 +235,6 @@ export function AuthModal({
                 if (!busy) onClose();
               }}
             />
-            <div className="pointer-events-none relative z-[1] flex h-full flex-col justify-end p-10 pb-14 lg:p-14 lg:pb-16">
-              <img
-                src={DINGRY_LOGO_URL}
-                alt="DINGRY Paris"
-                draggable={false}
-                className="h-11 w-auto brightness-0 invert md:h-[3.25rem]"
-              />
-              <p className="dingry-typo-manifesto mt-3 max-w-[15rem] text-left text-sm tracking-[0.06em] text-white/88">
-                Le luxe est dans l&apos;attitude
-              </p>
-            </div>
           </motion.div>
           <motion.aside
             role="dialog"

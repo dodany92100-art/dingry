@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
+const { execSync } = require('node:child_process');
 
 const root = process.cwd();
 const RED = '\x1b[31m';
@@ -96,6 +97,52 @@ for (const legacy of ['components/shop', 'components/admin']) {
 }
 if (!fs.existsSync(path.join(root, 'components/shop')) && !fs.existsSync(path.join(root, 'components/admin'))) {
   logSuccess('Aucun dossier legacy components/{shop,admin}.');
+}
+
+// 5. Cœur catalogue : ne doit pas rouvrir le tiroir compte invité
+const shopPagePath = path.join(root, 'components/templates/dingry-shop-page.tsx');
+if (fs.existsSync(shopPagePath)) {
+  const shopPage = fs.readFileSync(shopPagePath, 'utf8');
+  const blocked =
+    /openAuth\(\s*["']Connectez-vous pour retrouver votre sélection/.test(shopPage) ||
+    /adding\s*&&\s*!shopAuth\.user/.test(shopPage);
+  if (blocked) {
+    logError(
+      'Régression wishlist : le clic cœur catalogue ne doit pas appeler openAuth (toggleCatalogWishlistFavorite).',
+    );
+  } else if (!shopPage.includes('toggleCatalogWishlistFavorite')) {
+    logError('dingry-shop-page.tsx doit utiliser toggleCatalogWishlistFavorite pour le catalogue.');
+  } else {
+    logSuccess('Wishlist catalogue sans tiroir compte invité (cœur → nav).');
+  }
+} else {
+  logError('components/templates/dingry-shop-page.tsx introuvable.');
+}
+
+// 6. Carte produit : cœur hors bouton ouverture fiche
+const productCardPath = path.join(root, 'components/molecules/product-card.tsx');
+if (fs.existsSync(productCardPath)) {
+  const productCard = fs.readFileSync(productCardPath, 'utf8');
+  const hasIsolatedWishlist =
+    productCard.includes('data-dingry-wishlist') &&
+    productCard.includes('stopPropagation') &&
+    /openRecto\s*&&\s*wishlistVisible/.test(productCard);
+  if (!hasIsolatedWishlist) {
+    logError('product-card.tsx : le cœur doit être isolé du bouton data-dingry-product-card-open.');
+  } else {
+    logSuccess('product-card : cœur isolé de l’ouverture fiche.');
+  }
+} else {
+  logError('components/molecules/product-card.tsx introuvable.');
+}
+
+// 7. Journal CRM (JSON source unique)
+try {
+  execSync('node scripts/crm-changelog.mjs validate', { cwd: root, stdio: 'pipe', encoding: 'utf8' });
+  logSuccess('Journal CRM valide (scripts/crm-changelog.mjs).');
+} catch (err) {
+  const detail = err.stdout?.trim() || err.stderr?.trim() || err.message;
+  logError(`Journal CRM : ${detail}`);
 }
 
 console.log('');

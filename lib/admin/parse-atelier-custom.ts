@@ -2,6 +2,7 @@ import type { AdminAtelierCustomConfig, AtelierCustomModel } from "@/lib/atelier
 import {
   ATELIER_CUSTOM_SIZES,
   normalizeAtelierCityColor,
+  resolveAtelierSectionHero,
   sanitizeAtelierCitySize,
   sanitizeAtelierCityTop,
   sanitizeAtelierPreviewImageUrl,
@@ -82,10 +83,23 @@ export function parseAtelierCustomJson(json: string): AdminAtelierCustomConfig |
       .map((city) => (typeof city === "string" ? city.trim().toUpperCase() : ""))
       .filter((city) => city.length > 0);
 
+    const heroRaw =
+      row.sectionHero && typeof row.sectionHero === "object"
+        ? (row.sectionHero as Record<string, unknown>)
+        : null;
+
     return {
       enabled: row.enabled === undefined ? defaults.enabled : Boolean(row.enabled),
       models: [...models, ...extraModels],
       suggestedCities: suggestedCities.length > 0 ? suggestedCities : [...defaults.suggestedCities],
+      sectionHero: resolveAtelierSectionHero({
+        imageUrl:
+          typeof heroRaw?.imageUrl === "string" ? heroRaw.imageUrl : defaults.sectionHero.imageUrl,
+        imageFocusX:
+          typeof heroRaw?.imageFocusX === "number" ? heroRaw.imageFocusX : defaults.sectionHero.imageFocusX,
+        imageFocusY:
+          typeof heroRaw?.imageFocusY === "number" ? heroRaw.imageFocusY : defaults.sectionHero.imageFocusY,
+      }),
       updatedAt: typeof row.updatedAt === "string" ? row.updatedAt : "",
     };
   } catch {
@@ -98,6 +112,7 @@ export function serializeAtelierCustomConfig(config: AdminAtelierCustomConfig): 
     enabled: config.enabled,
     models: config.models,
     suggestedCities: config.suggestedCities,
+    sectionHero: config.sectionHero,
     updatedAt: config.updatedAt,
   });
 }

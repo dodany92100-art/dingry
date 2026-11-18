@@ -4,14 +4,17 @@ import { useEffect } from "react";
 import Image from "next/image";
 import type { OpenCustomOptions } from "@/lib/shop/atelier-open-options";
 import { DINGRY_SECTION_SCROLL_OFFSET_CLASS } from "@/components/organisms/shop/catalog-layout";
-import { DINGRY_ATELIER_HERO_SRC, DINGRY_LOGO_MONDE_CITIES_SRC } from "@/lib/dingry-brand";
+import { bannerObjectPosition } from "@/lib/catalog-perso-banner-focus";
+import { resolveAtelierSectionHero, type ShopAtelierCustomConfig } from "@/lib/atelier-custom-config";
+import { DINGRY_LOGO_MONDE_CITIES_SRC } from "@/lib/dingry-brand";
 import { useTranslation } from "@/hooks/use-translation";
 
 type AtelierCustomSectionProps = {
+  config?: ShopAtelierCustomConfig;
   onOpenCustom: (options?: OpenCustomOptions) => void;
 };
 
-export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps) {
+export function AtelierCustomSection({ config, onOpenCustom }: AtelierCustomSectionProps) {
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -22,6 +25,9 @@ export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps
   const title = t("atelier.sectionTitle");
   const lead = t("atelier.sectionLead");
   const cta = t("atelier.banner.cta");
+  const sectionHero = resolveAtelierSectionHero(config?.sectionHero);
+
+  if (config && !config.enabled) return null;
 
   return (
     <section
@@ -30,7 +36,11 @@ export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps
       aria-labelledby="dingry-atelier-hero-title"
     >
       <div className="relative flex min-h-[min(100dvh,56rem)] w-full flex-col justify-end">
-        <AtelierHeroImage />
+        <AtelierHeroImage
+          imageUrl={sectionHero.imageUrl}
+          focusX={sectionHero.imageFocusX}
+          focusY={sectionHero.imageFocusY}
+        />
         <div
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/25"
           aria-hidden
@@ -73,19 +83,42 @@ export function AtelierCustomSection({ onOpenCustom }: AtelierCustomSectionProps
   );
 }
 
-function AtelierHeroImage() {
+function AtelierHeroImage({
+  imageUrl,
+  focusX,
+  focusY,
+}: {
+  imageUrl: string;
+  focusX: number;
+  focusY: number;
+}) {
+  const objectPosition = bannerObjectPosition(focusX, focusY);
+  const isLocal = imageUrl.startsWith("/");
   return (
     <div className="absolute inset-0 z-0">
-      <Image
-        src={DINGRY_ATELIER_HERO_SRC}
-        alt=""
-        aria-hidden
-        priority={false}
-        fill
-        sizes="100vw"
-        loading="lazy"
-        className="object-cover object-[62%_50%] opacity-95"
-      />
+      {isLocal ? (
+        <Image
+          src={imageUrl}
+          alt=""
+          aria-hidden
+          priority={false}
+          fill
+          sizes="100vw"
+          loading="lazy"
+          className="object-cover opacity-95"
+          style={{ objectPosition }}
+        />
+      ) : (
+        <img
+          src={imageUrl}
+          alt=""
+          aria-hidden
+          decoding="async"
+          loading="lazy"
+          className="h-full w-full object-cover opacity-95"
+          style={{ objectPosition }}
+        />
+      )}
     </div>
   );
 }

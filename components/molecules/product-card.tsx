@@ -1,10 +1,11 @@
 "use client";
 
 import { memo } from "react";
-import { cn } from "@/lib/utils";
+import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductCardCopy } from "@/components/molecules/product-card-copy";
 import { ProductCardMedia } from "@/components/molecules/product-card-media";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
+import { cn } from "@/lib/utils";
 
 export { deliveryImageUrl as cldOpt } from "@/lib/media/delivery-image-url";
 
@@ -53,50 +54,66 @@ function ProductCardInner({
       }
     : undefined;
   const alt = `${name} ${variant}`.trim();
+  const wishlistVisible = onWishlistToggle !== undefined && wishlistActive !== undefined;
+  const openLabel = `Ouvrir la fiche : ${alt}`;
+
+  const media = (
+    <ProductCardMedia
+      productId={productId}
+      showAdminIdBadge={showAdminIdBadge}
+      image={image}
+      imageFallback={imageFallback}
+      alt={alt}
+      priority={priority}
+      soldOut={soldOut}
+      wishlistActive={openRecto ? undefined : wishlistActive}
+      onWishlistToggle={openRecto ? undefined : onWishlistToggle}
+    />
+  );
+  const copy = <ProductCardCopy name={name} variant={variant} price={price} />;
 
   return (
     <article
-      data-dingry-product-card-open=""
       className={cn(
-        "dingry-product-card group flex h-full w-full min-w-0 flex-col overflow-hidden touch-pan-y",
-        onClick && "cursor-pointer [touch-action:manipulation]",
+        "dingry-product-card group relative flex h-full w-full min-w-0 flex-col overflow-hidden touch-pan-y",
+        openRecto && "[touch-action:manipulation]",
         className,
       )}
       onMouseEnter={() => onPrefetch?.()}
-      onFocus={() => onPrefetch?.()}
-      onClick={
-        openRecto
-          ? (event) => {
-              if ((event.target as HTMLElement).closest("[data-dingry-wishlist]")) return;
-              openRecto();
-            }
-          : undefined
-      }
-      onKeyDown={
-        openRecto
-          ? (event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                openRecto();
-              }
-            }
-          : undefined
-      }
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
     >
-      <ProductCardMedia
-        productId={productId}
-        showAdminIdBadge={showAdminIdBadge}
-        image={image}
-        imageFallback={imageFallback}
-        alt={alt}
-        priority={priority}
-        soldOut={soldOut}
-        wishlistActive={wishlistActive}
-        onWishlistToggle={onWishlistToggle}
-      />
-      <ProductCardCopy name={name} variant={variant} price={price} />
+      {openRecto ? (
+        <button
+          type="button"
+          data-dingry-product-card-open=""
+          aria-label={openLabel}
+          className="flex h-full w-full min-w-0 cursor-pointer flex-col overflow-hidden border-0 bg-transparent p-0 text-left"
+          onFocus={() => onPrefetch?.()}
+          onClick={openRecto}
+        >
+          {media}
+          {copy}
+        </button>
+      ) : (
+        <>
+          {media}
+          {copy}
+        </>
+      )}
+      {openRecto && wishlistVisible ? (
+        <div
+          data-dingry-wishlist
+          className="absolute right-2 top-2 z-20 sm:right-2.5 sm:top-2.5"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <WishlistIconButton
+            active={wishlistActive}
+            label={wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
+            onClick={onWishlistToggle}
+            stopPropagation
+          />
+        </div>
+      ) : null}
     </article>
   );
 }

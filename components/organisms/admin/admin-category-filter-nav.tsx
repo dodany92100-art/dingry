@@ -42,11 +42,11 @@ export function AdminCategoryFilterNav({
     scroller.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
   }, [selected]);
 
-  const outerClass = embedded ? "min-w-0" : "-mx-6 px-6 md:-mx-10 md:px-10";
+  const outerClass = embedded ? "min-w-0 w-full overflow-hidden" : "-mx-6 px-6 md:-mx-10 md:px-10";
 
   return (
     <div className={`${outerClass} ${className}`}>
-      <div className="relative max-w-full">
+      <div className="relative min-w-0 w-full max-w-full overflow-hidden">
         <div
           className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[rgba(7,11,20,0.95)] to-transparent md:w-8"
           aria-hidden

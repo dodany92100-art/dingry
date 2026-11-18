@@ -1,0 +1,89 @@
+[
+  {
+    "id": "2026-11-14-release",
+    "deployedAtLabel": "14 nov. 2026",
+    "versionHint": "210",
+    "title": "Release dingry.com — boutique, vitrine & production",
+    "highlights": [
+      "Paiement : PayPal s’ouvre dans une fenêtre, le client reste sur le site pendant le règlement.",
+      "Boutique : textes et prix plus lisibles, panier et checkout harmonisés ; nouveau produit prérempli depuis une fiche existante ; garde-fous modèles catalogue.",
+      "Commandes CRM : e-mail et téléphone cliquables, bouton « Étiquette envoi » ; onglet Codes promo.",
+      "Vitrine : footer resserré, newsletter flèche or, Atelier avant Lookbook, CTA catalogue aimanté, bande gold foil.",
+      "Production : checkout PayPal aligné, parcours vitrine stabilisé pour la mise en ligne."
+    ]
+  },
+  {
+    "id": "2026-11-13-checkout-compte",
+    "deployedAtLabel": "13 nov. 2026",
+    "title": "Checkout invité & compte client",
+    "highlights": [
+      "Achat invité avec rattachement commande au compte.",
+      "Tunnel expédition et statuts commande renforcés.",
+      "Panneau Mon compte et déconnexion côté boutique."
+    ]
+  },
+  {
+    "id": "2026-11-13-auth",
+    "deployedAtLabel": "13 nov. 2026",
+    "title": "Connexion Google",
+    "highlights": [
+      "OAuth Google via Supabase (boutique).",
+      "Callback et session navigateur durcis (PKCE)."
+    ]
+  },
+  {
+    "id": "2026-11-06-crm-modulaire",
+    "deployedAtLabel": "6 nov. 2026",
+    "versionHint": "1.1",
+    "title": "CRM modulaire & lookbook",
+    "highlights": [
+      "Refactor admin (onglets, stock, commandes, lookbook).",
+      "Résolution des motifs « à vérifier » depuis l’UI commandes.",
+      "Store Blob sécurisé (plus d’écrasement accidentel des commandes).",
+      "Pipeline anti-régression (tests vitrine + checkout)."
+    ]
+  },
+  {
+    "id": "2026-11-05-crm-v1-1",
+    "deployedAtLabel": "5 nov. 2026",
+    "title": "CRM v1.1 — prix & couleurs",
+    "highlights": [
+      "Prix unifiés boutique ↔ fiches CRM.",
+      "Bandeau nouveautés admin.",
+      "Couleurs variante pour chaque catégorie stock.",
+      "Heritage, footer et voix de marque DINGRY."
+    ]
+  },
+  {
+    "id": "2026-11-04-admin",
+    "deployedAtLabel": "4 nov. 2026",
+    "title": "Admin — navigation stock",
+    "highlights": [
+      "Scroll et filtres catégories corrigés.",
+      "Édition catalogue plus stable en preview."
+    ]
+  },
+  {
+    "id": "2026-10-30-paypal-preview",
+    "deployedAtLabel": "30 oct. 2026",
+    "title": "PayPal & preview boutique",
+    "highlights": [
+      "PayPal côté serveur, remplace Stripe.",
+      "Admin centré sur stock + commandes.",
+      "Preview Vercel, cron et scripts déploiement.",
+      "Panier, prix verso/recto, total serveur."
+    ]
+  },
+  {
+    "id": "crm-v1-launch",
+    "deployedAtLabel": "28 oct. 2026",
+    "versionHint": "1.0",
+    "title": "CRM v1 — lancement",
+    "highlights": [
+      "Premier back-office DINGRY : stock et commandes.",
+      "Upload photos WebP (moins de 1 Mo), fiches recto/verso.",
+      "Catalogue mobile : filtres, cartes compactes, menu sticky.",
+      "Fiche produit au format naturel + moyens de paiement au footer."
+    ]
+  }
+]

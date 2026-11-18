@@ -57,10 +57,21 @@ export function AdminMediaDropzone({
           event.target.value = "";
         }}
       />
-      <button
-        type="button"
-        disabled={converting}
-        onClick={() => inputRef.current?.click()}
+      <div
+        role="button"
+        tabIndex={converting ? -1 : 0}
+        aria-disabled={converting}
+        onClick={() => {
+          if (converting) return;
+          inputRef.current?.click();
+        }}
+        onKeyDown={(event) => {
+          if (converting) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         onDragOver={(event) => {
           event.preventDefault();
           setDragOver(true);
@@ -72,7 +83,9 @@ export function AdminMediaDropzone({
           const file = event.dataTransfer.files?.[0] ?? null;
           pickFile(file);
         }}
-        className={`flex w-full flex-col items-center justify-center gap-3 overflow-visible rounded-md border border-dashed px-3 py-5 transition duration-300 ${panelTone} disabled:opacity-50`}
+        className={`flex w-full flex-col items-center justify-center gap-3 overflow-visible rounded-md border border-dashed px-3 py-5 transition duration-300 ${panelTone} ${
+          converting ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+        }`}
       >
         {previewSrc ? (
           <span className="relative inline-block max-w-[14rem] overflow-visible">
@@ -117,7 +130,7 @@ export function AdminMediaDropzone({
               ? "Glisser ou cliquer pour remplacer"
               : "Dropzone · glisser une image ou parcourir"}
         </span>
-      </button>
+      </div>
     </div>
   );
 }

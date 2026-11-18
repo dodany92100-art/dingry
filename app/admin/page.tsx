@@ -9,17 +9,16 @@ import { AdminCrmPassage } from "@/components/organisms/admin/admin-crm-passage"
 import { AuthGate } from "@/components/organisms/admin/auth-gate";
 import { BackupCodesBanner } from "@/components/organisms/admin/backup-codes-banner";
 import { useAdminAtelierCustom } from "@/components/organisms/admin/hooks/use-admin-atelier-custom";
-import { useAdminCatalogPersoBanner } from "@/components/organisms/admin/hooks/use-admin-catalog-perso-banner";
 import { useAdminLookbook } from "@/components/organisms/admin/hooks/use-admin-lookbook";
 import { useAdminOrders } from "@/components/organisms/admin/hooks/use-admin-orders";
 import { useAdminProducts } from "@/components/organisms/admin/hooks/use-admin-products";
 import { useAdminSession } from "@/components/organisms/admin/hooks/use-admin-session";
 import { AtelierCustomTab } from "@/components/organisms/admin/atelier-custom-tab";
-import { CatalogPersoBannerTab } from "@/components/organisms/admin/catalog-perso-banner-tab";
 import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
 import { PromoCodesTab } from "@/components/organisms/admin/promo-codes-tab";
 import { CrmChangelogDialog } from "@/components/organisms/admin/crm-changelog-dialog";
+import { CrmAdminMemoPostit } from "@/components/molecules/admin/crm-admin-memo-postit";
 import { ReleaseBanner } from "@/components/organisms/admin/release-banner";
 import { AdminActionToast } from "@/components/organisms/admin/admin-action-toast";
 import { AdminCrmTabRow } from "@/components/organisms/admin/admin-crm-tab-row";
@@ -37,6 +36,12 @@ import {
   sumProductStock,
 } from "@/lib/admin/order-view";
 import { sanitizeAdminLoginNext } from "@/lib/admin/login-next";
+import {
+  finishCrmAdminLoadProgress,
+  setCrmAdminLoadProgress,
+  startCrmAdminLoadProgress,
+} from "@/lib/crm-admin-load-progress";
+import { startDingryRouteProgress } from "@/lib/dingry-route-progress";
 import {
   adminCategoryQueryValue,
   parseAdminCategoryParam,
@@ -68,12 +73,12 @@ type EditorState = { product: AdminProduct | null } | null;
 type LookbookEditorState = { slide: AdminLookbookSlideView | null } | null;
 
 function parseTabParam(value: string | null): TabId {
+  if (value === "banniere") return "atelier";
   if (
     value === "produits" ||
     value === "brouillons" ||
     value === "commandes" ||
     value === "lookbook" ||
-    value === "banniere" ||
     value === "atelier" ||
     value === "promos"
   ) {
@@ -107,12 +112,10 @@ function AdminDashboard() {
   const productsApi = useAdminProducts({ onUnauthorized: expire });
   const ordersApi = useAdminOrders({ onUnauthorized: expire });
   const lookbookApi = useAdminLookbook({ onUnauthorized: expire });
-  const persoBannerApi = useAdminCatalogPersoBanner({ onUnauthorized: expire });
   const atelierApi = useAdminAtelierCustom({ onUnauthorized: expire });
   const { load: loadProducts, reset: resetProducts } = productsApi;
   const { load: loadOrders, reset: resetOrders } = ordersApi;
   const { load: loadLookbook, reset: resetLookbook } = lookbookApi;
-  const { load: loadPersoBanner, reset: resetPersoBanner } = persoBannerApi;
   const { load: loadAtelier, reset: resetAtelier } = atelierApi;
 
   const [tab, setTab] = useState<TabId>(() => parseTabParam(searchParams.get("tab")));
@@ -167,6 +170,7 @@ function AdminDashboard() {
 
   const replaceAdminQuery = useCallback(
     (patch: { tab?: TabId; cat?: AdminProductCategoryFilter; product?: string | null }) => {
+      startDingryRouteProgress();
       const params = new URLSearchParams(searchParams.toString());
       if (patch.tab !== undefined) {
         if (patch.tab === "produits") params.delete("tab");
@@ -274,6 +278,20 @@ function AdminDashboard() {
     }
   }
 
+  useEffect(() => {
+    if (session.booting) startCrmAdminLoadProgress();
+  }, [session.booting]);
+
+  useEffect(() => {
+    if (session.loginLoading) startCrmAdminLoadProgress();
+  }, [session.loginLoading]);
+
+  useEffect(() => {
+    if (!session.booting && !authenticated && !session.loginLoading) {
+      finishCrmAdminLoadProgress();
+    }
+  }, [session.booting, authenticated, session.loginLoading]);
+
   // Session valide → chargement du tableau de bord. 401 → retour au login.
   useEffect(() => {
     if (!authenticated || wantsShopRedirect) {
@@ -281,21 +299,38 @@ function AdminDashboard() {
       return;
     }
     let cancelled = false;
+    startCrmAdminLoadProgress();
+    setCrmAdminLoadProgress(0.18);
+    let completed = 0;
+    const bump = () => {
+      completed += 1;
+      setCrmAdminLoadProgress(0.18 + (completed / 4) * 0.78);
+    };
     void (async () => {
       setLoadError("");
-      const [productsResult, ordersResult, lookbookResult, bannerResult, atelierResult] = await Promise.all([
-        loadProducts(),
-        loadOrders(),
-        loadLookbook(),
-        loadPersoBanner(),
-        loadAtelier(),
+      const [productsResult, ordersResult, lookbookResult, atelierResult] = await Promise.all([
+        loadProducts().then((result) => {
+          bump();
+          return result;
+        }),
+        loadOrders().then((result) => {
+          bump();
+          return result;
+        }),
+        loadLookbook().then((result) => {
+          bump();
+          return result;
+        }),
+        loadAtelier().then((result) => {
+          bump();
+          return result;
+        }),
       ]);
       if (cancelled) return;
       if (
         productsResult === "unauthorized" ||
         ordersResult === "unauthorized" ||
         lookbookResult === "unauthorized" ||
-        bannerResult === "unauthorized" ||
         atelierResult === "unauthorized"
       ) {
         expire();
@@ -305,7 +340,6 @@ function AdminDashboard() {
       if (productsResult !== "ok") failed.push("produits");
       if (ordersResult !== "ok") failed.push("commandes");
       if (lookbookResult !== "ok") failed.push("lookbook");
-      if (bannerResult !== "ok") failed.push("bannière");
       if (atelierResult !== "ok") failed.push("atelier");
       if (failed.length > 0) {
         setLoadError(
@@ -313,6 +347,7 @@ function AdminDashboard() {
         );
       }
       setLoaded(true);
+      finishCrmAdminLoadProgress();
     })();
     return () => {
       cancelled = true;
@@ -323,7 +358,6 @@ function AdminDashboard() {
     loadProducts,
     loadOrders,
     loadLookbook,
-    loadPersoBanner,
     loadAtelier,
     expire,
   ]);
@@ -364,7 +398,6 @@ function AdminDashboard() {
     resetProducts();
     resetOrders();
     resetLookbook();
-    resetPersoBanner();
     resetAtelier();
     setEditor(null);
     setLookbookEditor(null);
@@ -457,8 +490,11 @@ function AdminDashboard() {
       />
       <ReleaseBanner onOpenChangelog={() => setChangelogOpen(true)} />
       <CrmChangelogDialog open={changelogOpen} onClose={() => setChangelogOpen(false)} />
+      <CrmAdminMemoPostit />
 
-      <div className={`dingry-admin px-6 py-4 md:px-10 md:py-6${showWorkflowBanner ? " pb-28" : ""}`}>
+      <div
+        className={`dingry-admin px-6 py-4 md:px-10 md:py-6 [--dingry-admin-header-offset:2.5rem] sm:[--dingry-admin-header-offset:2.65rem] md:[--dingry-admin-header-offset:3.25rem]${showWorkflowBanner ? " pb-28" : ""}`}
+      >
         <AdminCrmTabRow
           tab={tab}
           onChange={selectTab}
@@ -524,6 +560,8 @@ function AdminDashboard() {
             onViewModeChange={stockViewPrefs.setViewMode}
             storefrontPreview={stockViewPrefs.storefrontPreview}
             onStorefrontPreviewChange={stockViewPrefs.setStorefrontPreview}
+            stockContextTab={tab === "brouillons" ? "brouillons" : "produits"}
+            onStockContextTabChange={selectTab}
             mobileContextSlot={
               <AdminStockMobileContextSelect
                 tab={tab}
@@ -546,17 +584,6 @@ function AdminDashboard() {
                 ) : null}
               </>
             }
-          />
-          </>
-        ) : tab === "banniere" ? (
-          <>
-            <AdminActionToast toast={persoBannerApi.toast} onDismiss={persoBannerApi.dismissToast} />
-          <CatalogPersoBannerTab
-            banner={persoBannerApi.banner}
-            customized={persoBannerApi.customized}
-            saving={persoBannerApi.saving}
-            error={persoBannerApi.error}
-            onSave={persoBannerApi.save}
           />
           </>
         ) : tab === "atelier" ? (

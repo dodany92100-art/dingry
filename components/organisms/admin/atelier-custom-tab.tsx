@@ -1,9 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ATELIER_CUSTOM_SIZES } from "@/lib/atelier-custom-config";
+import { AdminImageDropField } from "@/components/molecules/admin/admin-image-drop-field";
+import { AtelierSectionHeroField } from "@/components/molecules/admin/atelier-section-hero-field";
+import {
+  ATELIER_CUSTOM_SIZES,
+  atelierAdminModelPanelStyle,
+} from "@/lib/atelier-custom-config";
 import type { AdminAtelierCustomConfig, AtelierCustomModel } from "@/lib/atelier-custom-config";
 import { AtelierModelPreviewTune } from "@/components/molecules/shop/atelier-model-preview-tune";
+import { prepareAndUploadAdminImage } from "@/lib/client/admin-media-upload";
+import { R2_ATELIER_MODEL_PREVIEW_FOLDER } from "@/lib/client/admin-upload-image";
 import {
   ADMIN_CRM_EYEBROW,
   ADMIN_CRM_FIELD,
@@ -11,6 +18,7 @@ import {
   ADMIN_CRM_SUBMIT_BTN,
 } from "@/components/organisms/admin/admin-crm-field-styles";
 import type { SaveAtelierCustomResult } from "./hooks/use-admin-atelier-custom";
+import { useAdminUploadGuard } from "./hooks/use-admin-upload-guard";
 
 type Props = {
   config: AdminAtelierCustomConfig;
@@ -39,6 +47,11 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
   const [draft, setDraft] = useState(config);
   const [citiesText, setCitiesText] = useState(config.suggestedCities.join(", "));
   const [formError, setFormError] = useState("");
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [modelPreviewUploadId, setModelPreviewUploadId] = useState<string | null>(null);
+  const [modelPreviewError, setModelPreviewError] = useState<{ modelId: string; message: string } | null>(null);
+  const busy = saving || heroUploading || modelPreviewUploadId !== null;
+  useAdminUploadGuard(busy);
 
   useEffect(() => {
     setDraft(config);
@@ -52,9 +65,32 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
     }));
   }
 
+  async function uploadModelPreviewImage(modelId: string, file: File) {
+    setModelPreviewError(null);
+    setModelPreviewUploadId(modelId);
+    const result = await prepareAndUploadAdminImage(file, {
+      folder: R2_ATELIER_MODEL_PREVIEW_FOLDER(modelId),
+      contentImage: true,
+    });
+    setModelPreviewUploadId(null);
+    if (!result.ok) {
+      setModelPreviewError({ modelId, message: result.error });
+      return;
+    }
+    if (result.uploaded?.url) {
+      patchModel(modelId, { previewImageUrl: result.uploaded.url });
+      return;
+    }
+    setModelPreviewError({ modelId, message: "Upload R2 requis pour enregistrer le visuel atelier." });
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setFormError("");
+    if (heroUploading || modelPreviewUploadId) {
+      setFormError("Attendez la fin de l’upload R2 avant d’enregistrer.");
+      return;
+    }
     const next: AdminAtelierCustomConfig = {
       ...draft,
       suggestedCities: parseCities(citiesText),
@@ -69,8 +105,8 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
       <div className="mb-6">
         <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Atelier CUSTOM</p>
         <p className="mt-1 text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
-          Modèles du configurateur vitrine (tee #11, #25…).{" "}
-          {customized ? "Configuration CRM enregistrée." : "Valeurs par défaut boutique."}
+          Section atelier (bas de page) + modèles configurateur (tee #11, #25…). Remplace l&apos;ancienne bannière
+          catalogue. {customized ? "Configuration CRM enregistrée." : "Valeurs par défaut boutique."}
         </p>
       </div>
 
@@ -78,6 +114,13 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
       {formError ? <p className="mb-3 text-sm text-red-400">{formError}</p> : null}
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        <AtelierSectionHeroField
+          value={draft.sectionHero}
+          disabled={busy}
+          onBusyChange={setHeroUploading}
+          onChange={(sectionHero) => setDraft((prev) => ({ ...prev, sectionHero }))}
+        />
+
         <section className={ADMIN_CRM_GLASS_PANEL}>
           <label className="flex items-center gap-3">
             <input
@@ -105,11 +148,23 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
 
         <div className="space-y-5">
           {draft.models.map((model) => (
-            <article key={model.id} className={ADMIN_CRM_GLASS_PANEL}>
+            <article
+              key={model.id}
+              className="dingry-admin-glass rounded-2xl p-4 md:p-5"
+              style={atelierAdminModelPanelStyle(model.swatch)}
+            >
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
-                <h3 className="text-sm font-medium text-white">
-                  {model.label}{" "}
-                  <span className="font-normal text-white/45">{model.catalogRef}</span>
+                <h3 className="flex min-w-0 items-center gap-2.5 text-sm font-medium text-white">
+                  <span
+                    className="size-4 shrink-0 rounded-full ring-1 ring-white/30"
+                    style={{ backgroundColor: model.swatch }}
+                    title={`Couleur · ${model.label}`}
+                    aria-hidden
+                  />
+                  <span className="min-w-0">
+                    {model.label}{" "}
+                    <span className="font-normal text-white/45">{model.catalogRef}</span>
+                  </span>
                 </h3>
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-[0.14em] ring-1 ${
@@ -185,18 +240,33 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
               </label>
 
               <label className="mt-4 block">
-                <span className={ADMIN_CRM_EYEBROW}>URL visuel aperçu (optionnel)</span>
+                <span className={ADMIN_CRM_EYEBROW}>Visuel vierge · aperçu configurateur</span>
+                <div className="mt-2">
+                  <AdminImageDropField
+                    variant="compact"
+                    disabled={busy}
+                    converting={modelPreviewUploadId === model.id}
+                    onFile={(file) => void uploadModelPreviewImage(model.id, file)}
+                  />
+                </div>
                 <input
                   value={model.previewImageUrl}
                   onChange={(e) => patchModel(model.id, { previewImageUrl: e.target.value })}
-                  className={`${ADMIN_CRM_FIELD} text-[13px]`}
+                  className={`${ADMIN_CRM_FIELD} mt-2 text-[13px]`}
+                  placeholder="https://… ou glisser-déposer ci-dessus / sur l’aperçu"
                 />
               </label>
 
               <div className="mt-5 border-t border-white/10 pt-5">
                 <p className={ADMIN_CRM_EYEBROW}>Aperçu ville · couleur · taille</p>
+                {modelPreviewError?.modelId === model.id ? (
+                  <p className="mt-2 text-sm text-red-400">{modelPreviewError.message}</p>
+                ) : null}
                 <AtelierModelPreviewTune
                   model={model}
+                  uploadDisabled={busy}
+                  previewUploading={modelPreviewUploadId === model.id}
+                  onPreviewImageFile={(file) => void uploadModelPreviewImage(model.id, file)}
                   onCityTopChange={(cityTop) => patchModel(model.id, { cityTop })}
                   onCityColorChange={(previewCityColor) => patchModel(model.id, { previewCityColor })}
                   onCitySizeChange={(citySize) => patchModel(model.id, { citySize })}
@@ -206,8 +276,8 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
           ))}
         </div>
 
-        <button type="submit" disabled={saving} className={ADMIN_CRM_SUBMIT_BTN}>
-          {saving ? "Enregistrement…" : "Enregistrer l'atelier"}
+        <button type="submit" disabled={busy} className={ADMIN_CRM_SUBMIT_BTN}>
+          {busy ? "Enregistrement…" : "Enregistrer l'atelier"}
         </button>
       </form>
     </div>

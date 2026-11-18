@@ -2,13 +2,12 @@
 
 import { motion } from "motion/react";
 
-export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "banniere" | "atelier" | "promos";
+export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "atelier" | "promos";
 
 const TABS: readonly (readonly [TabId, string])[] = [
   ["produits", "Stock"],
   ["brouillons", "Brouillons"],
   ["commandes", "Commandes"],
-  ["banniere", "Bannière"],
   ["atelier", "Atelier CUSTOM"],
   ["lookbook", "Lookbook"],
   ["promos", "Codes promo"],
@@ -27,13 +26,13 @@ type TabNavProps = {
 export function TabNav({ tab, onChange, className = "", hideStockTabsOnNarrow = false }: TabNavProps) {
   return (
     <div
-      className={`dingry-admin-glass mb-8 inline-flex max-w-full items-center gap-0.5 overflow-x-auto overscroll-x-contain scroll-smooth rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
+      className={`dingry-admin-glass inline-flex max-w-full items-center justify-center gap-0.5 overflow-x-auto overscroll-x-contain rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
       role="tablist"
       aria-label="Sections administration"
     >
       {TABS.map(([id, label]) => {
         const narrowHidden =
-          hideStockTabsOnNarrow && (id === "produits" || id === "brouillons") ? "max-[449px]:hidden" : "";
+          hideStockTabsOnNarrow && (id === "produits" || id === "brouillons") ? "hidden" : "";
         const active = tab === id;
         return (
           <button
