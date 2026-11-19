@@ -16,6 +16,8 @@ import {
 import { jsonRateLimited } from "@/lib/rate-limit-response";
 import { clientIp } from "@/lib/request-ip";
 import {
+  crmHostFromEnv,
+  isAdminSurfacePath,
   isCrmHost,
   isCrmOnlyPath,
   isCrmPermittedPath,
@@ -40,8 +42,30 @@ const HOST_STEALTH_HEADERS = {
   "X-Robots-Tag": "noindex, nofollow",
 } as const;
 
-function hostIsolationDenied(): NextResponse {
-  return new NextResponse(null, { status: 404, headers: HOST_STEALTH_HEADERS });
+const HOST_STEALTH_HTML =
+  "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"utf-8\"><title>404</title></head><body><p>Not found.</p></body></html>";
+
+function hostIsolationDenied(pathname: string): NextResponse {
+  if (pathname.startsWith("/api/")) {
+    return jsonNoStore({ error: "Not found." }, { status: 404, headers: HOST_STEALTH_HEADERS });
+  }
+  return new NextResponse(HOST_STEALTH_HTML, {
+    status: 404,
+    headers: {
+      ...HOST_STEALTH_HEADERS,
+      "Content-Type": "text/html; charset=utf-8",
+    },
+  });
+}
+
+function shopAdminPageRedirectToCrm(request: NextRequest, pathname: string): NextResponse | null {
+  const crmHost = crmHostFromEnv();
+  if (!crmHost) return null;
+  const target = new URL(`${pathname}${request.nextUrl.search}`, `https://${crmHost}`);
+  const response = NextResponse.redirect(target, 308);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return response;
 }
 
 /** Équivalent du catch-all `proxy.ts` (hors assets Next statiques). */
@@ -58,13 +82,17 @@ function applyHostSplitIsolation(request: NextRequest, pathname: string): NextRe
   const hostname = requestHostname(request);
 
   if (isCrmHost(hostname)) {
-    if (!isCrmPermittedPath(pathname)) return hostIsolationDenied();
+    if (!isCrmPermittedPath(pathname)) return hostIsolationDenied(pathname);
     return null;
   }
 
   if (!isDevHost(hostname)) {
     if (!isShopCriticalOpenPath(pathname) && isCrmOnlyPath(pathname)) {
-      return hostIsolationDenied();
+      if (isAdminSurfacePath(pathname) && !pathname.startsWith("/api/")) {
+        const redirect = shopAdminPageRedirectToCrm(request, pathname);
+        if (redirect) return redirect;
+      }
+      return hostIsolationDenied(pathname);
     }
   }
 

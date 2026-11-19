@@ -14,6 +14,8 @@ type ProductCardMediaProps = {
   alt: string;
   priority?: boolean;
   soldOut?: boolean;
+  /** Média dans un bouton parent (catalogue) : laisse passer le tap mobile. */
+  passivePointer?: boolean;
   wishlistActive?: boolean;
   onWishlistToggle?: () => void;
 };
@@ -26,6 +28,7 @@ function ProductCardMediaInner({
   alt,
   priority = false,
   soldOut = false,
+  passivePointer = false,
   wishlistActive,
   onWishlistToggle,
 }: ProductCardMediaProps) {
@@ -33,7 +36,11 @@ function ProductCardMediaInner({
   const showId = showAdminIdBadge && productId !== undefined && productId !== "";
 
   return (
-    <div className="dingry-product-card__media relative aspect-[3/4] w-full shrink-0 overflow-hidden">
+    <div
+      className={`dingry-product-card__media relative aspect-[3/4] w-full shrink-0 overflow-hidden${
+        passivePointer ? " pointer-events-none" : ""
+      }`}
+    >
       {showId ? (
         <div className="pointer-events-none absolute left-2 top-2 z-20">
           <ProductIdBadge id={productId} />

@@ -14,6 +14,11 @@ type AdminStockControlsProps = {
   onSetStock: (product: AdminProduct, nextStock: number) => void;
   onEdit: (product: AdminProduct) => void;
   layout?: "card" | "row";
+  /** Carte : trigger sur la ligne prix (pas de bordure haute). */
+  cardTriggerVariant?: "stacked" | "inline";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  panelId?: string;
   autosavePhase?: StockAutosavePhase;
 };
 
@@ -64,7 +69,7 @@ function StockControlPanel({
     >
       <div className="min-h-0 overflow-hidden">
         {cardLayout ? (
-          <div className="flex w-full min-w-0 flex-col gap-1 pt-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-0.5">
+          <div className="flex w-full min-w-0 flex-col gap-1 pt-1 max-md:items-stretch md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-0.5">
             <StockQtyControls
               product={product}
               disabled={disabled}
@@ -72,10 +77,14 @@ function StockControlPanel({
               onSetStock={onSetStock}
               compact
             />
-            <button type="button" onClick={() => onEdit(product)} className={`${BTN_EDIT_CARD} w-full sm:ml-0.5 sm:w-auto`}>
+            <button
+              type="button"
+              onClick={() => onEdit(product)}
+              className={`${BTN_EDIT_CARD} hidden md:inline-flex md:ml-0.5`}
+            >
               Modifier
             </button>
-            <div className="w-full sm:w-auto sm:basis-full">
+            <div className="w-full md:w-auto md:basis-full">
               <AdminStockAutosaveHint phase={autosavePhase} />
             </div>
           </div>
@@ -165,7 +174,11 @@ function AccordionTrigger({
       className={`${TRIGGER_CLASS} ${className}`}
       aria-expanded={open}
       aria-controls={panelId}
-      onClick={onToggle}
+      onClick={(event) => {
+        event.stopPropagation();
+        onToggle();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
       aria-label={`Stock ${product.stock} pièces — ouvrir les contrôles`}
     >
       <span className="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold tabular-nums text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
@@ -190,12 +203,22 @@ export function AdminStockControls({
   onSetStock,
   onEdit,
   layout = "card",
+  cardTriggerVariant = "stacked",
+  open: openControlled,
+  onOpenChange,
+  panelId: panelIdProp,
   autosavePhase,
 }: AdminStockControlsProps) {
   const disabled = busy;
-  const [open, setOpen] = useState(false);
+  const [openUncontrolled, setOpenUncontrolled] = useState(false);
   const reactId = useId();
-  const panelId = `dingry-stock-controls-${product.id}${reactId}`;
+  const panelId = panelIdProp ?? `dingry-stock-controls-${product.id}${reactId}`;
+  const open = openControlled ?? openUncontrolled;
+  const toggleOpen = () => {
+    const next = !open;
+    if (openControlled === undefined) setOpenUncontrolled(next);
+    onOpenChange?.(next);
+  };
 
   const sharedPanel = (
     <StockControlPanel
@@ -218,7 +241,7 @@ export function AdminStockControls({
           product={product}
           open={open}
           panelId={panelId}
-          onToggle={() => setOpen((v) => !v)}
+          onToggle={toggleOpen}
           className="w-auto self-end"
         />
         {sharedPanel}
@@ -226,15 +249,46 @@ export function AdminStockControls({
     );
   }
 
+  const inlineCard = cardTriggerVariant === "inline";
+
   return (
-    <div className="w-full min-w-0 border-t border-white/[0.06] pt-1.5" data-admin-no-reorder>
-      <AccordionTrigger
-        product={product}
-        open={open}
-        panelId={panelId}
-        onToggle={() => setOpen((v) => !v)}
-      />
+    <div
+      className={`w-full min-w-0 ${inlineCard ? "" : "border-t border-white/[0.06] pt-1.5"}`}
+      data-admin-no-reorder
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
+      {inlineCard ? null : (
+        <AccordionTrigger
+          product={product}
+          open={open}
+          panelId={panelId}
+          onToggle={toggleOpen}
+        />
+      )}
       {sharedPanel}
     </div>
+  );
+}
+
+export function AdminStockControlsCardTrigger({
+  product,
+  open,
+  panelId,
+  onToggle,
+}: {
+  product: AdminProduct;
+  open: boolean;
+  panelId: string;
+  onToggle: () => void;
+}) {
+  return (
+    <AccordionTrigger
+      product={product}
+      open={open}
+      panelId={panelId}
+      onToggle={onToggle}
+      className="w-auto shrink-0 justify-end py-0"
+    />
   );
 }

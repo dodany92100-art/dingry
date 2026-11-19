@@ -1,12 +1,16 @@
 "use client";
 
+import { useId, useState } from "react";
 import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
 import type { StockAutosavePhase } from "@/lib/admin/stock-autosave-types";
 import type { AdminProduct } from "@/lib/admin/types";
 import { CATALOG_THUMB_IMAGE_WIDTH } from "@/lib/media/catalog-image-sizes";
 import { deliveryImageUrl as cldOpt } from "@/lib/media/delivery-image-url";
-import { AdminStockControls } from "@/components/organisms/admin/admin-stock-controls";
+import {
+  AdminStockControls,
+  AdminStockControlsCardTrigger,
+} from "@/components/organisms/admin/admin-stock-controls";
 import { AdminStockStatusBadge } from "@/components/organisms/admin/admin-stock-status-badge";
 import { AdminProductOrderControls } from "@/components/organisms/admin/admin-product-order-controls";
 import { AdminReorderSurface } from "@/components/organisms/admin/admin-reorder-surface";
@@ -68,6 +72,9 @@ export function AdminStockProductCard({
 }: AdminStockProductCardProps) {
   const soldOut = product.stock <= 0;
   const variantLine = stockIndicativeVariants(product) || product.category;
+  const [stockOpen, setStockOpen] = useState(false);
+  const stockPanelReactId = useId();
+  const stockPanelId = `dingry-stock-controls-${product.id}${stockPanelReactId}`;
 
   return (
     <AdminReorderSurface
@@ -77,11 +84,12 @@ export function AdminStockProductCard({
       onDrop={onDrop}
       className={`dingry-admin-stock group flex h-full min-h-0 min-w-0 flex-col rounded-lg md:rounded-xl ${adminStockCardRing(product)}`}
     >
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg md:rounded-xl">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg md:rounded-xl">
         <div className="dingry-product-photo relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-lg bg-zinc-950 md:rounded-xl">
           <button
             type="button"
             onClick={() => onEdit(product)}
+            onPointerDown={(event) => event.stopPropagation()}
             aria-label={`Modifier ${product.name}`}
             className="absolute inset-0 z-0"
           >
@@ -123,7 +131,21 @@ export function AdminStockProductCard({
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col gap-1.5 px-1 py-1.5 md:px-1.5 md:py-2">
-          <div className="min-h-0 space-y-0.5 text-left">
+          <div
+            className="min-h-0 space-y-0.5 text-left"
+            data-admin-no-reorder
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => onEdit(product)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onEdit(product);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label={`Ouvrir la fiche ${product.name}`}
+          >
             <p
               className="truncate text-[9px] uppercase tracking-[0.16em] text-white/50 md:text-[10px] md:tracking-[0.2em]"
               title={product.name}
@@ -136,12 +158,25 @@ export function AdminStockProductCard({
             >
               {variantLine}
             </p>
-            <p className="pt-0.5 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs">
-              {priceFormat.format(product.price)}
-            </p>
           </div>
 
-          <div className="mt-auto shrink-0 pt-1">
+          <div
+            className="flex min-w-0 items-center justify-between gap-1 pt-0.5"
+            data-admin-no-reorder
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <p className="shrink-0 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs">
+              {priceFormat.format(product.price)}
+            </p>
+            <AdminStockControlsCardTrigger
+              product={product}
+              open={stockOpen}
+              panelId={stockPanelId}
+              onToggle={() => setStockOpen((value) => !value)}
+            />
+          </div>
+
+          <div className="mt-auto shrink-0">
             <AdminStockControls
               product={product}
               busy={busy}
@@ -149,6 +184,10 @@ export function AdminStockProductCard({
               onSetStock={onSetStock}
               onEdit={onEdit}
               layout="card"
+              cardTriggerVariant="inline"
+              open={stockOpen}
+              onOpenChange={setStockOpen}
+              panelId={stockPanelId}
               autosavePhase={autosavePhase}
             />
           </div>

@@ -56,6 +56,8 @@ type StockTabProps = {
   onStorefrontPreviewChange: (active: boolean) => void;
   /** Sélecteur Stock/Brouillons + catégorie (&lt; 450px). */
   mobileContextSlot?: ReactNode;
+  /** CRM | SITE — bas gauche de la plaque filtres (mobile). */
+  mobileToolbarSlot?: ReactNode;
   /** Aperçu + grille/liste dans la barre sticky (md+). */
   desktopToolbarSlot?: ReactNode;
   stockContextTab: "produits" | "brouillons";
@@ -122,6 +124,7 @@ export function StockTab({
   storefrontPreview,
   onStorefrontPreviewChange,
   mobileContextSlot,
+  mobileToolbarSlot,
   desktopToolbarSlot,
   stockContextTab,
   onStockContextTabChange,
@@ -221,7 +224,7 @@ export function StockTab({
         onCategoryChange={onCategoryFilterChange}
         mobileContextSlot={mobileContextSlot}
       >
-        <div className="flex min-w-0 flex-col gap-2 min-[450px]:flex-row min-[450px]:flex-wrap min-[450px]:items-center min-[450px]:justify-between min-[450px]:gap-2.5 md:flex-nowrap md:justify-start md:gap-3">
+        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:flex-nowrap md:items-center md:justify-start md:gap-3">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5 md:flex-none">
             <AdminStockPublishToggle tab={stockContextTab} onChange={onStockContextTabChange} />
             <div className="dingry-admin-track-linear flex h-8 w-full min-w-0 items-center gap-2 rounded-full px-2.5 py-0 transition-[border-color,box-shadow] duration-200 focus-within:border-white/14 focus-within:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] min-[450px]:h-9 min-[450px]:px-3 sm:min-w-[12rem] sm:flex-1 sm:max-w-md md:w-52 md:flex-none lg:w-60">
@@ -240,17 +243,22 @@ export function StockTab({
               />
             </div>
           </div>
-          <div className="flex shrink-0 items-center justify-end gap-2 min-[450px]:gap-2.5">
-            <AdminStockColorSortToggle
-              mode={colorSortMode}
-              onChange={setColorSortMode}
-              onValidate={handleValidateColorSort}
-              validateBusy={orderSaving}
-              validateDisabled={validateColorSortDisabled}
-            />
-            {desktopToolbarSlot ? (
-              <div className="hidden items-center gap-2.5 max-md:hidden min-[450px]:flex">{desktopToolbarSlot}</div>
+          <div className="flex w-full min-w-0 items-center justify-between gap-2 md:w-auto md:flex-1 md:justify-end md:gap-2.5">
+            {mobileToolbarSlot ? (
+              <div className="flex shrink-0 items-center md:hidden">{mobileToolbarSlot}</div>
             ) : null}
+            <div className="ml-auto flex shrink-0 items-center justify-end gap-2 md:ml-0 md:gap-2.5">
+              <AdminStockColorSortToggle
+                mode={colorSortMode}
+                onChange={setColorSortMode}
+                onValidate={handleValidateColorSort}
+                validateBusy={orderSaving}
+                validateDisabled={validateColorSortDisabled}
+              />
+              {desktopToolbarSlot ? (
+                <div className="hidden items-center gap-2.5 md:flex">{desktopToolbarSlot}</div>
+              ) : null}
+            </div>
           </div>
         </div>
       </AdminStockStickyFilters>

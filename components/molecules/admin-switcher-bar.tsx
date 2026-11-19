@@ -59,7 +59,7 @@ export function AdminSwitcherBar() {
       onClick={onSwitch}
       aria-label={hint}
       title={hint}
-      className="fixed bottom-6 right-6 z-50 flex max-w-[min(100vw-3rem,14rem)] items-center gap-2.5 rounded-full border border-white/10 bg-[#0a0c10]/88 px-4 py-2.5 text-left shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md transition-[transform,background-color] duration-200 hover:bg-[#12151c]/95 active:scale-[0.97]"
+      className="fixed right-4 z-[95] flex max-w-[min(100vw-2rem,14rem)] items-center gap-2.5 rounded-full border border-white/10 bg-[#0a0c10]/88 px-4 py-2.5 text-left shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md transition-[transform,background-color] duration-200 hover:bg-[#12151c]/95 active:scale-[0.97] max-md:bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6 md:right-6"
     >
       <span
         className="relative flex h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.75)]"

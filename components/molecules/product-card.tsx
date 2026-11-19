@@ -66,6 +66,7 @@ function ProductCardInner({
       alt={alt}
       priority={priority}
       soldOut={soldOut}
+      passivePointer={Boolean(openRecto)}
       wishlistActive={openRecto ? undefined : wishlistActive}
       onWishlistToggle={openRecto ? undefined : onWishlistToggle}
     />
@@ -75,8 +76,8 @@ function ProductCardInner({
   return (
     <article
       className={cn(
-        "dingry-product-card group relative flex h-full w-full min-w-0 flex-col overflow-hidden touch-pan-y",
-        openRecto && "[touch-action:manipulation]",
+        "dingry-product-card group relative flex h-full w-full min-w-0 flex-col overflow-hidden",
+        openRecto ? "touch-manipulation" : "touch-pan-y",
         className,
       )}
       onMouseEnter={() => onPrefetch?.()}

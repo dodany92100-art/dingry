@@ -81,22 +81,49 @@ describe("handleProxyRequest host split", () => {
     vi.restoreAllMocks();
   });
 
-  it("boutique + /admin → 404", async () => {
+  it("boutique + /admin → redirect CRM (308)", async () => {
     const response = await handleProxyRequest(requestFor("/admin", undefined, { host: "www.dingry.com" }));
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://crm.dingry.com/admin");
     expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
   });
 
-  it("boutique + /api/upload → 404", async () => {
-    const response = await handleProxyRequest(requestFor("/api/upload", undefined, { host: "dingry.com" }));
-    expect(response.status).toBe(404);
+  it("boutique + /admin?tab=lookbook → redirect CRM avec query", async () => {
+    const response = await handleProxyRequest(
+      requestFor("/admin?tab=lookbook", undefined, { host: "www.dingry.com" }),
+    );
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://crm.dingry.com/admin?tab=lookbook");
   });
 
-  it("vercel.app + /admin → 404", async () => {
+  it("boutique + /api/upload → 404 JSON", async () => {
+    const response = await handleProxyRequest(requestFor("/api/upload", undefined, { host: "dingry.com" }));
+    expect(response.status).toBe(404);
+    expect(response.headers.get("content-type")).toContain("application/json");
+  });
+
+  it("boutique + /api/admin/login → 404 JSON (pas de redirect API)", async () => {
+    const response = await handleProxyRequest(
+      requestFor("/api/admin/login", undefined, { host: "www.dingry.com" }),
+    );
+    expect(response.status).toBe(404);
+    expect(response.headers.get("content-type")).toContain("application/json");
+  });
+
+  it("host inconnu + /admin → redirect CRM (308)", async () => {
     const response = await handleProxyRequest(
       requestFor("/admin", undefined, { host: "dingry-git-main.vercel.app" }),
     );
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://crm.dingry.com/admin");
+  });
+
+  it("CRM + vitrine → 404 HTML", async () => {
+    const response = await handleProxyRequest(requestFor("/websitedx", undefined, { host: "crm.dingry.com" }));
     expect(response.status).toBe(404);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    const body = await response.text();
+    expect(body.length).toBeGreaterThan(0);
   });
 
   it("boutique + webhook → next()", async () => {
@@ -113,9 +140,10 @@ describe("handleProxyRequest host split", () => {
     expect(response.status).toBe(200);
   });
 
-  it("CRM + / → 404", async () => {
+  it("CRM + / → 404 HTML", async () => {
     const response = await handleProxyRequest(requestFor("/", undefined, { host: "crm.dingry.com" }));
     expect(response.status).toBe(404);
+    expect(response.headers.get("content-type")).toContain("text/html");
   });
 
   it("CRM + /admin → login page (next)", async () => {
@@ -152,12 +180,13 @@ describe("handleProxyRequest preview cookie", () => {
     vi.restoreAllMocks();
   });
 
-  it("cookie preview + /admin → 404 (ordre host avant teaser)", async () => {
+  it("cookie preview + /admin → redirect CRM (ordre host avant teaser)", async () => {
     const { token } = await signPreviewCookie(PREVIEW_SECRET);
     const response = await handleProxyRequest(
       requestFor("/admin", token, { host: "www.dingry.com", cookieName: "preview" }),
     );
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://crm.dingry.com/admin");
   });
 
   it("cookie preview + /api/admin/login → 404", async () => {

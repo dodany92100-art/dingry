@@ -502,11 +502,6 @@ function AdminDashboard() {
           trailing={
             tab === "produits" || tab === "brouillons" ? (
               <div className="flex w-full max-w-full items-center justify-center gap-1.5 md:hidden">
-                <AdminStockPreviewToggle
-                  compact
-                  active={stockViewPrefs.storefrontPreview}
-                  onChange={stockViewPrefs.setStorefrontPreview}
-                />
                 {!stockViewPrefs.storefrontPreview ? (
                   <AdminStockViewToggle
                     compact
@@ -572,6 +567,13 @@ function AdminDashboard() {
                 categoryFilter={categoryFilter}
                 onTabChange={selectTab}
                 onCategoryChange={selectCategory}
+              />
+            }
+            mobileToolbarSlot={
+              <AdminStockPreviewToggle
+                compact
+                active={stockViewPrefs.storefrontPreview}
+                onChange={stockViewPrefs.setStorefrontPreview}
               />
             }
             desktopToolbarSlot={

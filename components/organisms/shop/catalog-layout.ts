@@ -14,7 +14,7 @@ export const CATALOG_PRODUCT_GRID_CLASS =
 
 /** CRM stock : 2 col. mobile · densité progressive desktop. */
 export const ADMIN_STOCK_PRODUCT_GRID_CLASS =
-  "mx-auto grid w-full min-w-0 max-w-[1680px] grid-cols-2 items-stretch gap-2 px-0 sm:grid-cols-3 sm:gap-2.5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7";
+  "mx-auto grid w-full min-w-0 max-w-[1680px] grid-cols-2 items-start gap-2 px-0 sm:grid-cols-3 sm:gap-2.5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7";
 
 /** Surface catalogue boutique (`CatalogSection`). */
 export const CATALOG_SECTION_SURFACE_CLASS = "dingry-catalog-surface pb-20 md:pb-24";

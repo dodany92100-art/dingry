@@ -132,7 +132,7 @@ Si un ancien déploiement utilisait encore `access: "private"` alors que le blob
 
 **Comportement :** si `DINGRY_CRM_HOST` est **absent**, le proxy reste inchangé (non-régression). Sinon :
 
-- **Boutique** : `/admin`, `/api/admin/*`, `/api/upload` → **404** (stealth, `X-Robots-Tag: noindex, nofollow`).
+- **Boutique** : pages `/admin` et `/admin/*` → **308** vers `https://<DINGRY_CRM_HOST>/…` (query conservée) ; `/api/admin/*` et `/api/upload` → **404** JSON/HTML (stealth, jamais corps vide).
 - **CRM** : uniquement admin, `/api/upload`, `/.well-known/*`, assets Next ; vitrine (`/`, checkout, catalog…) → **404**.
 - **Hosts inconnus** (ex. preview Vercel) : admin + upload → **404** (sauf `localhost` en dev hors production).
 

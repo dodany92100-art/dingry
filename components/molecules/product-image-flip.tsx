@@ -154,7 +154,8 @@ export function ProductImageFlip({
   const cardW = priority ? 640 : CATALOG_CARD_IMAGE_WIDTH;
 
   const photoShellClass = cn(
-    "dingry-product-photo relative touch-pan-y overflow-hidden [touch-action:pan-y]",
+    "dingry-product-photo relative overflow-hidden",
+    onTap ? "touch-pan-y [touch-action:pan-y]" : "touch-manipulation [touch-action:manipulation]",
     catalogGrid
       ? "h-full w-full max-h-none"
       : "aspect-[3/4] lg:aspect-[4/5] lg:max-h-[22rem]",

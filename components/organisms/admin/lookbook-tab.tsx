@@ -23,8 +23,8 @@ export function LookbookTab({
 }: LookbookTabProps) {
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
+      <div className="mb-4 flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+        <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Lookbook boutique</p>
           <p className="mt-1 max-w-md text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
             Slides CRM Supabase · visibles sur la boutique quand elles sont en ligne. Supprimer = définitif.
@@ -33,7 +33,7 @@ export function LookbookTab({
         <button
           type="button"
           onClick={onNew}
-          className="h-9 border border-white/15 px-3 text-[11px] uppercase tracking-[0.18em] text-white/70 hover:text-white"
+          className="inline-flex h-9 shrink-0 items-center justify-center self-end whitespace-nowrap rounded-full border border-white/15 px-4 text-[11px] uppercase tracking-[0.14em] text-white/70 transition hover:border-white/25 hover:text-white max-sm:w-full sm:self-auto"
         >
           Nouvelle slide
         </button>
