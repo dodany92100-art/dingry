@@ -493,7 +493,7 @@ function AdminDashboard() {
       <CrmAdminMemoPostit />
 
       <div
-        className={`dingry-admin px-6 py-4 md:px-10 md:py-6 [--dingry-admin-header-offset:2.5rem] sm:[--dingry-admin-header-offset:2.65rem] md:[--dingry-admin-header-offset:3.25rem]${showWorkflowBanner ? " pb-28" : ""}`}
+        className={`dingry-admin max-md:min-w-0 max-md:max-w-full max-md:overflow-x-clip px-6 py-4 md:px-10 md:py-6 [--dingry-admin-header-offset:2.5rem] sm:[--dingry-admin-header-offset:2.65rem] md:[--dingry-admin-header-offset:3.25rem]${showWorkflowBanner ? " pb-28" : ""}`}
       >
         <AdminCrmTabRow
           tab={tab}
@@ -501,13 +501,15 @@ function AdminDashboard() {
           hideStockTabsOnNarrow={tab === "produits" || tab === "brouillons"}
           trailing={
             tab === "produits" || tab === "brouillons" ? (
-              <div className="flex w-full items-center justify-center gap-2.5 md:hidden">
+              <div className="flex w-full max-w-full items-center justify-center gap-1.5 md:hidden">
                 <AdminStockPreviewToggle
+                  compact
                   active={stockViewPrefs.storefrontPreview}
                   onChange={stockViewPrefs.setStorefrontPreview}
                 />
                 {!stockViewPrefs.storefrontPreview ? (
                   <AdminStockViewToggle
+                    compact
                     mode={stockViewPrefs.viewMode}
                     onChange={stockViewPrefs.setViewMode}
                   />

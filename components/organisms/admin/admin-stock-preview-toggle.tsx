@@ -1,19 +1,31 @@
 "use client";
 
-import { Eye } from "lucide-react";
+import { Eye, PencilLine } from "lucide-react";
 import { motion } from "motion/react";
 
 type AdminStockPreviewToggleProps = {
   active: boolean;
   onChange: (active: boolean) => void;
+  /** Barre secondaire (sous les onglets) : pilule plus petite. */
+  compact?: boolean;
 };
 
 const LAYOUT_ID = "dingry-admin-stock-preview-indicator";
 
-export function AdminStockPreviewToggle({ active, onChange }: AdminStockPreviewToggleProps) {
+export function AdminStockPreviewToggle({
+  active,
+  onChange,
+  compact = false,
+}: AdminStockPreviewToggleProps) {
+  const shell = compact ? "p-0.5 ring-violet-400/10" : "p-1 ring-violet-400/15";
+  const hit = compact ? "px-2 py-1" : "px-3 py-2 sm:px-3.5";
+  const label = compact
+    ? "text-[9px] tracking-[0.1em]"
+    : "text-[10px] tracking-[0.14em] sm:tracking-[0.16em]";
+
   return (
     <div
-      className="dingry-admin-glass inline-flex shrink-0 items-center gap-0.5 rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15"
+      className={`dingry-admin-glass inline-flex max-w-full shrink-0 items-center gap-0.5 rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ${shell}`}
       role="group"
       aria-label="Mode stock"
     >
@@ -22,7 +34,7 @@ export function AdminStockPreviewToggle({ active, onChange }: AdminStockPreviewT
         onClick={() => onChange(false)}
         aria-pressed={!active}
         title="Mode édition CRM"
-        className="relative z-0 rounded-full px-3 py-2 transition-colors duration-200 sm:px-3.5"
+        className={`relative z-0 rounded-full transition-colors duration-200 ${hit}`}
       >
         {!active ? (
           <motion.span
@@ -33,20 +45,25 @@ export function AdminStockPreviewToggle({ active, onChange }: AdminStockPreviewT
           />
         ) : null}
         <span
-          className={`relative z-10 text-[10px] font-medium uppercase tracking-[0.14em] sm:tracking-[0.16em] ${
+          className={`relative z-10 flex items-center gap-0.5 font-medium uppercase ${label} ${
             !active ? "text-[#0a0f18]" : "text-white/50 hover:text-white/80"
           }`}
         >
-          <span className="sm:hidden">CRM</span>
-          <span className="hidden sm:inline">Édition</span>
+          <PencilLine
+            size={compact ? 12 : 14}
+            strokeWidth={1.75}
+            className={`shrink-0 ${!active ? "text-[#0a0f18]" : "text-white/45"}`}
+            aria-hidden
+          />
+          CRM
         </span>
       </button>
       <button
         type="button"
         onClick={() => onChange(true)}
         aria-pressed={active}
-        title="Aperçu temps réel boutique"
-        className="relative z-0 flex items-center gap-1.5 rounded-full px-3 py-2 transition-colors duration-200 sm:px-3.5"
+        title="Aperçu catalogue boutique (intégré)"
+        className={`relative z-0 flex items-center gap-1 rounded-full transition-colors duration-200 ${hit}`}
       >
         {active ? (
           <motion.span
@@ -56,20 +73,18 @@ export function AdminStockPreviewToggle({ active, onChange }: AdminStockPreviewT
             aria-hidden
           />
         ) : null}
-        <Eye
-          size={15}
-          strokeWidth={1.75}
-          className={`relative z-10 shrink-0 ${active ? "text-[#ff8a4d]" : "text-white/45"}`}
-          aria-hidden
-        />
         <span
-          className={`relative z-10 text-[10px] font-medium uppercase tracking-[0.12em] sm:tracking-[0.16em] ${
+          className={`relative z-10 flex items-center gap-0.5 font-medium uppercase ${label} ${
             active ? "text-[#ff8a4d]" : "text-white/50 hover:text-white/80"
           }`}
         >
-          <span className="sm:hidden">Aperçu</span>
-          <span className="hidden lg:inline">Aperçu temps réel</span>
-          <span className="hidden sm:inline lg:hidden">Aperçu</span>
+          SITE
+          <Eye
+            size={compact ? 12 : 14}
+            strokeWidth={1.75}
+            className={`shrink-0 ${active ? "text-[#ff8a4d]" : "text-white/45"}`}
+            aria-hidden
+          />
         </span>
       </button>
     </div>

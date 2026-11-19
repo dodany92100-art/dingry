@@ -196,7 +196,7 @@ export function StockTab({
         <div className="flex min-w-0 flex-col gap-2 min-[450px]:flex-row min-[450px]:flex-wrap min-[450px]:items-center min-[450px]:justify-between min-[450px]:gap-2.5">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5">
             <AdminStockPublishToggle tab={stockContextTab} onChange={onStockContextTabChange} />
-            <div className="dingry-admin-glass flex h-9 w-full min-w-0 items-center gap-2 rounded-full px-3 py-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 transition-[box-shadow] duration-200 focus-within:shadow-[0_0_0_1px_rgba(167,139,250,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] focus-within:ring-violet-400/30 sm:min-w-[12rem] sm:flex-1 lg:max-w-md">
+            <div className="dingry-admin-glass flex h-8 w-full min-w-0 items-center gap-2 rounded-full px-2.5 py-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 transition-[box-shadow] duration-200 focus-within:shadow-[0_0_0_1px_rgba(167,139,250,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] focus-within:ring-violet-400/30 min-[450px]:h-9 min-[450px]:px-3 sm:min-w-[12rem] sm:flex-1 lg:max-w-md">
               <label htmlFor="dingry-admin-stock-search" className="sr-only">
                 Rechercher un produit
               </label>
@@ -213,7 +213,7 @@ export function StockTab({
             </div>
           </div>
           {desktopToolbarSlot ? (
-            <div className="hidden shrink-0 items-center justify-end gap-2.5 min-[450px]:flex">
+            <div className="hidden shrink-0 items-center justify-end gap-2.5 min-[450px]:flex max-md:hidden">
               {desktopToolbarSlot}
             </div>
           ) : null}

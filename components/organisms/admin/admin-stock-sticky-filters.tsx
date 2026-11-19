@@ -18,8 +18,8 @@ export function AdminStockStickyFilters({
   mobileContextSlot,
 }: AdminStockStickyFiltersProps) {
   return (
-    <div className="dingry-admin-stock-filters mb-3 py-1">
-      <div className="dingry-admin-glass space-y-2 rounded-2xl p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15">
+    <div className="dingry-admin-stock-filters mb-3 max-md:min-w-0 max-md:max-w-full py-1">
+      <div className="dingry-admin-glass space-y-1.5 rounded-2xl p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 max-md:min-w-0 max-md:overflow-hidden min-[450px]:space-y-2 min-[450px]:p-2">
         {mobileContextSlot}
         <AdminCategoryFilterNav
           selected={categoryFilter}

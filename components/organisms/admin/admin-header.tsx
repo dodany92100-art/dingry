@@ -26,11 +26,13 @@ export function AdminHeader({
   const deployedAt = formatCrmBuildLabel();
   const version = adminCrmVersion();
   const { openPreview, closePreview, busy, previewUiEnabled } = useAdminShopPreview();
+  const vitrineCtaClass =
+    "dingry-admin-preview-link relative hidden h-7 shrink-0 items-center gap-1 rounded-full border border-white/12 bg-white/[0.04] px-2 text-[10px] font-medium leading-none shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] ring-1 ring-white/10 backdrop-blur-md md:order-none md:ml-0 md:inline-flex md:h-9 md:gap-1.5 md:px-3.5 md:text-[12px]";
 
   return (
     <header className="dingry-admin-glass dingry-admin-header relative z-10 border-b-0 border-white/10 px-4 py-2 sm:px-6 sm:py-2.5 md:px-10 md:py-3 [--dingry-admin-header-offset:2.5rem] sm:[--dingry-admin-header-offset:2.65rem] md:[--dingry-admin-header-offset:3.25rem]">
       <div className="flex items-center justify-between gap-2 md:gap-3">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-2.5 md:gap-x-4">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-2.5 md:gap-x-4 max-md:gap-y-1.5">
           <h1 className="shrink-0 leading-none">
             <DingryLogo animate={false} className="h-6 w-auto sm:h-7 md:h-8" />
           </h1>
@@ -77,10 +79,10 @@ export function AdminHeader({
           ) : (
             <span className="shrink-0 text-[10px] text-zinc-500 sm:hidden">v{version}</span>
           )}
-          <span className="shrink-0 whitespace-nowrap text-[10px] text-zinc-400 sm:text-[11px] md:text-sm">
+          <span className="hidden shrink-0 whitespace-nowrap text-[10px] text-zinc-400 min-[400px]:inline sm:text-[11px] md:text-sm">
             {pendingOrders} <span className="text-zinc-500">exp.</span>
           </span>
-          <span className="shrink-0 whitespace-nowrap tabular-nums text-[10px] text-zinc-400 sm:text-[11px] md:text-sm">
+          <span className="hidden shrink-0 whitespace-nowrap tabular-nums text-[10px] text-zinc-400 min-[400px]:inline sm:text-[11px] md:text-sm">
             {totalStock} <span className="text-zinc-500">stk</span>
           </span>
           {stockPendingCount > 0 ? (
@@ -99,10 +101,9 @@ export function AdminHeader({
                 type="button"
                 disabled={busy}
                 onClick={() => void openPreview()}
-                className="dingry-admin-preview-link relative inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-white/12 bg-white/[0.04] px-2 text-[10px] font-medium leading-none shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] ring-1 ring-white/10 backdrop-blur-md disabled:opacity-50 sm:h-8 sm:px-2.5 md:h-9 md:gap-1.5 md:px-3.5 md:text-[12px]"
+                className={`${vitrineCtaClass} disabled:opacity-50`}
               >
-                <span className="relative z-[1] md:hidden">Vitrine</span>
-                <span className="relative z-[1] hidden md:inline">Ouvrir la preview</span>
+                <span className="relative z-[1]">Ouvrir la preview</span>
                 <ExternalLink
                   size={13}
                   strokeWidth={1.75}
@@ -124,10 +125,9 @@ export function AdminHeader({
               href="/websitedx"
               target="_blank"
               rel="noreferrer"
-              className="dingry-admin-preview-link relative inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-white/12 bg-white/[0.04] px-2 text-[10px] font-medium leading-none shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] ring-1 ring-white/10 backdrop-blur-md sm:h-8 sm:px-2.5 md:h-9 md:gap-1.5 md:px-3.5 md:text-[12px]"
+              className={vitrineCtaClass}
             >
-              <span className="relative z-[1] md:hidden">Vitrine</span>
-              <span className="relative z-[1] hidden md:inline">Aperçu du site</span>
+              <span className="relative z-[1]">Aperçu du site</span>
               <ExternalLink
                 size={13}
                 strokeWidth={1.75}

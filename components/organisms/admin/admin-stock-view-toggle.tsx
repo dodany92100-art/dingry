@@ -8,14 +8,19 @@ export type AdminStockViewMode = "grid" | "list";
 type AdminStockViewToggleProps = {
   mode: AdminStockViewMode;
   onChange: (mode: AdminStockViewMode) => void;
+  compact?: boolean;
 };
 
 const LAYOUT_ID = "dingry-admin-stock-view-indicator";
 
-export function AdminStockViewToggle({ mode, onChange }: AdminStockViewToggleProps) {
+export function AdminStockViewToggle({ mode, onChange, compact = false }: AdminStockViewToggleProps) {
+  const shell = compact ? "p-0.5 ring-violet-400/10" : "p-1 ring-violet-400/15";
+  const btn = compact ? "h-7 w-8" : "h-9 w-10 sm:w-11";
+  const icon = compact ? 14 : 16;
+
   return (
     <div
-      className="dingry-admin-glass inline-flex shrink-0 items-center gap-0.5 rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15"
+      className={`dingry-admin-glass inline-flex shrink-0 items-center gap-0.5 rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ${shell}`}
       role="group"
       aria-label="Mode d’affichage stock"
     >
@@ -24,7 +29,7 @@ export function AdminStockViewToggle({ mode, onChange }: AdminStockViewTogglePro
         onClick={() => onChange("grid")}
         aria-pressed={mode === "grid"}
         title="Grille visuelle"
-        className="relative z-0 flex h-9 w-10 items-center justify-center rounded-full transition-colors duration-200 sm:w-11"
+        className={`relative z-0 flex items-center justify-center rounded-full transition-colors duration-200 ${btn}`}
       >
         {mode === "grid" ? (
           <motion.span
@@ -35,7 +40,7 @@ export function AdminStockViewToggle({ mode, onChange }: AdminStockViewTogglePro
           />
         ) : null}
         <LayoutGrid
-          size={16}
+          size={icon}
           strokeWidth={1.75}
           className={`relative z-10 ${mode === "grid" ? "text-[#0a0f18]" : "text-white/45"}`}
           aria-hidden
@@ -46,7 +51,7 @@ export function AdminStockViewToggle({ mode, onChange }: AdminStockViewTogglePro
         onClick={() => onChange("list")}
         aria-pressed={mode === "list"}
         title="Tableau compact"
-        className="relative z-0 flex h-9 w-10 items-center justify-center rounded-full transition-colors duration-200 sm:w-11"
+        className={`relative z-0 flex items-center justify-center rounded-full transition-colors duration-200 ${btn}`}
       >
         {mode === "list" ? (
           <motion.span
@@ -57,7 +62,7 @@ export function AdminStockViewToggle({ mode, onChange }: AdminStockViewTogglePro
           />
         ) : null}
         <List
-          size={16}
+          size={icon}
           strokeWidth={1.75}
           className={`relative z-10 shrink-0 ${mode === "list" ? "text-[#0a0f18]" : "text-white/45"}`}
           aria-hidden

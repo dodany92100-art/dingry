@@ -150,7 +150,7 @@ function PreviewCatalogBody({
     return (
       <div className={CATALOG_PRODUCT_GRID_CLASS}>
         <div className="col-span-full border border-white/[0.06] py-20 text-center">
-          <p className="text-sm tracking-wider text-white/40">Rien à afficher dans cette catégorie.</p>
+          <p className="text-sm tracking-wider text-zinc-500">Rien à afficher dans cette catégorie.</p>
         </div>
       </div>
     );
@@ -311,7 +311,7 @@ export function AdminStockStorefrontPreview({
 
   return (
     <DingryI18nProvider>
-    <div className={`dingry-shop text-white ${ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS}`}>
+    <div className={`dingry-shop ${ADMIN_STOREFRONT_PREVIEW_BLEED_CLASS}`}>
       <ShopNav
         embedded
         shopBasePath="/websitedx"
@@ -319,24 +319,24 @@ export function AdminStockStorefrontPreview({
         onOpenCart={() => window.open("/websitedx/checkout", "_blank", "noopener,noreferrer")}
         onScrollToSection={openShopSection}
       />
-      <section className={`${CATALOG_SECTION_SURFACE_CLASS} pt-4 md:pt-6`}>
-        <div className="mb-5 space-y-2">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">
-            Catalogue en ligne (réel) · même fusion que la boutique publique
+      <div className="mb-4 space-y-2 px-4 sm:px-6 lg:px-8">
+        <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
+          Catalogue en ligne (réel) · même fusion que la boutique publique
+        </p>
+        {loadState === "ready" ? (
+          <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+            {scopedProducts.length} carte{scopedProducts.length > 1 ? "s" : ""}
+            {categoryFilter === "Collection" ? ` · ${ghostCount} fantôme${ghostCount > 1 ? "s" : ""} au total` : null}
+            {categoryFilter !== "Collection" && scopedGhostCount > 0
+              ? ` · ${scopedGhostCount} fantôme${scopedGhostCount > 1 ? "s" : ""}`
+              : null}
           </p>
-          {loadState === "ready" ? (
-            <p className="text-[10px] uppercase tracking-[0.16em] text-white/45">
-              {scopedProducts.length} carte{scopedProducts.length > 1 ? "s" : ""}
-              {categoryFilter === "Collection" ? ` · ${ghostCount} fantôme${ghostCount > 1 ? "s" : ""} au total` : null}
-              {categoryFilter !== "Collection" && scopedGhostCount > 0
-                ? ` · ${scopedGhostCount} fantôme${scopedGhostCount > 1 ? "s" : ""}`
-                : null}
-            </p>
-          ) : null}
-        </div>
+        ) : null}
+      </div>
+      <section id="catalogue" className={`${CATALOG_SECTION_SURFACE_CLASS} pt-4 md:pt-6`}>
         <CatalogFilterBar value={catalogTab} onChange={handleCatalogTabChange} products={scopedProducts} />
         {loadState === "loading" ? (
-          <p className="py-16 text-center text-sm text-white/40">Chargement du catalogue en ligne…</p>
+          <p className="py-16 text-center text-sm text-zinc-500">Chargement du catalogue en ligne…</p>
         ) : loadState === "error" ? (
           <p className="py-16 text-center text-sm text-red-400">{loadError}</p>
         ) : (
