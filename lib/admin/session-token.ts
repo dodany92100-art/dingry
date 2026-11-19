@@ -25,12 +25,17 @@ function validSessionSecret(raw: string, enforceMinLength: boolean): string {
   return trimmed;
 }
 
-/** Secret HMAC session. Prod : préférer `ADMIN_SESSION_SECRET` ; repli `ADMIN_TOTP_SECRET` si absent (comportement historique). */
+/**
+ * Secret HMAC cookie admin.
+ * Production Vercel : `ADMIN_SESSION_SECRET` uniquement (≥ 32 car.) — pas de repli TOTP.
+ * Preview / local : repli `ADMIN_TOTP_SECRET` si session dédiée absente.
+ */
 export function sessionSecretFromEnv(): string {
   const dedicated = process.env.ADMIN_SESSION_SECRET?.trim() ?? "";
   if (dedicated) {
     return validSessionSecret(dedicated, isProductionDeploy());
   }
+  if (isProductionDeploy()) return "";
   const fallback = process.env.ADMIN_TOTP_SECRET?.trim() ?? "";
   return validSessionSecret(fallback, false);
 }

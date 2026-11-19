@@ -14,7 +14,7 @@ const LAYOUT_ID = "dingry-admin-stock-publish-indicator";
 export function AdminStockPublishToggle({ tab, onChange, className = "" }: AdminStockPublishToggleProps) {
   return (
     <div
-      className={`dingry-admin-glass inline-flex shrink-0 items-center gap-0.5 rounded-full p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 max-[449px]:hidden ${className}`}
+      className={`dingry-admin-track-linear inline-flex shrink-0 items-center gap-0.5 rounded-full p-1 max-[449px]:hidden ${className}`}
       role="group"
       aria-label="Stock publié ou brouillons"
     >
@@ -31,7 +31,7 @@ export function AdminStockPublishToggle({ tab, onChange, className = "" }: Admin
             type="button"
             onClick={() => onChange(id)}
             aria-pressed={active}
-            className="relative z-0 shrink-0 rounded-full px-3 py-2 transition-colors duration-200 md:px-3.5"
+            className="dingry-admin-tab-pill relative z-0 shrink-0 rounded-full px-3 py-2 transition-colors duration-200 md:px-3.5"
           >
             {active ? (
               <motion.span
@@ -43,7 +43,7 @@ export function AdminStockPublishToggle({ tab, onChange, className = "" }: Admin
             ) : null}
             <span
               className={`relative z-10 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.14em] md:tracking-[0.16em] ${
-                active ? "text-[#0a0f18]" : "text-white/50 hover:text-white/80"
+                active ? "text-[#0a0f18]" : "dingry-admin-tab-pill__label--idle text-white/50"
               }`}
             >
               {label}

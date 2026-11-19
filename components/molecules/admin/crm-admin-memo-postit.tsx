@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  CRM_ADMIN_MEMO_OPEN_EDIT_EVENT,
   CRM_ADMIN_MEMO_UPDATED_EVENT,
   isCrmAdminMemoHidden,
   persistCrmAdminMemoHidden,
@@ -31,8 +32,19 @@ export function CrmAdminMemoPostit() {
     };
     sync();
     setReady(true);
+    const openEdit = () => {
+      sync();
+      persistCrmAdminMemoHidden(false);
+      setHidden(false);
+      setEditing(true);
+      setDockPeek(false);
+    };
     window.addEventListener(CRM_ADMIN_MEMO_UPDATED_EVENT, sync);
-    return () => window.removeEventListener(CRM_ADMIN_MEMO_UPDATED_EVENT, sync);
+    window.addEventListener(CRM_ADMIN_MEMO_OPEN_EDIT_EVENT, openEdit);
+    return () => {
+      window.removeEventListener(CRM_ADMIN_MEMO_UPDATED_EVENT, sync);
+      window.removeEventListener(CRM_ADMIN_MEMO_OPEN_EDIT_EVENT, openEdit);
+    };
   }, []);
 
   const persist = useCallback((value: string) => {

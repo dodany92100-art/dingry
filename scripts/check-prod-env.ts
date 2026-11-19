@@ -83,6 +83,16 @@ function r2ImageUpload(): Check {
   };
 }
 
+function turnstileProductTestDisabled(): Check {
+  const raw = process.env.NEXT_PUBLIC_DINGRY_TURNSTILE_PRODUCT_TEST?.trim() ?? "";
+  const ok = raw !== "1";
+  return {
+    name: "NEXT_PUBLIC_DINGRY_TURNSTILE_PRODUCT_TEST",
+    ok,
+    hint: ok ? "ok" : "ne pas activer le widget test Turnstile en prod",
+  };
+}
+
 function turnstileHostname(): Check {
   const raw = process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim() ?? "";
   const ok = raw.length > 0;
@@ -114,6 +124,7 @@ function main(): void {
     present("ADMIN_TOTP_SECRET", 16),
     present("ADMIN_SESSION_SECRET", 32),
     present("CRON_SECRET", MIN_CRON_SECRET_LENGTH),
+    present("DINGRY_FULFILLMENT_OWNER_EMAIL", 5),
     present("UPSTASH_REDIS_REST_URL"),
     present("UPSTASH_REDIS_REST_TOKEN"),
     present("BLOB_READ_WRITE_TOKEN"),
@@ -123,6 +134,7 @@ function main(): void {
     present("TURNSTILE_SECRET_KEY"),
     present("NEXT_PUBLIC_TURNSTILE_SITE_KEY"),
     turnstileSiteKeyNotDummy(),
+    turnstileProductTestDisabled(),
     turnstileHostname(),
     present("RESEND_API_KEY"),
     present("OPS_ALERT_EMAIL"),

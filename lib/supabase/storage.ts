@@ -1,3 +1,4 @@
+import { isWebpBuffer, webpHeaderError } from "@/lib/admin/image-webp-sniff";
 import { compressImageToWebp } from "@/lib/supabase/compress-image";
 import { isSupabaseStoreEnabled, supabaseAdmin } from "@/lib/supabase/server";
 
@@ -48,6 +49,9 @@ export async function uploadPublicImage(
   }
   const bucket = await imagesBucket();
   const source = Buffer.from(await file.arrayBuffer());
+  if (!isWebpBuffer(source)) {
+    throw new Error(webpHeaderError());
+  }
   const bytes = await compressImageToWebp(source);
   const { error } = await supabaseAdmin().storage.from(bucket).upload(objectPath, bytes, {
     contentType: "image/webp",

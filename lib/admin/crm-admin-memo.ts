@@ -1,6 +1,7 @@
 const STORAGE_KEY = "dingry-crm-admin-memo-v1";
 
 export const CRM_ADMIN_MEMO_UPDATED_EVENT = "dingry-crm-admin-memo-updated";
+export const CRM_ADMIN_MEMO_OPEN_EDIT_EVENT = "dingry-crm-admin-memo-open-edit";
 
 export function readCrmAdminMemo(): string {
   if (typeof window === "undefined") return "";
@@ -72,12 +73,36 @@ export function revealCrmAdminMemo(): void {
   notifyCrmAdminMemoUpdated();
 }
 
-/** Ajoute la fiche au mémo post-it et l’affiche. */
+/** Affiche le post-it et passe en mode édition (localStorage uniquement). */
+export function openCrmAdminMemoForEditing(): void {
+  revealCrmAdminMemo();
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CRM_ADMIN_MEMO_OPEN_EDIT_EVENT));
+}
+
+export function crmAdminMemoContainsProduct(product: {
+  id: string | null;
+  name: string;
+  sku: string;
+}): boolean {
+  const line = formatCrmAdminProductMemoLine(product).trim();
+  if (!line) return false;
+  return readCrmAdminMemo().includes(line);
+}
+
+/** Ajoute la fiche au mémo post-it et l’affiche (localStorage uniquement, pas d’API). */
 export function pinProductToCrmAdminMemo(product: {
   id: string | null;
   name: string;
   sku: string;
-}): void {
-  appendCrmAdminMemoLine(formatCrmAdminProductMemoLine(product));
+}): { added: boolean } {
+  const line = formatCrmAdminProductMemoLine(product);
+  const already = crmAdminMemoContainsProduct(product);
+  if (already) {
+    revealCrmAdminMemo();
+    return { added: false };
+  }
+  appendCrmAdminMemoLine(line);
   revealCrmAdminMemo();
+  return { added: true };
 }

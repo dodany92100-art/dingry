@@ -476,7 +476,7 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="dingry-admin min-h-screen bg-[#070b14]">
+    <div className="dingry-admin min-h-screen bg-black">
       {session.backupCodes ? (
         <BackupCodesBanner codes={session.backupCodes} onDismiss={session.dismissBackupCodes} />
       ) : null}

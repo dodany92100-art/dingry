@@ -42,7 +42,11 @@ export async function prepareAndUploadAdminImage(
     try {
       const uploaded = await uploadAdminImageToR2(prepared, options);
       return { ok: true, uploaded, file: null };
-    } catch {
+    } catch (error) {
+      console.warn(
+        "[admin-media-upload] upload R2 en échec, repli multipart",
+        error instanceof Error ? error.message : error,
+      );
       return { ok: true, uploaded: null, file: prepared };
     }
   } catch (error) {

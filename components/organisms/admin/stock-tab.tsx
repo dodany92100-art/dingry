@@ -193,10 +193,10 @@ export function StockTab({
         onCategoryChange={onCategoryFilterChange}
         mobileContextSlot={mobileContextSlot}
       >
-        <div className="flex min-w-0 flex-col gap-2 min-[450px]:flex-row min-[450px]:flex-wrap min-[450px]:items-center min-[450px]:justify-between min-[450px]:gap-2.5">
-          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5">
+        <div className="flex min-w-0 flex-col gap-2 min-[450px]:flex-row min-[450px]:flex-wrap min-[450px]:items-center min-[450px]:justify-between min-[450px]:gap-2.5 md:flex-nowrap md:justify-start md:gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5 md:flex-none">
             <AdminStockPublishToggle tab={stockContextTab} onChange={onStockContextTabChange} />
-            <div className="dingry-admin-glass flex h-8 w-full min-w-0 items-center gap-2 rounded-full px-2.5 py-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-violet-400/15 transition-[box-shadow] duration-200 focus-within:shadow-[0_0_0_1px_rgba(167,139,250,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] focus-within:ring-violet-400/30 min-[450px]:h-9 min-[450px]:px-3 sm:min-w-[12rem] sm:flex-1 lg:max-w-md">
+            <div className="dingry-admin-track-linear flex h-8 w-full min-w-0 items-center gap-2 rounded-full px-2.5 py-0 transition-[border-color,box-shadow] duration-200 focus-within:border-white/14 focus-within:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] min-[450px]:h-9 min-[450px]:px-3 sm:min-w-[12rem] sm:flex-1 sm:max-w-md md:w-52 md:flex-none lg:w-60">
               <label htmlFor="dingry-admin-stock-search" className="sr-only">
                 Rechercher un produit
               </label>

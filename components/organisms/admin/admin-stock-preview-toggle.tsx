@@ -17,7 +17,7 @@ export function AdminStockPreviewToggle({
   onChange,
   compact = false,
 }: AdminStockPreviewToggleProps) {
-  const shell = compact ? "p-0.5 ring-violet-400/10" : "p-1 ring-violet-400/15";
+  const shell = compact ? "p-0.5" : "p-1";
   const hit = compact ? "px-2 py-1" : "px-3 py-2 sm:px-3.5";
   const label = compact
     ? "text-[9px] tracking-[0.1em]"
@@ -25,7 +25,7 @@ export function AdminStockPreviewToggle({
 
   return (
     <div
-      className={`dingry-admin-glass inline-flex max-w-full shrink-0 items-center gap-0.5 rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ${shell}`}
+      className={`dingry-admin-track-linear inline-flex max-w-full shrink-0 items-center gap-0.5 rounded-full ${shell}`}
       role="group"
       aria-label="Mode stock"
     >

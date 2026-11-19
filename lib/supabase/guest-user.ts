@@ -21,7 +21,7 @@ async function findAuthUserByEmail(admin: SupabaseClient, email: string): Promis
     if (hit) return hit;
     if (data.users.length < perPage) break;
     page += 1;
-    if (page > 20) break;
+    if (page > 8) break;
   }
   return null;
 }

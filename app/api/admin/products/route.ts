@@ -9,8 +9,8 @@ import {
   StoreUnavailableError,
   ProductStockAdjustError,
   PublishValidationError,
-  validateImageFile,
 } from "@/lib/admin/store";
+import { validateImageFileAsync } from "@/lib/admin/validate-image-file-async";
 import { readStockQuantity } from "@/lib/stock";
 import { normalizePublishStatus } from "@/lib/admin/types";
 import type { ParsedProductFields } from "@/lib/admin/parse-product";
@@ -83,13 +83,13 @@ export async function POST(request: Request) {
   }
 
   if (image instanceof File && image.size > 0) {
-    const imageError = validateImageFile(image);
+    const imageError = await validateImageFileAsync(image);
     if (imageError) {
       return jsonNoStore({ error: imageError }, { status: 400 });
     }
   }
   if (imageBack instanceof File && imageBack.size > 0) {
-    const err = validateImageFile(imageBack);
+    const err = await validateImageFileAsync(imageBack);
     if (err) {
       return jsonNoStore({ error: err }, { status: 400 });
     }

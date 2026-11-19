@@ -136,7 +136,41 @@ if (fs.existsSync(productCardPath)) {
   logError('components/molecules/product-card.tsx introuvable.');
 }
 
-// 7. Journal CRM (JSON source unique)
+// 7. Gardes serveur API admin + upload CRM
+const adminApiDir = path.join(root, 'app/api/admin');
+const adminPublic = new Set(['login', 'logout', 'totp', 'session']);
+if (fs.existsSync(adminApiDir)) {
+  const routeFiles = collectFiles(adminApiDir).filter((f) => f.endsWith('route.ts'));
+  let guardOk = true;
+  for (const filePath of routeFiles) {
+    const rel = path.relative(adminApiDir, filePath);
+    const top = rel.split(path.sep)[0];
+    if (adminPublic.has(top)) continue;
+    const src = fs.readFileSync(filePath, 'utf8');
+    if (!src.includes('requireAdmin')) {
+      logError(`Route admin sans requireAdmin : app/api/admin/${rel.replace(/\\/g, '/')}`);
+      guardOk = false;
+    }
+  }
+  const uploadRoute = path.join(root, 'app/api/upload/route.ts');
+  if (fs.existsSync(uploadRoute)) {
+    const uploadSrc = fs.readFileSync(uploadRoute, 'utf8');
+    if (!uploadSrc.includes('requireAdmin')) {
+      logError('app/api/upload/route.ts doit appeler requireAdmin.');
+      guardOk = false;
+    }
+  } else {
+    logError('app/api/upload/route.ts introuvable.');
+    guardOk = false;
+  }
+  if (guardOk) {
+    logSuccess('Routes admin sensibles : requireAdmin présent (hors login/logout/totp/session).');
+  }
+} else {
+  logError('app/api/admin introuvable.');
+}
+
+// 8. Journal CRM (JSON source unique)
 try {
   execSync('node scripts/crm-changelog.mjs validate', { cwd: root, stdio: 'pipe', encoding: 'utf8' });
   logSuccess('Journal CRM valide (scripts/crm-changelog.mjs).');

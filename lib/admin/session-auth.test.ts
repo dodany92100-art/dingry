@@ -26,12 +26,12 @@ describe("sessionSecretFromEnv", () => {
     expect(sessionSecretFromEnv()).toBe("JBSWY3DPEHPK3PXP");
   });
 
-  it("production sans ADMIN_SESSION_SECRET replie sur ADMIN_TOTP_SECRET", () => {
+  it("production sans ADMIN_SESSION_SECRET refuse le repli TOTP", () => {
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("ADMIN_SESSION_SECRET", "");
     vi.stubEnv("ADMIN_TOTP_SECRET", "JBSWY3DPEHPK3PXP");
-    expect(sessionSecretFromEnv()).toBe("JBSWY3DPEHPK3PXP");
+    expect(sessionSecretFromEnv()).toBe("");
   });
 
   it("production refuse un secret session trop court", () => {
@@ -70,7 +70,7 @@ describe("createAdminSessionResponse", () => {
     vi.stubEnv("ADMIN_TOTP_SECRET", "");
     const response = await createAdminSessionResponse({ ok: true });
     expect(response.status).toBe(503);
-    expect(((await response.json()) as { error?: string }).error).toContain("ADMIN_TOTP_SECRET");
+    expect(((await response.json()) as { error?: string }).error).toContain("ADMIN_SESSION_SECRET");
   });
 
   it("login réussi → Cache-Control no-store", async () => {

@@ -32,3 +32,5 @@ comment on table public.product_options is
   'Déclinaisons du produit parent (couleur…) : SKU combiné, visuels optionnels (R2)';
 
 alter table public.product_options enable row level security;
+
+revoke all on table public.product_options from anon, authenticated;

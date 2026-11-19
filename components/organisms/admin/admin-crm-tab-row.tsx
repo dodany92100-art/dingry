@@ -18,12 +18,21 @@ export function AdminCrmTabRow({
 }: AdminCrmTabRowProps) {
   return (
     <div className="mb-2 flex min-w-0 w-full flex-col items-center gap-2 md:mb-3">
-      <TabNav
-        tab={tab}
-        onChange={onChange}
-        hideStockTabsOnNarrow={hideStockTabsOnNarrow}
-        className="w-fit max-w-full shrink-0"
-      />
+      <div className="relative w-full min-w-0 max-w-full md:w-auto">
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-5 bg-gradient-to-r from-black to-transparent md:hidden"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-5 bg-gradient-to-l from-black to-transparent md:hidden"
+          aria-hidden
+        />
+        <TabNav
+          tab={tab}
+          onChange={onChange}
+          hideStockTabsOnNarrow={hideStockTabsOnNarrow}
+        />
+      </div>
       {trailing ? (
         <div className="flex w-full max-w-full shrink-0 items-center justify-center gap-2.5 md:w-auto md:justify-end">
           {trailing}

@@ -34,7 +34,7 @@ function adminProductForBadge(model: AdminProductPreviewModel): AdminProduct {
     sizes: model.sizes,
     stock: model.stock,
     publishStatus: model.publishStatus,
-    colorDeclinations: [],
+    colorDeclinations: [...model.colorDeclinations],
     imageUrl: model.imageSrc,
     blobUrl: null,
     blobPathname: null,
@@ -98,7 +98,7 @@ export function AdminProductEditorLivePreview({ model, productId }: AdminProduct
           </h2>
           <AdminStockStatusBadge product={badgeProduct} />
         </div>
-        <AdminProductPreview model={model} className="w-full border-white/10 bg-zinc-950/80" />
+        <AdminProductPreview model={model} className="w-full" />
       </section>
     </div>
   );

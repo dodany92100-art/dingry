@@ -37,6 +37,9 @@ create table if not exists public.catalog_removed_ids (
 alter table public.products enable row level security;
 alter table public.catalog_removed_ids enable row level security;
 
+revoke all on table public.products from anon, authenticated;
+revoke all on table public.catalog_removed_ids from anon, authenticated;
+
 insert into storage.buckets (id, name, public)
 values ('dgry-images', 'dgry-images', true)
 on conflict (id) do update set public = true;

@@ -10,6 +10,8 @@
     "check:all": "tsc --noEmit && npm test && npm run knip",
     "check:release": "npm run verify:anti-regression && vitest run && npm run test:e2e",
     "check:prod-env": "tsx scripts/check-prod-env.ts",
+    "check:supabase-deploy": "node scripts/supabase-deploy-checklist.mjs",
+    "check:deploy": "node scripts/check-deploy.mjs",
     "verify:anti-regression": "node scripts/verify-anti-regression.js",
     "changelog:validate": "node scripts/crm-changelog.mjs validate",
     "changelog:add": "node scripts/crm-changelog.mjs add",

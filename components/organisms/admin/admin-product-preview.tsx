@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
 import { resolveStockStatusLabel } from "@/components/organisms/admin/admin-stock-status-badge";
+import { DingryPaintSwatch } from "@/components/atoms/dingry-paint-swatch";
+import {
+  colorDeclinationsCanonicallyEqual,
+  frenchLabelForColorPreset,
+} from "@/lib/admin/dingry-color-palette";
 import type { AdminProduct } from "@/lib/admin/types";
 import { isDraftPlaceholderImage, printPlacementDisplayLabel } from "@/lib/admin/types";
 import type {
@@ -26,6 +31,7 @@ export type AdminProductPreviewModel = {
   imageBackSrc: string;
   publishStatus: ProductPublishStatus;
   stock: number;
+  colorDeclinations: readonly string[];
 };
 
 type AdminProductPreviewProps = {
@@ -50,7 +56,7 @@ function previewProductFromModel(model: AdminProductPreviewModel): AdminProduct 
     sizes: model.sizes,
     stock: model.stock,
     publishStatus: model.publishStatus,
-    colorDeclinations: [],
+    colorDeclinations: [...model.colorDeclinations],
     imageUrl: model.imageSrc || "/dingry-draft-product.svg",
     blobUrl: null,
     blobPathname: null,
@@ -78,18 +84,22 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
 
   const [side, setSide] = useState<"recto" | "verso">("recto");
 
+  const colorDeclinations = model.colorDeclinations.filter((c) => c.trim().length > 0);
+
   return (
     <div
-      className={`dingry-admin-stock flex flex-col overflow-hidden rounded-sm border border-zinc-800 bg-zinc-900 ${className}`}
+      className={`dingry-admin-product-preview dingry-admin-stock flex flex-col overflow-hidden rounded-xl border border-[rgb(191_149_63/0.32)] bg-[#0a0a0a] shadow-[inset_0_1px_0_rgb(252_246_186/0.08),0_0_28px_rgb(191_149_63/0.07)] ${className}`}
       aria-live="polite"
       aria-label="Aperçu fiche produit"
     >
-      <div className="border-b border-zinc-800 px-4 py-3">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">Live preview</p>
+      <div className="border-b border-white/[0.08] bg-[rgb(191_149_63/0.04)] px-4 py-2.5">
+        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[rgb(252_246_186/0.55)]">
+          Live preview
+        </p>
         <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-zinc-400">{model.category}</p>
       </div>
 
-      <div className="relative flex min-h-[14rem] w-full flex-col items-stretch justify-center bg-zinc-950 px-3 py-4 sm:min-h-[16rem] sm:px-4 lg:min-h-[20rem]">
+      <div className="relative flex min-h-[14rem] w-full flex-col items-stretch justify-center bg-black px-3 py-4 sm:min-h-[16rem] sm:px-4 lg:min-h-[20rem]">
         {flippable ? (
           <div
             className="mx-auto w-full max-w-[14rem] sm:max-w-[16rem]"
@@ -122,15 +132,37 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
         )}
       </div>
 
-      <div className="space-y-1.5 border-t border-zinc-800 px-3 py-3">
+      <div className="space-y-2 border-t border-[rgb(191_149_63/0.18)] px-3 py-3">
         <h3 className="line-clamp-2 text-[11px] font-bold uppercase leading-snug tracking-[0.08em] text-white">
           {product.name}
         </h3>
-        <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-400">{product.variant}</p>
-        <p className="text-[11px] uppercase tracking-[0.16em] text-white">
-          {priceLabel}
-          <span className="mx-2 text-zinc-600">·</span>
-          {sizesLabel}
+        <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">{product.variant}</p>
+        {colorDeclinations.length > 0 ? (
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            aria-label={`${colorDeclinations.length} couleur${colorDeclinations.length > 1 ? "s" : ""} sélectionnée${colorDeclinations.length > 1 ? "s" : ""}`}
+          >
+            {colorDeclinations.map((color) => {
+              const active = colorDeclinationsCanonicallyEqual(color, model.variant);
+              const label = frenchLabelForColorPreset(color);
+              return (
+                <span key={color} title={active ? `${label} · variante active` : label}>
+                  <DingryPaintSwatch
+                    colorKey={color}
+                    size="sm"
+                    active={active}
+                    variant="preview"
+                    className="border border-white/15"
+                  />
+                </span>
+              );
+            })}
+          </div>
+        ) : null}
+        <p className="text-[11px] uppercase tracking-[0.14em] text-white">
+          <span className="font-semibold tabular-nums">{priceLabel}</span>
+          <span className="mx-1.5 text-zinc-600">·</span>
+          <span className="text-white/85">{sizesLabel}</span>
         </p>
         {printLabel ? (
           <p className="text-[10px] uppercase tracking-[0.18em] text-emerald-400/90">{printLabel}</p>

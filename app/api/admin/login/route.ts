@@ -61,10 +61,12 @@ export async function POST(request: Request) {
   }
 
   if (!sessionSecretFromEnv()) {
+    const onProd = process.env.VERCEL_ENV === "production";
     return jsonNoStore(
       {
-        error:
-          "Admin non configuré : définis ADMIN_TOTP_SECRET sur Vercel Production (même secret que Google Authenticator), puis redéploie.",
+        error: onProd
+          ? "Admin non configuré : définis ADMIN_SESSION_SECRET (≥ 32 car., openssl rand -base64 48) sur Vercel Production, puis redéploie."
+          : "Admin non configuré : définis ADMIN_TOTP_SECRET ou ADMIN_SESSION_SECRET, puis redéploie.",
       },
       { status: 503 },
     );

@@ -5,7 +5,6 @@ import {
   loadStoreReadOnly,
   removeProduct,
   updateProduct,
-  validateImageFile,
   StoreConflictError,
   StoreUnavailableError,
   ProductStockAdjustError,
@@ -13,6 +12,7 @@ import {
 } from "@/lib/admin/store";
 import { isDraftPlaceholderImage } from "@/lib/admin/types";
 import { preuploadedRectoFromForm, preuploadedVersoFromForm } from "@/lib/admin/preuploaded-image";
+import { validateImageFileAsync } from "@/lib/admin/validate-image-file-async";
 import { jsonNoStore } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -51,7 +51,7 @@ export async function PATCH(
       const preuploadedVerso = preuploadedVersoFromForm(formData);
       let file: File | undefined;
       if (image instanceof File && image.size > 0) {
-        const imageError = validateImageFile(image);
+        const imageError = await validateImageFileAsync(image);
         if (imageError) {
           return jsonNoStore({ error: imageError }, { status: 400 });
         }
@@ -59,7 +59,7 @@ export async function PATCH(
       }
       let fileBack: File | undefined;
       if (imageBack instanceof File && imageBack.size > 0) {
-        const err = validateImageFile(imageBack);
+        const err = await validateImageFileAsync(imageBack);
         if (err) {
           return jsonNoStore({ error: err }, { status: 400 });
         }

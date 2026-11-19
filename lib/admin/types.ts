@@ -114,13 +114,11 @@ export type ProductPrintPlacement = "" | "RECTO_VERSO" | "RECTO_ONLY" | "VERSO_O
 export const PRODUCT_PRINT_PLACEMENT_OPTIONS: readonly ProductPrintPlacement[] = [
   "",
   "RECTO_VERSO",
-  "RECTO_ONLY",
-  "VERSO_ONLY",
 ];
 
 export const PRODUCT_PRINT_PLACEMENT_LABELS: Record<ProductPrintPlacement, string> = {
   "": "Non renseigné",
-  RECTO_VERSO: "Face / dos",
+  RECTO_VERSO: "Recto : verso",
   RECTO_ONLY: "Face uniquement",
   VERSO_ONLY: "Dos uniquement",
 };

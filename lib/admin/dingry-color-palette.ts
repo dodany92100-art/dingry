@@ -3,6 +3,7 @@
  * alias pastilles déjà présents dans l’éditeur CRM (GREEN→VERT, etc.).
  */
 
+import type { CSSProperties } from "react";
 import { colorAbbrevFromDeclinationLabel } from "@/lib/catalog/dingry-color-abbrev";
 import {
   buildCustomColorDeclination,
@@ -162,6 +163,61 @@ export function adminSwatchHex(raw: string): string | null {
   const alias = SWATCH_HEX_ALIASES[key];
   if (alias) return alias;
   return null;
+}
+
+export type AdminColorTileChromePhase = "idle" | "selected" | "default";
+
+function swatchHexToRgb(hex: string): [number, number, number] {
+  let h = hex.replace(/^#/, "").trim();
+  if (h.length === 3) {
+    h = [...h].map((c) => c + c).join("");
+  }
+  if (h.length !== 6) return [72, 72, 72];
+  const n = Number.parseInt(h, 16);
+  if (Number.isNaN(n)) return [72, 72, 72];
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Fond teinté + lueur discrète pour tuiles couleur CRM (sans cadre rectangulaire). */
+export function adminColorTileChromeStyle(
+  colorKey: string,
+  phase: AdminColorTileChromePhase,
+): CSSProperties {
+  const hex = adminSwatchHex(colorKey) ?? adminSwatchStyle(colorKey).backgroundColor;
+  const normalized = hex.startsWith("#") ? hex : `#${hex}`;
+  const [r, g, b] = swatchHexToRgb(normalized);
+
+  const idle = phase === "idle";
+  const isDefault = phase === "default";
+  const selected = phase === "selected" || isDefault;
+
+  const aTop = idle ? 0.16 : isDefault ? 0.3 : 0.24;
+  const aMid = idle ? 0.07 : isDefault ? 0.14 : 0.11;
+  const glow = idle ? 0.1 : isDefault ? 0.36 : 0.26;
+
+  const gold = selected
+    ? isDefault
+      ? "rgba(191,149,63,0.62)"
+      : "rgba(191,149,63,0.46)"
+    : "transparent";
+
+  const shadows: string[] = [
+    `inset 0 1px 0 rgba(${r},${g},${b},${idle ? 0.2 : 0.3})`,
+    `inset 0 -10px 18px rgba(${r},${g},${b},${aMid})`,
+  ];
+
+  if (selected) {
+    shadows.push(`0 0 0 1px ${gold}`);
+    shadows.push(`0 0 12px rgba(${r},${g},${b},${glow})`);
+    shadows.push(`inset 0 0 18px rgba(191,149,63,${isDefault ? 0.09 : 0.05})`);
+  } else {
+    shadows.push(`0 0 8px rgba(${r},${g},${b},0.07)`);
+  }
+
+  return {
+    background: `linear-gradient(152deg, rgba(${r},${g},${b},${aTop}) 0%, rgba(${r},${g},${b},${aMid}) 40%, rgba(5,5,8,0.9) 100%)`,
+    boxShadow: shadows.join(", "),
+  };
 }
 
 export function adminSwatchStyle(raw: string): { backgroundColor: string; boxShadow?: string } {

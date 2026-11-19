@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Eye } from "lucide-react";
 import { motion } from "motion/react";
+import {
+  ProductEditorSplitLayout,
+  readProductEditorSplitPct,
+  PRODUCT_EDITOR_SPLIT_DEFAULT_PCT,
+} from "@/components/organisms/admin/product-editor-split-layout";
 import { AdminMediaDropzone } from "@/components/organisms/admin/admin-media-dropzone";
 import { AdminProductEditorLivePreview } from "@/components/organisms/admin/admin-product-editor-live-preview";
-import { AdminProductPreview } from "@/components/organisms/admin/admin-product-preview";
-import { AdminSmartCrmBanner } from "@/components/organisms/admin/admin-smart-crm-banner";
+import {
+  AdminProductPreview,
+  type AdminProductPreviewModel,
+} from "@/components/organisms/admin/admin-product-preview";
 import {
   PrintSizePickerSheet,
   type PrintSizePickerProduct,
@@ -31,22 +39,25 @@ import {
   normalizeProductCategory,
   isValidPantWaistSize,
   isDraftPlaceholderImage,
-  PRODUCT_PRINT_PLACEMENT_LABELS,
-  PRODUCT_PRINT_PLACEMENT_OPTIONS,
   type AdminProduct,
   type ProductCategory,
-  type ProductPrintPlacement,
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
-import { pinProductToCrmAdminMemo } from "@/lib/admin/crm-admin-memo";
+import {
+  CRM_ADMIN_MEMO_UPDATED_EVENT,
+  crmAdminMemoContainsProduct,
+  formatCrmAdminProductMemoLine,
+  openCrmAdminMemoForEditing,
+  pinProductToCrmAdminMemo,
+} from "@/lib/admin/crm-admin-memo";
 import { EMPTY_PRODUCT_STORY } from "@/lib/admin/product-story";
 import {
   uploadAdminImageToR2,
   type AdminImageUploadResponse,
 } from "@/lib/client/admin-upload-image";
 import { prepareProductImage } from "@/lib/client/prepare-product-image";
-import { buildSmartCrmHints, buildSmartDescriptionDraft } from "@/lib/admin/smart-crm";
+import { buildSmartDescriptionDraft } from "@/lib/admin/smart-crm";
 import {
   buildSmartParseRecap,
   parseSmartProductText,
@@ -99,10 +110,15 @@ import {
   AdminEditorAccordion,
   ADMIN_BTN,
   ADMIN_BTN_ACTIVE,
-  ADMIN_BTN_SMART_OFF,
-  ADMIN_BTN_SMART_ON,
+  ADMIN_BTN_GEMINI_DESCRIPTION,
+  ADMIN_BTN_GOLD_DETECT,
+  ADMIN_BTN_VIOLET_SMART_OFF,
+  ADMIN_BTN_VIOLET_SMART_ON,
   FIELD_INPUT,
   FIELD_LABEL,
+  FIELD_LABEL_COMPACT,
+  FIELD_LABEL_EMPHASIS,
+  FIELD_INPUT_COMPACT,
   FIELD_SELECT,
   SmartCollageSkeletonGuide,
 } from "@/components/organisms/admin/product-editor-modal-chrome";
@@ -139,6 +155,88 @@ type FormSuccessState =
     };
 
 type EditorTab = ProductEditorTab;
+
+type ProductEditorPreviewRailProps = {
+  model: AdminProductPreviewModel;
+  previewRectoSrc: string;
+  previewVersoSrc: string;
+  convertingRecto: boolean;
+  convertingVerso: boolean;
+  saving: boolean;
+  convertingImage: boolean;
+  mediaDirty: boolean;
+  onRectoFile: (file: File) => void;
+  onVersoFile: (file: File) => void;
+  onSwapFaces: () => void;
+  onOpenFullPreview: () => void;
+};
+
+function ProductEditorPreviewRail({
+  model,
+  previewRectoSrc,
+  previewVersoSrc,
+  convertingRecto,
+  convertingVerso,
+  saving,
+  convertingImage,
+  mediaDirty,
+  onRectoFile,
+  onVersoFile,
+  onSwapFaces,
+  onOpenFullPreview,
+}: ProductEditorPreviewRailProps) {
+  return (
+    <div className="min-w-0 space-y-4 lg:max-w-full lg:space-y-3">
+      <AdminEditorAccordion
+        title="Médias"
+        subtitle="Recto / verso · WebP auto"
+        dirty={mediaDirty}
+        density="compact"
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <AdminMediaDropzone
+            tone="default"
+            density="compact"
+            label="Recto"
+            previewSrc={previewRectoSrc}
+            converting={convertingRecto}
+            onFile={(file) => {
+              if (file) onRectoFile(file);
+            }}
+          />
+          <AdminMediaDropzone
+            tone="default"
+            density="compact"
+            label="Verso"
+            previewSrc={previewVersoSrc}
+            converting={convertingVerso}
+            onFile={(file) => {
+              if (file) onVersoFile(file);
+            }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-white/[0.06] pt-2">
+          <button
+            type="button"
+            onClick={onSwapFaces}
+            disabled={saving || convertingImage}
+            className="rounded-full border border-white/[0.1] bg-[#101010] px-2.5 py-1 text-[10px] font-medium text-white/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/16 hover:bg-[#161616] hover:text-white disabled:opacity-40"
+            title="Échanger recto et verso (fichiers, uploads ou photos enregistrées)"
+          >
+            Permuter recto ↔ verso
+          </button>
+          <p className="text-[8px] uppercase tracking-[0.14em] text-white/32">
+            WebP · 10 Mo · auto
+          </p>
+        </div>
+      </AdminEditorAccordion>
+      <AdminProductPreview model={model} className="w-full max-w-none" />
+      <button type="button" onClick={onOpenFullPreview} className={`${ADMIN_BTN} w-full text-center`}>
+        Aperçu boutique plein écran
+      </button>
+    </div>
+  );
+}
 
 type ProductEditorModalProps = {
   /** null = création. */
@@ -203,12 +301,34 @@ export function ProductEditorModal({
   const [colorListDraft, setColorListDraft] = useState(() => hydratedUi.colorListDraft);
   const [waistListDraft, setWaistListDraft] = useState(() => hydratedUi.waistListDraft);
   const [editorTab, setEditorTab] = useState<EditorTab>(() => hydratedUi.editorTab);
+  const [editorSplitLeftPct, setEditorSplitLeftPct] = useState(
+    () =>
+      (typeof window !== "undefined" ? readProductEditorSplitPct() : null) ??
+      PRODUCT_EDITOR_SPLIT_DEFAULT_PCT,
+  );
   /** Description avant « Smart Description » · permet d’annuler sans recharger. */
   const [storyUndoDescription, setStoryUndoDescription] = useState<string | null>(null);
   const [makerTemplateId, setMakerTemplateId] = useState("");
   const [makerTemplateLabelDraft, setMakerTemplateLabelDraft] = useState("");
 
   const editingId = current?.id ?? null;
+  const [memoPinned, setMemoPinned] = useState(false);
+
+  useEffect(() => {
+    const sync = () => {
+      setMemoPinned(
+        crmAdminMemoContainsProduct({
+          id: editingId,
+          name: form.name,
+          sku: form.sku,
+        }),
+      );
+    };
+    sync();
+    window.addEventListener(CRM_ADMIN_MEMO_UPDATED_EVENT, sync);
+    return () => window.removeEventListener(CRM_ADMIN_MEMO_UPDATED_EVENT, sync);
+  }, [editingId, form.name, form.sku]);
+
   const catalogMakerFromProducts = useMemo(
     () => catalogProductMakerTemplates(catalogProducts, { excludeProductId: editingId }),
     [catalogProducts, editingId],
@@ -421,6 +541,21 @@ export function ProductEditorModal({
 
   function showFormSuccess(message: string, tone: "draft" | "live" | "neutral") {
     setFormSuccess({ kind: "plain", message, tone });
+  }
+
+  function requestPinProductMemo() {
+    const payload = { id: editingId, name: form.name, sku: form.sku };
+    const line = formatCrmAdminProductMemoLine(payload);
+    if (!crmAdminMemoContainsProduct(payload)) {
+      const ok = window.confirm(
+        `Ajouter cette fiche au mémo ?\n\n• ${line}\n\nOK = ajoute puis ouvre le mémo · Annuler = ouvre le mémo sans ajouter.\n(Cet appareil uniquement.)`,
+      );
+      if (ok) {
+        const { added } = pinProductToCrmAdminMemo(payload);
+        if (added) showFormSuccess("Fiche ajoutée au mémo.", "neutral");
+      }
+    }
+    openCrmAdminMemoForEditing();
   }
 
   function showSmartPasteSuccess(parsed: ReturnType<typeof parseSmartProductText>) {
@@ -1054,6 +1189,18 @@ export function ProductEditorModal({
     ? form.sizes.filter((size) => !presetPantWaists.includes(size))
     : [];
 
+  const categoryGridSizes = ADMIN_CATEGORY_SIZES[form.category];
+  const selectedOnCategoryGrid = categoryGridSizes.filter((size) => form.sizes.includes(size)).length;
+  const sizeBulkToggleClears =
+    categoryGridSizes.length > 0 &&
+    (selectedOnCategoryGrid === categoryGridSizes.length ||
+      selectedOnCategoryGrid > categoryGridSizes.length / 2);
+
+  function toggleCategorySizesBulk() {
+    if (sizeBulkToggleClears) clearAllSizes();
+    else selectAllSizesForCategory();
+  }
+
   const previewRectoSrc = imageRectoCleared
     ? ""
     : imageRectoFile
@@ -1083,6 +1230,7 @@ export function ProductEditorModal({
       imageBackSrc: previewVersoSrc,
       publishStatus: (current?.publishStatus ?? "draft") as ProductPublishStatus,
       stock: Number(form.stock) || 0,
+      colorDeclinations: form.colorDeclinations,
     }),
     [form, previewRectoSrc, previewVersoSrc, current?.publishStatus],
   );
@@ -1096,21 +1244,6 @@ export function ProductEditorModal({
       stockPool: Math.max(0, Math.floor(Number(form.stock) || 0)),
     }),
     [form.name, form.variant, form.sku, form.sizes, form.stock, current?.name],
-  );
-
-  const smartHints = useMemo(
-    () =>
-      buildSmartCrmHints({
-        name: form.name,
-        category: form.category,
-        variant: form.variant,
-        price: form.price,
-        stock: form.stock,
-        description: form.description,
-        hasRealImage,
-        publishStatus: current?.publishStatus ?? "unsaved",
-      }),
-    [form, hasRealImage, current?.publishStatus],
   );
 
   function applySmartDescription() {
@@ -1200,7 +1333,7 @@ export function ProductEditorModal({
     if (sectionDirty.sizes) labels.push("Tailles");
     if (sectionDirty.price) labels.push("Prix / stock");
     if (sectionDirty.media) labels.push("Médias");
-    if (sectionDirty.story) labels.push("Fiche boutique");
+    if (sectionDirty.story) labels.push("Description");
     return labels;
   }, [sectionDirty]);
 
@@ -1255,7 +1388,7 @@ export function ProductEditorModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.22 }}
-      className="dingry-admin flex h-dvh max-h-dvh flex-col overflow-hidden text-white"
+      className="dingry-admin dingry-product-editor flex h-dvh max-h-dvh flex-col overflow-hidden bg-black text-white"
       aria-label={editingId ? "Fiche produit" : "Nouveau produit"}
     >
       <motion.div
@@ -1270,7 +1403,7 @@ export function ProductEditorModal({
           }}
           className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
-          <header className="dingry-admin-glass dingry-product-editor-header sticky top-0 z-20 flex shrink-0 flex-col gap-1.5 border-b border-white/10 px-4 py-2.5 sm:px-6 sm:py-3">
+          <header className="dingry-product-editor-chrome dingry-product-editor-header sticky top-0 z-20 flex shrink-0 flex-col gap-1.5 border-b px-4 py-2.5 sm:px-6 sm:py-3">
             <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-2.5">
                 <button
@@ -1279,48 +1412,46 @@ export function ProductEditorModal({
                   disabled={saving}
                   className="shrink-0 text-[11px] text-zinc-400 transition hover:text-white disabled:opacity-40 sm:text-[12px]"
                 >
-                  <span className="sm:hidden">← Stock</span>
-                  <span className="hidden sm:inline">← Retour au stock</span>
+                  ← Retour
                 </button>
+                <h1 className="min-w-0 truncate text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl">
+                  {form.name.trim() || (editingId ? "Modifier" : "Nouveau produit")}
+                </h1>
+                <span className="hidden h-3.5 w-px shrink-0 bg-zinc-700 sm:block" aria-hidden />
                 {onStartNewProduct ? (
                   <button
                     type="button"
                     onClick={requestNewProduct}
                     disabled={saving}
-                    className="shrink-0 text-[11px] text-[#ffab73] transition hover:text-white disabled:opacity-40 sm:text-[12px]"
+                    className="shrink-0 text-[11px] font-medium text-[#4de8ff] drop-shadow-[0_0_10px_rgba(45,232,255,0.4)] transition hover:text-[#b8fcff] hover:drop-shadow-[0_0_14px_rgba(45,232,255,0.65)] disabled:opacity-40 sm:text-[12px]"
                   >
-                    + Nouvelle fiche
+                    Nouvelle fiche +
                   </button>
                 ) : null}
                 <button
                   type="button"
                   disabled={saving}
-                  onClick={() =>
-                    pinProductToCrmAdminMemo({
-                      id: editingId,
-                      name: form.name,
-                      sku: form.sku,
-                    })
-                  }
-                  className="shrink-0 rounded-full border border-[#e8d87a]/45 bg-[#fff9c4]/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[#f5e6a8] transition hover:bg-[#fff9c4]/20 hover:text-[#fffef0] disabled:opacity-40"
-                  title="Ajouter cette fiche au mémo « À ne pas oublier »"
+                  onClick={requestPinProductMemo}
+                  aria-pressed={memoPinned}
+                  className={`inline-flex shrink-0 items-center justify-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide transition disabled:opacity-40 [font-size:10px] ${
+                    memoPinned
+                      ? "border-[#e8d87a]/55 bg-[#fff9c4]/14 text-[#fff9c4] shadow-[0_0_8px_rgba(232,216,122,0.12)]"
+                      : "border-[#e8d87a]/38 bg-[#fff9c4]/5 text-[#e8d6a0] hover:bg-[#fff9c4]/12 hover:text-[#fff9c4]"
+                  }`}
+                  title="Ouvrir le mémo · lire et modifier (cet appareil)"
                 >
-                  Mémo
+                  mémo
                 </button>
-                <span className="hidden h-3.5 w-px shrink-0 bg-zinc-700 md:block" aria-hidden />
-                <h1 className="min-w-0 truncate text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl">
-                  {form.name.trim() || (editingId ? "Modifier" : "Nouveau produit")}
-                </h1>
               </div>
               <div
                 className="flex shrink-0 gap-px rounded-full bg-white/8 p-px backdrop-blur-md"
                 role="tablist"
-                aria-label="Produit ou fiche boutique"
+                aria-label="Produit, description ou aperçu"
               >
                 {(
                   [
                     ["product", "Produit"],
-                    ["story", "Fiche"],
+                    ["story", "Description"],
                     ["preview", "Aperçu"],
                   ] as const
                 ).map(([id, label]) => {
@@ -1328,9 +1459,11 @@ export function ProductEditorModal({
                   const fullLabel =
                     id === "story" ? (
                       <>
-                        <span className="sm:hidden">Fiche</span>
-                        <span className="hidden sm:inline">Fiche boutique</span>
+                        <span className="sm:hidden">Descr.</span>
+                        <span className="hidden sm:inline">Description</span>
                       </>
+                    ) : id === "preview" ? (
+                      <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.25} aria-hidden />
                     ) : (
                       label
                     );
@@ -1340,6 +1473,7 @@ export function ProductEditorModal({
                       type="button"
                       role="tab"
                       aria-selected={active}
+                      aria-label={id === "preview" ? "Aperçu boutique" : undefined}
                       onClick={() => setEditorTab(id)}
                       className={`rounded-full px-2 py-1 text-[10px] font-medium tracking-wide transition sm:px-2.5 sm:py-1 sm:text-[11px] md:px-3 md:text-[12px] ${
                         active ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
@@ -1387,7 +1521,7 @@ export function ProductEditorModal({
                   formSuccess.tone === "live"
                     ? "border-emerald-500/35 bg-[#0c1f18] text-emerald-100"
                     : formSuccess.tone === "draft"
-                      ? "border-sky-500/30 bg-[#0e1628] text-sky-100"
+                      ? "border-white/12 bg-[#161616] text-white/85"
                       : "dingry-admin-panel"
                 }`}
               >
@@ -1400,16 +1534,38 @@ export function ProductEditorModal({
             {editorTab === "preview" ? (
               <AdminProductEditorLivePreview model={previewModel} productId={editingId} />
             ) : editorTab === "product" ? (
-              <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(200px,20rem)_minmax(0,1fr)] lg:gap-6 xl:gap-8">
-                <div className="min-w-0 space-y-4 lg:order-2 lg:max-w-none">
+              <ProductEditorSplitLayout
+                previewAfterEditorOnMobile
+                committedLeftPct={editorSplitLeftPct}
+                onCommitLeftPct={setEditorSplitLeftPct}
+                preview={
+                  <ProductEditorPreviewRail
+                    model={previewModel}
+                    previewRectoSrc={previewRectoSrc}
+                    previewVersoSrc={previewVersoSrc}
+                    convertingRecto={convertingRecto}
+                    convertingVerso={convertingVerso}
+                    saving={saving}
+                    convertingImage={convertingImage}
+                    mediaDirty={sectionDirty.media}
+                    onRectoFile={(file) => void acceptImageRecto(file)}
+                    onVersoFile={(file) => void acceptImageVerso(file)}
+                    onSwapFaces={swapProductMediaFaces}
+                    onOpenFullPreview={() => setEditorTab("preview")}
+                  />
+                }
+                editor={
+                <div className="min-w-0 space-y-4 lg:max-w-none lg:space-y-3">
                   <AdminEditorAccordion
                     title="Informations générales"
-                    subtitle="Catégorie boutique, référence, nom et Smart collage."
                     dirty={sectionDirty.general}
                   >
                     <div className="space-y-3 sm:space-y-4">
                       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-                        <label htmlFor="dingry-product-category" className={`${FIELD_LABEL} sm:col-span-2 lg:col-span-1`}>
+                        <label
+                          htmlFor="dingry-product-category"
+                          className={`${FIELD_LABEL_EMPHASIS} sm:col-span-2 lg:col-span-1`}
+                        >
                           Catégorie
                           <select
                             id="dingry-product-category"
@@ -1430,7 +1586,7 @@ export function ProductEditorModal({
                             ))}
                           </select>
                         </label>
-                        <label className={FIELD_LABEL}>
+                        <label className={FIELD_LABEL_EMPHASIS}>
                           Référence (SKU)
                           <div className="mt-1.5 flex items-stretch gap-2">
                             <input
@@ -1454,7 +1610,7 @@ export function ProductEditorModal({
                             </button>
                           </div>
                         </label>
-                        <label className={`${FIELD_LABEL} sm:col-span-2 lg:col-span-1`}>
+                        <label className={`${FIELD_LABEL_EMPHASIS} sm:col-span-2 lg:col-span-1`}>
                           Nom produit
                           <input
                             ref={productNameInputRef}
@@ -1541,41 +1697,37 @@ export function ProductEditorModal({
                               {makerMemorizeDuplicateMessage}
                             </p>
                           ) : null}
-                          <span className="block text-[11px] font-normal text-white/45">
-                            Modèles mémorisés (HOODIE / TEE-SHIRT…) ou fiches CRM existantes — la liste « Produits
-                            déjà en catalogue » reprend catégorie, prix, tailles et grammage. Le nom, la couleur et les
-                            visuels restent libres à l&apos;enregistrement.
+                          <span className="block text-[11px] font-normal leading-relaxed text-white/45">
+                            Un modèle préremplit catégorie, prix et tailles. Nom, couleurs et photos restent à toi.
                           </span>
                         </div>
                       ) : null}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={applyFamilyDetectionFromName}
                           disabled={saving || convertingImage}
-                          className={ADMIN_BTN}
+                          className={`${ADMIN_BTN_GOLD_DETECT} shrink-0`}
                         >
                           Détecter famille & prix
                         </button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={() => setSmartPasteOpen((open) => !open)}
                           aria-expanded={smartPasteOpen}
                           aria-pressed={smartPasteOpen}
                           title="Coller une fiche brute — remplissage intelligent des champs produit"
-                          className={smartPasteOpen ? ADMIN_BTN_SMART_ON : ADMIN_BTN_SMART_OFF}
+                          className={`${smartPasteOpen ? ADMIN_BTN_VIOLET_SMART_ON : ADMIN_BTN_VIOLET_SMART_OFF} shrink-0`}
                         >
                           <span className="inline-flex items-center gap-2">
                             {smartPasteOpen ? (
                               <span
-                                className="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-300 shadow-[0_0_8px_rgba(196,181,253,0.9)]"
+                                className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#e9d5ff] shadow-[0_0_10px_rgba(192,132,252,0.55)]"
                                 aria-hidden
                               />
                             ) : (
                               <span
-                                className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300/80"
+                                className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#c4b5fd]/80"
                                 aria-hidden
                               >
                                 IA
@@ -1587,52 +1739,18 @@ export function ProductEditorModal({
                         <button
                           type="button"
                           onClick={applySmartDescription}
-                          className={`${ADMIN_BTN} hover:border-violet-400/30 hover:text-violet-200`}
+                          disabled={saving || convertingImage}
+                          className={`${ADMIN_BTN_GEMINI_DESCRIPTION} shrink-0`}
                         >
                           Smart Description
                         </button>
                       </div>
                       {smartPasteOpen ? (
                         <div className="dingry-admin-panel dingry-admin-panel-smart space-y-3 rounded-2xl p-4 sm:p-5">
-                          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-violet-200/70">
-                            Maker · collage intelligent
-                          </p>
-                          <motion.div
-                            layout="size"
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                            role="region"
-                            aria-live="polite"
-                            aria-label="Aide Smart collage"
-                            className="overflow-hidden rounded-xl border border-violet-400/25 bg-violet-950/25 px-3.5 py-3 text-[13px] leading-relaxed text-white/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm"
-                          >
-                            <p className="mb-2 text-[12px] font-semibold tracking-wide text-violet-100/95">
-                              💡 Règles faciles pour parser rapidement :
-                            </p>
-                            <ul className="m-0 list-none space-y-1.5 pl-0 text-white/70">
-                              <li>
-                                <span className="text-white/85">:</span> après un mot-clé → remplit la case (
-                                <span className="text-violet-200/90">mat:</span>,{" "}
-                                <span className="text-violet-200/90">ref:</span>,{" "}
-                                <span className="text-violet-200/90">t:</span>,{" "}
-                                <span className="text-violet-200/90">prix:</span>,{" "}
-                                <span className="text-violet-200/90">qte:</span>…).
-                              </li>
-                              <li>
-                                <span className="font-medium text-violet-100/90">fin d&apos; argu @</span> → fin de
-                                l&apos;argumentaire.
-                              </li>
-                              <li>
-                                <span className="font-medium text-violet-100/90">fin de matiere #</span> → fin de la
-                                matière.
-                              </li>
-                            </ul>
-                          </motion.div>
                           <label htmlFor="dingry-smart-paste" className={FIELD_LABEL}>
                             Coller une fiche brute
                             <div
-                              className={`${FIELD_INPUT} relative h-auto min-h-[18rem] p-0 focus-within:border-white/25 focus-within:bg-white/[0.08] focus-within:ring-2 focus-within:ring-white/10`}
+                              className={`${FIELD_INPUT} relative h-auto min-h-[10rem] p-0 focus-within:border-white/25 focus-within:bg-white/[0.08] focus-within:ring-2 focus-within:ring-white/10`}
                             >
                               {!smartPasteText.trim() ? <SmartCollageSkeletonGuide /> : null}
                               <textarea
@@ -1640,9 +1758,9 @@ export function ProductEditorModal({
                                 id="dingry-smart-paste"
                                 value={smartPasteText}
                                 onChange={(event) => setSmartPasteText(event.target.value)}
-                                rows={12}
+                                rows={7}
                                 placeholder=" "
-                                className="relative z-10 min-h-[18rem] w-full resize-y border-0 bg-transparent px-3.5 py-3 font-mono text-[13px] leading-relaxed text-white outline-none ring-0 placeholder:text-transparent focus:ring-0"
+                                className="relative z-10 min-h-[10rem] w-full resize-y border-0 bg-transparent px-3.5 py-2.5 font-mono text-[13px] leading-snug text-white outline-none ring-0 placeholder:text-transparent focus:ring-0"
                               />
                             </div>
                           </label>
@@ -1661,146 +1779,138 @@ export function ProductEditorModal({
 
                   <AdminEditorAccordion
                     sectionId="dingry-product-sizes-colors"
-                    title={pantsForm ? "Grille tours" : "Grille tailles"}
-                    subtitle={
-                      pantsForm
-                        ? "Tours de taille · variante active sur la boutique."
-                        : "Sélection des tailles proposées à l'achat."
-                    }
-                    dirty={sectionDirty.sizes}
+                    title={pantsForm ? "Tours & variantes" : "Tailles & variantes"}
+                    subtitle="Grille boutique, couleurs et finition — une seule zone."
+                    dirty={sectionDirty.sizes || sectionDirty.general}
                   >
-                    <div className="flex flex-wrap justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={selectAllSizesForCategory}
-                          className={ADMIN_BTN}
-                        >
-                          Tout sélectionner
-                        </button>
-                        <button
-                          type="button"
-                          onClick={clearAllSizes}
-                          className={ADMIN_BTN}
-                        >
-                          Tout effacer
-                        </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {ADMIN_CATEGORY_SIZES[form.category].map((size) => {
-                        const active = form.sizes.includes(size);
-                        return (
+                    <div className="space-y-3 sm:space-y-3.5">
+                      <div className="min-w-0">
+                        <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/60 sm:text-[13px]">
+                          {pantsForm ? "Grille tours" : "Grille tailles"}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {ADMIN_CATEGORY_SIZES[form.category].map((size) => {
+                            const active = form.sizes.includes(size);
+                            return (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={() => toggleSize(size)}
+                                className={`min-w-[2.35rem] rounded-full border px-2 py-1.5 text-[11px] font-medium tabular-nums tracking-wide transition ${
+                                  active
+                                    ? "border-white bg-white text-black"
+                                    : "border-white/15 bg-white/5 text-white/60 hover:border-white/30 hover:text-white"
+                                }`}
+                              >
+                                {size}
+                              </button>
+                            );
+                          })}
+                          {extraPantWaists.map((size) => (
+                            <button
+                              key={`custom-${size}`}
+                              type="button"
+                              onClick={() => toggleSize(size)}
+                              className={`min-w-[2.35rem] rounded-full border px-2 py-1.5 text-[11px] font-medium tabular-nums tracking-wide transition ${
+                                form.sizes.includes(size)
+                                  ? "border-white bg-white text-black"
+                                  : "border-white/15 bg-white/5 text-white/60 hover:border-white/30 hover:text-white"
+                              }`}
+                            >
+                              {size}
+                            </button>
+                          ))}
                           <button
-                            key={size}
                             type="button"
-                            onClick={() => toggleSize(size)}
-                            className={`min-w-[2.5rem] rounded-full border px-2.5 py-2 text-[11px] font-medium tabular-nums tracking-wide transition ${
-                              active
-                                ? "border-white bg-white text-black"
-                                : "border-white/15 bg-white/5 text-white/60 hover:border-white/30 hover:text-white"
+                            onClick={toggleCategorySizesBulk}
+                            aria-pressed={sizeBulkToggleClears}
+                            title={
+                              sizeBulkToggleClears
+                                ? "Désélectionner toutes les tailles de la grille"
+                                : "Sélectionner toutes les tailles de la grille"
+                            }
+                            className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[11px] font-medium transition ${
+                              sizeBulkToggleClears
+                                ? "border-white/22 bg-[#1c1c1c] text-white ring-1 ring-white/12"
+                                : `${ADMIN_BTN} py-1.5`
                             }`}
                           >
-                            {size}
+                            {sizeBulkToggleClears ? "Tout effacer" : "Tout sélectionner"}
                           </button>
-                        );
-                      })}
-                      {extraPantWaists.map((size) => (
-                        <button
-                          key={`custom-${size}`}
-                          type="button"
-                          onClick={() => toggleSize(size)}
-                          className={`min-w-[2.5rem] rounded-full border px-2.5 py-2 text-[11px] font-medium tabular-nums tracking-wide transition ${
-                            form.sizes.includes(size)
-                              ? "border-white bg-white text-black"
-                              : "border-white/15 bg-white/5 text-white/60 hover:border-white/30 hover:text-white"
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      ))}
-                    </div>
-                    {pantsForm ? (
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={2}
-                          value={customPantWaist}
-                          onChange={(event) =>
-                            setCustomPantWaist(event.target.value.replace(/\D/g, "").slice(0, 2))
-                          }
-                          placeholder="Perso."
-                          className={`${FIELD_INPUT} h-9 w-14 px-2 text-center`}
-                        />
-                        <button
-                          type="button"
-                          onClick={addCustomPantWaist}
-                          className={ADMIN_BTN}
-                        >
-                          Ajouter tour
-                        </button>
-                      </div>
-                    ) : null}
-                  </AdminEditorAccordion>
-
-                  <AdminEditorAccordion
-                    title="Variantes boutique"
-                    subtitle="Couleurs, impression et déclinaisons."
-                    dirty={sectionDirty.general}
-                  >
-                    <div className="space-y-5">
-                      {pantsForm ? (
-                        <div>
-                          <p className={FIELD_LABEL}>Tours de taille</p>
-                          <input
-                            value={waistListDraft}
-                            onChange={(event) => onWaistListDraftChange(event.target.value)}
-                            placeholder={`${PANT_WAIST_MIN}–${PANT_WAIST_MAX}, séparés par des virgules`}
-                            className={FIELD_INPUT}
-                          />
-                          {form.sizes.length > 0 ? (
-                            <div className="mt-2 flex flex-wrap gap-1.5" role="list" aria-label="Tours sélectionnés">
-                              {form.sizes.map((w) => {
-                                const active =
-                                  pickPantActiveVariant(form.sizes, form.variant) ===
-                                  normalizePantWaistSize(w);
-                                return (
-                                  <span
-                                    key={`waist-tag-${w}`}
-                                    role="listitem"
-                                    className={`inline-flex items-center gap-1 rounded-full border py-0.5 pl-1 pr-1 text-[12px] font-medium tabular-nums ${
-                                      active
-                                        ? "border-white bg-white text-black"
-                                        : "border-white/15 bg-[#0e1628] text-white/80"
-                                    }`}
-                                  >
-                                    <button
-                                      type="button"
-                                      title="Définir comme tour actif (variante boutique)"
-                                      onClick={() => setPantActiveVariant(w)}
-                                      className="rounded-full px-1.5 py-0.5"
-                                    >
-                                      {w}
-                                      {active ? " · actif" : ""}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      aria-label={`Retirer le tour ${w}`}
-                                      onClick={() => removeWaistSize(w)}
-                                      className={`rounded-full px-1 ${active ? "text-black/45 hover:text-black" : "text-white/40 hover:text-white"}`}
-                                    >
-                                      ×
-                                    </button>
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          ) : null}
-                          <p className="mt-2 text-[13px] leading-relaxed text-white/50">
-                            Grille ou saisie libre · clic sur un tour pour la variante boutique (actif surligné).
-                          </p>
                         </div>
-                      ) : (
-                        <div>
+                        {pantsForm ? (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={2}
+                              value={customPantWaist}
+                              onChange={(event) =>
+                                setCustomPantWaist(event.target.value.replace(/\D/g, "").slice(0, 2))
+                              }
+                              placeholder="Perso."
+                              className={`${FIELD_INPUT} h-9 w-14 px-2 text-center`}
+                            />
+                            <button type="button" onClick={addCustomPantWaist} className={ADMIN_BTN}>
+                              Ajouter tour
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="min-w-0 border-t border-white/10 pt-3">
+                        {pantsForm ? (
+                          <div className="space-y-2">
+                            <p className={FIELD_LABEL}>Tours de taille</p>
+                            <input
+                              value={waistListDraft}
+                              onChange={(event) => onWaistListDraftChange(event.target.value)}
+                              placeholder={`${PANT_WAIST_MIN}–${PANT_WAIST_MAX}, séparés par des virgules`}
+                              className={FIELD_INPUT}
+                            />
+                            {form.sizes.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5" role="list" aria-label="Tours sélectionnés">
+                                {form.sizes.map((w) => {
+                                  const active =
+                                    pickPantActiveVariant(form.sizes, form.variant) ===
+                                    normalizePantWaistSize(w);
+                                  return (
+                                    <span
+                                      key={`waist-tag-${w}`}
+                                      role="listitem"
+                                      className={`inline-flex items-center gap-1 rounded-full border py-0.5 pl-1 pr-1 text-[12px] font-medium tabular-nums ${
+                                        active
+                                          ? "border-white bg-white text-black"
+                                          : "border-white/12 bg-[#161616] text-white/80"
+                                      }`}
+                                    >
+                                      <button
+                                        type="button"
+                                        title="Définir comme tour actif (variante boutique)"
+                                        onClick={() => setPantActiveVariant(w)}
+                                        className="rounded-full px-1.5 py-0.5"
+                                      >
+                                        {w}
+                                        {active ? " · actif" : ""}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        aria-label={`Retirer le tour ${w}`}
+                                        onClick={() => removeWaistSize(w)}
+                                        className={`rounded-full px-1 ${active ? "text-black/45 hover:text-black" : "text-white/40 hover:text-white"}`}
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                            <p className="text-[12px] leading-snug text-white/45">
+                              Clic sur un tour = variante active boutique.
+                            </p>
+                          </div>
+                        ) : (
                           <AdminColorDeclinationSelector
                             selected={form.colorDeclinations}
                             activeVariant={form.variant}
@@ -1827,35 +1937,19 @@ export function ProductEditorModal({
                             productName={form.name}
                             parentSku={form.sku}
                           />
-                        </div>
-                      )}
-
-                      <label className={FIELD_LABEL}>
-                        Impression / finition
-                        <select
-                          value={form.printPlacement}
-                          onChange={(event) =>
-                            patch({ printPlacement: event.target.value as ProductPrintPlacement })
-                          }
-                          className={FIELD_SELECT}
-                        >
-                          {PRODUCT_PRINT_PLACEMENT_OPTIONS.map((opt) => (
-                            <option key={opt || "unset"} value={opt}>
-                              {PRODUCT_PRINT_PLACEMENT_LABELS[opt]}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                        )}
+                      </div>
                     </div>
                   </AdminEditorAccordion>
 
                   <AdminEditorAccordion
                     title="Prix · stock"
-                    subtitle="Tarif boutique et quantité CRM."
                     dirty={sectionDirty.price}
+                    density="compact"
+                    defaultOpen
                   >
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <label className={FIELD_LABEL}>
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      <label className={FIELD_LABEL_COMPACT}>
                         Prix (€)
                         <input
                           type="number"
@@ -1865,15 +1959,15 @@ export function ProductEditorModal({
                           onChange={(event) => patch({ price: event.target.value })}
                           placeholder="Grille famille ou saisie libre"
                           required
-                          className={`${FIELD_INPUT} tabular-nums`}
+                          className={`${FIELD_INPUT_COMPACT} tabular-nums`}
                         />
                       </label>
-                      <label className={FIELD_LABEL}>
-                        <span className="inline-flex items-center gap-1.5">
+                      <label className={FIELD_LABEL_COMPACT}>
+                        <span className="inline-flex items-center gap-1">
                           Stock global
                           <span
                             title="Réserve partagée entre les tailles actives."
-                            className="cursor-help rounded-full border border-white/20 px-1.5 text-[11px] text-white/45"
+                            className="cursor-help rounded-full border border-white/20 px-1 text-[10px] text-white/45"
                           >
                             i
                           </span>
@@ -1886,13 +1980,13 @@ export function ProductEditorModal({
                           value={form.stock}
                           onChange={(event) => patch({ stock: event.target.value })}
                           required
-                          className={`${FIELD_INPUT} tabular-nums`}
+                          className={`${FIELD_INPUT_COMPACT} tabular-nums`}
                         />
                       </label>
                     </div>
 
                   {current ? (
-                    <div className="flex flex-col gap-2 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+                    <div className="mt-2.5 flex flex-col gap-2 border-t border-white/[0.08] pt-2.5 sm:flex-row sm:justify-end">
                       <button
                         type="button"
                         onClick={() => setPrintSheetOpen(true)}
@@ -1912,59 +2006,30 @@ export function ProductEditorModal({
                   ) : null}
                   </AdminEditorAccordion>
                 </div>
-
-                <div className="min-w-0 space-y-4 lg:order-1 lg:sticky lg:top-[4.5rem] lg:max-w-[20rem] lg:self-start">
-                  <AdminEditorAccordion
-                    title="Médias"
-                    subtitle="Recto / verso · conversion WebP auto."
-                    dirty={sectionDirty.media}
-                  >
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                      <AdminMediaDropzone
-                        tone="default"
-                        label="Recto"
-                        previewSrc={previewRectoSrc}
-                        converting={convertingRecto}
-                        onFile={(file) => void acceptImageRecto(file)}
-                      />
-                      <AdminMediaDropzone
-                        tone="default"
-                        label="Verso"
-                        previewSrc={previewVersoSrc}
-                        converting={convertingVerso}
-                        onFile={(file) => void acceptImageVerso(file)}
-                      />
-                    </div>
-                    <div className="mt-3 flex w-full justify-center">
-                      <button
-                        type="button"
-                        onClick={swapProductMediaFaces}
-                        disabled={saving || convertingImage}
-                        className={`${ADMIN_BTN} w-full sm:w-auto`}
-                        title="Échanger recto et verso (fichiers, uploads ou photos enregistrées)"
-                      >
-                        Permuter recto ↔ verso
-                      </button>
-                    </div>
-                    <p className="mt-3 text-[9px] uppercase tracking-[0.16em] text-white/35">
-                      WebP · 10 Mo max · conversion auto
-                    </p>
-                  </AdminEditorAccordion>
-                  <AdminProductPreview
-                    model={previewModel}
-                    className="w-full max-w-none border-white/10 bg-zinc-950/60"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setEditorTab("preview")}
-                    className={`${ADMIN_BTN} w-full text-center`}
-                  >
-                    Aperçu boutique plein écran
-                  </button>
-                </div>
-              </div>
+                }
+              />
             ) : (
-              <div className="mx-auto w-full max-w-4xl space-y-4">
+              <ProductEditorSplitLayout
+                committedLeftPct={editorSplitLeftPct}
+                onCommitLeftPct={setEditorSplitLeftPct}
+                preview={
+                  <ProductEditorPreviewRail
+                    model={previewModel}
+                    previewRectoSrc={previewRectoSrc}
+                    previewVersoSrc={previewVersoSrc}
+                    convertingRecto={convertingRecto}
+                    convertingVerso={convertingVerso}
+                    saving={saving}
+                    convertingImage={convertingImage}
+                    mediaDirty={sectionDirty.media}
+                    onRectoFile={(file) => void acceptImageRecto(file)}
+                    onVersoFile={(file) => void acceptImageVerso(file)}
+                    onSwapFaces={swapProductMediaFaces}
+                    onOpenFullPreview={() => setEditorTab("preview")}
+                  />
+                }
+                editor={
+                <div className="min-w-0 space-y-4 lg:max-w-none lg:space-y-3">
                 {(
                   [
                     [
@@ -2033,20 +2098,21 @@ export function ProductEditorModal({
                     <button
                       type="button"
                       onClick={undoSmartDescription}
-                      className={`${ADMIN_BTN} border-violet-500/30 text-violet-200 hover:border-violet-400/40 hover:bg-[#15102a]`}
+                      className={`${ADMIN_BTN} border-white/14 text-white/75 hover:border-white/20 hover:bg-[#1c1c1c]`}
                     >
                       Annuler Smart Description
                     </button>
                   ) : null}
                 </div>
-              </div>
+                </div>
+                }
+              />
             )}
           </div>
-            <AdminSmartCrmBanner hints={smartHints} />
           </div>
 
-          <footer className="dingry-product-editor-footer dingry-admin-glass sticky bottom-0 z-30 shrink-0 border-t border-white/10 px-3 py-2 sm:px-6 sm:py-2.5">
-            <div className="flex flex-row items-stretch gap-2">
+          <footer className="dingry-product-editor-footer dingry-product-editor-chrome sticky bottom-0 z-30 shrink-0 border-t px-3 pt-2 sm:px-6 sm:pt-2.5">
+            <div className="flex flex-row items-stretch gap-2 pr-1 sm:pr-0">
               <button
                 type="button"
                 onClick={onClose}
@@ -2099,27 +2165,32 @@ export function ProductEditorModal({
                 )}
               </button>
             </div>
-            <p className="mt-1 hidden text-center text-[10px] leading-snug text-zinc-500 sm:block sm:text-[11px]">
-              {isPublished ? (
-                <>
-                  <span className="text-white/70">Brouillon</span> = retire de la boutique ·{" "}
-                  <span className="text-white/70">En ligne</span> = déjà publié
-                </>
-              ) : (
-                <>
-                  <span className="text-white/70">Brouillon</span> = admin seulement ·{" "}
-                  <span className="text-white/70">En ligne</span> = visible boutique
-                </>
-              )}
-            </p>
-            {isDirty ? (
-              <p className="mt-0.5 truncate text-center text-[10px] text-zinc-400 sm:text-[11px]" aria-live="polite">
-                Modifications non enregistrées
-                {dirtySectionLabels.length > 0 ? (
-                  <span className="text-white/35"> · {dirtySectionLabels.join(" · ")}</span>
-                ) : null}
+            <div className="mt-2 flex w-full min-w-0 flex-col items-center gap-1 px-0.5 text-center sm:mt-2.5 sm:gap-1.5 sm:px-2">
+              <p className="hidden max-w-2xl text-balance text-[10px] leading-relaxed text-zinc-500 sm:block sm:text-[11px]">
+                {isPublished ? (
+                  <>
+                    <span className="text-white/70">Brouillon</span> = retire de la boutique ·{" "}
+                    <span className="text-white/70">En ligne</span> = déjà publié
+                  </>
+                ) : (
+                  <>
+                    <span className="text-white/70">Brouillon</span> = admin seulement ·{" "}
+                    <span className="text-white/70">En ligne</span> = visible boutique
+                  </>
+                )}
               </p>
-            ) : null}
+              {isDirty ? (
+                <p
+                  className="max-w-2xl text-balance text-[10px] leading-relaxed text-zinc-400 sm:text-[11px]"
+                  aria-live="polite"
+                >
+                  Modifications non enregistrées
+                  {dirtySectionLabels.length > 0 ? (
+                    <span className="text-white/35"> · {dirtySectionLabels.join(" · ")}</span>
+                  ) : null}
+                </p>
+              ) : null}
+            </div>
           </footer>
         </form>
       </motion.div>

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { requireAdmin } from "@/lib/admin/auth";
-import { validateCrmContentImageFile, validateImageFile } from "@/lib/admin/store";
+import { sanitizeAdminUploadFolder } from "@/lib/admin/upload-folder";
+import { validateImageFileAsync } from "@/lib/admin/validate-image-file-async";
 import { jsonNoStore } from "@/lib/http";
 import { isR2ImageStorageEnabled, r2ObjectKey, uploadR2PublicImage } from "@/lib/r2";
 
@@ -9,16 +10,14 @@ export const runtime = "nodejs";
 type ImageFace = "recto" | "verso";
 
 function resolveFolder(formData: FormData, request: Request): string | null {
-  const folder = String(formData.get("folder") ?? "").trim();
-  if (folder) return folder.replace(/^\/+|\/+$/g, "");
   const url = new URL(request.url);
-  const custom = String(url.searchParams.get("folder") ?? "").trim();
-  if (custom) return custom.replace(/^\/+|\/+$/g, "");
+  const folderRaw = String(formData.get("folder") ?? url.searchParams.get("folder") ?? "").trim();
+  if (folderRaw) return sanitizeAdminUploadFolder(folderRaw);
   const productId = String(formData.get("productId") ?? url.searchParams.get("productId") ?? "").trim();
   const faceRaw = String(formData.get("face") ?? url.searchParams.get("face") ?? "recto").trim();
   const face: ImageFace = faceRaw === "verso" ? "verso" : "recto";
-  if (productId) return `dingry/products/${productId}/${face}`;
-  return `dingry/products/staging/${randomUUID()}/${face}`;
+  if (productId) return sanitizeAdminUploadFolder(`dingry/products/${productId}/${face}`);
+  return sanitizeAdminUploadFolder(`dingry/products/staging/${randomUUID()}/${face}`);
 }
 
 export async function POST(request: Request) {
@@ -46,7 +45,7 @@ export async function POST(request: Request) {
     return jsonNoStore({ error: "Dossier cible invalide." }, { status: 400 });
   }
   const contentImage = folder.includes("lookbook") || folder.includes("banner");
-  const imageError = contentImage ? validateCrmContentImageFile(file) : validateImageFile(file);
+  const imageError = await validateImageFileAsync(file, contentImage);
   if (imageError) {
     return jsonNoStore({ error: imageError }, { status: 400 });
   }

@@ -1,4 +1,5 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { isWebpBuffer, webpHeaderError } from "@/lib/admin/image-webp-sniff";
 import { compressImageToWebp } from "@/lib/supabase/compress-image";
 import {
   isR2ImageStorageEnabled,
@@ -56,7 +57,11 @@ export async function uploadR2PublicImage(objectKey: string, file: File): Promis
     throw new Error("Stockage R2 non configuré.");
   }
   const key = objectKey.replace(/^\/+/, "");
-  const bytes = await compressImageToWebp(Buffer.from(await file.arrayBuffer()));
+  const source = Buffer.from(await file.arrayBuffer());
+  if (!isWebpBuffer(source)) {
+    throw new Error(webpHeaderError());
+  }
+  const bytes = await compressImageToWebp(source);
   await r2Client().send(
     new PutObjectCommand({
       Bucket: r2BucketName(),
