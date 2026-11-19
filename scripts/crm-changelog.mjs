@@ -9,6 +9,80 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
+
+const FR_MONTH = {
+  jan: 0,
+  janv: 0,
+  fev: 1,
+  fév: 1,
+  fevr: 1,
+  mar: 2,
+  avr: 3,
+  mai: 4,
+  jun: 5,
+  jui: 6,
+  juil: 6,
+  aou: 7,
+  aoû: 7,
+  sep: 8,
+  sept: 8,
+  oct: 9,
+  nov: 10,
+  déc: 11,
+  dec: 11,
+};
+
+function parseDeployedAtMs(label) {
+  const norm = String(label)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  const match = norm.match(/(\d{1,2})\s+([a-z]+)\.?\s+(\d{4})/);
+  if (!match) return 0;
+  const day = Number(match[1]);
+  const monthToken = match[2].replace(/\./g, "").slice(0, 5);
+  let month = FR_MONTH[monthToken];
+  if (month == null) {
+    const hit = Object.entries(FR_MONTH).find(
+      ([key]) => monthToken.startsWith(key) || key.startsWith(monthToken),
+    );
+    month = hit?.[1];
+  }
+  if (month == null) return 0;
+  return Date.UTC(Number(match[3]), month, day);
+}
+
+function versionHintSortKey(hint) {
+  const t = (hint ?? "").trim();
+  if (!t) return -1;
+  if (/^\d+$/.test(t)) return Number(t);
+  const parts = t.split(".").map((p) => Number(p));
+  if (parts.length === 2 && parts.every((n) => Number.isFinite(n))) return parts[0] * 10_000 + parts[1] * 100;
+  if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
+    return parts[0] * 1_000_000 + parts[1] * 10_000 + parts[2];
+  }
+  return 0;
+}
+
+function sortNewestFirst(entries) {
+  return [...entries].sort((a, b) => {
+    const dateDiff = parseDeployedAtMs(b.deployedAtLabel) - parseDeployedAtMs(a.deployedAtLabel);
+    if (dateDiff !== 0) return dateDiff;
+    return versionHintSortKey(b.versionHint) - versionHintSortKey(a.versionHint);
+  });
+}
+
+function assertAntiChronologicalOrder(entries, errors) {
+  const sorted = sortNewestFirst(entries);
+  for (let i = 0; i < entries.length; i += 1) {
+    if (entries[i]?.id !== sorted[i]?.id) {
+      errors.push(
+        "Le journal doit être trié du plus récent au plus ancien (réordonner le JSON ou relancer changelog:add).",
+      );
+      return;
+    }
+  }
+}
 const historyPath = path.join(root, "lib/admin/crm-release-history.json");
 
 function readHistory() {
@@ -70,6 +144,8 @@ export function validateCrmReleaseHistory(entries) {
     }
   }
 
+  assertAntiChronologicalOrder(entries, errors);
+
   return errors;
 }
 
@@ -119,7 +195,7 @@ function cmdAdd(argv) {
   };
   if (args.versionHint.trim()) entry.versionHint = args.versionHint.trim();
 
-  const next = [entry, ...entries];
+  const next = sortNewestFirst([entry, ...entries]);
   const errors = validateCrmReleaseHistory(next);
   if (errors.length) {
     console.error(errors.join("\n"));

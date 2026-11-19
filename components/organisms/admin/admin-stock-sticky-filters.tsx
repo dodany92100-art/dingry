@@ -19,7 +19,7 @@ export function AdminStockStickyFilters({
 }: AdminStockStickyFiltersProps) {
   return (
     <div className="dingry-admin-stock-filters mb-3 max-md:min-w-0 max-md:max-w-full py-1 md:flex md:w-full md:justify-center">
-      <div className="dingry-admin-surface-linear space-y-1.5 rounded-xl p-1.5 max-md:min-w-0 max-md:max-w-full max-md:overflow-hidden min-[450px]:space-y-2 min-[450px]:p-2.5 md:w-auto md:max-w-full">
+      <div className="dingry-admin-stock-filters-plaque relative space-y-2 overflow-hidden rounded-3xl p-2.5 pb-3 max-md:min-w-0 max-md:max-w-full min-[450px]:space-y-2.5 min-[450px]:p-3 min-[450px]:pb-3.5 md:w-auto md:max-w-full">
         {mobileContextSlot}
         <AdminCategoryFilterNav
           selected={categoryFilter}

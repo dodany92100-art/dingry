@@ -1,5 +1,17 @@
 [
   {
+    "id": "2026-11-19-editeur-securite",
+    "deployedAtLabel": "19 nov. 2026",
+    "versionHint": "231",
+    "title": "Éditeur produit, médias & durcissement CRM",
+    "highlights": [
+      "Éditeur produit : colonnes redimensionnables (split mémorisé), formulaire compact, libellés médias centrés, suppression recto/verso opérationnelle.",
+      "Médias & aperçu : bascule automatique Live preview en tête dès qu’une image est chargée ; cadre d’aperçu harmonisé entre recto seul et flip recto/verso.",
+      "Variantes : pastilles couleur type peinture et finitions dans la fiche produit.",
+      "Sécurité & infra : upload WebP sniffé, chemins R2 whitelistés, session admin sans repli TOTP en production, RLS CRM renforcé."
+    ]
+  },
+  {
     "id": "2026-11-14-release",
     "deployedAtLabel": "14 nov. 2026",
     "versionHint": "210",
@@ -15,6 +27,7 @@
   {
     "id": "2026-11-13-checkout-compte",
     "deployedAtLabel": "13 nov. 2026",
+    "versionHint": "209",
     "title": "Checkout invité & compte client",
     "highlights": [
       "Achat invité avec rattachement commande au compte.",
@@ -25,6 +38,7 @@
   {
     "id": "2026-11-13-auth",
     "deployedAtLabel": "13 nov. 2026",
+    "versionHint": "208",
     "title": "Connexion Google",
     "highlights": [
       "OAuth Google via Supabase (boutique).",
@@ -46,6 +60,7 @@
   {
     "id": "2026-11-05-crm-v1-1",
     "deployedAtLabel": "5 nov. 2026",
+    "versionHint": "205",
     "title": "CRM v1.1 — prix & couleurs",
     "highlights": [
       "Prix unifiés boutique ↔ fiches CRM.",
@@ -57,6 +72,7 @@
   {
     "id": "2026-11-04-admin",
     "deployedAtLabel": "4 nov. 2026",
+    "versionHint": "204",
     "title": "Admin — navigation stock",
     "highlights": [
       "Scroll et filtres catégories corrigés.",
@@ -66,6 +82,7 @@
   {
     "id": "2026-10-30-paypal-preview",
     "deployedAtLabel": "30 oct. 2026",
+    "versionHint": "203",
     "title": "PayPal & preview boutique",
     "highlights": [
       "PayPal côté serveur, remplace Stripe.",

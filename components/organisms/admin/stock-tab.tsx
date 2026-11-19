@@ -5,6 +5,7 @@ import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
 import { normalizeProductCategory } from "@/lib/admin/types";
 import { AdminStockPublishToggle } from "@/components/organisms/admin/admin-stock-publish-toggle";
+import { AdminStockColorSortToggle } from "@/components/organisms/admin/admin-stock-color-sort-toggle";
 import { AdminStockStickyFilters } from "@/components/organisms/admin/admin-stock-sticky-filters";
 import type { TabId } from "@/components/organisms/admin/tab-nav";
 import { AdminStockListRow } from "@/components/organisms/admin/admin-stock-list-row";
@@ -22,6 +23,10 @@ import { AdminStockSectionsGrid } from "@/components/organisms/admin/admin-stock
 import { AdminStockStorefrontPreview } from "@/components/organisms/admin/admin-stock-storefront-preview";
 import { ADMIN_STOCK_PRODUCT_GRID_CLASS } from "@/components/organisms/shop/catalog-layout";
 import type { StockAutosaveStatusMap } from "@/lib/admin/stock-autosave-types";
+import {
+  sortProductsByColorLuminance,
+  type StockColorSortMode,
+} from "@/lib/admin/stock-color-luminance";
 import type { AdminProductCategoryFilter } from "@/lib/shop-data";
 
 type StockTabProps = {
@@ -55,6 +60,9 @@ type StockTabProps = {
   desktopToolbarSlot?: ReactNode;
   stockContextTab: "produits" | "brouillons";
   onStockContextTabChange: (tab: TabId) => void;
+  /** Enregistrement direct de l’ordre affiché (tri luminosité, etc.). */
+  onCommitProductOrder?: (orderedIds: readonly string[]) => Promise<boolean>;
+  orderSaving?: boolean;
 };
 
 function filterByAdminCategory(
@@ -117,10 +125,13 @@ export function StockTab({
   desktopToolbarSlot,
   stockContextTab,
   onStockContextTabChange,
+  onCommitProductOrder,
+  orderSaving = false,
 }: StockTabProps) {
   const stockControlsBusy = productEditorOpen;
   const [pendingDelete, setPendingDelete] = useState<AdminProduct | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [colorSortMode, setColorSortMode] = useState<StockColorSortMode>("default");
 
   const catalogCardProducts = useMemo(
     () => hideCrewneckVersoFromAdminStock(products),
@@ -141,15 +152,22 @@ export function StockTab({
     [baseFiltered, searchQuery],
   );
 
-  const menuSections = useMemo(
-    () => (categoryFilter === "Collection" ? buildAdminStockMenuSections(searchFiltered) : null),
-    [searchFiltered, categoryFilter],
-  );
+  const menuSections = useMemo(() => {
+    if (categoryFilter !== "Collection") return null;
+    const sections = buildAdminStockMenuSections(searchFiltered);
+    if (colorSortMode === "default") return sections;
+    return sections.map((section) => ({
+      ...section,
+      products: sortProductsByColorLuminance(section.products, colorSortMode),
+    }));
+  }, [searchFiltered, categoryFilter, colorSortMode]);
 
   const visibleProducts = useMemo(() => {
     if (menuSections) return menuSections.flatMap((section) => section.products);
-    return sortAdminProductsLikeShop(searchFiltered);
-  }, [searchFiltered, menuSections]);
+    const base = sortAdminProductsLikeShop(searchFiltered);
+    if (colorSortMode === "default") return base;
+    return sortProductsByColorLuminance(base, colorSortMode);
+  }, [searchFiltered, menuSections, colorSortMode]);
 
   const indexByProductId = useMemo(() => {
     const map = new Map<string, number>();
@@ -164,7 +182,17 @@ export function StockTab({
     );
   }, [onVisibleDraftIdsChange, visibleProducts]);
 
-  const reorderBlocked = gridLocked || storefrontPreview;
+  const reorderBlocked = gridLocked || storefrontPreview || colorSortMode !== "default";
+
+  const validateColorSortDisabled =
+    storefrontPreview || !onCommitProductOrder || visibleProducts.length < 2;
+
+  const handleValidateColorSort = () => {
+    if (validateColorSortDisabled || colorSortMode === "default" || orderSaving) return;
+    void onCommitProductOrder?.(visibleProducts.map((product) => product.id)).then((ok) => {
+      if (ok) setColorSortMode("default");
+    });
+  };
 
   const moveProduct = (fromIndex: number, toIndex: number) => {
     if (reorderBlocked) return;
@@ -212,11 +240,18 @@ export function StockTab({
               />
             </div>
           </div>
-          {desktopToolbarSlot ? (
-            <div className="hidden shrink-0 items-center justify-end gap-2.5 min-[450px]:flex max-md:hidden">
-              {desktopToolbarSlot}
-            </div>
-          ) : null}
+          <div className="flex shrink-0 items-center justify-end gap-2 min-[450px]:gap-2.5">
+            <AdminStockColorSortToggle
+              mode={colorSortMode}
+              onChange={setColorSortMode}
+              onValidate={handleValidateColorSort}
+              validateBusy={orderSaving}
+              validateDisabled={validateColorSortDisabled}
+            />
+            {desktopToolbarSlot ? (
+              <div className="hidden items-center gap-2.5 max-md:hidden min-[450px]:flex">{desktopToolbarSlot}</div>
+            ) : null}
+          </div>
         </div>
       </AdminStockStickyFilters>
 

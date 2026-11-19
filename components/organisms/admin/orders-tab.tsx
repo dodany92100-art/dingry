@@ -5,6 +5,7 @@ import { formatDate, formatPrice } from "@/lib/admin/format";
 import type { OrderStatus } from "@/lib/admin/types";
 import { customerPhoneTelHref, formatCustomerPhoneDisplay } from "@/lib/checkout-phone";
 import type { AdminOrder } from "@/lib/admin/types";
+import { plannedShippingForOrder } from "@/lib/admin/planned-shipping";
 import { formatReviewReasons, isShippingAddressMissing, type OrderReviewReason } from "@/lib/order-review";
 
 type OrdersTabProps = {
@@ -52,14 +53,25 @@ export function OrdersTab({
       {error ? (
         <p className={`mb-3 text-sm ${errorIsSuccess ? "text-emerald-300" : "text-red-400"}`}>{error}</p>
       ) : null}
-      <div className="border border-white/10">
+      <div className="flex flex-col gap-3 sm:gap-3.5">
         {orders.length === 0 ? (
-          <p className="px-4 py-10 text-sm text-white/40">Aucune commande PayPal.</p>
+          <p className="rounded-2xl border border-white/10 px-4 py-10 text-sm text-white/40">
+            Aucune commande PayPal.
+          </p>
         ) : (
-          orders.map((order) => {
+          orders.map((order, index) => {
             const stock = stockLabel(order);
+            const shippingPlanned = plannedShippingForOrder(order);
+            const zebra = index % 2 === 1;
             return (
-              <article key={order.id} className="border-b border-white/[0.06] px-4 py-5 last:border-b-0">
+              <article
+                key={order.id}
+                className={`rounded-2xl border px-4 py-5 sm:rounded-3xl sm:px-5 sm:py-5 ${
+                  zebra
+                    ? "border-white/12 bg-white/[0.055] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                    : "border-white/[0.08] bg-white/[0.018] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                }`}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-sm text-white">{order.customerName}</p>
@@ -90,7 +102,30 @@ export function OrdersTab({
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">{formatPrice(order.total)}</p>
+                    <p className="text-sm font-medium tabular-nums">{formatPrice(order.total)}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/40">
+                      Payé PayPal · articles
+                    </p>
+                    {shippingPlanned.amountEur !== null ? (
+                      <p
+                        className="mt-1 text-[10px] uppercase tracking-[0.12em] text-sky-200/85"
+                        title="Frais de port prévus (non inclus dans le total PayPal actuel)"
+                      >
+                        Livraison prévue · {formatPrice(shippingPlanned.amountEur)} ·{" "}
+                        {shippingPlanned.tierLabel}
+                        {shippingPlanned.amountEur > 0 ? (
+                          <span className="text-white/35">
+                            {" "}
+                            · expédition ~{" "}
+                            {formatPrice(order.total + shippingPlanned.amountEur)}
+                          </span>
+                        ) : null}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/40">
+                        Livraison prévue · tarif à confirmer
+                      </p>
+                    )}
                     <div className="mt-2">
                       <OrderFulfillmentControls
                         order={order}
@@ -116,7 +151,7 @@ export function OrdersTab({
                               busyOrderId === order.id || !canResolveReason(order, reason)
                             }
                             onClick={() => onResolveReview(order, reason)}
-                            className="h-8 border border-amber-500/35 px-2 text-[9px] uppercase tracking-[0.14em] text-amber-200/90 disabled:opacity-30"
+                            className="h-8 rounded-full border border-amber-500/35 px-2.5 text-[9px] uppercase tracking-[0.14em] text-amber-200/90 disabled:opacity-30"
                           >
                             {RESOLVE_LABEL[reason]}
                           </button>
@@ -143,6 +178,14 @@ export function OrdersTab({
                   {order.shippingName ?? order.customerName}
                   <br />
                   {order.shippingAddress || "Adresse manquante"}
+                  {shippingPlanned.amountEur !== null ? (
+                    <>
+                      <br />
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-sky-200/70">
+                        Port futur · {formatPrice(shippingPlanned.amountEur)} ({shippingPlanned.tierLabel})
+                      </span>
+                    </>
+                  ) : null}
                 </p>
               </article>
             );

@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import {
   ADMIN_CRM_RELEASE_HISTORY,
+  ADMIN_CRM_V1_SINCE_LABEL,
+  adminCrmDisplayVersion,
   adminCrmReleaseVersionLabel,
 } from "@/lib/admin/crm-release";
 
@@ -44,11 +46,13 @@ export function CrmChangelogDialog({ open, onClose }: CrmChangelogDialogProps) {
             </p>
             <p className="mt-1 text-sm text-white/70">
               Toutes les mises à jour depuis{" "}
-              <span className="text-white/90">{ADMIN_CRM_RELEASE_HISTORY.at(-1)?.deployedAtLabel}</span>
+              <span className="text-white/90">{ADMIN_CRM_V1_SINCE_LABEL}</span>
               {ADMIN_CRM_RELEASE_HISTORY.at(-1)?.versionHint
                 ? ` (CRM ${adminCrmReleaseVersionLabel(ADMIN_CRM_RELEASE_HISTORY.at(-1)!)})`
                 : null}
-              .
+              {" · "}
+              version actuelle{" "}
+              <span className="text-white/90">v. {adminCrmDisplayVersion()}</span>.
             </p>
           </div>
           <button
@@ -65,8 +69,12 @@ export function CrmChangelogDialog({ open, onClose }: CrmChangelogDialogProps) {
               <article key={entry.id} className="border-l-2 border-[#FF3D00]/40 pl-3">
                 <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/45">
                   {entry.deployedAtLabel}
-                  <span className="text-white/30"> · </span>
-                  {adminCrmReleaseVersionLabel(entry)}
+                  {adminCrmReleaseVersionLabel(entry) ? (
+                    <>
+                      <span className="text-white/30"> · </span>
+                      {adminCrmReleaseVersionLabel(entry)}
+                    </>
+                  ) : null}
                   {index === 0 ? (
                     <span className="normal-case tracking-normal text-[#8ec0ff]/80"> — actuelle</span>
                   ) : null}

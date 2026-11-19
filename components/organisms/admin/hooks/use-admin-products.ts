@@ -474,6 +474,7 @@ export function useAdminProducts({ onUnauthorized }: Options) {
       const sorted = sortAdminProductsForDisplay(result.products);
       setProducts(sorted);
       syncOrderBaseline(sorted);
+      setOrderDirty(false);
       setGridValidated(true);
     } catch {
       setStockError("Ordre non enregistré.");
@@ -481,6 +482,38 @@ export function useAdminProducts({ onUnauthorized }: Options) {
       setOrderSaving(false);
     }
   }, [onUnauthorized, orderDirty, orderSaving, products, syncOrderBaseline]);
+
+  /** Applique un ordre (vue filtrée) et l’enregistre directement sur la vitrine. */
+  const commitProductOrder = useCallback(
+    async (orderedIds: readonly string[]): Promise<boolean> => {
+      if (orderSaving || orderedIds.length === 0) return false;
+      setStockError("");
+      const nextProducts = sortAdminProductsForDisplay(
+        applyDisplayOrderByIds(products, orderedIds),
+      );
+      setOrderSaving(true);
+      try {
+        const result = await publishDropBatchAction(buildDropBatchItems(nextProducts));
+        if (!result.ok) {
+          if (result.error === "Non autorisé.") onUnauthorized();
+          setStockError(result.error || "Ordre non enregistré.");
+          return false;
+        }
+        const sorted = sortAdminProductsForDisplay(result.products);
+        setProducts(sorted);
+        syncOrderBaseline(sorted);
+        setOrderDirty(false);
+        setGridValidated(true);
+        return true;
+      } catch {
+        setStockError("Ordre non enregistré.");
+        return false;
+      } finally {
+        setOrderSaving(false);
+      }
+    },
+    [onUnauthorized, orderSaving, products, syncOrderBaseline],
+  );
 
   const publishSelectionLive = useCallback(
     async (productIds: string[]) => {
@@ -567,6 +600,7 @@ export function useAdminProducts({ onUnauthorized }: Options) {
     reorderProductsLocal,
     discardProductOrder,
     saveProductOrder,
+    commitProductOrder,
     publishSelectionLive,
     clearGridValidated,
   };

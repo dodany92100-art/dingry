@@ -555,6 +555,8 @@ function AdminDashboard() {
               });
             }}
             onReorderProducts={productsApi.reorderProductsLocal}
+            onCommitProductOrder={productsApi.commitProductOrder}
+            orderSaving={productsApi.orderSaving}
             categoryFilter={categoryFilter}
             onCategoryFilterChange={selectCategory}
             onUnauthorized={expire}

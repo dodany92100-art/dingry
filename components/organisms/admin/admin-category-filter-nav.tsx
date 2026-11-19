@@ -62,7 +62,9 @@ export function AdminCategoryFilterNav({
           className="overflow-x-auto overscroll-x-contain scroll-smooth pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:overflow-x-visible"
         >
           <div
-            className="dingry-admin-track-linear inline-flex min-w-max items-center gap-0.5 rounded-full p-1"
+            className={`inline-flex min-w-max items-center gap-0.5 rounded-full p-1 ${
+              embedded ? "dingry-admin-category-track-bottle" : "dingry-admin-track-linear"
+            }`}
             role="tablist"
             aria-label="Filtrer par catégorie produit"
           >
