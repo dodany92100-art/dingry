@@ -11,3 +11,6 @@ export const ATELIER_CITY_BANNER_IMAGE_MAX_LABEL = CRM_CONTENT_IMAGE_MAX_LABEL;
 export const PRODUCT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 
 export const PRODUCT_IMAGE_MAX_LABEL = "10 Mo";
+
+/** Sous-titre accordéon médias éditeur produit. */
+export const PRODUCT_IMAGE_EDITOR_SUBTITLE = `WebP · ${PRODUCT_IMAGE_MAX_LABEL} · auto`;

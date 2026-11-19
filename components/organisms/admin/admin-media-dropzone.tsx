@@ -49,7 +49,7 @@ export function AdminMediaDropzone({
         <p
           className={`font-medium uppercase tracking-[0.14em] ${
             compact
-              ? "mb-1 text-[9px] text-white/45"
+              ? "mb-1 w-full text-center text-[9px] text-white/45"
               : `mb-2 text-sm ${tone === "ghost" ? "text-zinc-500" : "text-zinc-400"}`
           }`}
         >

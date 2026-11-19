@@ -86,6 +86,12 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
 
   const colorDeclinations = model.colorDeclinations.filter((c) => c.trim().length > 0);
 
+  /** Même cadre recto seul ou flip — évite le plein rail vs l’ancien 14rem. */
+  const previewImageFrameClass =
+    "mx-auto w-full max-w-[15rem] sm:max-w-[17rem]";
+  const previewImageClass =
+    "mx-auto max-h-52 w-full object-contain object-center sm:max-h-56 lg:max-h-60";
+
   return (
     <div
       className={`dingry-admin-product-preview dingry-admin-stock flex flex-col overflow-hidden rounded-xl border border-[rgb(191_149_63/0.32)] bg-[#0a0a0a] shadow-[inset_0_1px_0_rgb(252_246_186/0.08),0_0_28px_rgb(191_149_63/0.07)] ${className}`}
@@ -99,10 +105,14 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
         <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-zinc-400">{model.category}</p>
       </div>
 
-      <div className="relative flex min-h-[14rem] w-full flex-col items-stretch justify-center bg-black px-3 py-4 sm:min-h-[16rem] sm:px-4 lg:min-h-[20rem]">
+      <div
+        className={`relative flex w-full flex-col items-stretch justify-center bg-black px-3 py-3 sm:px-4 ${
+          hasRecto ? "min-h-0" : "min-h-[12rem] sm:min-h-[14rem]"
+        }`}
+      >
         {flippable ? (
           <div
-            className="mx-auto w-full max-w-[14rem] sm:max-w-[16rem]"
+            className={previewImageFrameClass}
             onMouseEnter={() => setSide("verso")}
             onMouseLeave={() => setSide("recto")}
           >
@@ -112,21 +122,19 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
               side={side}
               onDoubleTapFlip={() => setSide((current) => (current === "recto" ? "verso" : "recto"))}
               alt={product.name}
-              imgClassName="max-h-64 object-contain object-center sm:max-h-72 lg:max-h-80"
+              className="w-full max-h-52 sm:max-h-56 lg:max-h-[15rem]"
+              imgClassName={previewImageClass}
             />
-            <p className="mt-2 text-center text-[9px] uppercase tracking-[0.16em] text-zinc-500">
+            <p className="mt-1.5 text-center text-[9px] uppercase tracking-[0.16em] text-zinc-500">
               Survol · recto / verso
             </p>
           </div>
         ) : hasRecto ? (
-          <img
-            src={recto}
-            alt=""
-            className="mx-auto max-h-64 w-full max-w-full object-contain object-center sm:max-h-72 lg:max-h-80"
-            decoding="async"
-          />
+          <div className={previewImageFrameClass}>
+            <img src={recto} alt="" className={previewImageClass} decoding="async" />
+          </div>
         ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+          <div className="flex min-h-[10rem] items-center justify-center px-4 text-center text-[10px] uppercase tracking-[0.18em] text-zinc-600">
             Aperçu image · upload recto ou brouillon
           </div>
         )}

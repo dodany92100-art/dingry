@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye } from "lucide-react";
+import { ArrowLeftRight, Eye } from "lucide-react";
 import { motion } from "motion/react";
 import {
   ProductEditorSplitLayout,
@@ -56,6 +56,7 @@ import {
   uploadAdminImageToR2,
   type AdminImageUploadResponse,
 } from "@/lib/client/admin-upload-image";
+import { PRODUCT_IMAGE_EDITOR_SUBTITLE } from "@/lib/admin/image-limits";
 import { prepareProductImage } from "@/lib/client/prepare-product-image";
 import { buildSmartDescriptionDraft } from "@/lib/admin/smart-crm";
 import {
@@ -154,8 +155,6 @@ type FormSuccessState =
       filledSummary: string;
     };
 
-type EditorTab = ProductEditorTab;
-
 type ProductEditorPreviewRailProps = {
   model: AdminProductPreviewModel;
   previewRectoSrc: string;
@@ -165,8 +164,8 @@ type ProductEditorPreviewRailProps = {
   saving: boolean;
   convertingImage: boolean;
   mediaDirty: boolean;
-  onRectoFile: (file: File) => void;
-  onVersoFile: (file: File) => void;
+  onRectoFile: (file: File | null) => void;
+  onVersoFile: (file: File | null) => void;
   onSwapFaces: () => void;
   onOpenFullPreview: () => void;
 };
@@ -185,55 +184,62 @@ function ProductEditorPreviewRail({
   onSwapFaces,
   onOpenFullPreview,
 }: ProductEditorPreviewRailProps) {
+  const previewSrcLoaded = (src: string) =>
+    src.trim().length > 0 && !isDraftPlaceholderImage(src);
+  const previewMediaLoaded =
+    previewSrcLoaded(previewRectoSrc) || previewSrcLoaded(previewVersoSrc);
+
   return (
-    <div className="min-w-0 space-y-4 lg:max-w-full lg:space-y-3">
-      <AdminEditorAccordion
-        title="Médias"
-        subtitle="Recto / verso · WebP auto"
-        dirty={mediaDirty}
-        density="compact"
-      >
-        <div className="grid grid-cols-2 gap-2">
-          <AdminMediaDropzone
-            tone="default"
-            density="compact"
-            label="Recto"
-            previewSrc={previewRectoSrc}
-            converting={convertingRecto}
-            onFile={(file) => {
-              if (file) onRectoFile(file);
-            }}
-          />
-          <AdminMediaDropzone
-            tone="default"
-            density="compact"
-            label="Verso"
-            previewSrc={previewVersoSrc}
-            converting={convertingVerso}
-            onFile={(file) => {
-              if (file) onVersoFile(file);
-            }}
-          />
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t border-white/[0.06] pt-2">
-          <button
-            type="button"
-            onClick={onSwapFaces}
-            disabled={saving || convertingImage}
-            className="rounded-full border border-white/[0.1] bg-[#101010] px-2.5 py-1 text-[10px] font-medium text-white/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/16 hover:bg-[#161616] hover:text-white disabled:opacity-40"
-            title="Échanger recto et verso (fichiers, uploads ou photos enregistrées)"
-          >
-            Permuter recto ↔ verso
-          </button>
-          <p className="text-[8px] uppercase tracking-[0.14em] text-white/32">
-            WebP · 10 Mo · auto
-          </p>
-        </div>
-      </AdminEditorAccordion>
-      <AdminProductPreview model={model} className="w-full max-w-none" />
-      <button type="button" onClick={onOpenFullPreview} className={`${ADMIN_BTN} w-full text-center`}>
-        Aperçu boutique plein écran
-      </button>
+    <div className="flex min-w-0 flex-col gap-4 lg:max-w-full lg:gap-3">
+      <div className={previewMediaLoaded ? "order-2" : "order-1"}>
+        <AdminEditorAccordion
+          title="Médias"
+          subtitle={PRODUCT_IMAGE_EDITOR_SUBTITLE}
+          dirty={mediaDirty}
+          density="compact"
+        >
+          <div className="relative">
+            <div className="grid grid-cols-2 gap-2">
+              <AdminMediaDropzone
+                tone="default"
+                density="compact"
+                label="Recto"
+                previewSrc={previewRectoSrc}
+                converting={convertingRecto}
+                onFile={(file) => {
+                  void onRectoFile(file);
+                }}
+              />
+              <AdminMediaDropzone
+                tone="default"
+                density="compact"
+                label="Verso"
+                previewSrc={previewVersoSrc}
+                converting={convertingVerso}
+                onFile={(file) => {
+                  void onVersoFile(file);
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={onSwapFaces}
+              disabled={saving || convertingImage}
+              aria-label="Permuter recto et verso"
+              className="absolute left-1/2 top-1/2 z-10 inline-flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.1] bg-[#101010] text-white/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/16 hover:bg-[#161616] hover:text-white disabled:opacity-40"
+              title="Échanger recto et verso (fichiers, uploads ou photos enregistrées)"
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </div>
+        </AdminEditorAccordion>
+      </div>
+      <div className={`flex flex-col gap-4 lg:gap-3 ${previewMediaLoaded ? "order-1" : "order-2"}`}>
+        <AdminProductPreview model={model} className="w-full max-w-none" />
+        <button type="button" onClick={onOpenFullPreview} className={`${ADMIN_BTN} w-full text-center`}>
+          Aperçu boutique plein écran
+        </button>
+      </div>
     </div>
   );
 }
@@ -300,7 +306,7 @@ export function ProductEditorModal({
   const [printSheetOpen, setPrintSheetOpen] = useState(false);
   const [colorListDraft, setColorListDraft] = useState(() => hydratedUi.colorListDraft);
   const [waistListDraft, setWaistListDraft] = useState(() => hydratedUi.waistListDraft);
-  const [editorTab, setEditorTab] = useState<EditorTab>(() => hydratedUi.editorTab);
+  const [editorTab, setEditorTab] = useState<ProductEditorTab>(() => hydratedUi.editorTab);
   const [editorSplitLeftPct, setEditorSplitLeftPct] = useState(
     () =>
       (typeof window !== "undefined" ? readProductEditorSplitPct() : null) ??
@@ -1337,6 +1343,23 @@ export function ProductEditorModal({
     return labels;
   }, [sectionDirty]);
 
+  const productEditorPreviewRail = (
+    <ProductEditorPreviewRail
+      model={previewModel}
+      previewRectoSrc={previewRectoSrc}
+      previewVersoSrc={previewVersoSrc}
+      convertingRecto={convertingRecto}
+      convertingVerso={convertingVerso}
+      saving={saving}
+      convertingImage={convertingImage}
+      mediaDirty={sectionDirty.media}
+      onRectoFile={(file) => void acceptImageRecto(file)}
+      onVersoFile={(file) => void acceptImageVerso(file)}
+      onSwapFaces={swapProductMediaFaces}
+      onOpenFullPreview={() => setEditorTab("preview")}
+    />
+  );
+
   const saveActionsDisabled = saving || convertingImage;
 
   const draftSaveButtonClass = !isDirty
@@ -1538,33 +1561,19 @@ export function ProductEditorModal({
                 previewAfterEditorOnMobile
                 committedLeftPct={editorSplitLeftPct}
                 onCommitLeftPct={setEditorSplitLeftPct}
-                preview={
-                  <ProductEditorPreviewRail
-                    model={previewModel}
-                    previewRectoSrc={previewRectoSrc}
-                    previewVersoSrc={previewVersoSrc}
-                    convertingRecto={convertingRecto}
-                    convertingVerso={convertingVerso}
-                    saving={saving}
-                    convertingImage={convertingImage}
-                    mediaDirty={sectionDirty.media}
-                    onRectoFile={(file) => void acceptImageRecto(file)}
-                    onVersoFile={(file) => void acceptImageVerso(file)}
-                    onSwapFaces={swapProductMediaFaces}
-                    onOpenFullPreview={() => setEditorTab("preview")}
-                  />
-                }
+                preview={productEditorPreviewRail}
                 editor={
-                <div className="min-w-0 space-y-4 lg:max-w-none lg:space-y-3">
+                <div className="dingry-product-editor-form min-w-0 space-y-2.5 sm:space-y-3 lg:max-w-none">
                   <AdminEditorAccordion
                     title="Informations générales"
                     dirty={sectionDirty.general}
+                    density="compact"
                   >
-                    <div className="space-y-3 sm:space-y-4">
-                      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                    <div className="space-y-2.5 sm:space-y-3">
+                      <div className="grid gap-2 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-3">
                         <label
                           htmlFor="dingry-product-category"
-                          className={`${FIELD_LABEL_EMPHASIS} sm:col-span-2 lg:col-span-1`}
+                          className={`${FIELD_LABEL_COMPACT} sm:col-span-2 lg:col-span-1`}
                         >
                           Catégorie
                           <select
@@ -1573,7 +1582,7 @@ export function ProductEditorModal({
                             aria-label="Catégorie produit"
                             value={form.category}
                             onChange={(event) => changeCategory(event.target.value as ProductCategory)}
-                            className={`${FIELD_SELECT} font-medium ${
+                            className={`${FIELD_SELECT.replace("mt-1.5 h-11", "mt-1 h-9")} px-3 text-[14px] font-medium ${
                               sectionDirty.general && form.category !== baselineForm.category
                                 ? "border-white/40"
                                 : ""
@@ -1586,9 +1595,9 @@ export function ProductEditorModal({
                             ))}
                           </select>
                         </label>
-                        <label className={FIELD_LABEL_EMPHASIS}>
+                        <label className={FIELD_LABEL_COMPACT}>
                           Référence (SKU)
-                          <div className="mt-1.5 flex items-stretch gap-2">
+                          <div className="mt-1 flex items-stretch gap-1.5">
                             <input
                               id="dingry-product-sku"
                               value={form.sku}
@@ -1597,27 +1606,27 @@ export function ProductEditorModal({
                               }
                               required
                               maxLength={32}
-                              className={`${FIELD_INPUT} mt-0 min-w-0 flex-1 font-mono text-[12px] uppercase`}
+                              className={`${FIELD_INPUT_COMPACT} mt-0 min-w-0 flex-1 font-mono text-[11px] uppercase`}
                             />
                             <button
                               type="button"
                               onClick={onGenerateSkuClick}
                               disabled={saving || convertingImage}
-                              className={`${ADMIN_BTN} shrink-0 self-center`}
+                              className={`${ADMIN_BTN} shrink-0 self-center py-1.5 text-[11px]`}
                               title="Générer un SKU DGRY unique pour la catégorie"
                             >
                               Générer
                             </button>
                           </div>
                         </label>
-                        <label className={`${FIELD_LABEL_EMPHASIS} sm:col-span-2 lg:col-span-1`}>
+                        <label className={`${FIELD_LABEL_COMPACT} sm:col-span-2 lg:col-span-1`}>
                           Nom produit
                           <input
                             ref={productNameInputRef}
                             value={form.name}
                             onChange={(event) => patch({ name: event.target.value.toUpperCase() })}
                             required
-                            className={FIELD_INPUT}
+                            className={FIELD_INPUT_COMPACT}
                           />
                         </label>
                       </div>
@@ -1780,12 +1789,12 @@ export function ProductEditorModal({
                   <AdminEditorAccordion
                     sectionId="dingry-product-sizes-colors"
                     title={pantsForm ? "Tours & variantes" : "Tailles & variantes"}
-                    subtitle="Grille boutique, couleurs et finition — une seule zone."
                     dirty={sectionDirty.sizes || sectionDirty.general}
+                    density="compact"
                   >
-                    <div className="space-y-3 sm:space-y-3.5">
+                    <div className="space-y-2.5">
                       <div className="min-w-0">
-                        <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/60 sm:text-[13px]">
+                        <p className="mb-1.5 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-white/50">
                           {pantsForm ? "Grille tours" : "Grille tailles"}
                         </p>
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -1858,7 +1867,7 @@ export function ProductEditorModal({
                         ) : null}
                       </div>
 
-                      <div className="min-w-0 border-t border-white/10 pt-3">
+                      <div className="min-w-0 border-t border-white/[0.08] pt-2.5">
                         {pantsForm ? (
                           <div className="space-y-2">
                             <p className={FIELD_LABEL}>Tours de taille</p>
@@ -1948,8 +1957,8 @@ export function ProductEditorModal({
                     density="compact"
                     defaultOpen
                   >
-                    <div className="grid gap-2.5 sm:grid-cols-2">
-                      <label className={FIELD_LABEL_COMPACT}>
+                    <div className="grid gap-2 sm:grid-cols-2 sm:items-start">
+                      <label className={`${FIELD_LABEL_COMPACT} text-[11px] text-white/55`}>
                         Prix (€)
                         <input
                           type="number"
@@ -1962,7 +1971,7 @@ export function ProductEditorModal({
                           className={`${FIELD_INPUT_COMPACT} tabular-nums`}
                         />
                       </label>
-                      <label className={FIELD_LABEL_COMPACT}>
+                      <label className={`${FIELD_LABEL_COMPACT} text-[11px] text-white/55`}>
                         <span className="inline-flex items-center gap-1">
                           Stock global
                           <span
@@ -1986,11 +1995,11 @@ export function ProductEditorModal({
                     </div>
 
                   {current ? (
-                    <div className="mt-2.5 flex flex-col gap-2 border-t border-white/[0.08] pt-2.5 sm:flex-row sm:justify-end">
+                    <div className="mt-2 flex flex-wrap justify-end gap-1.5 border-t border-white/[0.08] pt-2">
                       <button
                         type="button"
                         onClick={() => setPrintSheetOpen(true)}
-                        className={`${ADMIN_BTN} px-4 py-2.5`}
+                        className={`${ADMIN_BTN} px-3 py-1.5 text-[11px]`}
                       >
                         Imprimer
                       </button>
@@ -1998,7 +2007,7 @@ export function ProductEditorModal({
                         type="button"
                         disabled={busyProductId === current.id}
                         onClick={() => void handleDelete()}
-                        className="rounded-full border border-red-500/35 bg-red-950/40 px-4 py-2.5 text-[13px] font-medium text-red-200 transition hover:bg-red-950/70 disabled:opacity-40"
+                        className="rounded-full border border-red-500/35 bg-red-950/40 px-3 py-1.5 text-[11px] font-medium text-red-200 transition hover:bg-red-950/70 disabled:opacity-40"
                       >
                         Supprimer
                       </button>
@@ -2012,22 +2021,7 @@ export function ProductEditorModal({
               <ProductEditorSplitLayout
                 committedLeftPct={editorSplitLeftPct}
                 onCommitLeftPct={setEditorSplitLeftPct}
-                preview={
-                  <ProductEditorPreviewRail
-                    model={previewModel}
-                    previewRectoSrc={previewRectoSrc}
-                    previewVersoSrc={previewVersoSrc}
-                    convertingRecto={convertingRecto}
-                    convertingVerso={convertingVerso}
-                    saving={saving}
-                    convertingImage={convertingImage}
-                    mediaDirty={sectionDirty.media}
-                    onRectoFile={(file) => void acceptImageRecto(file)}
-                    onVersoFile={(file) => void acceptImageVerso(file)}
-                    onSwapFaces={swapProductMediaFaces}
-                    onOpenFullPreview={() => setEditorTab("preview")}
-                  />
-                }
+                preview={productEditorPreviewRail}
                 editor={
                 <div className="min-w-0 space-y-4 lg:max-w-none lg:space-y-3">
                 {(

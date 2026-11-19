@@ -197,7 +197,7 @@ export function ProductEditorSplitLayout({
       </div>
 
       <div
-        className={`min-w-0 flex-1 space-y-4 min-[960px]:order-3 min-[960px]:min-w-[280px] min-[960px]:max-w-none min-[960px]:space-y-3 min-[960px]:pl-2 ${editorOrder}`}
+        className={`min-w-0 flex-1 space-y-2.5 min-[960px]:order-3 min-[960px]:min-w-[280px] min-[960px]:max-w-none min-[960px]:space-y-2.5 min-[960px]:pl-2 ${editorOrder}`}
       >
         {editor}
       </div>

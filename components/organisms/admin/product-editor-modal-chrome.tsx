@@ -8,7 +8,7 @@ export const SECTION_CARD =
 export const SECTION_CARD_COMPACT =
   "dingry-admin-editor-card relative rounded-xl px-3 py-3 sm:rounded-2xl sm:px-4 sm:py-3.5";
 export const SECTION_DIRTY =
-  "border-l border-l-white/50 pl-[1.125rem] sm:pl-[1.25rem] before:pointer-events-none before:absolute before:left-2 before:top-5 before:h-1.5 before:w-1.5 before:rounded-full before:bg-white before:content-['']";
+  "border-l border-l-white/50 pl-[1.125rem] sm:pl-[1.25rem] before:pointer-events-none before:absolute before:left-2 before:top-[1.125rem] before:h-1.5 before:w-1.5 before:rounded-full before:bg-white before:content-[''] sm:before:top-5";
 
 export const FIELD_LABEL = "block text-[13px] font-medium tracking-tight text-white/55";
 /** Libellés principaux (catégorie, SKU, nom). */
