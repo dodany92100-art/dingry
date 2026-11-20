@@ -6,10 +6,11 @@ import { isAdminAppPath } from "@/lib/alto-last-public-url";
 import { isWebsitedxPath } from "@/lib/alto-switch-urls";
 
 function isAltoSurfacePath(pathname: string): boolean {
-  return isAdminAppPath(pathname) || isWebsitedxPath(pathname);
+  if (isAdminAppPath(pathname) || isWebsitedxPath(pathname)) return true;
+  return pathname === "/checkout" || pathname.startsWith("/checkout/");
 }
 
-/** Alto uniquement sur CRM et vitrine privée /websitedx (pas sur le teaser public). */
+/** Alto sur CRM, /websitedx, checkout — pas sur le teaser public `/`. */
 export function AdminSwitcherBarScope() {
   const pathname = usePathname() ?? "/";
   if (!isAltoSurfacePath(pathname)) return null;

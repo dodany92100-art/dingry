@@ -58,6 +58,11 @@ export const DINGRY_PRODUCT_MEDIA = {
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie7/1794331750008-72kewj-hoodie7.webp",
   hoodie8Verso:
     "https://pub-5c13c59abc20442390a5eee5cb7034b0.r2.dev/dingry/legacy/hoodie8/1794331769827-e2bgg6-hoodie8.webp",
+  /** Pants / crop — repli vitrine tant que le CRM n’a pas de WebP dédié. */
+  pantsCargoBlack:
+    "https://images.unsplash.com/photo-1552902875-9ac1f9fe0c07?w=800&h=1000&fit=crop&auto=format",
+  cropTopSignature:
+    "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793122204/WhatsApp_Image_2026-10-26_at_19.33.25_yzr0fb.jpg",
 } as const;
 
 /** Images catalogue de repli (flip verso / fiche CRM incomplète). */
@@ -86,6 +91,8 @@ export const CATALOG_CANONICAL_IMAGE_BY_ID: Readonly<Record<number, string>> = {
   19: DINGRY_PRODUCT_MEDIA.teeCollection09Recto,
   21: DINGRY_PRODUCT_MEDIA.teeBlackRecto,
   22: DINGRY_PRODUCT_MEDIA.teeFemmeRecto,
+  23: DINGRY_PRODUCT_MEDIA.cropTopSignature,
+  43: DINGRY_PRODUCT_MEDIA.pantsCargoBlack,
   41: DINGRY_PRODUCT_MEDIA.jerseyWhite,
   42: DINGRY_PRODUCT_MEDIA.jerseyBlack,
   37: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/99459ef5-5357-4aa7-adce-8ab461ca0370_obzc2o.jpg",

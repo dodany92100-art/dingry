@@ -30,7 +30,7 @@ export type ShopCategory =
   | "Caps"
   | "Jersey"
   | "Pants"
-  | "Crop Top";
+  | "Crop tops";
 
 export const SHOP_TEE_CATEGORY = "T-shirts" satisfies ShopCategory;
 
@@ -42,7 +42,7 @@ const SHOP_CATEGORY_BY_MENU_SLUG: Record<CatalogCategory, ShopCategory> = {
   "t-shirts": SHOP_TEE_CATEGORY,
   jersey: "Jersey",
   pants: "Pants",
-  "crop-top": "Crop Top",
+  "crop-top": "Crop tops",
   caps: "Caps",
 };
 

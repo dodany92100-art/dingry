@@ -446,4 +446,22 @@ export const PRODUCTS: ShopProduct[] = [
     description: "Jersey mesh noir, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
     category: "Jerseys",
   },
+  {
+    id: 23,
+    name: "DINGRY CROP TOP",
+    variant: "SIGNATURE — RECTO",
+    price: 45,
+    image: DINGRY_PRODUCT_MEDIA.cropTopSignature,
+    description: "Crop top signature DINGRY — coupe féminine, print poitrine.",
+    category: "Crop tops",
+  },
+  {
+    id: 43,
+    name: "PANTALON CARGO DINGRY",
+    variant: "NOIR — RECTO",
+    price: 110,
+    image: DINGRY_PRODUCT_MEDIA.pantsCargoBlack,
+    description: "Pantalon cargo signature, coupe street, finitions DINGRY.",
+    category: "Pants",
+  },
 ];

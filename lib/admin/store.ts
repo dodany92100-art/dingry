@@ -400,6 +400,10 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
       : (canonicalImage ?? seed.imageUrl);
 
   if (catalogLocked) {
+    const seedLiveRestoresCatalog =
+      seed.publishStatus === "live" &&
+      current.publishStatus === "draft" &&
+      (!liveImage || isDraftPlaceholderImage(liveImage));
     const resolvedCategory = current
       ? normalizeProductCategory(current.category)
       : DINGRY_SWEAT_PRODUCT_IDS.has(seedIdNum)
@@ -413,7 +417,8 @@ function mergeSeedProduct(seed: AdminProduct, current: AdminProduct | undefined)
       ...seed,
       ...current,
       imageUrl: crmImage,
-      category: resolvedCategory,
+      publishStatus: seedLiveRestoresCatalog ? "live" : current.publishStatus,
+      category: genericCategory ? normalizeProductCategory(seed.category) : resolvedCategory,
       name: current.name.includes(" — ") ? seed.name : current.name,
       variant: current.variant.trim() || seed.variant,
       description: current.description.trim() || seed.description,

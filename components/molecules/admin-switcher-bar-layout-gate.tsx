@@ -1,12 +1,6 @@
-import { headers } from "next/headers";
-
 import { AdminSwitcherBarScope } from "@/components/molecules/admin-switcher-bar-scope";
-import { isCrmHost, isDevHost, isHostSplitActive } from "@/lib/host-routing";
 
-/** Alto / switcher : CRM, local dev, ou split désactivé — pas sur `www` scindé. */
+/** Alto : monté sur tous les hosts ; affichage client = session admin / preview + surfaces vitrine / CRM. */
 export async function AdminSwitcherBarLayoutGate() {
-  if (!isHostSplitActive()) return <AdminSwitcherBarScope />;
-  const host = (await headers()).get("host") ?? "";
-  if (isDevHost(host) || isCrmHost(host)) return <AdminSwitcherBarScope />;
-  return null;
+  return <AdminSwitcherBarScope />;
 }

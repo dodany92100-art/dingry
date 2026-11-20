@@ -14,7 +14,8 @@ export function useAltoSwitcherEligibility(pathname: string): AltoState {
     let cancelled = false;
     const onAdmin = isAdminAppPath(pathname);
     const onWebsitedx = isWebsitedxPath(pathname);
-    if (!onAdmin && !onWebsitedx) {
+    const onCheckout = pathname === "/checkout" || pathname.startsWith("/checkout/");
+    if (!onAdmin && !onWebsitedx && !onCheckout) {
       setState({ booting: false, showAlto: false });
       return;
     }

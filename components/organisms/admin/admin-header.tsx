@@ -47,10 +47,13 @@ export function AdminHeader({
               {deployedAtParts ? (
                 <>
                   <span className="text-zinc-700/40"> · </span>
-                  <time dateTime={process.env.NEXT_PUBLIC_CRM_BUILD_AT} className="text-zinc-600/45">
+                  <time
+                    dateTime={process.env.NEXT_PUBLIC_CRM_BUILD_AT}
+                    className="text-[6px] text-zinc-600/40 md:text-[7px]"
+                  >
                     {deployedAtParts.date}
                     <span className="text-zinc-700/35"> · </span>
-                    <span className="tabular-nums text-zinc-600/40">{deployedAtParts.time}</span>
+                    <span className="tabular-nums text-zinc-600/35">{deployedAtParts.time}</span>
                   </time>
                 </>
               ) : null}
@@ -61,10 +64,13 @@ export function AdminHeader({
               {deployedAtParts ? (
                 <>
                   <span className="text-zinc-700/40"> · </span>
-                  <time dateTime={process.env.NEXT_PUBLIC_CRM_BUILD_AT} className="text-zinc-600/45">
+                  <time
+                    dateTime={process.env.NEXT_PUBLIC_CRM_BUILD_AT}
+                    className="text-[6px] text-zinc-600/40 md:text-[7px]"
+                  >
                     {deployedAtParts.date}
                     <span className="text-zinc-700/35"> · </span>
-                    <span className="tabular-nums text-zinc-600/40">{deployedAtParts.time}</span>
+                    <span className="tabular-nums text-zinc-600/35">{deployedAtParts.time}</span>
                   </time>
                 </>
               ) : null}
