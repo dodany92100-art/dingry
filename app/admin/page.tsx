@@ -134,8 +134,7 @@ function AdminDashboard() {
   );
   const wantsShopRedirect = loginNext !== "/admin";
   const shopRedirectStartedRef = useRef(false);
-  /** Vrai seulement juste après un login réussi (évite blocage sur `?next=` collé dans l’URL). */
-  const [postLoginShopRedirect, setPostLoginShopRedirect] = useState(false);
+  const pendingShopRedirect = authenticated && wantsShopRedirect && !session.backupCodes;
 
   const navigateAfterLogin = useCallback(
     (target: string) => {
@@ -262,27 +261,11 @@ function AdminDashboard() {
   }, [loaded, searchParams, productsApi.products]);
 
   useEffect(() => {
-    if (!authenticated || session.backupCodes || !wantsShopRedirect) return;
-    if (!postLoginShopRedirect) {
-      if (searchParams.get("next")) {
-        router.replace("/admin", { scroll: false });
-      }
-      return;
-    }
-    setPostLoginShopRedirect(false);
+    if (!pendingShopRedirect) return;
     if (shopRedirectStartedRef.current) return;
     shopRedirectStartedRef.current = true;
     navigateAfterLogin(loginNext);
-  }, [
-    authenticated,
-    session.backupCodes,
-    wantsShopRedirect,
-    loginNext,
-    navigateAfterLogin,
-    postLoginShopRedirect,
-    router,
-    searchParams,
-  ]);
+  }, [pendingShopRedirect, loginNext, navigateAfterLogin]);
 
   function dismissBackupThenRedirect() {
     session.dismissBackupCodes();
@@ -318,16 +301,9 @@ function AdminDashboard() {
 
   useEffect(() => {
     if (session.loginLoading) {
-      setPostLoginShopRedirect(true);
       startCrmAdminLoadProgress();
     }
   }, [session.loginLoading]);
-
-  useEffect(() => {
-    if (!session.booting && !authenticated && !session.loginLoading) {
-      setPostLoginShopRedirect(false);
-    }
-  }, [session.booting, authenticated, session.loginLoading]);
 
   useEffect(() => {
     if (!session.booting && !authenticated && !session.loginLoading) {
@@ -337,7 +313,7 @@ function AdminDashboard() {
 
   // Session valide → chargement du tableau de bord. 401 → retour au login.
   useEffect(() => {
-    if (!authenticated || (wantsShopRedirect && postLoginShopRedirect)) {
+    if (!authenticated || pendingShopRedirect) {
       setLoaded(false);
       return;
     }
@@ -397,8 +373,7 @@ function AdminDashboard() {
     };
   }, [
     authenticated,
-    wantsShopRedirect,
-    postLoginShopRedirect,
+    pendingShopRedirect,
     loadProducts,
     loadOrders,
     loadLookbook,
@@ -467,7 +442,7 @@ function AdminDashboard() {
     );
   }
 
-  if (authenticated && wantsShopRedirect && postLoginShopRedirect && !session.backupCodes) {
+  if (pendingShopRedirect) {
     return <LoadingScreen status="Ouverture boutique…" />;
   }
 

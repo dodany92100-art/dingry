@@ -221,7 +221,7 @@ describe("handleProxyRequest preview cookie", () => {
 
 describe("handleProxyRequest teaser gate", () => {
   beforeEach(() => {
-    vi.stubEnv("DINGRY_TEASER_GATE", "");
+    vi.stubEnv("DINGRY_TEASER_GATE", "on");
     vi.stubEnv("ADMIN_SESSION_SECRET", SESSION_SECRET);
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("VERCEL_ENV", "");

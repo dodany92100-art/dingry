@@ -91,8 +91,6 @@ export const CATALOG_CANONICAL_IMAGE_BY_ID: Readonly<Record<number, string>> = {
   19: DINGRY_PRODUCT_MEDIA.teeCollection09Recto,
   21: DINGRY_PRODUCT_MEDIA.teeBlackRecto,
   22: DINGRY_PRODUCT_MEDIA.teeFemmeRecto,
-  23: DINGRY_PRODUCT_MEDIA.cropTopSignature,
-  43: DINGRY_PRODUCT_MEDIA.pantsCargoBlack,
   41: DINGRY_PRODUCT_MEDIA.jerseyWhite,
   42: DINGRY_PRODUCT_MEDIA.jerseyBlack,
   37: "https://res.cloudinary.com/dc9xmxpvv/image/upload/v1793310306/99459ef5-5357-4aa7-adce-8ab461ca0370_obzc2o.jpg",

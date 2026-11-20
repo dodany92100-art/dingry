@@ -1,3 +1,4 @@
+import { DEFAULT_REMOVED_CATALOG_IDS } from "@/lib/admin/seed";
 import type { AdminProduct, AdminStore } from "@/lib/admin/types";
 import { toCatalogProduct } from "@/lib/admin/types";
 import { overlayShopCatalog, type ShopProduct } from "@/lib/catalog";
@@ -17,6 +18,7 @@ export function removedCatalogIdSet(store: AdminStore): ReadonlySet<number> {
     if (Number.isInteger(id) && id > 0) ids.add(id);
   };
   for (const raw of store.removedCatalogIds ?? []) add(raw);
+  for (const raw of DEFAULT_REMOVED_CATALOG_IDS) add(raw);
   for (const product of store.products) {
     if (product.publishStatus === "draft") add(product.id);
   }

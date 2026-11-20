@@ -146,7 +146,7 @@ Si un ancien déploiement utilisait encore `access: "private"` alors que le blob
 
 ## Teaser public + boutique privée (`DINGRY_TEASER_GATE`)
 
-**Comportement (défaut) :** `DINGRY_TEASER_GATE` absent ou non reconnu → gate **actif** — `/websitedx`, `/checkout`, `/api/catalog`, `/api/checkout`, `/api/lookbook`, `/api/catalog-perso-banner` exigent le cookie admin (TOTP). L’accueil `/` reste géré par `DINGRY_PUBLIC_HOME` + date d’ouverture (`lib/dingry-teaser-opening.ts`).
+**Comportement (défaut) :** gate **actif** — `/websitedx`, checkout et APIs catalogue exigent cookie **admin** (TOTP CRM) ou **preview** ; vitrine **non publique**. Lancement ouvert : `DINGRY_TEASER_GATE=off` → redeploy. L’accueil `/` reste géré par `DINGRY_PUBLIC_HOME` + date d’ouverture (`lib/dingry-teaser-opening.ts`).
 
 **Lancement boutique ouverte (checkout + API vitrine publics) — pas automatique :**
 

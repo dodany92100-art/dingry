@@ -4,7 +4,7 @@ import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
 import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
 
 /** Fiches seed retirées — masquées boutique après migration magasin. */
-export const DEFAULT_REMOVED_CATALOG_IDS = [] as const;
+export const DEFAULT_REMOVED_CATALOG_IDS = ["23", "43"] as const;
 
 /** CRM (Supabase) = source de vérité : ne plus forcer de réintégration seed dans les tombstones. */
 export const RESTORED_CATALOG_SEED_IDS = [] as const;
@@ -162,18 +162,6 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     "",
     "T-shirts",
     16,
-  ),
-  product(
-    "23",
-    "DINGRY-TF02",
-    "DINGRY CROP TOP",
-    "SIGNATURE — RECTO",
-    45,
-    DINGRY_PRODUCT_MEDIA.cropTopSignature,
-    "Crop top signature DINGRY — coupe féminine, print poitrine.",
-    "Crop tops",
-    13,
-    ["S", "M", "L", "XL"],
   ),
   product(
     "24",
@@ -385,18 +373,6 @@ export const SEEDED_PRODUCTS: AdminProduct[] = [
     "Jersey mesh noir, logo DINGRY Paris sur la poitrine et éclairs sur les manches.",
     "Jerseys",
     14,
-  ),
-  product(
-    "43",
-    "DINGRY-PT01",
-    "PANTALON CARGO DINGRY",
-    "NOIR — RECTO",
-    110,
-    DINGRY_PRODUCT_MEDIA.pantsCargoBlack,
-    "Pantalon cargo signature, coupe street, finitions DINGRY.",
-    "Pants",
-    10,
-    ["32", "34", "36", "38"],
   ),
 ];
 

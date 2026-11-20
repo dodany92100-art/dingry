@@ -1,4 +1,4 @@
-/** Gate vitrine/checkout en période teaser — actif par défaut (échec fermé). */
+/** Gate vitrine/checkout — actif par défaut ; vitrine réservée (cookie admin/preview après CRM). */
 export function isTeaserGateActive(): boolean {
   const raw = process.env.DINGRY_TEASER_GATE?.trim().toLowerCase();
   if (!raw) return true;
