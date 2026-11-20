@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminHeader } from "@/components/organisms/admin/admin-header";
@@ -133,6 +133,7 @@ function AdminDashboard() {
     [searchParams],
   );
   const wantsShopRedirect = loginNext !== "/admin";
+  const shopRedirectStartedRef = useRef(false);
 
   const navigateAfterLogin = useCallback(
     (target: string) => {
@@ -260,6 +261,8 @@ function AdminDashboard() {
 
   useEffect(() => {
     if (!authenticated || session.backupCodes || !wantsShopRedirect) return;
+    if (shopRedirectStartedRef.current) return;
+    shopRedirectStartedRef.current = true;
     navigateAfterLogin(loginNext);
   }, [authenticated, session.backupCodes, wantsShopRedirect, loginNext, navigateAfterLogin]);
 

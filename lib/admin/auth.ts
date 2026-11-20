@@ -7,6 +7,7 @@ import {
   signAdminSession,
   verifyAdminSession,
 } from "@/lib/admin/session-token";
+import { dingrySharedCookieDomain } from "@/lib/dingry-cookie-domain";
 
 export { ADMIN_COOKIE_NAME };
 
@@ -23,12 +24,15 @@ export async function isAdminAuthenticated(): Promise<boolean> {
 }
 
 export function adminCookieOptions(maxAge = sessionTtlSeconds()) {
+  const domain = dingrySharedCookieDomain();
   return {
     httpOnly: true,
-    sameSite: "strict" as const,
+    /** `lax` + domaine partagé : session admin lisible sur www après login CRM (gate vitrine). */
+    sameSite: "lax" as const,
     secure: cookieSecure(),
     path: "/",
     maxAge,
+    ...(domain ? { domain } : {}),
   };
 }
 

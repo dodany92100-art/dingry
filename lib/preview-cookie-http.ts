@@ -10,9 +10,10 @@ function cookieSecure(): boolean {
   return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 }
 
+import { dingrySharedCookieDomain } from "@/lib/dingry-cookie-domain";
+
 export function previewCookieDomain(): string | undefined {
-  const raw = process.env.DINGRY_COOKIE_DOMAIN?.trim();
-  return raw || undefined;
+  return dingrySharedCookieDomain();
 }
 
 export function previewCookieBaseOptions() {
