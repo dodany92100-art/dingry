@@ -35,7 +35,7 @@ import {
   selectPaypalOrders,
   sumProductStock,
 } from "@/lib/admin/order-view";
-import { sanitizeAdminLoginNext } from "@/lib/admin/login-next";
+import { adminLoginNavigationTarget, sanitizeAdminLoginNext } from "@/lib/admin/login-next";
 import {
   finishCrmAdminLoadProgress,
   setCrmAdminLoadProgress,
@@ -133,6 +133,19 @@ function AdminDashboard() {
     [searchParams],
   );
   const wantsShopRedirect = loginNext !== "/admin";
+
+  const navigateAfterLogin = useCallback(
+    (target: string) => {
+      const { href, external } = adminLoginNavigationTarget(target);
+      if (external) {
+        startDingryRouteProgress();
+        window.location.assign(href);
+        return;
+      }
+      router.replace(href);
+    },
+    [router],
+  );
 
   const onVisibleDraftIdsChange = useCallback((ids: string[]) => {
     setVisibleDraftIds(ids);
@@ -247,12 +260,12 @@ function AdminDashboard() {
 
   useEffect(() => {
     if (!authenticated || session.backupCodes || !wantsShopRedirect) return;
-    router.replace(loginNext);
-  }, [authenticated, session.backupCodes, wantsShopRedirect, loginNext, router]);
+    navigateAfterLogin(loginNext);
+  }, [authenticated, session.backupCodes, wantsShopRedirect, loginNext, navigateAfterLogin]);
 
   function dismissBackupThenRedirect() {
     session.dismissBackupCodes();
-    if (wantsShopRedirect) router.replace(loginNext);
+    if (wantsShopRedirect) navigateAfterLogin(loginNext);
   }
 
   function selectTab(next: TabId) {

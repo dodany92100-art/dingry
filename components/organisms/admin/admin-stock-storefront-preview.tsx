@@ -23,6 +23,7 @@ import {
 import { CatalogFilterBar, type CatalogTabValue } from "@/components/organisms/shop/catalog-filter-bar";
 import { ShopNav } from "@/components/organisms/shop/shop-nav";
 import { DingryI18nProvider } from "@/hooks/use-translation";
+import { altoAbsolutePublicUrl } from "@/lib/alto-switch-urls";
 import type { AdminProductCategoryFilter } from "@/lib/shop-data";
 
 type AdminStockStorefrontPreviewProps = {
@@ -206,7 +207,7 @@ export function AdminStockStorefrontPreview({
   const handleCatalogTabChange = useCallback(
     (tab: string) => {
       if (tab === CATALOG_MENU_TAB_CUSTOM) {
-        window.open("/websitedx#atelier-custom", "_blank", "noopener,noreferrer");
+        window.open(altoAbsolutePublicUrl("/websitedx#atelier-custom"), "_blank", "noopener,noreferrer");
         return;
       }
       const next = catalogTabToAdminCategory(tab as CatalogTabValue);
@@ -216,7 +217,7 @@ export function AdminStockStorefrontPreview({
   );
 
   const openShopSection = useCallback((id: string) => {
-    window.open(`/websitedx#${id}`, "_blank", "noopener,noreferrer");
+    window.open(altoAbsolutePublicUrl(`/websitedx#${id}`), "_blank", "noopener,noreferrer");
   }, []);
   const [onlineProducts, setOnlineProducts] = useState<StorefrontOnlineProduct[]>([]);
   const [ghostCount, setGhostCount] = useState(0);
@@ -316,7 +317,9 @@ export function AdminStockStorefrontPreview({
         embedded
         shopBasePath="/websitedx"
         cartCount={0}
-        onOpenCart={() => window.open("/websitedx/checkout", "_blank", "noopener,noreferrer")}
+        onOpenCart={() =>
+          window.open(altoAbsolutePublicUrl("/websitedx/checkout"), "_blank", "noopener,noreferrer")
+        }
         onScrollToSection={openShopSection}
       />
       <div className="mb-4 space-y-2 px-4 sm:px-6 lg:px-8">

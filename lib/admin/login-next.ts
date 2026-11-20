@@ -1,4 +1,5 @@
 import { isPayPalOrderId } from "@/lib/paypal-order-id";
+import { altoAbsolutePublicUrl, altoCrmOrigin, isAltoHostSplitEnabled } from "@/lib/alto-switch-urls";
 
 const LOGIN_NEXT_PATHS = new Set<string>(["/websitedx", "/checkout", "/checkout/cancel"]);
 
@@ -34,4 +35,30 @@ export function sanitizeAdminLoginNext(value: string | null | undefined): string
   }
 
   return "/admin";
+}
+
+function adminOnlyPath(path: string): boolean {
+  const q = path.indexOf("?");
+  const base = q === -1 ? path : path.slice(0, q);
+  return base === "/admin" || base.startsWith("/admin/");
+}
+
+/** Après login CRM : vitrine `?next=` → URL absolue www (pas `crm…/websitedx`). */
+export function adminLoginNavigationTarget(relativeNext: string): { href: string; external: boolean } {
+  if (!isAltoHostSplitEnabled() || adminOnlyPath(relativeNext)) {
+    return { href: relativeNext, external: false };
+  }
+  if (typeof window === "undefined") {
+    return { href: relativeNext, external: false };
+  }
+  const crm = altoCrmOrigin();
+  if (!crm) return { href: relativeNext, external: false };
+  try {
+    if (window.location.hostname.toLowerCase() === new URL(crm).hostname.toLowerCase()) {
+      return { href: altoAbsolutePublicUrl(relativeNext), external: true };
+    }
+  } catch {
+    return { href: relativeNext, external: false };
+  }
+  return { href: relativeNext, external: false };
 }

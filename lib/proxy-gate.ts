@@ -26,6 +26,8 @@ import {
   isShopCriticalOpenPath,
   requestHostname,
 } from "@/lib/host-routing";
+import { SHOP_PREVIEW_PATH } from "@/lib/shop-base-path";
+import { shopWebsitedxOrigin } from "@/lib/shop-preview-url";
 
 const ADMIN_PUBLIC_API = new Set(["/api/admin/login", "/api/admin/logout", "/api/admin/totp"]);
 
@@ -68,6 +70,23 @@ function shopAdminPageRedirectToCrm(request: NextRequest, pathname: string): Nex
   return response;
 }
 
+function isShopPublicSurfacePath(pathname: string): boolean {
+  if (pathname === SHOP_PREVIEW_PATH || pathname.startsWith(`${SHOP_PREVIEW_PATH}/`)) return true;
+  if (pathname === "/checkout" || pathname.startsWith("/checkout/")) return true;
+  return false;
+}
+
+/** Host CRM : vitrine/checkout → www (évite « Not found » sur crm…/websitedx). */
+function crmShopPathRedirectToWww(request: NextRequest, pathname: string): NextResponse | null {
+  if (!isShopPublicSurfacePath(pathname)) return null;
+  const origin = shopWebsitedxOrigin();
+  const target = new URL(`${pathname}${request.nextUrl.search}`, origin);
+  const response = NextResponse.redirect(target, 308);
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return response;
+}
+
 /** Équivalent du catch-all `proxy.ts` (hors assets Next statiques). */
 export function pathMatchesProxyMatcher(pathname: string): boolean {
   if (pathname === "/") return true;
@@ -82,6 +101,8 @@ function applyHostSplitIsolation(request: NextRequest, pathname: string): NextRe
   const hostname = requestHostname(request);
 
   if (isCrmHost(hostname)) {
+    const shopRedirect = crmShopPathRedirectToWww(request, pathname);
+    if (shopRedirect) return shopRedirect;
     if (!isCrmPermittedPath(pathname)) return hostIsolationDenied(pathname);
     return null;
   }

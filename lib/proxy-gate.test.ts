@@ -118,12 +118,10 @@ describe("handleProxyRequest host split", () => {
     expect(response.headers.get("location")).toBe("https://crm.dingry.com/admin");
   });
 
-  it("CRM + vitrine → 404 HTML", async () => {
+  it("CRM + vitrine → 308 vers www", async () => {
     const response = await handleProxyRequest(requestFor("/websitedx", undefined, { host: "crm.dingry.com" }));
-    expect(response.status).toBe(404);
-    expect(response.headers.get("content-type")).toContain("text/html");
-    const body = await response.text();
-    expect(body.length).toBeGreaterThan(0);
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://www.dingry.com/websitedx");
   });
 
   it("boutique + webhook → next()", async () => {

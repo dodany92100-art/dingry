@@ -5,6 +5,7 @@ import { ExternalLink, Power } from "lucide-react";
 import { formatCrmBuildLabelHeaderParts } from "@/lib/admin/crm-build-label";
 import { adminCrmDisplayVersion } from "@/lib/admin/crm-release";
 import { useAdminShopPreview } from "@/components/organisms/admin/hooks/use-admin-shop-preview";
+import { altoShopEntryUrl } from "@/lib/alto-switch-urls";
 
 type AdminHeaderProps = {
   pendingOrders: number;
@@ -130,7 +131,7 @@ export function AdminHeader({
             </>
           ) : (
             <a
-              href="/websitedx"
+              href={altoShopEntryUrl()}
               target="_blank"
               rel="noreferrer"
               className={vitrineCtaClass}

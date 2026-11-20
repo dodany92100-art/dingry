@@ -1,12 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-function shopPreviewOpenUrl(): string {
-  const base = process.env.NEXT_PUBLIC_DINGRY_SHOP_PREVIEW_URL?.trim().replace(/\/$/, "");
-  if (base) return `${base}/websitedx`;
-  return "/websitedx";
-}
+import { altoShopEntryUrl } from "@/lib/alto-switch-urls";
 
 export function useAdminShopPreview() {
   const [busy, setBusy] = useState(false);
@@ -22,7 +17,7 @@ export function useAdminShopPreview() {
       if (response.status === 404) return;
       if (!response.ok) return;
       const body = (await response.json()) as { openUrl?: string };
-      const url = body.openUrl?.trim() || shopPreviewOpenUrl();
+      const url = body.openUrl?.trim() || altoShopEntryUrl();
       window.open(url, "_blank", "noopener,noreferrer");
     } finally {
       setBusy(false);
