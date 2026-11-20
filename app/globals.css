@@ -1343,6 +1343,16 @@ html[data-theme="light"] .dingry-shop #catalogue .dingry-product-ref--variant {
   color: #121212;
 }
 
+.dingry-catalog-sold-out-badge {
+  background-color: #000;
+  color: #fff;
+}
+
+html[data-theme="light"] .dingry-shop #catalogue .dingry-catalog-sold-out-badge {
+  background-color: #000;
+  color: #fff;
+}
+
 .dingry-shop #catalogue .dingry-product-card[role="button"]:focus-visible {
   outline: none;
   border-radius: 0.375rem;
@@ -4040,8 +4050,24 @@ html[data-theme="light"] .dingry-shop .dingry-auth-drawer {
 }
 
 @media (min-width: 640px) {
-  .dingry-footer-classic .dingry-footer-newsletter-stage .dingry-newsletter-headline {
+  .dingry-footer-classic .dingry-footer-newsletter-stage .dingry-newsletter:not(.dingry-newsletter--inline) .dingry-newsletter-headline {
     white-space: normal;
+  }
+}
+
+.dingry-footer-classic .dingry-footer-newsletter-stage .dingry-newsletter--inline .dingry-newsletter-headline {
+  width: auto;
+  flex: 0 1 auto;
+  text-align: left;
+}
+
+.dingry-footer-classic .dingry-footer-newsletter-stage .dingry-newsletter--inline form {
+  margin-top: 0;
+}
+
+@media (min-width: 640px) {
+  .dingry-footer-classic .dingry-footer-newsletter-stage .dingry-newsletter--inline .dingry-newsletter-headline {
+    white-space: nowrap;
   }
 }
 
@@ -4067,25 +4093,6 @@ html[data-theme="light"] .dingry-shop .dingry-auth-drawer {
 
 .dingry-newsletter-email--with-send {
   padding-right: 2.35rem;
-}
-
-.dingry-newsletter-email--long-cta {
-  font-size: clamp(0.5rem, 2.15vw, 0.75rem);
-  letter-spacing: 0.04em;
-}
-
-.dingry-newsletter-email--long-cta::placeholder {
-  letter-spacing: 0.05em;
-}
-
-@media (min-width: 640px) {
-  .dingry-newsletter-email--long-cta {
-    letter-spacing: 0.08em;
-  }
-
-  .dingry-newsletter-email--long-cta::placeholder {
-    letter-spacing: 0.08em;
-  }
 }
 
 .dingry-newsletter-field {

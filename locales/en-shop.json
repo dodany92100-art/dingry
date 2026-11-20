@@ -125,7 +125,8 @@
     "overlayCloseAria": "Close Heritage reader",
     "tabsAria": "Heritage chapters",
     "chronologyTitle": "Timeline",
-    "visualPlaceholder": "Visual"
+    "visualPlaceholder": "Visual",
+    "backToShop": "Back to the shop"
   },
   "collection": {
     "eyebrow": "Collection",

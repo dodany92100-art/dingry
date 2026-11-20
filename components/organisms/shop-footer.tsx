@@ -243,8 +243,8 @@ export function ShopFooter({
           </div>
 
           <div className="dingry-footer-newsletter-stage mt-6 flex w-full justify-center md:mt-7">
-            <div className="mx-auto w-full max-w-md px-1">
-              <DingryNewsletterForm align="center" />
+            <div className="mx-auto w-full max-w-5xl px-1 sm:px-2">
+              <DingryNewsletterForm align="center" inline />
             </div>
           </div>
 

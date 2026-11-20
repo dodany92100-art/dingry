@@ -47,9 +47,6 @@ export function LookbookCatalogStrip() {
     <section className="dingry-lookbook-band dingry-gold-rule-top scroll-mt-28 -mx-4 bg-[#050505] px-4 py-16 sm:-mx-6 sm:px-6 md:py-20 lg:-mx-8 lg:px-8">
       <header className="mb-8 md:mb-10">
         <p className="dingry-section-eyebrow">{t("lookbookTeaser.eyebrow")}</p>
-        <h2 className="mt-3 text-[clamp(1.35rem,3.2vw,2rem)] font-medium tracking-[0.04em] text-white">
-          {t("lookbookTeaser.title")}
-        </h2>
       </header>
       {loadState === "idle" ? (
         <div

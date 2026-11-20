@@ -71,9 +71,9 @@ const PaymentToast = dynamic(
 const prefetchLookbookStrip = () =>
   import("@/components/organisms/shop/lookbook-catalog-strip");
 
-const prefetchHeritageSection = () => import("@/components/organisms/shop/heritage-section");
-
 const prefetchAtelierCustomSection = () => import("@/components/organisms/shop/atelier-custom-section");
+
+const prefetchHeritageSection = () => import("@/components/organisms/shop/heritage-section");
 
 const prefetchShopFooter = () => import("@/components/organisms/shop-footer");
 
@@ -85,18 +85,18 @@ const LookbookCatalogStrip = dynamic(
   { ssr: false },
 );
 
-const HeritageSection = dynamic(
-  () =>
-    prefetchHeritageSection().then((m) => ({
-      default: m.HeritageSection,
-    })),
-  { ssr: false },
-);
-
 const AtelierCustomSection = dynamic(
   () =>
     prefetchAtelierCustomSection().then((m) => ({
       default: m.AtelierCustomSection,
+    })),
+  { ssr: false },
+);
+
+const HeritageSection = dynamic(
+  () =>
+    prefetchHeritageSection().then((m) => ({
+      default: m.HeritageSection,
     })),
   { ssr: false },
 );

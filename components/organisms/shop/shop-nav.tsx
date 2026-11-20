@@ -13,10 +13,7 @@ import { cn } from "@/lib/utils";
 import { DingryLocaleToggle } from "@/components/atoms/dingry-locale-toggle";
 import { useTranslation } from "@/hooks/use-translation";
 
-const NAV_SECTION_LINKS = [
-  ["catalogue", "nav.collection"],
-  ["heritage", "nav.heritage"],
-] as const;
+const NAV_SECTION_LINKS = [["catalogue", "nav.collection"]] as const;
 
 const NAV_LOOKBOOK_LINK = ["lookbook", "nav.lookbook"] as const;
 
@@ -29,7 +26,6 @@ export type ShopNavMagnet = { section: ShopNavActiveSection; at: number };
 
 const NAV_SCROLL_TARGETS: { section: ShopNavActiveSection; elementId: string }[] = [
   { section: "catalogue", elementId: "catalogue" },
-  { section: "heritage", elementId: "heritage" },
   { section: "lookbook", elementId: "lookbook" },
   { section: "custom", elementId: "atelier-custom-hero" },
 ];
@@ -266,15 +262,6 @@ export function ShopNav({
 
   function goSection(id: ShopNavSectionId) {
     setActiveSection(id);
-    if (id === "heritage") {
-      if (onHeritagePage) {
-        onScrollToSection("heritage-top");
-      } else {
-        router.push(shopHref(shopBasePath, "/heritage"));
-      }
-      setMobileMenuOpen(false);
-      return;
-    }
     if (onHeritagePage) {
       router.push(shopSectionHref(shopBasePath, id));
     } else {

@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { CatalogSoldOutBadge } from "@/components/atoms/catalog-sold-out-badge";
 import { ProductIdBadge } from "@/components/atoms/product-id-badge";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
@@ -52,11 +53,15 @@ function ProductCardMediaInner({
         side="recto"
         priority={priority}
         soldOut={soldOut}
+        showSoldOutBadge={false}
         catalogGrid
         alt={alt}
         className="absolute inset-0 h-full w-full"
         imgClassName="transition-[filter] duration-300 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:brightness-[1.03]"
       />
+      {soldOut ? (
+        <CatalogSoldOutBadge className={showId ? "top-9 sm:top-10" : "top-2 sm:top-2.5"} />
+      ) : null}
       {wishlistVisible ? (
         <div data-dingry-wishlist className="absolute right-2 top-2 z-10 sm:right-2.5 sm:top-2.5">
           <WishlistIconButton

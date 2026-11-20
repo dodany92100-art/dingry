@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CatalogSoldOutBadge } from "@/components/atoms/catalog-sold-out-badge";
 import { DingryProductImage } from "@/components/atoms/dingry-product-image";
 import { CATALOG_CARD_IMAGE_WIDTH } from "@/lib/media/catalog-image-sizes";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ type ProductImageFlipProps = {
   showPeekAnimation?: boolean;
   priority?: boolean;
   soldOut?: boolean;
+  showSoldOutBadge?: boolean;
   /** Grille catalogue : même ratio sur toutes les cartes (prix alignés sur la ligne). */
   catalogGrid?: boolean;
   /** Modale fiche produit : une face, contain, sans track flip. */
@@ -61,6 +63,7 @@ export function ProductImageFlip({
   showPeekAnimation = false,
   priority = false,
   soldOut = false,
+  showSoldOutBadge = true,
   catalogGrid = false,
   presentation = "card",
   className,
@@ -241,10 +244,8 @@ export function ProductImageFlip({
             soldOut && "opacity-50",
           )}
         />
-        {soldOut ? (
-          <span className="pointer-events-none absolute left-2 top-2 bg-black/80 px-2 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
-            Épuisé
-          </span>
+        {soldOut && showSoldOutBadge ? (
+          <CatalogSoldOutBadge className="top-2 sm:top-2.5" />
         ) : null}
       </div>
     );
@@ -318,10 +319,8 @@ export function ProductImageFlip({
           {side === "recto" ? "Tap ouvrir · double tap verso" : "Tap ouvrir · double tap recto"}
         </span>
       )}
-      {soldOut ? (
-        <span className="pointer-events-none absolute left-2 top-2 bg-black/80 px-2 py-1 text-[9px] uppercase tracking-[0.18em] text-white">
-          Épuisé
-        </span>
+      {soldOut && showSoldOutBadge ? (
+        <CatalogSoldOutBadge className="top-2 sm:top-2.5" />
       ) : null}
     </div>
   );

@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useMemo } from "react";
+import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import {
   heritageArticlesForLocale,
   heritageReaderTabsFromBundle,
@@ -10,6 +13,8 @@ import { HeritageArticleCard } from "@/components/organisms/shop/heritage-editor
 import styles from "./heritage-editorial.module.css";
 
 export function HeritageEditorial() {
+  const pathname = usePathname() ?? "/";
+  const shopHomeHref = shopHref(shopBasePathFromPathname(pathname), "/");
   const { dict, t } = useTranslation();
   const heritage = dict.heritage;
   const tabs = useMemo(() => heritageReaderTabsFromBundle(heritage), [heritage]);
@@ -59,6 +64,15 @@ export function HeritageEditorial() {
             </ol>
           </div>
         </section>
+
+        <div className={styles.backToShop}>
+          <Link
+            href={shopHomeHref}
+            className="dingry-heritage-teaser-cta inline-flex w-fit shrink-0 px-6 py-2.5 text-[10px] font-semibold uppercase tracking-[0.28em] no-underline transition-[border-color,box-shadow,background,transform] duration-200 hover:scale-[1.01] active:scale-[0.99] sm:px-7 sm:text-[11px] sm:tracking-[0.3em]"
+          >
+            {t("heritageReader.backToShop")}
+          </Link>
+        </div>
       </div>
     </div>
   );
