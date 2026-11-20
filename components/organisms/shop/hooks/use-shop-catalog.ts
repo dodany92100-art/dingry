@@ -50,7 +50,7 @@ export function useShopCatalog(options?: UseShopCatalogOptions) {
       }
       setCatalogState((state) => (state === "ready" ? state : "loading"));
       try {
-        const response = await fetch("/api/catalog");
+        const response = await fetch("/api/catalog", { cache: "no-store", credentials: "same-origin" });
         let data: CatalogApiPayload = {};
         try {
           data = (await response.json()) as CatalogApiPayload;

@@ -13,4 +13,14 @@ describe("shop-api-client-access", () => {
     expect(shouldClientFetchGatedShopApi()).toBe(true);
   });
 
+  it("gate actif + /websitedx → fetch catalogue (cookie httpOnly)", () => {
+    vi.stubEnv("NEXT_PUBLIC_DINGRY_TEASER_GATE", "on");
+    vi.stubGlobal("window", {
+      location: { pathname: "/websitedx", hostname: "www.dingry.com" },
+      document: { cookie: "" },
+    } as Window);
+    expect(shouldClientFetchGatedShopApi()).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
 });

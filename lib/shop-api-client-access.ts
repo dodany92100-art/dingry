@@ -42,10 +42,22 @@ export function shouldClientProbeAdminSession(): boolean {
   }
 }
 
-/** Catalogue / bannières perso : pas d’appel si teaser gate sans cookie preview/admin. */
+function isShopGatedSurfacePath(pathname: string): boolean {
+  if (pathname === "/websitedx" || pathname.startsWith("/websitedx/")) return true;
+  if (pathname === "/checkout" || pathname.startsWith("/checkout/")) return true;
+  return false;
+}
+
+/**
+ * Catalogue live CRM : les cookies admin/preview sont httpOnly (invisibles en JS).
+ * Sur vitrine/checkout, le proxy a déjà validé la session → on appelle `/api/catalog`.
+ */
 export function shouldClientFetchGatedShopApi(): boolean {
   if (!isTeaserGateActiveClient()) return true;
   const host = hostFromWindow();
   if (isLocalDevHost(host)) return true;
+  if (typeof window !== "undefined" && isShopGatedSurfacePath(window.location.pathname)) {
+    return true;
+  }
   return hasClientPreviewOrAdminCookie();
 }
