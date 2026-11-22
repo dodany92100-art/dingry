@@ -1,12 +1,14 @@
 # Déploiement — atelier CUSTOM (`shop_private_config`)
 
-Ordre recommandé (sans commit de PII) :
+Ordre **sûr** (ne pas appliquer la migration avant le code en prod) :
 
-1. **Sauvegarde** — Exporter la config atelier (admin CRM ou ligne `shop_banners` `position = atelier_custom`) dans un fichier **hors git**.
-2. **Code** — Déployer l’app (repli legacy en **lecture** si la table n’existe pas encore).
-3. **Migration** — Appliquer `supabase/migrations/20261122181000_shop_private_config_atelier.sql` sur le projet Supabase DINGRY.
-4. **RLS** — Exécuter `scripts/supabase-verify-rls.sql` (SQL Editor) et vérifier les résultats attendus en commentaires.
-5. **Clé anon (manuel)** — Avec `NEXT_PUBLIC_SUPABASE_URL` + clé anon (jamais la `service_role`) :
-   - `GET /rest/v1/shop_private_config` → **401/403** ou corps vide / aucune ligne utile ;
+1. **Sauvegarde** — Exporter la config atelier (`shop_banners` `position = atelier_custom`, JSON dans `link_url`) dans un fichier **hors git**.
+2. **Push / déployer le code** — Git push → Vercel (ou équivalent). Tant que la table n’existe pas, le repli legacy lit encore `shop_banners` (**lecture seule**).
+3. **Migration Supabase** — Appliquer `supabase/migrations/20261122181000_shop_private_config_atelier.sql` sur le projet DINGRY.
+4. **Checklist RLS** — Exécuter `scripts/supabase-verify-rls.sql` (SQL Editor) ; valider les attentes en commentaires.
+5. **Contrôle clé `anon`** (jamais `service_role`) :
+   - `GET /rest/v1/shop_private_config` → **401/403** ou **`[]`** ;
    - `GET /rest/v1/shop_banners?select=position&position=eq.atelier_custom` → **`[]`**.
-6. **App** — Tester `GET /api/atelier-custom` (vitrine) et `GET /api/admin/atelier-custom` (session admin).
+6. **App** — Tester `GET /api/atelier-custom` (vitrine) et `GET /api/admin/atelier-custom` (session admin CRM).
+
+Ne pas committer l’export JSON ni de PII dans le dépôt.
