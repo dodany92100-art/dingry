@@ -11,6 +11,8 @@ __v0_jsx-dev-runtime.ts
 .env*.local
 .env.preview
 .env.vercel.*
+.env.local.bak*
+.env*.bak*
 
 # Common ignores
 node_modules
