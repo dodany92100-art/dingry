@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: development
-      STOCK_KEY_PREFIX: e2e:
+      STOCK_KEY_PREFIX: 'e2e:'
       UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_E2E_REDIS_REST_URL }}
       UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_E2E_REDIS_REST_TOKEN }}
     steps:
