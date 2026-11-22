@@ -23,6 +23,18 @@ export type AuthCallbackUrlScan = {
   otpType: string | null;
 };
 
+/** Présence d’un code OAuth PKCE dans la query (`?code=`). */
+export function hasAuthCallbackCode(search: string): boolean {
+  const code = new URLSearchParams(search).get("code")?.trim() ?? "";
+  return code.length > 0;
+}
+
+/** Hash de retour implicit legacy ou erreur OAuth (`access_token=` / `error=`). */
+export function hasAuthCallbackHash(hashRaw: string): boolean {
+  const normalized = hashRaw.startsWith("#") ? hashRaw.slice(1) : hashRaw;
+  return /(?:^|&)(?:access_token=|error=)/i.test(normalized);
+}
+
 /** Détecte erreurs OAuth / hash implicit sans exposer de secrets. */
 export function scanAuthCallbackUrl(search: string, hashRaw: string): AuthCallbackUrlScan {
   const params = new URLSearchParams(search);

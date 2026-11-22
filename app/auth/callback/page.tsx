@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { sanitizeAuthCallbackNext } from "@/lib/auth/auth-callback-next";
 import {
-  exchangePkceCodeOnce,
+  hasAuthCallbackCode,
+  hasAuthCallbackHash,
   isAllowedEmailOtpType,
   logAuthCallbackFailure,
   scanAuthCallbackUrl,
@@ -79,17 +80,45 @@ function AuthCallbackContent() {
 
     const hashRaw = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
     const scan = scanAuthCallbackUrl(window.location.search, hashRaw);
+    const hasCode = hasAuthCallbackCode(window.location.search);
+    const hasHash = hasAuthCallbackHash(window.location.hash);
 
-    if (scan.oauthError || scan.hasImplicitTokens) {
-      markFailed(scan.hasImplicitTokens ? "implicit_hash_rejected" : "oauth_error_query");
+    if (scan.oauthError && !hasCode && !hasHash && !scan.hasTokenHash) {
+      markFailed("oauth_error_query");
       return;
     }
 
-    const runHandoff = (
+    const waitForUrlSession = (): (() => void) => {
+      const { data: sub } = client.auth.onAuthStateChange((event, session) => {
+        if (session && event === "SIGNED_IN") {
+          finishSuccess();
+        }
+      });
+
+      void client.auth.getSession().then(({ data }) => {
+        if (cancelled || redirected) return;
+        if (data.session) finishSuccess();
+      });
+
+      const timeout = window.setTimeout(() => {
+        if (cancelled || redirected) return;
+        void client.auth.getSession().then(({ data, error }) => {
+          if (cancelled || redirected) return;
+          if (data.session) finishSuccess();
+          else markFailed("handoff_timeout", error ?? null);
+        });
+      }, AUTH_CALLBACK_WAIT_MS);
+
+      return () => {
+        sub.subscription.unsubscribe();
+        window.clearTimeout(timeout);
+      };
+    };
+
+    const runEmailHandoff = (
       handoff: Promise<AuthHandoffResult>,
       failContext: string,
-      diagnostics?: Parameters<typeof logAuthCallbackFailure>[2],
-    ) => {
+    ): (() => void) => {
       const { data: sub } = client.auth.onAuthStateChange((event, session) => {
         if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
           finishSuccess();
@@ -100,7 +129,7 @@ function AuthCallbackContent() {
       const settleFailure = (context: string, error: Parameters<typeof logAuthCallbackFailure>[1]) => {
         if (settled || cancelled || redirected) return;
         settled = true;
-        markFailed(context, error, diagnostics);
+        markFailed(context, error);
       };
 
       void handoff.then((result) => {
@@ -127,26 +156,34 @@ function AuthCallbackContent() {
       }, AUTH_CALLBACK_WAIT_MS);
 
       return () => {
-        cancelled = true;
         sub.subscription.unsubscribe();
         window.clearTimeout(timeout);
       };
     };
 
-    if (scan.hasCode && scan.code) {
-      return runHandoff(
-        exchangePkceCodeOnce(client, scan.code, scan.pkceFlowId),
-        "exchange_code_for_session",
-        { hasPkceFlowId: Boolean(scan.pkceFlowId) },
-      );
-    }
-
     if (scan.hasTokenHash && scan.tokenHash) {
       if (!isAllowedEmailOtpType(scan.otpType)) {
         markFailed("otp_type_rejected", null);
-        return;
+        return () => {
+          cancelled = true;
+        };
       }
-      return runHandoff(verifyEmailOtpOnce(client, scan.tokenHash, scan.otpType), "verify_email_otp");
+      const cleanupHandoff = runEmailHandoff(
+        verifyEmailOtpOnce(client, scan.tokenHash, scan.otpType),
+        "verify_email_otp",
+      );
+      return () => {
+        cancelled = true;
+        cleanupHandoff();
+      };
+    }
+
+    if (hasCode || hasHash) {
+      const cleanupWait = waitForUrlSession();
+      return () => {
+        cancelled = true;
+        cleanupWait();
+      };
     }
 
     void client.auth.getSession().then(({ data, error }) => {

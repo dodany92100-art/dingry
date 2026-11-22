@@ -3,12 +3,37 @@ import type { AuthError, Session, SupabaseClient } from "@supabase/supabase-js";
 import {
   authCallbackFailureFromError,
   exchangePkceCodeOnce,
+  hasAuthCallbackCode,
+  hasAuthCallbackHash,
   isAllowedEmailOtpType,
   logAuthCallbackFailure,
   resetAuthCallbackLocksForTests,
   scanAuthCallbackUrl,
   verifyEmailOtpOnce,
 } from "@/lib/auth/auth-callback-oauth";
+import { sanitizeAuthCallbackNext } from "@/lib/auth/auth-callback-next";
+
+describe("hasAuthCallbackCode / hasAuthCallbackHash", () => {
+  it("détecte ?code= et hash implicit / erreur", () => {
+    expect(hasAuthCallbackCode("?next=%2Fen")).toBe(false);
+    expect(hasAuthCallbackCode("?code=pkce-code&next=%2Fen")).toBe(true);
+    expect(hasAuthCallbackHash("")).toBe(false);
+    expect(hasAuthCallbackHash("#access_token=redacted&token_type=bearer")).toBe(true);
+    expect(hasAuthCallbackHash("error=access_denied")).toBe(true);
+  });
+
+  it("ni code ni hash : pas de matériel de handoff OAuth", () => {
+    expect(hasAuthCallbackCode("?next=%2Fwebsitedx")).toBe(false);
+    expect(hasAuthCallbackHash("")).toBe(false);
+  });
+});
+
+describe("sanitizeAuthCallbackNext (callback redirect)", () => {
+  it("assainit next pour la redirection post-login", () => {
+    expect(sanitizeAuthCallbackNext("/websitedx")).toBe("/websitedx");
+    expect(sanitizeAuthCallbackNext("https://evil.com")).not.toContain("evil");
+  });
+});
 
 describe("scanAuthCallbackUrl", () => {
   it("détecte erreur query, tokens implicit et token_hash", () => {
