@@ -15,7 +15,7 @@ import {
 } from "@/lib/atelier-custom-config";
 import { jsonNoStore } from "@/lib/http";
 import { isSupabaseStoreEnabled } from "@/lib/supabase/server";
-import { readSupabaseAtelierCustomJson, upsertSupabaseAtelierCustomJson } from "@/lib/supabase/shop-banners";
+import { readSupabaseAtelierCustomJson, upsertSupabaseAtelierCustomJson } from "@/lib/supabase/atelier-custom-store";
 
 export const runtime = "nodejs";
 

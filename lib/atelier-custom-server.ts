@@ -5,7 +5,7 @@ import {
   SHOP_ATELIER_CUSTOM_DEFAULT,
   type ShopAtelierCustomConfig,
 } from "@/lib/atelier-custom-config";
-import { readSupabaseAtelierCustomJson } from "@/lib/supabase/shop-banners";
+import { readSupabaseAtelierCustomJson } from "@/lib/supabase/atelier-custom-store";
 
 export async function loadShopAtelierCustomConfig(): Promise<ShopAtelierCustomConfig> {
   try {

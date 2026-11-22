@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { loadStoreReadOnly, StoreUnavailableError } from "@/lib/admin/store";
 import { resolveShopCatalogPersoBanner } from "@/lib/catalog-perso-banner";
 import {
-  listSupabaseShopBanners,
+  listPublicSupabaseShopBanners,
   rowToPublicShopBanner,
   SHOP_BANNER_POSITION_CATALOG_PERSO,
 } from "@/lib/supabase/shop-banners";
@@ -14,7 +14,7 @@ export const revalidate = 60;
 export async function GET() {
   try {
     if (isSupabaseStoreEnabled()) {
-      const rows = await listSupabaseShopBanners({ activeOnly: true });
+      const rows = await listPublicSupabaseShopBanners();
       return NextResponse.json({ banners: rows.map(rowToPublicShopBanner) });
     }
     const store = await loadStoreReadOnly();
