@@ -96,6 +96,49 @@ async function assertCheckoutPayPalThreshold(page: Page): Promise<void> {
   expect(sawCheckoutReady).toBeTruthy();
 }
 
+type InStockCatalogPick = { catalogName: string; id: number };
+
+async function pickInStockCatalogProduct(page: Page): Promise<InStockCatalogPick> {
+  const pick = await page.evaluate(async () => {
+    const res = await fetch('/api/catalog');
+    if (!res.ok) return null;
+    const data = await res.json();
+    const products = Array.isArray(data?.products) ? data.products : [];
+    for (const p of products) {
+      if (p.inStock === false) continue;
+      const catalogName = String(p.name ?? p.title ?? '').trim();
+      if (!catalogName) continue;
+      return { catalogName, id: Number(p.id) };
+    }
+    return null;
+  });
+  if (!pick) {
+    throw new Error(
+      'E2E: aucun produit en stock dans /api/catalog (seed CI). Stabiliser le stock seed plutôt que contourner le spec.',
+    );
+  }
+  return pick;
+}
+
+/** Ouvre la modale d’une fiche réellement en stock (via /api/catalog). */
+async function openInStockProductModal(page: Page) {
+  const pick = await pickInStockCatalogProduct(page);
+  await focusCatalogWithProducts(page);
+  const escaped = pick.catalogName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const openBtn = page.getByRole('button', { name: new RegExp(`Ouvrir la fiche.*${escaped}`, 'i') }).first();
+  if (await openBtn.isVisible({ timeout: 8000 }).catch(() => false)) {
+    await openBtn.scrollIntoViewIfNeeded();
+    await openBtn.click();
+  } else {
+    const fallback = page.locator('[data-dingry-product-card-open]').first();
+    await fallback.scrollIntoViewIfNeeded();
+    await fallback.click();
+  }
+  const productModal = page.locator('[data-product-modal]');
+  await expect(productModal).toBeVisible({ timeout: 15000 });
+  return productModal;
+}
+
 async function assertShopCatalogVisible(page: Page): Promise<void> {
   const onAdmin = await page.getByText(/CRM · session/i).isVisible({ timeout: 500 }).catch(() => false);
   if (onAdmin) {
@@ -133,14 +176,8 @@ test.describe('Parcours utilisateur boutique', () => {
     await assertShopCatalogVisible(page);
     console.log('✅ Étape 1 : Arrivée sur le shop réussie.');
 
-    // Étape 2 : Ouverture de la modale produit (bouton sous l’image — pas la zone flip recto/verso)
-    const firstProductCard = page.locator('[data-dingry-product-card-open]').first();
-    await expect(firstProductCard).toBeVisible();
-    await firstProductCard.scrollIntoViewIfNeeded();
-    await firstProductCard.click();
-
-    const productModal = page.locator('[data-product-modal]');
-    await expect(productModal).toBeVisible({ timeout: 15000 });
+    // Étape 2 : fiche en stock (API catalogue), pas la première carte si épuisée
+    const productModal = await openInStockProductModal(page);
     console.log('✅ Étape 2 : Ouverture de la modale produit validée.');
 
     // Étape 3a : Jersey — couleur si la section est présente
@@ -172,9 +209,10 @@ test.describe('Parcours utilisateur boutique', () => {
       console.log('ℹ️ Pas de taille cliquable détectée — poursuite.');
     }
 
-    // Étape 4 : Ajout au panier (bouton réel : .dingry-add-to-cart-btn, activé après taille)
+  // Étape 4 : .dingry-add-to-cart-btn (libellé « Épuisé » si hors stock — refusé ici)
     await dismissCookieBanner(page);
-    const addToCartBtn = productModal.getByRole('button', { name: 'Ajouter au panier' }).first();
+    const addToCartBtn = productModal.locator('.dingry-add-to-cart-btn').first();
+    await expect(addToCartBtn).toHaveText(/Ajouter au panier/i, { timeout: 5000 });
     await expect(addToCartBtn).toBeEnabled({ timeout: 15000 });
     await addToCartBtn.click();
     console.log('✅ Étape 3 & 4 : Produit ajouté au panier.');

@@ -37,6 +37,7 @@ describe("verrou Redis store", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://xxx.supabase.co");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role");
+    vi.stubEnv("BLOB_READ_WRITE_TOKEN", "ci-test-blob-token");
     redisSet.mockResolvedValue("OK");
     redisEval.mockResolvedValue(1);
     writeMock.mockResolvedValue(undefined);
