@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CircleUser, Heart, Menu, X } from "lucide-react";
 import { LayoutGroup, motion, useAnimation, useReducedMotion } from "motion/react";
@@ -12,6 +12,12 @@ import { shopSectionHref } from "@/lib/shop-section-href";
 import { cn } from "@/lib/utils";
 import { DingryLocaleToggle } from "@/components/atoms/dingry-locale-toggle";
 import { useTranslation } from "@/hooks/use-translation";
+import {
+  DINGRY_MODAL_PANEL_TRANSITION,
+  DINGRY_NAV_MOBILE_DIALOG_CLASS,
+  isDialogBackdropDismissTarget,
+  supportsNativeModalDialog,
+} from "@/components/molecules/dingry-native-dialog";
 
 const NAV_SECTION_LINKS = [["catalogue", "nav.collection"]] as const;
 
@@ -48,6 +54,117 @@ function activeSectionFromScroll(scroller: HTMLElement): ShopNavActiveSection {
     }
   }
   return pick;
+}
+
+function ShopNavMobileMenuPanel({
+  accountActive,
+  onOpenAccount,
+  onOpenCustom,
+  onGoSection,
+  onOpenCustomClick,
+  t,
+}: {
+  accountActive: boolean;
+  onOpenAccount?: () => void;
+  onOpenCustom?: () => void;
+  onGoSection: (id: ShopNavSectionId) => void;
+  onOpenCustomClick: () => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <>
+      {onOpenAccount ? (
+        <button
+          type="button"
+          onClick={() => {
+            onOpenAccount();
+          }}
+          className="dingry-interactive-luxe mb-3 flex w-full items-center gap-3 rounded-sm border border-white/15 bg-white/[0.04] px-3 py-3 text-left text-[11px] font-medium tracking-[0.14em] text-white/88 uppercase transition-colors hover:bg-white/[0.08] hover:text-white"
+        >
+          <CircleUser
+            size={20}
+            strokeWidth={1.75}
+            className={accountActive ? "shrink-0 text-[#fcf6ba]" : "shrink-0 stroke-current"}
+            aria-hidden
+          />
+          <span>{accountActive ? t("nav.myAccount") : t("nav.signIn")}</span>
+        </button>
+      ) : null}
+      <p className="dingry-typo-manifesto mb-1 text-[10px] text-white/55">{t("brand.manifesto")}</p>
+      <ul className="mt-2 flex flex-col gap-0.5">
+        <li key="catalogue-street">
+          <button
+            type="button"
+            onClick={() => onGoSection("catalogue")}
+            className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
+          >
+            {t("brand.streetLine")}
+          </button>
+        </li>
+        {onOpenCustom ? (
+          <li>
+            <button
+              type="button"
+              onClick={onOpenCustomClick}
+              className={cn(
+                "dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe w-full px-4 py-3 text-left text-[10px] font-medium uppercase tracking-[0.2em]",
+              )}
+            >
+              <span className="gold-text">{t("nav.custom")}</span>
+            </button>
+          </li>
+        ) : null}
+        {NAV_SECTION_LINKS.filter(([id]) => id !== "catalogue").map(([id, labelKey]) => (
+          <li key={id}>
+            <button
+              type="button"
+              onClick={() => onGoSection(id)}
+              className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
+            >
+              {t(labelKey)}
+            </button>
+          </li>
+        ))}
+        <li key={NAV_LOOKBOOK_LINK[0]}>
+          <button
+            type="button"
+            onClick={() => onGoSection(NAV_LOOKBOOK_LINK[0])}
+            className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
+          >
+            {t(NAV_LOOKBOOK_LINK[1])}
+          </button>
+        </li>
+      </ul>
+    </>
+  );
+}
+
+function LegacyShopNavMobileMenu({
+  open,
+  reduceMotion,
+  mobileNavLabel,
+  panel,
+}: {
+  open: boolean;
+  reduceMotion: boolean | null;
+  mobileNavLabel: string;
+  panel: ReactNode;
+}) {
+  if (!open) return null;
+
+  return (
+    <motion.div
+      id="dingry-nav-mobile-menu"
+      role="dialog"
+      aria-modal="true"
+      aria-label={mobileNavLabel}
+      initial={reduceMotion ? false : { opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="dingry-nav-mobile-menu absolute inset-x-0 top-full z-[60] border-t border-white/10 bg-[#12151c]/98 px-4 py-3 shadow-[0_16px_40px_rgb(0_0_0/0.45)] backdrop-blur-md md:hidden"
+    >
+      {panel}
+    </motion.div>
+  );
 }
 
 function ShopNavActions({
@@ -201,6 +318,15 @@ export function ShopNav({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<ShopNavActiveSection | null>(null);
   const [navMagnetFlash, setNavMagnetFlash] = useState(false);
+  const mobileMenuDialogRef = useRef<HTMLDialogElement>(null);
+  const nativeMobileMenu = supportsNativeModalDialog();
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+    if (nativeMobileMenu) {
+      mobileMenuDialogRef.current?.close();
+    }
+  }, [nativeMobileMenu]);
 
   useEffect(() => {
     if (embedded || onHeritagePage) return;
@@ -243,13 +369,47 @@ export function ShopNav({
   }, [navMagnet?.at, navMagnet?.section, navMenuControls, reduceMotion]);
 
   useEffect(() => {
-    if (!mobileMenuOpen) return;
+    if (nativeMobileMenu || !mobileMenuOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileMenuOpen(false);
+      if (event.key === "Escape") closeMobileMenu();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, nativeMobileMenu, closeMobileMenu]);
+
+  useEffect(() => {
+    if (!nativeMobileMenu) return;
+    const dialog = mobileMenuDialogRef.current;
+    if (!dialog) return;
+
+    const onDialogClose = () => {
+      setMobileMenuOpen(false);
+    };
+
+    const onDialogClick = (event: MouseEvent) => {
+      if (isDialogBackdropDismissTarget(event.target, dialog)) {
+        dialog.close();
+      }
+    };
+
+    dialog.addEventListener("close", onDialogClose);
+    dialog.addEventListener("click", onDialogClick);
+    return () => {
+      dialog.removeEventListener("close", onDialogClose);
+      dialog.removeEventListener("click", onDialogClick);
+    };
+  }, [nativeMobileMenu]);
+
+  useEffect(() => {
+    if (!nativeMobileMenu) return;
+    const dialog = mobileMenuDialogRef.current;
+    if (!dialog) return;
+    if (mobileMenuOpen) {
+      if (!dialog.open) dialog.showModal();
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [mobileMenuOpen, nativeMobileMenu]);
 
   useEffect(() => {
     if (!fly?.pulse || reduceMotion) return;
@@ -267,8 +427,30 @@ export function ShopNav({
     } else {
       onScrollToSection(id);
     }
-    setMobileMenuOpen(false);
+    closeMobileMenu();
   }
+
+  const mobileNavPanel = (
+    <ShopNavMobileMenuPanel
+      accountActive={accountActive}
+      onOpenAccount={
+        onOpenAccount
+          ? () => {
+              onOpenAccount();
+              closeMobileMenu();
+            }
+          : undefined
+      }
+      onOpenCustom={onOpenCustom}
+      onGoSection={goSection}
+      onOpenCustomClick={() => {
+        setActiveSection("custom");
+        onOpenCustom?.();
+        closeMobileMenu();
+      }}
+      t={t}
+    />
+  );
 
   function renderDesktopNavSection([id, labelKey]: readonly [ShopNavSectionId, string]) {
     const isActive = activeSection === id;
@@ -402,85 +584,34 @@ export function ShopNav({
             />
           </div>
         </div>
-        {mobileMenuOpen ? (
-          <motion.div
+        {nativeMobileMenu ? (
+          <dialog
+            ref={mobileMenuDialogRef}
             id="dingry-nav-mobile-menu"
-            role="dialog"
-            aria-modal="true"
             aria-label={t("nav.mobileNavLabel")}
-            initial={reduceMotion ? false : { opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="dingry-nav-mobile-menu absolute inset-x-0 top-full z-[60] border-t border-white/10 bg-[#12151c]/98 px-4 py-3 shadow-[0_16px_40px_rgb(0_0_0/0.45)] backdrop-blur-md md:hidden"
+            className={DINGRY_NAV_MOBILE_DIALOG_CLASS}
+            style={{ overscrollBehavior: "contain" }}
           >
-            {onOpenAccount ? (
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenAccount();
-                  setMobileMenuOpen(false);
-                }}
-                className="dingry-interactive-luxe mb-3 flex w-full items-center gap-3 rounded-sm border border-white/15 bg-white/[0.04] px-3 py-3 text-left text-[11px] font-medium tracking-[0.14em] text-white/88 uppercase transition-colors hover:bg-white/[0.08] hover:text-white"
+            {mobileMenuOpen ? (
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={DINGRY_MODAL_PANEL_TRANSITION}
+                className="dingry-nav-mobile-menu w-full border-t border-white/10 bg-[#12151c]/98 px-4 py-3 shadow-[0_16px_40px_rgb(0_0_0/0.45)] backdrop-blur-md"
+                style={{ marginTop: "var(--dingry-nav-h)" }}
               >
-                <CircleUser
-                  size={20}
-                  strokeWidth={1.75}
-                  className={accountActive ? "shrink-0 text-[#fcf6ba]" : "shrink-0 stroke-current"}
-                  aria-hidden
-                />
-                <span>{accountActive ? t("nav.myAccount") : t("nav.signIn")}</span>
-              </button>
+                {mobileNavPanel}
+              </motion.div>
             ) : null}
-            <p className="dingry-typo-manifesto mb-1 text-[10px] text-white/55">{t("brand.manifesto")}</p>
-            <ul className="mt-2 flex flex-col gap-0.5">
-              <li key="catalogue-street">
-                <button
-                  type="button"
-                  onClick={() => goSection("catalogue")}
-                  className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
-                >
-                  {t("brand.streetLine")}
-                </button>
-              </li>
-              {onOpenCustom ? (
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSection("custom");
-                      onOpenCustom();
-                      setMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      "dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe w-full px-4 py-3 text-left text-[10px] font-medium uppercase tracking-[0.2em]",
-                    )}
-                  >
-                    <span className="gold-text">{t("nav.custom")}</span>
-                  </button>
-                </li>
-              ) : null}
-              {NAV_SECTION_LINKS.filter(([id]) => id !== "catalogue").map(([id, labelKey]) => (
-                <li key={id}>
-                  <button
-                    type="button"
-                    onClick={() => goSection(id)}
-                    className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
-                  >
-                    {t(labelKey)}
-                  </button>
-                </li>
-              ))}
-              <li key={NAV_LOOKBOOK_LINK[0]}>
-                <button
-                  type="button"
-                  onClick={() => goSection(NAV_LOOKBOOK_LINK[0])}
-                  className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
-                >
-                  {t(NAV_LOOKBOOK_LINK[1])}
-                </button>
-              </li>
-            </ul>
-          </motion.div>
-        ) : null}
+          </dialog>
+        ) : (
+          <LegacyShopNavMobileMenu
+            open={mobileMenuOpen}
+            reduceMotion={reduceMotion}
+            mobileNavLabel={t("nav.mobileNavLabel")}
+            panel={mobileNavPanel}
+          />
+        )}
       </div>
     </nav>
   );
