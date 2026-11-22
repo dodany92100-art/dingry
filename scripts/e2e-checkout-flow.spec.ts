@@ -167,6 +167,12 @@ async function assertShopCatalogVisible(page: Page): Promise<void> {
 test.describe('Parcours utilisateur boutique', () => {
   test.describe.configure({ mode: 'serial' });
 
+  test.beforeEach(async ({ context }) => {
+    await context.addInitScript(() => {
+      localStorage.setItem('dingry-cookie-consent', 'rejected');
+    });
+  });
+
   /** Parcours catalogue classique : carte produit → modale → taille → ajout → tiroir → checkout. */
   test('Parcours d\'achat DINGRY : de l\'accueil au seuil de paiement (Stop avant CB)', async ({ page }) => {
     console.log('🚀 Démarrage du test du parcours client...');
