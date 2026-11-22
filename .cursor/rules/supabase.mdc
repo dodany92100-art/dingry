@@ -1,0 +1,19 @@
+---
+description: Supabase, RLS, migrations, config privée
+globs: lib/supabase/**,supabase/**,scripts/supabase-*,app/api/**
+alwaysApply: false
+---
+
+# Supabase
+
+- **RLS** activée sur toute nouvelle table, sans policy pour `anon` ni `authenticated` tant qu'un besoin public n'est pas démontré. Les accès publics passent par une route API qui filtre.
+- **Config non publique** → `shop_private_config`. Jamais dans `shop_banners` (table lisible via `anon`) : un filtre d'API ne protège pas contre une requête REST directe.
+- **`supabaseAdmin`** : serveur uniquement. Les modules qui l'utilisent commencent par `import "server-only"` et ne sont jamais importés par un fichier `"use client"`. Aucune clé service dans une variable `NEXT_PUBLIC_*`.
+- **Migrations** :
+  - une seule transaction (`BEGIN` / `COMMIT`), idempotente (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`) ;
+  - timestamp **strictement postérieur** à la dernière migration du dossier, année en cours ;
+  - copier avant de supprimer, le `DELETE` seulement si la copie existe ;
+  - `REVOKE` uniquement pour `anon` et `authenticated`, jamais pour `service_role`.
+- **Repli legacy** : lecture seule, déclenché uniquement sur « table absente » (`42P01` ou `PGRST205`). Toute autre erreur est propagée. Aucune écriture de repli vers une table publique.
+- **Ordre de déploiement** : sauvegarder la donnée (hors git), déployer le code avec repli, appliquer la migration, lancer `scripts/supabase-verify-rls.sql`, contrôler avec la clé `anon` (401, 403 ou `[]`), tester les routes.
+- Toute migration vient avec un test dans `lib/supabase/dingry-data-security.test.ts` et un contrôle dans `scripts/supabase-verify-rls.sql`.

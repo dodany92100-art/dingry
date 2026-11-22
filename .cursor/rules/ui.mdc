@@ -1,0 +1,18 @@
+---
+description: Interface boutique, Baseline, dialog natif, accessibilité
+globs: components/**,app/**/*.tsx
+alwaysApply: false
+---
+
+# UI
+
+- **Cible** : Baseline « Widely available » (voir `AGENTS.md`). Pas de fonctionnalité « Newly » ou « Limited » sans repli.
+- **Modales** : `<dialog>` + `showModal()`, repli propre si `showModal` est absent. Garder l'animation Motion existante, sans la réécrire en CSS `@starting-style`.
+- **Scroll** : `overscroll-behavior: contain` sur la modale. Ne pas manipuler `document.body.style.overflow`.
+- **Accessibilité** : navigation clavier complète, focus restauré sur le déclencheur à la fermeture, libellés explicites.
+- **Natif d'abord** : HTML et CSS natifs (`dialog`, `popover`, `details`, container queries) avant d'ajouter du JS. Consulter MWG (`npx modern-web-guidance@latest search`, puis `retrieve`) avant de toucher une modale, un menu ou une animation.
+- **Un composant par mission** : pas de refonte groupée. Extraire les helpers partagés dans un petit module sans changer le comportement des composants existants.
+- **Contenu légal et textes** : jamais modifiés sans demande explicite, pas un mot.
+- **Après toute modif de panier ou fiche produit** : parcours complet sur mobile (ajout, panier, paiement en environnement de test).
+- **Médias neufs** : R2, pas Cloudinary.
+- **Tests** : un test vitest pour la logique pure (détection, helpers). Pas de jsdom dans le repo : le comportement navigateur se vérifie à la main ou par un spec Playwright dédié.
