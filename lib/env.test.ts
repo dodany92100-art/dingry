@@ -8,6 +8,10 @@ const PROD_KEYS = [
   "SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
+  "BLOB_READ_WRITE_TOKEN",
+  "VERCEL_ENV",
+  "NEXT_PUBLIC_DINGRY_TURNSTILE_PRODUCT_TEST",
+  "DINGRY_FULFILLMENT_OWNER_EMAIL",
 ] as const;
 
 const snapshot = Object.fromEntries(PROD_KEYS.map((k) => [k, process.env[k]]));
@@ -31,6 +35,10 @@ function prodEnv(overrides: Record<string, string | undefined>) {
   delete process.env.SUPABASE_URL;
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.BLOB_READ_WRITE_TOKEN;
+  delete process.env.VERCEL_ENV;
+  delete process.env.NEXT_PUBLIC_DINGRY_TURNSTILE_PRODUCT_TEST;
+  delete process.env.DINGRY_FULFILLMENT_OWNER_EMAIL;
   for (const [key, value] of Object.entries(overrides)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -63,6 +71,7 @@ describe("validateProductionEnv", () => {
     prodEnv({
       NEXT_PUBLIC_SUPABASE_URL: "https://xxx.supabase.co",
       SUPABASE_SERVICE_ROLE_KEY: "service-role",
+      BLOB_READ_WRITE_TOKEN: "ci-test-blob-token",
     });
     expect(collectProductionEnvErrors()).toEqual([]);
     expect(() => validateProductionEnv()).not.toThrow();

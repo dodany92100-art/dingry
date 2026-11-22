@@ -1,5 +1,4 @@
-import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -34,6 +33,50 @@ import {
 import { SHOP_BANNER_POSITION_ATELIER_CUSTOM } from "@/lib/supabase/shop-banners";
 
 const root = path.resolve(import.meta.dirname, "../..");
+
+const WALK_SKIP_DIRS = new Set([
+  "node_modules",
+  ".git",
+  ".next",
+  "dist",
+  "coverage",
+  ".tmp-footer-pdf",
+  "playwright",
+  "test-results",
+]);
+
+function listSourceFilesReferencing(needle: string): string[] {
+  const hits: string[] = [];
+  function walk(dir: string) {
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of entries) {
+      if (WALK_SKIP_DIRS.has(name)) continue;
+      const full = path.join(dir, name);
+      let st;
+      try {
+        st = statSync(full);
+      } catch {
+        continue;
+      }
+      if (st.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(ts|tsx|js|jsx|mjs|cjs)$/.test(name)) continue;
+      const body = readFileSync(full, "utf8");
+      if (body.includes(needle)) {
+        hits.push(path.relative(root, full));
+      }
+    }
+  }
+  walk(root);
+  return hits;
+}
 
 function mockPrivateSelectResult(result: { data: unknown; error: { code?: string; message: string } | null }) {
   const maybeSingle = vi.fn().mockResolvedValue(result);
@@ -120,8 +163,7 @@ describe("atelier-custom-store invariants", () => {
   });
 
   it("non importé par des fichiers use client", () => {
-    const raw = execSync(`rg -l 'atelier-custom-store' .`, { cwd: root, encoding: "utf8" }).trim();
-    const hits = raw ? raw.split("\n") : [];
+    const hits = listSourceFilesReferencing("atelier-custom-store");
     const clientFiles: string[] = [];
     for (const rel of hits) {
       if (!/\.(ts|tsx)$/.test(rel) || /\.test\.(ts|tsx)$/.test(rel)) continue;
