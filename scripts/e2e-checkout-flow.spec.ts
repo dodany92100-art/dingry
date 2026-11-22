@@ -17,9 +17,10 @@ function shopUrl(hash: string): string {
 }
 
 async function dismissCookieBanner(page: Page): Promise<void> {
-  const dialog = page.getByRole('dialog', { name: /Cookies DINGRY/i });
-  if (!(await dialog.isVisible({ timeout: 2000 }).catch(() => false))) return;
-  await dialog.getByRole('button', { name: /^Refuser$/i }).click();
+  const refuser = page.getByRole('button', { name: /^Refuser$/i });
+  if (!(await refuser.isVisible({ timeout: 8000 }).catch(() => false))) return;
+  await refuser.click();
+  await refuser.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => undefined);
 }
 
 async function gotoShop(page: Page, hash = '#catalogue'): Promise<void> {
@@ -166,12 +167,6 @@ async function assertShopCatalogVisible(page: Page): Promise<void> {
 /** Les deux parcours s’enchaînent dans l’ordre (pas en parallèle entre eux). */
 test.describe('Parcours utilisateur boutique', () => {
   test.describe.configure({ mode: 'serial' });
-
-  test.beforeEach(async ({ context }) => {
-    await context.addInitScript(() => {
-      localStorage.setItem('dingry-cookie-consent', 'rejected');
-    });
-  });
 
   /** Parcours catalogue classique : carte produit → modale → taille → ajout → tiroir → checkout. */
   test('Parcours d\'achat DINGRY : de l\'accueil au seuil de paiement (Stop avant CB)', async ({ page }) => {

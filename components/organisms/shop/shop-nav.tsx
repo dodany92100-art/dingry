@@ -319,7 +319,11 @@ export function ShopNav({
   const [activeSection, setActiveSection] = useState<ShopNavActiveSection | null>(null);
   const [navMagnetFlash, setNavMagnetFlash] = useState(false);
   const mobileMenuDialogRef = useRef<HTMLDialogElement>(null);
-  const nativeMobileMenu = supportsNativeModalDialog();
+  const [nativeMobileMenu, setNativeMobileMenu] = useState(false);
+
+  useEffect(() => {
+    setNativeMobileMenu(supportsNativeModalDialog());
+  }, []);
 
   const closeMobileMenu = useCallback(() => {
     setMobileMenuOpen(false);
