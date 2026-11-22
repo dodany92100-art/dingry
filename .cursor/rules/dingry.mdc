@@ -1,0 +1,15 @@
+---
+description: DINGRY — périmètre, gel UX, zones protégées, efficacité agent
+alwaysApply: true
+---
+
+# DINGRY
+
+1. **Projet** : dépôt `dodany92100-art/dingry`, vitrine live `/websitedx`, split-domain `www` vs `crm`, Next 16, React 19, Tailwind 4, TS strict, médias **R2** (pas Cloudinary pour le neuf), Vercel, marque blanche. Pas RAP2K, Stock Scan, Diaguily.
+2. **Gel UX** : aucun changement code, styles, contenus ni comportement boutique sans cible **nommée** dans le message. « Lis / explique / vérifie [fichier] » sans « modifier » = lecture seule. Accord = consigne d’agir explicite. « continue », capture ou screenshot seul ≠ accord.
+3. **Zones protégées** (diff minimal ; fichier nommé dans la requête) : auth `components/auth/auth-modal.tsx`, `lib/supabase/**` ; OAuth `app/auth/callback/**`, `lib/auth/**`, `hooks/use-shop-auth.ts`, `scripts/enable-supabase-google-oauth.mjs` ; TOTP `lib/admin/totp.ts` ; `lib/proxy-gate.ts` ; shop `lib/shop/**`, `app/api/shop/orders/**`, `app/api/shop/fulfillment/**` ; PayPal `lib/paypal-*.ts`, `app/api/checkout/route.ts`, `app/checkout/**`, `app/api/paypal/**`, `hooks/use-shop-orders.ts`, `hooks/use-fulfillment-orders.ts`. **Gel UX prime** sur la seule liste PayPal.
+4. **Staff / tokens** : `rg` ou commandes ciblées avant Read massif ; ne pas relire un fichier déjà lu ; pas `docs/DEPLOY.md` ni `package-lock.json` sans nécessité ; pas Vitest/e2e complet en boucle en local (suite complète = GitHub Actions) ; `npm run check:build-size` si besoin ; zéro `any` ; diffs minimaux ; jamais `--no-verify`.
+5. **Git** : ce dépôt seulement ; un commit par groupe ; messages clairs ; pas commit/push/deploy sans accord ; avant push : `git remote -v`.
+6. **Données / RGPD** : RLS deny-by-default ; pas de PII dans `shop_banners` ni via clé `anon` ; writes sensibles via `supabaseAdmin` seulement ; `data/admin/` (ex. `traiteur-requests.json`) dans `.gitignore` et hors `git ls-files` ; aucun secret dans le code.
+7. **Interdits** : pas de renommage masse `DINGRY_*` sans commit dédié ; pas de dépendance sans accord.
+8. **Agent** : français, chirurgical, concis. Dev : `npm run dev` → http://localhost:3000/
