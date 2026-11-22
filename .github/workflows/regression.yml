@@ -23,6 +23,7 @@ jobs:
     env:
       NODE_ENV: development
       STOCK_KEY_PREFIX: 'e2e:'
+      NEXT_PUBLIC_DINGRY_E2E: '1'
       UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_E2E_REDIS_REST_URL }}
       UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_E2E_REDIS_REST_TOKEN }}
     steps:
