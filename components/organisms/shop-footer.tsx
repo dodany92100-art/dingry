@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryContactModal } from "@/components/molecules/dingry-contact-modal";
+import { DingryLegalDocModal } from "@/components/molecules/dingry-legal-doc-modal";
 import { DingryNewsletterForm } from "@/components/molecules/dingry-newsletter-form";
 import { DINGRY_LEGAL_CLOSING } from "@/lib/dingry-legal";
 import { legalDocumentsForLocale, type LegalDocId } from "@/lib/legal-placeholders";
@@ -268,61 +269,16 @@ export function ShopFooter({
 
       <DingryContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
 
-      {activeLegal && legalDoc ? (
-          <div
-            key={`legal-${legalDoc}`}
-            className="fixed inset-0 z-[70] flex items-center justify-center p-4 md:p-8"
-          >
-            <div
-              className="dingry-legal-overlay absolute inset-0 bg-[#050505]/92"
-              onClick={() => setLegalDoc(null)}
-            />
-            <div
-              className="dingry-legal-panel relative z-10 flex max-h-[88vh] w-full max-w-2xl flex-col border border-white/[0.08] bg-[#0a0a0a]"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="legal-modal-title"
-            >
-              <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] p-6 md:p-8">
-                <div>
-                  <p className="dingry-section-eyebrow">{t("footer.legalModalEyebrow")}</p>
-                  <h2 id="legal-modal-title" className="mt-2 text-xl font-bold uppercase tracking-wide md:text-2xl">
-                    {activeLegal.title}
-                  </h2>
-                  <p className="mt-2 text-xs leading-relaxed text-white/40">{activeLegal.subtitle}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setLegalDoc(null)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center text-white/40 transition-colors hover:text-white"
-                  aria-label={t("common.close")}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-              <div className="overflow-y-auto p-6 md:p-8">
-                <div className="space-y-6">
-                  {activeLegal.sections.map((section) => (
-                    <section key={section.heading}>
-                      <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/80">
-                        {section.heading}
-                      </h3>
-                      <p className="mt-2 text-sm leading-relaxed text-white/45">{section.body}</p>
-                    </section>
-                  ))}
-                </div>
-                {LEGAL_CLOSING_IDS.has(legalDoc) ? (
-                  <p className="dingry-gold-rule-top relative mt-8 block pt-4 text-sm tracking-normal text-white/90 normal-case">
-                    {legalClosing}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          </div>
-      ) : null}
+      <DingryLegalDocModal
+        open={Boolean(activeLegal && legalDoc)}
+        legalDocId={legalDoc}
+        document={activeLegal}
+        legalModalEyebrow={t("footer.legalModalEyebrow")}
+        closeAriaLabel={t("common.close")}
+        showLegalClosing={Boolean(legalDoc && LEGAL_CLOSING_IDS.has(legalDoc))}
+        legalClosing={legalClosing}
+        onClose={() => setLegalDoc(null)}
+      />
     </>
   );
 }
