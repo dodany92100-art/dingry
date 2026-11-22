@@ -3,26 +3,19 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { DINGRY_CONTACT_EMAIL } from "@/lib/dingry-legal";
+import {
+  DINGRY_MODAL_PANEL_TRANSITION,
+  DINGRY_NATIVE_DIALOG_CLASS,
+  isDialogBackdropDismissTarget,
+  supportsNativeModalDialog,
+} from "@/components/molecules/dingry-native-dialog";
+
+export { isDialogBackdropDismissTarget, supportsNativeModalDialog } from "@/components/molecules/dingry-native-dialog";
 
 type DingryContactModalProps = {
   open: boolean;
   onClose: () => void;
 };
-
-const PANEL_TRANSITION = { duration: 0.28, ease: [0.16, 1, 0.3, 1] as const };
-
-/** Exporté pour les tests unitaires (repère clic light dismiss sur le `<dialog>`). */
-export function isDialogBackdropDismissTarget(
-  target: EventTarget | null,
-  dialog: HTMLDialogElement | null,
-): boolean {
-  return Boolean(dialog && target === dialog);
-}
-
-export function supportsNativeModalDialog(): boolean {
-  if (typeof HTMLDialogElement === "undefined") return false;
-  return typeof HTMLDialogElement.prototype.showModal === "function";
-}
 
 function ContactModalPanel({
   onRequestClose,
@@ -235,7 +228,7 @@ export function DingryContactModal({ open, onClose }: DingryContactModalProps) {
     <dialog
       ref={dialogRef}
       aria-labelledby="dingry-contact-modal-title"
-      className="dingry-contact-native-dialog fixed inset-0 z-[70] m-0 flex h-dvh max-h-dvh w-full max-w-none items-center justify-center border-0 bg-transparent p-4 open:flex md:p-8 [&::backdrop]:animate-[dingry-overlay-in_0.22s_cubic-bezier(0.16,1,0.3,1)_both] [&::backdrop]:bg-[#050505]/92 [&::backdrop]:overscroll-contain"
+      className={DINGRY_NATIVE_DIALOG_CLASS}
       style={{ overscrollBehavior: "contain" }}
     >
       <AnimatePresence>
@@ -245,7 +238,7 @@ export function DingryContactModal({ open, onClose }: DingryContactModalProps) {
             initial={{ opacity: 0, scale: 0.96, y: 14 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 8 }}
-            transition={PANEL_TRANSITION}
+            transition={DINGRY_MODAL_PANEL_TRANSITION}
             className="w-full max-w-md"
           >
             <ContactModalPanel
