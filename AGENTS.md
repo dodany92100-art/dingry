@@ -1,3 +1,5 @@
+This project's Baseline target is Baseline Widely available.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
