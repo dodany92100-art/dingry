@@ -1,0 +1,17 @@
+---
+description: OAuth Google, PKCE, callback, session
+globs: app/auth/**,lib/auth/**,components/auth/**,hooks/use-shop-auth.ts,lib/supabase/browser.ts
+alwaysApply: false
+---
+
+# Auth
+
+- **Un seul client navigateur** : `getSupabaseBrowser()` dans `lib/supabase/browser.ts`. Aucun autre `createClient` côté navigateur.
+- **Flux** : `flowType: "pkce"` se configure sur le client, pas sur `signInWithOAuth`. Garder `detectSessionInUrl: true`.
+- **Callback** : ne jamais appeler `exchangeCodeForSession` à la main quand `detectSessionInUrl` est actif (le code est déjà consommé, le second appel échoue). Attendre la session via `onAuthStateChange` (`SIGNED_IN`) et `getSession()`, avec un timeout.
+- **Domaine unique** : le login démarre et finit sur le même host, car le `code_verifier` est dans le `localStorage` de ce domaine. `NEXT_PUBLIC_SITE_URL` vaut exactement le host réel de la boutique (`https://www.dingry.com`, avec `www`). Aucune redirection apex ↔ `www` sur le flux.
+- **Redirect URLs Supabase** : avec wildcard (`https://www.dingry.com/auth/callback**`, `http://localhost:3000/auth/callback**`), car `?next=` et `sb_flow_id` s'ajoutent à l'URL de retour.
+- **`next`** : toujours passé par `sanitizeAuthCallbackNext` (`@/lib/auth/auth-callback-next`).
+- **Journalisation** : jamais le hash, le `code`, le `state` ni un token, ni dans la console, ni dans les logs serveur, ni dans une réponse.
+- **Tests locaux** : `NEXT_PUBLIC_SITE_URL` absente ou `http://localhost:3000`, fenêtre privée, serveur relancé (les `NEXT_PUBLIC_*` sont figées au démarrage). Ne pas tester Google sur une preview Vercel (URL hors allowlist).
+- **Résultat attendu après login** : `/auth/callback?code=...`, jamais de `#access_token`, appel `token?grant_type=pkce` en 200.

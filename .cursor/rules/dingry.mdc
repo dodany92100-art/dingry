@@ -1,15 +1,20 @@
 ---
-description: DINGRY — périmètre, gel UX, zones protégées, efficacité agent
+description: DINGRY, périmètre, gel UX, zones protégées, secrets, définition de « terminé »
 alwaysApply: true
 ---
 
 # DINGRY
 
-1. **Projet** : dépôt `dodany92100-art/dingry`, vitrine live `/websitedx`, split-domain `www` vs `crm`, Next 16, React 19, Tailwind 4, TS strict, médias **R2** (pas Cloudinary pour le neuf), Vercel, marque blanche. Pas RAP2K, Stock Scan, Diaguily.
-2. **Gel UX** : aucun changement code, styles, contenus ni comportement boutique sans cible **nommée** dans le message. « Lis / explique / vérifie [fichier] » sans « modifier » = lecture seule. Accord = consigne d’agir explicite. « continue », capture ou screenshot seul ≠ accord.
-3. **Zones protégées** (diff minimal ; fichier nommé dans la requête) : auth `components/auth/auth-modal.tsx`, `lib/supabase/**` ; OAuth `app/auth/callback/**`, `lib/auth/**`, `hooks/use-shop-auth.ts`, `scripts/enable-supabase-google-oauth.mjs` ; TOTP `lib/admin/totp.ts` ; `lib/proxy-gate.ts` ; shop `lib/shop/**`, `app/api/shop/orders/**`, `app/api/shop/fulfillment/**` ; PayPal `lib/paypal-*.ts`, `app/api/checkout/route.ts`, `app/checkout/**`, `app/api/paypal/**`, `hooks/use-shop-orders.ts`, `hooks/use-fulfillment-orders.ts`. **Gel UX prime** sur la seule liste PayPal.
-4. **Staff / tokens** : `rg` ou commandes ciblées avant Read massif ; ne pas relire un fichier déjà lu ; pas `docs/DEPLOY.md` ni `package-lock.json` sans nécessité ; pas Vitest/e2e complet en boucle en local (suite complète = GitHub Actions) ; `npm run check:build-size` si besoin ; zéro `any` ; diffs minimaux ; jamais `--no-verify`.
-5. **Git** : ce dépôt seulement ; un commit par groupe ; messages clairs ; pas commit/push/deploy sans accord ; avant push : `git remote -v`.
-6. **Données / RGPD** : RLS deny-by-default ; pas de PII dans `shop_banners` ni via clé `anon` ; writes sensibles via `supabaseAdmin` seulement ; `data/admin/` (ex. `traiteur-requests.json`) dans `.gitignore` et hors `git ls-files` ; aucun secret dans le code.
-7. **Interdits** : pas de renommage masse `DINGRY_*` sans commit dédié ; pas de dépendance sans accord.
-8. **Agent** : français, chirurgical, concis. Dev : `npm run dev` → http://localhost:3000/
+1. **Projet** : dépôt `dodany92100-art/dingry`, vitrine `/websitedx`, split-domain `www` / `crm`, Next 16, React 19, Tailwind 4, TS strict, médias R2, Vercel, marque blanche.
+2. **Gel UX** : aucun changement de code, style, contenu ou comportement boutique sans cible **nommée** et consigne d'agir explicite. « Lis / explique / vérifie » = lecture seule. « continue », capture ou screenshot ≠ accord.
+3. **Zones protégées** (diff minimal, fichier nommé dans la requête) :
+   - auth : `components/auth/**`, `lib/supabase/**`, `app/auth/**`, `lib/auth/**`, `hooks/use-shop-auth.ts`
+   - sécurité : `lib/admin/totp.ts`, `lib/proxy-gate.ts`
+   - commandes : `lib/shop/**`, `app/api/shop/orders/**`, `app/api/shop/fulfillment/**`
+   - **paiement** (cible nommée ET accord explicite) : `lib/paypal-*.ts`, `app/api/checkout/**`, `app/checkout/**`, `app/api/paypal/**`, `hooks/use-shop-orders.ts`, `hooks/use-fulfillment-orders.ts`
+4. **Secrets** : aucun `.env*` committé hors `.env.example`. Jamais de clé, token, `code=` OAuth, `state` ou hash d'URL dans le code, les logs, les commits ou les réponses. Pas de `SUPABASE_ACCESS_TOKEN` dans les fichiers d'environnement. Les sauvegardes d'env portent un nom couvert par `.gitignore` (`.env*.bak*`).
+5. **Données** : RLS deny-by-default. Pas de PII ni de config privée dans `shop_banners`, ni lisible via la clé `anon`. Config non publique → `shop_private_config`. Écritures sensibles via `supabaseAdmin`, côté serveur seulement.
+6. **Git** : ce dépôt seulement. Une mission = une branche = un commit. Jamais `git add -A` : chemins explicites, puis `git status --short` avant de committer. Jamais `--no-verify` ni force push. Pas de commit, push, merge ou deploy sans accord. Avant push : `git remote -v`. Branches empilées : merge commit, pas squash.
+7. **Terminé** = `npx tsc --noEmit` + `npm run verify:anti-regression` OK, tests des fichiers touchés OK, build Vercel **Ready**, test manuel (mobile inclus). CI rouge = à signaler, jamais à contourner.
+8. **Économie** : `rg` ou commandes ciblées avant lecture massive. Ne pas relire un fichier déjà lu. Pas de `package-lock.json` ni `docs/DEPLOY.md` sans nécessité. Zéro `any`. Pas de dépendance ni de renommage de masse `DINGRY_*` sans accord.
+9. **Agent** : français, chirurgical, concis. En fin de mission : fichiers modifiés, résultats des vérifications, ce qu'il reste à faire de mon côté. Dev : `npm run dev` → http://localhost:3000/
