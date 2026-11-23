@@ -18,6 +18,8 @@ type AdminStockControlsProps = {
   cardTriggerVariant?: "stacked" | "inline";
   /** Carte : quantités déjà sur la ligne prix — panneau = Modifier + autosave seulement. */
   hideQtyInPanel?: boolean;
+  /** Carte : pas de bouton Modifier (fiche via clic photo / titre). */
+  hideEditInPanel?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   panelId?: string;
@@ -47,6 +49,7 @@ type StockControlPanelProps = {
   layout: "card" | "row";
   autosavePhase?: StockAutosavePhase;
   hideQtyInPanel?: boolean;
+  hideEditInPanel?: boolean;
 };
 
 function StockControlPanel({
@@ -60,6 +63,7 @@ function StockControlPanel({
   layout,
   autosavePhase,
   hideQtyInPanel = false,
+  hideEditInPanel = false,
 }: StockControlPanelProps) {
   const cardLayout = layout === "card";
   const cardPanelAlwaysOpen = cardLayout && hideQtyInPanel;
@@ -85,13 +89,15 @@ function StockControlPanel({
                 compact
               />
             )}
-            <button
-              type="button"
-              onClick={() => onEdit(product)}
-              className={`${BTN_EDIT_CARD} hidden md:inline-flex md:ml-0.5`}
-            >
-              Modifier
-            </button>
+            {hideEditInPanel ? null : (
+              <button
+                type="button"
+                onClick={() => onEdit(product)}
+                className={`${BTN_EDIT_CARD} hidden md:inline-flex md:ml-0.5`}
+              >
+                Modifier
+              </button>
+            )}
             <div className="w-full md:w-auto md:basis-full">
               <AdminStockAutosaveHint phase={autosavePhase} />
             </div>
@@ -130,7 +136,12 @@ export function AdminStockQtyControls({
   compact: boolean;
 }) {
   return (
-    <div className={`flex min-w-0 items-center justify-center gap-0.5 ${compact ? "" : "gap-1.5 md:gap-2"}`}>
+    <div
+      className={`flex min-w-0 touch-manipulation items-center justify-end gap-0.5 ${compact ? "" : "gap-1.5 md:gap-2"}`}
+      data-admin-no-reorder
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
       <button
         type="button"
         disabled={disabled || product.stock === 0}
@@ -217,6 +228,7 @@ export function AdminStockControls({
   panelId: panelIdProp,
   autosavePhase,
   hideQtyInPanel = false,
+  hideEditInPanel = false,
 }: AdminStockControlsProps) {
   const disabled = busy;
   const [openUncontrolled, setOpenUncontrolled] = useState(false);
@@ -241,6 +253,7 @@ export function AdminStockControls({
       layout={layout}
       autosavePhase={autosavePhase}
       hideQtyInPanel={hideQtyInPanel}
+      hideEditInPanel={hideEditInPanel}
     />
   );
 

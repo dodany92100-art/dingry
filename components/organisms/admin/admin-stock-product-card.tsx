@@ -187,20 +187,23 @@ export function AdminStockProductCard({
             className="flex min-w-0 items-center justify-between gap-1 pt-0.5"
             data-admin-no-reorder
             onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <p className="shrink-0 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs">
               {priceFormat.format(product.price)}
             </p>
-            <AdminStockQtyControls
-              product={product}
-              disabled={busy}
-              onChangeStock={onChangeStock}
-              onSetStock={onSetStock}
-              compact
-            />
+            <div className="min-w-0 max-w-[62%] shrink">
+              <AdminStockQtyControls
+                product={product}
+                disabled={busy}
+                onChangeStock={onChangeStock}
+                onSetStock={onSetStock}
+                compact
+              />
+            </div>
           </div>
 
-          <div className="mt-auto shrink-0">
+          <div className="mt-auto shrink-0 pt-0.5">
             <AdminStockControls
               product={product}
               busy={busy}
@@ -210,6 +213,7 @@ export function AdminStockProductCard({
               layout="card"
               cardTriggerVariant="inline"
               hideQtyInPanel
+              hideEditInPanel
               open
               panelId={stockPanelId}
               autosavePhase={autosavePhase}
