@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryProductImage } from "@/components/atoms/dingry-product-image";
@@ -46,6 +46,52 @@ export const PRODUCT_MODAL_DECORATIVE_IMG = {
   fetchPriority: "low",
   decoding: "async",
 } as const;
+
+const PRODUCT_MODAL_FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(", ");
+
+/** Éléments focusables dans le panneau (pour piège Tab). */
+export function getProductModalFocusableElements(root: HTMLElement): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>(PRODUCT_MODAL_FOCUSABLE_SELECTOR)].filter(
+    (el) => !el.hasAttribute("disabled") && !el.closest("[aria-hidden='true']"),
+  );
+}
+
+export type ProductModalTabDirection = "next" | "prev";
+
+/** Cible du prochain focus si Tab doit rester dans la modale (boucle). */
+export function resolveProductModalTabFocus(
+  direction: ProductModalTabDirection,
+  focusables: readonly HTMLElement[],
+  active: HTMLElement | null,
+): HTMLElement | null {
+  if (focusables.length === 0) return null;
+  const index = active ? focusables.indexOf(active) : -1;
+  if (direction === "next") {
+    if (index < 0 || index >= focusables.length - 1) return focusables[0] ?? null;
+    return focusables[index + 1] ?? null;
+  }
+  if (index <= 0) return focusables[focusables.length - 1] ?? null;
+  return focusables[index - 1] ?? null;
+}
+
+/** Vrai si Tab / Maj+Tab doit être intercepté (bord du piège). */
+export function shouldTrapProductModalTab(
+  direction: ProductModalTabDirection,
+  focusables: readonly HTMLElement[],
+  active: HTMLElement | null,
+): boolean {
+  if (focusables.length === 0) return false;
+  const index = active ? focusables.indexOf(active) : -1;
+  if (direction === "next") return index === focusables.length - 1 || index < 0;
+  return index <= 0;
+}
 
 type ShopProductModalProps = {
   modal: ProductModalState;
@@ -156,6 +202,47 @@ function ProductModalContent({
     isTurnstileProductTestEnabled() && isShopTeeCategory(String(shopCategory));
 
   const data = shell.data;
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const openerFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const opener = document.activeElement;
+    openerFocusRef.current = opener instanceof HTMLElement ? opener : null;
+
+    const raf = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
+
+    const panel = modal.productModalRef.current;
+    if (!panel) {
+      return () => {
+        window.cancelAnimationFrame(raf);
+        const previous = openerFocusRef.current;
+        if (previous?.isConnected) previous.focus();
+      };
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const direction: ProductModalTabDirection = event.shiftKey ? "prev" : "next";
+      const focusables = getProductModalFocusableElements(panel);
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      if (!shouldTrapProductModalTab(direction, focusables, active)) return;
+      const target = resolveProductModalTabFocus(direction, focusables, active);
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
+    };
+
+    panel.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      panel.removeEventListener("keydown", onKeyDown);
+      const previous = openerFocusRef.current;
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [modal.productModalRef]);
+
   if (!data) return null;
 
   const sizeGridVars = {
@@ -278,6 +365,7 @@ function ProductModalContent({
             <div className={styles.toolbar}>
               <div className={styles.toolbarCluster}>
                 <button
+                  ref={closeButtonRef}
                   type="button"
                   onClick={shell.onClose}
                   className={styles.close}
