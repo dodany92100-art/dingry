@@ -13,6 +13,25 @@ import {
 import { supportsNativeModalDialog } from "@/components/molecules/dingry-native-dialog";
 import { isE2eAutomation } from "@/lib/e2e-flags";
 
+/** Bandeau informatif : pas d’écoute `cancel` / `preventDefault` sur Échap. */
+export const COOKIE_CONSENT_INTERCEPTS_DIALOG_CANCEL = false;
+
+const DINGRY_COOKIE_NATIVE_DIALOG_CLASS =
+  "fixed inset-x-0 bottom-0 z-[100] m-0 w-full max-w-none border-0 bg-transparent p-0 open:block";
+
+/** Ouvre le bandeau natif en mode non modal (`show`, sans top layer bloquant). */
+export function openNativeCookieConsentDialog(dialog: HTMLDialogElement): void {
+  if (!dialog.open) {
+    dialog.show();
+  }
+}
+
+export function closeNativeCookieConsentDialog(dialog: HTMLDialogElement): void {
+  if (dialog.open) {
+    dialog.close();
+  }
+}
+
 function CookieConsentPanel({
   onChoose,
   onPolicyLinkClick,
@@ -113,14 +132,16 @@ export function CookieConsent() {
       setAnalyticsEnabled(true);
     }
     if (nativeModal) {
-      dialogRef.current?.close();
+      const dialog = dialogRef.current;
+      if (dialog) closeNativeCookieConsentDialog(dialog);
     }
   }, [nativeModal]);
 
   const hideForPolicyLink = useCallback(() => {
     setVisible(false);
     if (nativeModal) {
-      dialogRef.current?.close();
+      const dialog = dialogRef.current;
+      if (dialog) closeNativeCookieConsentDialog(dialog);
     }
   }, [nativeModal]);
 
@@ -128,25 +149,10 @@ export function CookieConsent() {
     if (!nativeModal || isAdmin) return;
     const dialog = dialogRef.current;
     if (!dialog) return;
-
-    const onCancel = (event: Event) => {
-      event.preventDefault();
-    };
-
-    dialog.addEventListener("cancel", onCancel);
-    return () => {
-      dialog.removeEventListener("cancel", onCancel);
-    };
-  }, [nativeModal, isAdmin]);
-
-  useEffect(() => {
-    if (!nativeModal || isAdmin) return;
-    const dialog = dialogRef.current;
-    if (!dialog) return;
     if (visible) {
-      if (!dialog.open) dialog.showModal();
-    } else if (dialog.open) {
-      dialog.close();
+      openNativeCookieConsentDialog(dialog);
+    } else {
+      closeNativeCookieConsentDialog(dialog);
     }
   }, [visible, nativeModal, isAdmin]);
 
@@ -162,8 +168,7 @@ export function CookieConsent() {
           ref={dialogRef}
           aria-labelledby="dingry-cookie-title"
           aria-describedby="dingry-cookie-desc"
-          className="fixed inset-x-0 bottom-0 z-[100] m-0 w-full max-w-none border-0 bg-transparent p-0 open:block [&::backdrop]:bg-[#050505]/40 [&::backdrop]:overscroll-contain"
-          style={{ overscrollBehavior: "contain" }}
+          className={DINGRY_COOKIE_NATIVE_DIALOG_CLASS}
         >
           {visible ? <CookieConsentPanel onChoose={choose} onPolicyLinkClick={hideForPolicyLink} /> : null}
         </dialog>
