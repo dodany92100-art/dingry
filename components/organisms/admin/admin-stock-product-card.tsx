@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
 import type { StockAutosavePhase } from "@/lib/admin/stock-autosave-types";
@@ -9,7 +9,7 @@ import { CATALOG_THUMB_IMAGE_WIDTH } from "@/lib/media/catalog-image-sizes";
 import { deliveryImageUrl as cldOpt } from "@/lib/media/delivery-image-url";
 import {
   AdminStockControls,
-  AdminStockControlsCardTrigger,
+  AdminStockQtyControls,
 } from "@/components/organisms/admin/admin-stock-controls";
 import { AdminStockStatusBadge } from "@/components/organisms/admin/admin-stock-status-badge";
 import { AdminProductOrderControls } from "@/components/organisms/admin/admin-product-order-controls";
@@ -72,7 +72,6 @@ export function AdminStockProductCard({
 }: AdminStockProductCardProps) {
   const soldOut = product.stock <= 0;
   const variantLine = stockIndicativeVariants(product) || product.category;
-  const [stockOpen, setStockOpen] = useState(false);
   const stockPanelReactId = useId();
   const stockPanelId = `dingry-stock-controls-${product.id}${stockPanelReactId}`;
 
@@ -168,11 +167,12 @@ export function AdminStockProductCard({
             <p className="shrink-0 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs">
               {priceFormat.format(product.price)}
             </p>
-            <AdminStockControlsCardTrigger
+            <AdminStockQtyControls
               product={product}
-              open={stockOpen}
-              panelId={stockPanelId}
-              onToggle={() => setStockOpen((value) => !value)}
+              disabled={busy}
+              onChangeStock={onChangeStock}
+              onSetStock={onSetStock}
+              compact
             />
           </div>
 
@@ -185,8 +185,8 @@ export function AdminStockProductCard({
               onEdit={onEdit}
               layout="card"
               cardTriggerVariant="inline"
-              open={stockOpen}
-              onOpenChange={setStockOpen}
+              hideQtyInPanel
+              open
               panelId={stockPanelId}
               autosavePhase={autosavePhase}
             />

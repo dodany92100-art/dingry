@@ -16,6 +16,8 @@ type AdminStockControlsProps = {
   layout?: "card" | "row";
   /** Carte : trigger sur la ligne prix (pas de bordure haute). */
   cardTriggerVariant?: "stacked" | "inline";
+  /** Carte : quantités déjà sur la ligne prix — panneau = Modifier + autosave seulement. */
+  hideQtyInPanel?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   panelId?: string;
@@ -44,6 +46,7 @@ type StockControlPanelProps = {
   onEdit: (product: AdminProduct) => void;
   layout: "card" | "row";
   autosavePhase?: StockAutosavePhase;
+  hideQtyInPanel?: boolean;
 };
 
 function StockControlPanel({
@@ -56,27 +59,32 @@ function StockControlPanel({
   onEdit,
   layout,
   autosavePhase,
+  hideQtyInPanel = false,
 }: StockControlPanelProps) {
   const cardLayout = layout === "card";
+  const cardPanelAlwaysOpen = cardLayout && hideQtyInPanel;
+  const panelOpen = cardPanelAlwaysOpen ? true : open;
 
   return (
     <div
       id={panelId}
       className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${
-        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        panelOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
       }`}
-      aria-hidden={!open}
+      aria-hidden={!panelOpen}
     >
       <div className="min-h-0 overflow-hidden">
         {cardLayout ? (
           <div className="flex w-full min-w-0 flex-col gap-1 pt-1 max-md:items-stretch md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-0.5">
-            <StockQtyControls
-              product={product}
-              disabled={disabled}
-              onChangeStock={onChangeStock}
-              onSetStock={onSetStock}
-              compact
-            />
+            {hideQtyInPanel ? null : (
+              <AdminStockQtyControls
+                product={product}
+                disabled={disabled}
+                onChangeStock={onChangeStock}
+                onSetStock={onSetStock}
+                compact
+              />
+            )}
             <button
               type="button"
               onClick={() => onEdit(product)}
@@ -90,7 +98,7 @@ function StockControlPanel({
           </div>
         ) : (
           <div className="flex flex-col items-end gap-0.5 pt-1">
-            <StockQtyControls
+            <AdminStockQtyControls
               product={product}
               disabled={disabled}
               onChangeStock={onChangeStock}
@@ -108,7 +116,7 @@ function StockControlPanel({
   );
 }
 
-function StockQtyControls({
+export function AdminStockQtyControls({
   product,
   disabled,
   onChangeStock,
@@ -208,6 +216,7 @@ export function AdminStockControls({
   onOpenChange,
   panelId: panelIdProp,
   autosavePhase,
+  hideQtyInPanel = false,
 }: AdminStockControlsProps) {
   const disabled = busy;
   const [openUncontrolled, setOpenUncontrolled] = useState(false);
@@ -231,6 +240,7 @@ export function AdminStockControls({
       onEdit={onEdit}
       layout={layout}
       autosavePhase={autosavePhase}
+      hideQtyInPanel={hideQtyInPanel}
     />
   );
 
