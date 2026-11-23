@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryProductImage } from "@/components/atoms/dingry-product-image";
@@ -36,6 +36,62 @@ import styles from "./product-modal.module.css";
 import { productModalDataFromShop, type ProductModalProps as ProductModalShellProps } from "./product-modal.types";
 
 export type { ProductModalData, ProductModalProps } from "./product-modal.types";
+
+/** Id stable pour `aria-labelledby` (aligné personalize-modal / MWG). */
+export const DINGRY_PRODUCT_MODAL_TITLE_ID = "dingry-product-modal-title";
+
+/** Images décoratives modale (fond, miniatures) : pas de concurrence LCP. */
+export const PRODUCT_MODAL_DECORATIVE_IMG = {
+  loading: "lazy",
+  fetchPriority: "low",
+  decoding: "async",
+} as const;
+
+const PRODUCT_MODAL_FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(", ");
+
+/** Éléments focusables dans le panneau (pour piège Tab). */
+export function getProductModalFocusableElements(root: HTMLElement): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>(PRODUCT_MODAL_FOCUSABLE_SELECTOR)].filter(
+    (el) => !el.hasAttribute("disabled") && !el.closest("[aria-hidden='true']"),
+  );
+}
+
+export type ProductModalTabDirection = "next" | "prev";
+
+/** Cible du prochain focus si Tab doit rester dans la modale (boucle). */
+export function resolveProductModalTabFocus(
+  direction: ProductModalTabDirection,
+  focusables: readonly HTMLElement[],
+  active: HTMLElement | null,
+): HTMLElement | null {
+  if (focusables.length === 0) return null;
+  const index = active ? focusables.indexOf(active) : -1;
+  if (direction === "next") {
+    if (index < 0 || index >= focusables.length - 1) return focusables[0] ?? null;
+    return focusables[index + 1] ?? null;
+  }
+  if (index <= 0) return focusables[focusables.length - 1] ?? null;
+  return focusables[index - 1] ?? null;
+}
+
+/** Vrai si Tab / Maj+Tab doit être intercepté (bord du piège). */
+export function shouldTrapProductModalTab(
+  direction: ProductModalTabDirection,
+  focusables: readonly HTMLElement[],
+  active: HTMLElement | null,
+): boolean {
+  if (focusables.length === 0) return false;
+  const index = active ? focusables.indexOf(active) : -1;
+  if (direction === "next") return index === focusables.length - 1 || index < 0;
+  return index <= 0;
+}
 
 type ShopProductModalProps = {
   modal: ProductModalState;
@@ -146,6 +202,47 @@ function ProductModalContent({
     isTurnstileProductTestEnabled() && isShopTeeCategory(String(shopCategory));
 
   const data = shell.data;
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const openerFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const opener = document.activeElement;
+    openerFocusRef.current = opener instanceof HTMLElement ? opener : null;
+
+    const raf = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
+
+    const panel = modal.productModalRef.current;
+    if (!panel) {
+      return () => {
+        window.cancelAnimationFrame(raf);
+        const previous = openerFocusRef.current;
+        if (previous?.isConnected) previous.focus();
+      };
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const direction: ProductModalTabDirection = event.shiftKey ? "prev" : "next";
+      const focusables = getProductModalFocusableElements(panel);
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      if (!shouldTrapProductModalTab(direction, focusables, active)) return;
+      const target = resolveProductModalTabFocus(direction, focusables, active);
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
+    };
+
+    panel.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      panel.removeEventListener("keydown", onKeyDown);
+      const previous = openerFocusRef.current;
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [modal.productModalRef]);
+
   if (!data) return null;
 
   const sizeGridVars = {
@@ -161,6 +258,7 @@ function ProductModalContent({
         exit={{ opacity: 0 }}
         transition={MODAL_OVERLAY_TRANSITION}
         onClick={shell.onClose}
+        aria-hidden
       />
       <motion.div
         ref={modal.productModalRef}
@@ -170,9 +268,17 @@ function ProductModalContent({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
         transition={MODAL_PANEL_SPRING}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={DINGRY_PRODUCT_MODAL_TITLE_ID}
       >
         <div className={styles.ambience} aria-hidden>
-          <img src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC} alt="" decoding="async" className={styles.ambienceImg} />
+          <img
+            src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC}
+            alt=""
+            className={styles.ambienceImg}
+            {...PRODUCT_MODAL_DECORATIVE_IMG}
+          />
           <div className={styles.ambienceVeil} />
         </div>
         <div ref={modal.productImageRef} className={styles.photo}>
@@ -207,6 +313,7 @@ function ProductModalContent({
                   width={600}
                   height={800}
                   deliveryWidth={720}
+                  priority
                   className={styles.photoCover}
                   sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
                   fitContent
@@ -227,7 +334,9 @@ function ProductModalContent({
                   src={effectiveFlipImages.front}
                   alt=""
                   className={styles.viewThumbImg}
-                  decoding="async"
+                  width={56}
+                  height={56}
+                  {...PRODUCT_MODAL_DECORATIVE_IMG}
                 />
                 <span className={styles.viewThumbLabel}>Recto</span>
               </button>
@@ -242,7 +351,9 @@ function ProductModalContent({
                   src={effectiveFlipImages.back}
                   alt=""
                   className={styles.viewThumbImg}
-                  decoding="async"
+                  width={56}
+                  height={56}
+                  {...PRODUCT_MODAL_DECORATIVE_IMG}
                 />
                 <span className={styles.viewThumbLabel}>Verso</span>
               </button>
@@ -254,6 +365,7 @@ function ProductModalContent({
             <div className={styles.toolbar}>
               <div className={styles.toolbarCluster}>
                 <button
+                  ref={closeButtonRef}
                   type="button"
                   onClick={shell.onClose}
                   className={styles.close}
@@ -268,7 +380,9 @@ function ProductModalContent({
             </div>
             <DingryLogo animate={false} tone="on-light" className="mb-3 h-8 w-auto opacity-90 md:mb-4 md:h-9" />
             <p className={`dingry-typo-manifesto ${styles.manifesto}`}>{DINGRY_MANIFESTO_FR}</p>
-            <h2 className={styles.title}>{data.title}</h2>
+            <h2 id={DINGRY_PRODUCT_MODAL_TITLE_ID} className={styles.title}>
+              {data.title}
+            </h2>
             {detail.description ? (
               <p className={styles.description}>{detail.description}</p>
             ) : null}
