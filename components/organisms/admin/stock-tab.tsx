@@ -284,7 +284,7 @@ export function StockTab({
   const liveCount = visibleProducts.length - draftCount;
 
   return (
-    <div>
+    <div className="pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))]">
       <AdminStockStickyFilters
         categoryFilter={categoryFilter}
         onCategoryChange={onCategoryFilterChange}
@@ -329,8 +329,8 @@ export function StockTab({
         </div>
       </AdminStockStickyFilters>
 
-      <div className="mb-4 mt-3 flex items-center justify-between gap-4">
-        <div className="min-w-0">
+      <div className="mb-4 mt-3 min-w-0">
+        <div>
           <p className="hidden text-[10px] uppercase tracking-[0.22em] text-white/40 sm:block">
             {publishFilter === "draft" ? "Brouillons" : "Stock"}
             {categoryFilter !== "Collection" ? (
@@ -362,13 +362,6 @@ export function StockTab({
             </p>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={onNew}
-          className="dingry-gold-pill-btn dingry-admin-new-product-btn h-9 shrink-0 rounded-full px-4 text-[11px] uppercase tracking-[0.12em]"
-        >
-          <span className="gold-text">Nouveau</span>
-        </button>
       </div>
       {error ? <p className="mb-3 text-sm text-red-400">{error}</p> : null}
 
@@ -517,6 +510,14 @@ export function StockTab({
               ))}
         </div>
       )}
+      <button
+        type="button"
+        onClick={onNew}
+        className="dingry-gold-pill-btn dingry-admin-new-product-btn dingry-admin-new-product-fab fixed right-4 z-[92] h-10 rounded-full px-5 text-[11px] uppercase tracking-[0.12em] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm bottom-[calc(3.65rem+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-[4.75rem]"
+        aria-label="Créer un nouveau produit"
+      >
+        <span className="gold-text">Nouveau</span>
+      </button>
       {pendingDelete ? (
         <div
           className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
