@@ -28,13 +28,12 @@ function trimUrl(url: string): string {
   return url.trim();
 }
 
-/** Affiche le repli tant que l’URL CRM n’est pas vérifiée (évite icône cassée + swap agressif). */
-function initialActiveSrc(primary: string, fallback?: string): string {
+/** Source affichée : CRM d’abord, repli via `onError` (pas de sonde `new Image()` par cellule). */
+export function resolveProductImageSrc(primary: string, fallback?: string): string {
   const p = trimUrl(primary);
   const f = trimUrl(fallback ?? "");
   if (!p) return f;
-  if (!f || f === p) return p;
-  return f;
+  return p;
 }
 
 export function DingryProductImage({
@@ -49,33 +48,10 @@ export function DingryProductImage({
   deliveryWidth,
   fitContent = false,
 }: DingryProductImageProps) {
-  const [activeSrc, setActiveSrc] = useState(() => initialActiveSrc(src, fallbackSrc));
+  const [activeSrc, setActiveSrc] = useState(() => resolveProductImageSrc(src, fallbackSrc));
   useEffect(() => {
-    const primary = trimUrl(src);
-    const fallback = trimUrl(fallbackSrc ?? "");
-    if (!primary) {
-      setActiveSrc(fallback);
-      return;
-    }
-    if (!fallback || fallback === primary) {
-      setActiveSrc(primary);
-      return;
-    }
-    setActiveSrc(fallback);
-    let cancelled = false;
-    const probe = new window.Image();
-    const probeUrl = deliveryImageUrl(primary, deliveryWidth);
-    probe.onload = () => {
-      if (!cancelled) setActiveSrc(primary);
-    };
-    probe.onerror = () => {
-      if (!cancelled) setActiveSrc(fallback);
-    };
-    probe.src = probeUrl;
-    return () => {
-      cancelled = true;
-    };
-  }, [src, fallbackSrc, deliveryWidth]);
+    setActiveSrc(resolveProductImageSrc(src, fallbackSrc));
+  }, [src, fallbackSrc]);
   const onError = useCallback(() => {
     const next = fallbackSrc?.trim() ?? "";
     if (next && next !== activeSrc) setActiveSrc(next);
@@ -98,8 +74,10 @@ export function DingryProductImage({
       <img
         src={safeSrc}
         alt={alt}
+        width={width}
+        height={height}
         loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : "auto"}
+        {...(priority ? { fetchPriority: "high" as const } : {})}
         decoding="async"
         draggable={false}
         onError={onError}
