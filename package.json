@@ -28,6 +28,7 @@
     "migrate:r2-images": "tsx scripts/migrate-product-images-to-r2.ts",
     "purge:r2": "tsx scripts/purge-r2-bucket.ts --confirm",
     "smoke:quote": "tsx scripts/smoke-quote.ts",
+    "e2e:prepare-redis": "tsx scripts/e2e-prepare-redis.ts",
     "test:e2e": "node scripts/run-playwright-e2e.mjs",
     "vercel:env-preview": "node scripts/push-vercel-preview-env.mjs",
     "supabase:google-oauth": "node scripts/enable-supabase-google-oauth.mjs",

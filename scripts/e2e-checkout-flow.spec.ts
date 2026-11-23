@@ -17,9 +17,10 @@ function shopUrl(hash: string): string {
 }
 
 async function dismissCookieBanner(page: Page): Promise<void> {
-  const dialog = page.getByRole('dialog', { name: /Cookies DINGRY/i });
-  if (!(await dialog.isVisible({ timeout: 2000 }).catch(() => false))) return;
-  await dialog.getByRole('button', { name: /^Refuser$/i }).click();
+  const refuser = page.getByRole('button', { name: /^Refuser$/i });
+  if (!(await refuser.isVisible({ timeout: 8000 }).catch(() => false))) return;
+  await refuser.click();
+  await refuser.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => undefined);
 }
 
 async function gotoShop(page: Page, hash = '#catalogue'): Promise<void> {

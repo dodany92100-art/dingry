@@ -11,6 +11,7 @@ import {
   readCookieConsent,
 } from "@/lib/cookie-consent";
 import { supportsNativeModalDialog } from "@/components/molecules/dingry-native-dialog";
+import { isE2eAutomation } from "@/lib/e2e-flags";
 
 function CookieConsentPanel({
   onChoose,
@@ -95,7 +96,7 @@ export function CookieConsent() {
   const nativeModal = supportsNativeModalDialog();
 
   useEffect(() => {
-    if (isAdmin) return;
+    if (isAdmin || isE2eAutomation()) return;
     const stored = readCookieConsent();
     if (stored === "accepted") {
       setAnalyticsEnabled(true);
