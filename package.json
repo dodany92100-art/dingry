@@ -25,6 +25,8 @@
     "import:ghosts": "tsx scripts/import-ghosts.ts",
     "import:product-options": "tsx scripts/import-product-options.ts",
     "verify:smart-album": "vitest run lib/admin/smart-collage-album.test.ts lib/admin/product-options-import-album.test.ts",
+    "verify:crm-stock-lot": "vitest run lib/admin/stock-autosave-build.test.ts lib/admin/stock-bulk-session.test.ts",
+    "verify:crm-stock-lot:full": "npx tsc --noEmit && npm run verify:anti-regression && npm run verify:crm-stock-lot",
     "migrate:r2-images": "tsx scripts/migrate-product-images-to-r2.ts",
     "purge:r2": "tsx scripts/purge-r2-bucket.ts --confirm",
     "smoke:quote": "tsx scripts/smoke-quote.ts",

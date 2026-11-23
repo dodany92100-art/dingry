@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { BulkEditSnapshotRow } from "@/components/organisms/admin/hooks/use-admin-products";
+import {
+  selectedProductsForBulk,
+  shouldPropagateBulkEdit,
+} from "@/lib/admin/stock-bulk-session";
 import { AdminStockBulkEditBar } from "@/components/organisms/admin/admin-stock-bulk-edit-bar";
 import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
@@ -289,13 +293,12 @@ export function StockTab({
   const bulkEditActive = bulkEditAll || bulkEditSection !== null;
 
   const selectedBulkProducts = useMemo(
-    () => visibleProducts.filter((product) => bulkSelectedIds.has(product.id)),
+    () => selectedProductsForBulk(visibleProducts, bulkSelectedIds),
     [visibleProducts, bulkSelectedIds],
   );
 
   const shouldApplyToBulkSelection = useCallback(
-    (product: AdminProduct) =>
-      bulkEditActive && bulkSelectedIds.has(product.id) && bulkSelectedIds.size > 1,
+    (product: AdminProduct) => shouldPropagateBulkEdit(bulkEditActive, product.id, bulkSelectedIds),
     [bulkEditActive, bulkSelectedIds],
   );
 
