@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { BulkEditSnapshotRow } from "@/components/organisms/admin/hooks/use-admin-products";
 import { AdminStockBulkEditBar } from "@/components/organisms/admin/admin-stock-bulk-edit-bar";
 import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
@@ -41,7 +42,13 @@ type StockTabProps = {
   onVisibleDraftIdsChange?: (ids: string[]) => void;
   onChangeStock: (product: AdminProduct, delta: number) => void;
   onSetStock: (product: AdminProduct, nextStock: number) => void;
+  onConfirmStockPending?: () => Promise<void>;
+  onRevertBulkEditSession?: (
+    snapshot: Record<string, BulkEditSnapshotRow>,
+    scope: readonly AdminProduct[],
+  ) => Promise<void>;
   onChangePrice: (product: AdminProduct, delta: number) => void;
+  onSetPrice: (product: AdminProduct, nextPrice: number) => void;
   onEdit: (product: AdminProduct) => void;
   onNew: () => void;
   onTogglePin: (product: AdminProduct) => void;
@@ -113,7 +120,10 @@ export function StockTab({
   onVisibleDraftIdsChange,
   onChangeStock,
   onSetStock,
+  onConfirmStockPending,
+  onRevertBulkEditSession,
   onChangePrice,
+  onSetPrice,
   onEdit,
   onNew,
   onTogglePin,
@@ -142,8 +152,18 @@ export function StockTab({
   const [bulkEditAll, setBulkEditAll] = useState(false);
   const [bulkEditSection, setBulkEditSection] = useState<CatalogCategory | null>(null);
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set());
+  const bulkEditSnapshotRef = useRef<Record<string, BulkEditSnapshotRow> | null>(null);
+
+  const captureBulkEditSnapshot = useCallback((targets: readonly AdminProduct[]) => {
+    const snapshot: Record<string, BulkEditSnapshotRow> = {};
+    for (const product of targets) {
+      snapshot[product.id] = { stock: product.stock, price: product.price };
+    }
+    bulkEditSnapshotRef.current = snapshot;
+  }, []);
 
   useEffect(() => {
+    bulkEditSnapshotRef.current = null;
     setBulkEditAll(false);
     setBulkEditSection(null);
     setBulkSelectedIds(new Set());
@@ -164,7 +184,7 @@ export function StockTab({
       for (const product of targets) {
         const next = product.price + delta;
         if (next <= 0 || next > 10_000) continue;
-        onChangePrice(product, delta);
+        void onChangePrice(product, delta);
       }
     },
     [onChangePrice],
@@ -190,14 +210,9 @@ export function StockTab({
     });
   }, []);
 
-  const onBulkEditSectionChange = useCallback((category: CatalogCategory | null) => {
-    setBulkEditSection(category);
-    if (category) setBulkEditAll(false);
-    setBulkSelectedIds(new Set());
-  }, []);
-
-  const toggleBulkEditAll = useCallback(() => {
-    setBulkEditAll((active) => !active);
+  const closeBulkEdit = useCallback(() => {
+    bulkEditSnapshotRef.current = null;
+    setBulkEditAll(false);
     setBulkEditSection(null);
     setBulkSelectedIds(new Set());
   }, []);
@@ -237,6 +252,100 @@ export function StockTab({
     if (colorSortMode === "default") return base;
     return sortProductsByColorLuminance(base, colorSortMode);
   }, [searchFiltered, menuSections, colorSortMode]);
+
+  const enterBulkEditAll = useCallback(() => {
+    captureBulkEditSnapshot(visibleProducts);
+    setBulkEditAll(true);
+    setBulkEditSection(null);
+    setBulkSelectedIds(new Set());
+  }, [captureBulkEditSnapshot, visibleProducts]);
+
+  const enterBulkEditSection = useCallback(
+    (category: CatalogCategory, targets: readonly AdminProduct[]) => {
+      captureBulkEditSnapshot(targets);
+      setBulkEditSection(category);
+      setBulkEditAll(false);
+      setBulkSelectedIds(new Set());
+    },
+    [captureBulkEditSnapshot],
+  );
+
+  const confirmBulkEdit = useCallback(async () => {
+    if (onConfirmStockPending) await onConfirmStockPending();
+    closeBulkEdit();
+  }, [closeBulkEdit, onConfirmStockPending]);
+
+  const cancelBulkEdit = useCallback(
+    (scope: readonly AdminProduct[]) => {
+      const snapshot = bulkEditSnapshotRef.current;
+      if (snapshot && onRevertBulkEditSession) {
+        void onRevertBulkEditSession(snapshot, scope);
+      }
+      closeBulkEdit();
+    },
+    [closeBulkEdit, onRevertBulkEditSession],
+  );
+
+  const bulkEditActive = bulkEditAll || bulkEditSection !== null;
+
+  const selectedBulkProducts = useMemo(
+    () => visibleProducts.filter((product) => bulkSelectedIds.has(product.id)),
+    [visibleProducts, bulkSelectedIds],
+  );
+
+  const shouldApplyToBulkSelection = useCallback(
+    (product: AdminProduct) =>
+      bulkEditActive && bulkSelectedIds.has(product.id) && bulkSelectedIds.size > 1,
+    [bulkEditActive, bulkSelectedIds],
+  );
+
+  const changeStockForCard = useCallback(
+    (product: AdminProduct, delta: number) => {
+      if (shouldApplyToBulkSelection(product)) {
+        applyBulkStockDelta(selectedBulkProducts, delta);
+        return;
+      }
+      onChangeStock(product, delta);
+    },
+    [shouldApplyToBulkSelection, selectedBulkProducts, applyBulkStockDelta, onChangeStock],
+  );
+
+  const setStockForCard = useCallback(
+    (product: AdminProduct, nextStock: number) => {
+      if (shouldApplyToBulkSelection(product)) {
+        for (const target of selectedBulkProducts) {
+          onSetStock(target, nextStock);
+        }
+        return;
+      }
+      onSetStock(product, nextStock);
+    },
+    [shouldApplyToBulkSelection, selectedBulkProducts, onSetStock],
+  );
+
+  const changePriceForCard = useCallback(
+    (product: AdminProduct, delta: number) => {
+      if (shouldApplyToBulkSelection(product)) {
+        applyBulkPriceDelta(selectedBulkProducts, delta);
+        return;
+      }
+      void onChangePrice(product, delta);
+    },
+    [shouldApplyToBulkSelection, selectedBulkProducts, applyBulkPriceDelta, onChangePrice],
+  );
+
+  const setPriceForCard = useCallback(
+    (product: AdminProduct, nextPrice: number) => {
+      if (shouldApplyToBulkSelection(product)) {
+        for (const target of selectedBulkProducts) {
+          void onSetPrice(target, nextPrice);
+        }
+        return;
+      }
+      void onSetPrice(product, nextPrice);
+    },
+    [shouldApplyToBulkSelection, selectedBulkProducts, onSetPrice],
+  );
 
   const indexByProductId = useMemo(() => {
     const map = new Map<string, number>();
@@ -369,7 +478,9 @@ export function StockTab({
         <div className="mb-4">
           <AdminStockBulkEditBar
             editActive={bulkEditAll}
-            onToggleEdit={toggleBulkEditAll}
+            onEnterEdit={enterBulkEditAll}
+            onConfirmEdit={() => void confirmBulkEdit()}
+            onCancelEdit={() => cancelBulkEdit(visibleProducts)}
             targets={visibleProducts}
             selectedCount={visibleProducts.filter((p) => bulkSelectedIds.has(p.id)).length}
             allSelected={
@@ -424,8 +535,10 @@ export function StockTab({
             indexByProductId={indexByProductId}
             busyProductId={busyProductId}
             reorderBlocked={reorderBlocked}
-            onChangeStock={onChangeStock}
-            onSetStock={onSetStock}
+            onChangeStock={changeStockForCard}
+            onSetStock={setStockForCard}
+            onChangePrice={changePriceForCard}
+            onSetPrice={setPriceForCard}
             onEdit={onEdit}
             onTogglePin={onTogglePin}
             onDelete={setPendingDelete}
@@ -434,11 +547,13 @@ export function StockTab({
             bulkEditAll={bulkEditAll}
             bulkEditSection={bulkEditSection}
             bulkSelectedIds={bulkSelectedIds}
-            onBulkEditSectionChange={onBulkEditSectionChange}
+            onEnterBulkEditSection={enterBulkEditSection}
             onBulkSelectToggle={onBulkSelectToggle}
             onBulkSelectAllInSection={onBulkSelectAllInTargets}
             onBulkStockDelta={applyBulkStockDelta}
             onBulkPriceDelta={applyBulkPriceDelta}
+            onBulkConfirmEdit={() => void confirmBulkEdit()}
+            onBulkCancelEdit={cancelBulkEdit}
             bulkActionsDisabled={stockControlsBusy}
           />
         ) : (
@@ -449,8 +564,10 @@ export function StockTab({
                 product={product}
                 dragIndex={index}
                 busy={stockControlsBusy || busyProductId === product.id}
-                onChangeStock={onChangeStock}
-                onSetStock={onSetStock}
+                onChangeStock={changeStockForCard}
+                onSetStock={setStockForCard}
+                onChangePrice={changePriceForCard}
+                onSetPrice={setPriceForCard}
                 onEdit={onEdit}
                 onTogglePin={onTogglePin}
                 onDelete={setPendingDelete}

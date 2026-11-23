@@ -11,6 +11,7 @@ import {
   AdminStockControls,
   AdminStockQtyControls,
 } from "@/components/organisms/admin/admin-stock-controls";
+import { AdminStockPriceControls } from "@/components/organisms/admin/admin-price-input";
 import { AdminStockStatusBadge } from "@/components/organisms/admin/admin-stock-status-badge";
 import { AdminProductOrderControls } from "@/components/organisms/admin/admin-product-order-controls";
 import { AdminReorderSurface } from "@/components/organisms/admin/admin-reorder-surface";
@@ -22,6 +23,8 @@ type AdminStockProductCardProps = {
   busy: boolean;
   onChangeStock: (product: AdminProduct, delta: number) => void;
   onSetStock: (product: AdminProduct, nextStock: number) => void;
+  onChangePrice?: (product: AdminProduct, delta: number) => void;
+  onSetPrice?: (product: AdminProduct, nextPrice: number) => void;
   onEdit: (product: AdminProduct) => void;
   onTogglePin: (product: AdminProduct) => void;
   onDelete: (product: AdminProduct) => void;
@@ -66,6 +69,8 @@ export function AdminStockProductCard({
   busy,
   onChangeStock,
   onSetStock,
+  onChangePrice,
+  onSetPrice,
   onEdit,
   onTogglePin,
   onDelete,
@@ -184,18 +189,37 @@ export function AdminStockProductCard({
           </div>
 
           <div
-            className="flex min-w-0 items-center justify-between gap-1 pt-0.5"
+            className={`flex min-w-0 pt-0.5 ${bulkSelectMode ? "flex-col gap-1.5" : "items-center justify-between gap-1"}`}
             data-admin-no-reorder
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
           >
-            <p className="shrink-0 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs">
-              {priceFormat.format(product.price)}
-            </p>
-            <div className="min-w-0 max-w-[62%] shrink">
-              <AdminStockQtyControls
+            {bulkSelectMode && bulkSelected && onChangePrice && onSetPrice ? (
+              <AdminStockPriceControls
                 product={product}
                 disabled={busy}
+                onChangePrice={onChangePrice}
+                onSetPrice={onSetPrice}
+              />
+            ) : (
+              <p
+                className={`shrink-0 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs ${
+                  bulkSelectMode && !bulkSelected ? "text-white/45" : ""
+                }`}
+              >
+                {priceFormat.format(product.price)}
+              </p>
+            )}
+            <div
+              className={
+                bulkSelectMode
+                  ? "flex w-full min-w-0 justify-end"
+                  : "min-w-0 max-w-[62%] shrink"
+              }
+            >
+              <AdminStockQtyControls
+                product={product}
+                disabled={busy || (bulkSelectMode && !bulkSelected)}
                 onChangeStock={onChangeStock}
                 onSetStock={onSetStock}
                 compact

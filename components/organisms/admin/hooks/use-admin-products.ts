@@ -24,6 +24,8 @@ function cloneProducts(list: AdminProduct[]): AdminProduct[] {
   return list.map((item) => ({ ...item }));
 }
 
+export type BulkEditSnapshotRow = { stock: number; price: number };
+
 function stockBaselineFromProducts(list: AdminProduct[]): Record<string, number> {
   return Object.fromEntries(list.map((item) => [item.id, item.stock]));
 }
@@ -299,6 +301,41 @@ export function useAdminProducts({ onUnauthorized }: Options) {
     }, STOCK_AUTOSAVE_DEBOUNCE_MS);
   }, [flushStockAutosave]);
 
+  /** Force l’envoi du batch stock en attente (mode lot · Valider). */
+  const confirmStockPending = useCallback(async () => {
+    await flushStockAutosave();
+  }, [flushStockAutosave]);
+
+  /** Annule les deltas stock locaux non encore enregistrés pour les fiches listées. */
+  const revertStockPendingForIds = useCallback(
+    (ids: readonly string[]) => {
+      if (ids.length === 0) return;
+      if (stockDebounceRef.current) {
+        clearTimeout(stockDebounceRef.current);
+        stockDebounceRef.current = null;
+      }
+      const idSet = new Set(ids);
+      setProducts((current) =>
+        current.map((item) => {
+          if (!idSet.has(item.id)) return item;
+          const base = stockBaselineRef.current[item.id];
+          if (base === undefined) return item;
+          delete pendingChangesRef.current[item.id];
+          return { ...item, stock: base };
+        }),
+      );
+      setStockAutosaveStatus((current) => {
+        const next = { ...current };
+        for (const id of ids) delete next[id];
+        return next;
+      });
+      if (hasUnsyncedStock(pendingChangesRef.current, stockBaselineRef.current)) {
+        scheduleStockAutosave();
+      }
+    },
+    [scheduleStockAutosave],
+  );
+
   useEffect(() => {
     const flushIfPending = () => {
       if (
@@ -408,12 +445,11 @@ export function useAdminProducts({ onUnauthorized }: Options) {
     [scheduleStockAutosave, syncPendingDelta],
   );
 
-  /** ± prix TTC (enregistrement immédiat, lot stock CRM). */
-  const changePrice = useCallback(
-    async (product: AdminProduct, delta: number) => {
-      const next = Math.round((product.price + delta) * 100) / 100;
-      if (next <= 0 || next > 10_000) return;
-      if (next === product.price) return;
+  const patchProductPrice = useCallback(
+    async (product: AdminProduct, nextPrice: number): Promise<boolean> => {
+      const next = Math.round(nextPrice * 100) / 100;
+      if (next <= 0 || next > 10_000) return false;
+      if (next === product.price) return true;
       setStockError("");
       setBusyProductId(product.id);
       try {
@@ -424,7 +460,7 @@ export function useAdminProducts({ onUnauthorized }: Options) {
         });
         if (response.status === 401) {
           onUnauthorized();
-          return;
+          return false;
         }
         const data = (await response.json().catch(() => ({}))) as {
           product?: AdminProduct;
@@ -437,16 +473,91 @@ export function useAdminProducts({ onUnauthorized }: Options) {
               current.map((item) => (item.id === product.id ? updated : item)),
             ),
           );
-        } else {
-          setStockError(data.error || "Prix non enregistré.");
+          return true;
         }
+        setStockError(data.error || "Prix non enregistré.");
+        return false;
       } catch {
         setStockError("Prix non enregistré.");
+        return false;
       } finally {
         setBusyProductId(null);
       }
     },
     [onUnauthorized],
+  );
+
+  /** ± prix TTC (enregistrement immédiat, lot stock CRM). */
+  const changePrice = useCallback(
+    async (product: AdminProduct, delta: number) => {
+      const next = Math.round((product.price + delta) * 100) / 100;
+      await patchProductPrice(product, next);
+    },
+    [patchProductPrice],
+  );
+
+  const setPrice = useCallback(
+    async (product: AdminProduct, nextPrice: number) => {
+      await patchProductPrice(product, nextPrice);
+    },
+    [patchProductPrice],
+  );
+
+  /** Annule stock + prix modifiés pendant une session « Tout modifier » (retour snapshot). */
+  const revertBulkEditSession = useCallback(
+    async (
+      snapshot: Record<string, BulkEditSnapshotRow>,
+      scope: readonly AdminProduct[],
+    ) => {
+      if (scope.length === 0) return;
+      if (stockDebounceRef.current) {
+        clearTimeout(stockDebounceRef.current);
+        stockDebounceRef.current = null;
+      }
+
+      const scopeIds = new Set(scope.map((product) => product.id));
+      const stockNeedsFlush: string[] = [];
+
+      for (const product of scope) {
+        const snap = snapshot[product.id];
+        if (!snap) continue;
+        const live = productsRef.current.find((row) => row.id === product.id) ?? product;
+
+        if (live.stock !== snap.stock) {
+          stockNeedsFlush.push(product.id);
+          syncPendingDelta(product.id, snap.stock);
+        } else {
+          delete pendingChangesRef.current[product.id];
+        }
+
+        if (live.price !== snap.price) {
+          await patchProductPrice(live, snap.price);
+        }
+      }
+
+      setProducts((current) =>
+        current.map((item) => {
+          if (!scopeIds.has(item.id)) return item;
+          const snap = snapshot[item.id];
+          if (!snap) return item;
+          return { ...item, stock: snap.stock };
+        }),
+      );
+
+      setStockAutosaveStatus((current) => {
+        const next = { ...current };
+        for (const id of scopeIds) delete next[id];
+        return next;
+      });
+
+      if (
+        stockNeedsFlush.length > 0 &&
+        hasUnsyncedStock(pendingChangesRef.current, stockBaselineRef.current)
+      ) {
+        await flushStockAutosave();
+      }
+    },
+    [flushStockAutosave, patchProductPrice, syncPendingDelta],
   );
 
   const togglePin = useCallback(
@@ -633,7 +744,11 @@ export function useAdminProducts({ onUnauthorized }: Options) {
     save,
     changeStock,
     setStock,
+    confirmStockPending,
+    revertStockPendingForIds,
+    revertBulkEditSession,
     changePrice,
+    setPrice,
     stockAutosaveStatus,
     stockToast,
     dismissStockToast,

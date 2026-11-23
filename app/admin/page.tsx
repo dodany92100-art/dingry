@@ -560,7 +560,12 @@ function AdminDashboard() {
             onVisibleDraftIdsChange={onVisibleDraftIdsChange}
             onChangeStock={(product, delta) => productsApi.changeStock(product, delta)}
             onSetStock={(product, next) => productsApi.setStock(product, next)}
+            onConfirmStockPending={() => productsApi.confirmStockPending()}
+            onRevertBulkEditSession={(snapshot, scope) =>
+              productsApi.revertBulkEditSession(snapshot, scope)
+            }
             onChangePrice={(product, delta) => void productsApi.changePrice(product, delta)}
+            onSetPrice={(product, next) => void productsApi.setPrice(product, next)}
             onEdit={openEdit}
             onNew={openNew}
             onTogglePin={(product) => void productsApi.togglePin(product)}

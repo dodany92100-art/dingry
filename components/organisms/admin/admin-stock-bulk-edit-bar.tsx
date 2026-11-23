@@ -1,11 +1,13 @@
 "use client";
 
-import { Pencil, X } from "lucide-react";
+import { Pencil } from "lucide-react";
 import type { AdminProduct } from "@/lib/admin/types";
 
 type AdminStockBulkEditBarProps = {
   editActive: boolean;
-  onToggleEdit: () => void;
+  onEnterEdit: () => void;
+  onConfirmEdit: () => void;
+  onCancelEdit: () => void;
   targets: readonly AdminProduct[];
   selectedCount: number;
   allSelected: boolean;
@@ -19,9 +21,17 @@ type AdminStockBulkEditBarProps = {
 const CHIP =
   "dingry-admin-track-linear h-8 shrink-0 rounded-full border border-white/12 px-3 text-[10px] font-medium uppercase tracking-[0.14em] text-white/85 transition hover:border-white/25 disabled:opacity-35";
 
+const CHIP_MUTED =
+  "dingry-admin-track-linear h-8 shrink-0 rounded-full border border-white/12 px-3 text-[10px] font-medium uppercase tracking-[0.14em] text-white/65 transition hover:border-white/25 disabled:opacity-35";
+
+const CHIP_CONFIRM =
+  "dingry-admin-track-linear h-8 shrink-0 rounded-full border border-[#FF3D00]/45 bg-[#FF3D00]/12 px-3 text-[10px] font-medium uppercase tracking-[0.14em] text-white transition hover:border-[#FF3D00]/60 disabled:opacity-35";
+
 export function AdminStockBulkEditBar({
   editActive,
-  onToggleEdit,
+  onEnterEdit,
+  onConfirmEdit,
+  onCancelEdit,
   targets,
   selectedCount,
   allSelected,
@@ -43,21 +53,19 @@ export function AdminStockBulkEditBar({
       className="dingry-admin-track-linear flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2"
       data-admin-no-reorder
     >
-      <button
-        type="button"
-        onClick={onToggleEdit}
-        aria-pressed={editActive}
-        title="Tout modifier (stock et prix en lot)"
-        disabled={disabled || targets.length === 0}
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition ${
-          editActive
-            ? "border-[#FF3D00]/50 bg-[#FF3D00]/15 text-white"
-            : "border-white/12 bg-white/[0.04] text-white/70 hover:border-white/25"
-        }`}
-      >
-        {editActive ? <X size={14} aria-hidden /> : <Pencil size={14} aria-hidden />}
-        <span className="sr-only">{editActive ? "Quitter le mode lot" : "Tout modifier"}</span>
-      </button>
+      {!editActive ? (
+        <button
+          type="button"
+          onClick={onEnterEdit}
+          aria-pressed={false}
+          title="Tout modifier (stock et prix en lot)"
+          disabled={disabled || targets.length === 0}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/[0.04] text-white/70 transition hover:border-white/25 disabled:opacity-35"
+        >
+          <Pencil size={14} aria-hidden />
+          <span className="sr-only">Tout modifier</span>
+        </button>
+      ) : null}
 
       {editActive ? (
         <>
@@ -86,6 +94,14 @@ export function AdminStockBulkEditBar({
             </button>
             <button type="button" className={CHIP} disabled={disabled || selectedCount === 0} onClick={() => onBulkPrice(1)}>
               +1 €
+            </button>
+          </div>
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-1.5">
+            <button type="button" className={CHIP_MUTED} disabled={disabled} onClick={onCancelEdit}>
+              Annuler
+            </button>
+            <button type="button" className={CHIP_CONFIRM} disabled={disabled} onClick={onConfirmEdit}>
+              Valider
             </button>
           </div>
         </>

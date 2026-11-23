@@ -15,6 +15,8 @@ type AdminStockSectionsGridProps = {
   reorderBlocked: boolean;
   onChangeStock: (product: AdminProduct, delta: number) => void;
   onSetStock: (product: AdminProduct, nextStock: number) => void;
+  onChangePrice: (product: AdminProduct, delta: number) => void;
+  onSetPrice: (product: AdminProduct, nextPrice: number) => void;
   onEdit: (product: AdminProduct) => void;
   onTogglePin: (product: AdminProduct) => void;
   onDelete: (product: AdminProduct) => void;
@@ -23,11 +25,13 @@ type AdminStockSectionsGridProps = {
   bulkEditAll: boolean;
   bulkEditSection: CatalogCategory | null;
   bulkSelectedIds: ReadonlySet<string>;
-  onBulkEditSectionChange: (category: CatalogCategory | null) => void;
+  onEnterBulkEditSection: (category: CatalogCategory, products: readonly AdminProduct[]) => void;
   onBulkSelectToggle: (productId: string, selected: boolean) => void;
   onBulkSelectAllInSection: (sectionProducts: readonly AdminProduct[], selected: boolean) => void;
   onBulkStockDelta: (targets: readonly AdminProduct[], delta: number) => void;
   onBulkPriceDelta: (targets: readonly AdminProduct[], delta: number) => void;
+  onBulkConfirmEdit: () => void;
+  onBulkCancelEdit: (scope: readonly AdminProduct[]) => void;
   bulkActionsDisabled?: boolean;
 };
 
@@ -39,6 +43,8 @@ export function AdminStockSectionsGrid({
   reorderBlocked,
   onChangeStock,
   onSetStock,
+  onChangePrice,
+  onSetPrice,
   onEdit,
   onTogglePin,
   onDelete,
@@ -47,11 +53,13 @@ export function AdminStockSectionsGrid({
   bulkEditAll,
   bulkEditSection,
   bulkSelectedIds,
-  onBulkEditSectionChange,
+  onEnterBulkEditSection,
   onBulkSelectToggle,
   onBulkSelectAllInSection,
   onBulkStockDelta,
   onBulkPriceDelta,
+  onBulkConfirmEdit,
+  onBulkCancelEdit,
   bulkActionsDisabled = false,
 }: AdminStockSectionsGridProps) {
   return (
@@ -72,9 +80,9 @@ export function AdminStockSectionsGrid({
               {!bulkEditAll ? (
                 <AdminStockBulkEditBar
                   editActive={sectionEditActive}
-                  onToggleEdit={() =>
-                    onBulkEditSectionChange(sectionEditActive ? null : section.category)
-                  }
+                  onEnterEdit={() => onEnterBulkEditSection(section.category, section.products)}
+                  onConfirmEdit={onBulkConfirmEdit}
+                  onCancelEdit={() => onBulkCancelEdit(section.products)}
                   targets={section.products}
                   selectedCount={selectedInSection.length}
                   allSelected={allInSection}
@@ -100,6 +108,8 @@ export function AdminStockSectionsGrid({
                     busy={busyProductId === product.id}
                     onChangeStock={onChangeStock}
                     onSetStock={onSetStock}
+                    onChangePrice={onChangePrice}
+                    onSetPrice={onSetPrice}
                     onEdit={onEdit}
                     onTogglePin={onTogglePin}
                     onDelete={onDelete}
