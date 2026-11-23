@@ -37,6 +37,16 @@ import { productModalDataFromShop, type ProductModalProps as ProductModalShellPr
 
 export type { ProductModalData, ProductModalProps } from "./product-modal.types";
 
+/** Id stable pour `aria-labelledby` (aligné personalize-modal / MWG). */
+export const DINGRY_PRODUCT_MODAL_TITLE_ID = "dingry-product-modal-title";
+
+/** Images décoratives modale (fond, miniatures) : pas de concurrence LCP. */
+export const PRODUCT_MODAL_DECORATIVE_IMG = {
+  loading: "lazy",
+  fetchPriority: "low",
+  decoding: "async",
+} as const;
+
 type ShopProductModalProps = {
   modal: ProductModalState;
   products: ShopProduct[];
@@ -161,6 +171,7 @@ function ProductModalContent({
         exit={{ opacity: 0 }}
         transition={MODAL_OVERLAY_TRANSITION}
         onClick={shell.onClose}
+        aria-hidden
       />
       <motion.div
         ref={modal.productModalRef}
@@ -170,9 +181,17 @@ function ProductModalContent({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
         transition={MODAL_PANEL_SPRING}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={DINGRY_PRODUCT_MODAL_TITLE_ID}
       >
         <div className={styles.ambience} aria-hidden>
-          <img src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC} alt="" decoding="async" className={styles.ambienceImg} />
+          <img
+            src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC}
+            alt=""
+            className={styles.ambienceImg}
+            {...PRODUCT_MODAL_DECORATIVE_IMG}
+          />
           <div className={styles.ambienceVeil} />
         </div>
         <div ref={modal.productImageRef} className={styles.photo}>
@@ -207,6 +226,7 @@ function ProductModalContent({
                   width={600}
                   height={800}
                   deliveryWidth={720}
+                  priority
                   className={styles.photoCover}
                   sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
                   fitContent
@@ -227,7 +247,9 @@ function ProductModalContent({
                   src={effectiveFlipImages.front}
                   alt=""
                   className={styles.viewThumbImg}
-                  decoding="async"
+                  width={56}
+                  height={56}
+                  {...PRODUCT_MODAL_DECORATIVE_IMG}
                 />
                 <span className={styles.viewThumbLabel}>Recto</span>
               </button>
@@ -242,7 +264,9 @@ function ProductModalContent({
                   src={effectiveFlipImages.back}
                   alt=""
                   className={styles.viewThumbImg}
-                  decoding="async"
+                  width={56}
+                  height={56}
+                  {...PRODUCT_MODAL_DECORATIVE_IMG}
                 />
                 <span className={styles.viewThumbLabel}>Verso</span>
               </button>
@@ -268,7 +292,9 @@ function ProductModalContent({
             </div>
             <DingryLogo animate={false} tone="on-light" className="mb-3 h-8 w-auto opacity-90 md:mb-4 md:h-9" />
             <p className={`dingry-typo-manifesto ${styles.manifesto}`}>{DINGRY_MANIFESTO_FR}</p>
-            <h2 className={styles.title}>{data.title}</h2>
+            <h2 id={DINGRY_PRODUCT_MODAL_TITLE_ID} className={styles.title}>
+              {data.title}
+            </h2>
             {detail.description ? (
               <p className={styles.description}>{detail.description}</p>
             ) : null}
