@@ -20,8 +20,10 @@ export function ShopHero({ onDiscoverCollection }: ShopHeroProps) {
           src={HERO_IMAGE}
           alt="DINGRY Hero"
           priority
+          fetchPriority="high"
           fill
           sizes="100vw"
+          decoding="async"
           className="object-cover object-[50%_38%] md:object-contain md:object-center"
         />
       </div>
