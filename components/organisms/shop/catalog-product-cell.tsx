@@ -8,6 +8,11 @@ import { catalogRectoId, storefrontProductSubtitle, storefrontProductTitle } fro
 import { CATALOG_CANONICAL_IMAGE_BY_ID } from "@/lib/dingry-product-media";
 import { PRODUCTS } from "@/lib/shop-data";
 
+/** LCP = hero (`shop-hero`) ; la grille est sous la ligne de flottaison sur mobile. */
+export function catalogProductImagePriority(_globalIndex: number): boolean {
+  return false;
+}
+
 function catalogGridImageFallback(productId: number): string | undefined {
   const canonical = CATALOG_CANONICAL_IMAGE_BY_ID[productId]?.trim();
   if (canonical) return canonical;
@@ -49,7 +54,7 @@ export const CatalogProductCell = memo(function CatalogProductCell({
       image={product.image}
       imageFallback={catalogGridImageFallback(product.id)}
       price={product.price}
-      priority={globalIndex === 0}
+      priority={catalogProductImagePriority(globalIndex)}
       soldOut={!isShopProductInStock(product)}
       onPrefetch={onPrefetch}
       onClick={onClick}
