@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cldOpt } from "@/components/molecules/product-card";
 import type { CheckoutConfirmation } from "@/lib/checkout-draft";
@@ -13,6 +14,22 @@ import {
 import { lineUnitPrice, cartLineKey, modalSizesFor, type CartLine } from "@/lib/shop-view";
 import { CartReassurance } from "@/components/cart/cart-reassurance";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "./motion";
+import {
+  getShopOverlayFocusableElements,
+  resolveShopOverlayTabFocus,
+  shouldTrapShopOverlayTab,
+  type ShopOverlayTabDirection,
+} from "./shop-overlay-focus-trap";
+
+/** Id stable pour `aria-labelledby` sur le panneau panier. */
+export const DINGRY_CART_DRAWER_TITLE_ID = "dingry-cart-drawer-title";
+
+/** Fond décoratif desktop : pas de concurrence LCP. */
+export const CART_DRAWER_DECORATIVE_IMG = {
+  loading: "lazy",
+  fetchPriority: "low",
+  decoding: "async",
+} as const;
 
 type CartDrawerProps = {
   open: boolean;
@@ -50,6 +67,54 @@ export function CartDrawer({
   catalogProducts,
 }: CartDrawerProps) {
   const { t } = useTranslation();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const openerFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const opener = document.activeElement;
+    openerFocusRef.current = opener instanceof HTMLElement ? opener : null;
+
+    const raf = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
+
+    const panel = panelRef.current;
+    if (!panel) {
+      return () => {
+        window.cancelAnimationFrame(raf);
+        const previous = openerFocusRef.current;
+        if (previous?.isConnected) previous.focus();
+      };
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const direction: ShopOverlayTabDirection = event.shiftKey ? "prev" : "next";
+      const focusables = getShopOverlayFocusableElements(panel);
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      if (!shouldTrapShopOverlayTab(direction, focusables, active)) return;
+      const target = resolveShopOverlayTabFocus(direction, focusables, active);
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
+    };
+
+    panel.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      panel.removeEventListener("keydown", onKeyDown);
+      const previous = openerFocusRef.current;
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [open, onClose]);
 
   function itemsCountLabel(count: number): string {
     return t(count > 1 ? "cart.drawer.itemsCountOther" : "cart.drawer.itemsCountOne", { count });
@@ -89,7 +154,9 @@ export function CartDrawer({
             <img
               src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC}
               alt=""
+              aria-hidden
               className="absolute inset-0 h-full w-full object-cover object-[center_35%]"
+              {...CART_DRAWER_DECORATIVE_IMG}
             />
             <div
               className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent"
@@ -106,6 +173,10 @@ export function CartDrawer({
             aria-hidden
           />
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={DINGRY_CART_DRAWER_TITLE_ID}
             className="dingry-sale-ui dingry-cart-drawer-panel relative z-10 flex h-full min-h-0 w-full max-w-md flex-col border-l border-white/[0.06] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.45)] will-change-transform"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
@@ -114,7 +185,7 @@ export function CartDrawer({
           >
             <div className="dingry-gold-rule-bottom relative flex items-center justify-between p-8">
               <div>
-                <h2 className="text-sm font-bold tracking-[0.3em] uppercase">
+                <h2 id={DINGRY_CART_DRAWER_TITLE_ID} className="text-sm font-bold tracking-[0.3em] uppercase">
                   {confirmation ? t("cart.drawer.confirmedTitle") : t("cart.drawer.title")}
                 </h2>
                 {count > 0 && !confirmation ? (
@@ -128,6 +199,7 @@ export function CartDrawer({
                 ) : null}
               </div>
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
                 aria-label={t("cart.drawer.closeAria")}
