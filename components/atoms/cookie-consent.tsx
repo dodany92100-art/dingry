@@ -3,7 +3,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 import {
   DINGRY_COOKIE_CONSENT_KEY,
@@ -16,8 +16,62 @@ import { isE2eAutomation } from "@/lib/e2e-flags";
 /** Bandeau informatif : pas d’écoute `cancel` / `preventDefault` sur Échap. */
 export const COOKIE_CONSENT_INTERCEPTS_DIALOG_CANCEL = false;
 
-const DINGRY_COOKIE_NATIVE_DIALOG_CLASS =
-  "fixed inset-x-0 bottom-0 z-[100] m-0 w-full max-w-none border-0 bg-transparent p-0 open:block";
+/** Classes d’ancrage viewport (dialog natif + repli legacy). */
+export const DINGRY_COOKIE_BANNER_ANCHOR_CLASS = "fixed inset-x-0 bottom-0 z-[100]";
+
+/** Safe area bas (iPhone encoche / barre d’accueil). */
+export const DINGRY_COOKIE_PANEL_SAFE_AREA_CLASS =
+  "pb-[max(1rem,env(safe-area-inset-bottom,0px))]";
+
+export const DINGRY_COOKIE_NATIVE_DIALOG_CLASS = [
+  DINGRY_COOKIE_BANNER_ANCHOR_CLASS,
+  "m-0 w-full max-w-none border-0 bg-transparent p-0 open:block",
+].join(" ");
+
+function resolveCookieBannerInsetTarget(): HTMLElement | null {
+  const main = document.querySelector("main");
+  if (!main) return null;
+  for (const child of Array.from(main.children)) {
+    if (child instanceof HTMLElement && /\bmin-h-\[100dvh\]/.test(child.className)) {
+      return child;
+    }
+  }
+  return main;
+}
+
+function useReserveSpaceForCookieBanner(
+  visible: boolean,
+  measureRef: RefObject<HTMLElement | null>,
+) {
+  useEffect(() => {
+    if (!visible) return;
+    const insetTarget = resolveCookieBannerInsetTarget();
+    if (!insetTarget) return;
+
+    const apply = () => {
+      const node = measureRef.current;
+      const height = node ? Math.ceil(node.getBoundingClientRect().height) : 0;
+      insetTarget.style.paddingBottom = height > 0 ? `${height}px` : "";
+    };
+
+    apply();
+    const node = measureRef.current;
+    if (!node) {
+      return () => {
+        insetTarget.style.paddingBottom = "";
+      };
+    }
+
+    const ro = new ResizeObserver(apply);
+    ro.observe(node);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+      insetTarget.style.paddingBottom = "";
+    };
+  }, [visible, measureRef]);
+}
 
 /** Ouvre le bandeau natif en mode non modal (`show`, sans top layer bloquant). */
 export function openNativeCookieConsentDialog(dialog: HTMLDialogElement): void {
@@ -40,7 +94,9 @@ function CookieConsentPanel({
   onPolicyLinkClick: () => void;
 }) {
   return (
-    <div className="dingry-gold-rule-top bg-[#0a0a0a]/95 px-4 py-4 md:px-8 md:py-5">
+    <div
+      className={`dingry-gold-rule-top bg-[#0a0a0a]/95 px-4 pt-4 md:px-8 md:pt-5 ${DINGRY_COOKIE_PANEL_SAFE_AREA_CLASS} md:pb-5`}
+    >
       <div className="mx-auto flex max-w-5xl flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8">
         <div className="min-w-0">
           <p
@@ -87,19 +143,22 @@ function LegacyCookieBanner({
   visible,
   onChoose,
   onPolicyLinkClick,
+  measureRef,
 }: {
   visible: boolean;
   onChoose: (value: DingryCookieConsent) => void;
   onPolicyLinkClick: () => void;
+  measureRef: RefObject<HTMLDivElement | null>;
 }) {
   if (!visible) return null;
 
   return (
     <div
+      ref={measureRef}
       role="dialog"
       aria-labelledby="dingry-cookie-title"
       aria-describedby="dingry-cookie-desc"
-      className="dingry-gold-rule-top fixed inset-x-0 bottom-0 z-[100]"
+      className={`dingry-gold-rule-top ${DINGRY_COOKIE_BANNER_ANCHOR_CLASS}`}
     >
       <CookieConsentPanel onChoose={onChoose} onPolicyLinkClick={onPolicyLinkClick} />
     </div>
@@ -112,7 +171,11 @@ export function CookieConsent() {
   const [visible, setVisible] = useState(false);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const legacyBannerRef = useRef<HTMLDivElement>(null);
   const nativeModal = supportsNativeModalDialog();
+  const bannerMeasureRef: RefObject<HTMLElement | null> = nativeModal ? dialogRef : legacyBannerRef;
+
+  useReserveSpaceForCookieBanner(visible, bannerMeasureRef);
 
   useEffect(() => {
     if (isAdmin || isE2eAutomation()) return;
@@ -173,7 +236,12 @@ export function CookieConsent() {
           {visible ? <CookieConsentPanel onChoose={choose} onPolicyLinkClick={hideForPolicyLink} /> : null}
         </dialog>
       ) : (
-        <LegacyCookieBanner visible={visible} onChoose={choose} onPolicyLinkClick={hideForPolicyLink} />
+        <LegacyCookieBanner
+          visible={visible}
+          onChoose={choose}
+          onPolicyLinkClick={hideForPolicyLink}
+          measureRef={legacyBannerRef}
+        />
       )}
     </>
   );

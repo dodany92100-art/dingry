@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { supportsNativeModalDialog } from "@/components/molecules/dingry-native-dialog";
 import {
   COOKIE_CONSENT_INTERCEPTS_DIALOG_CANCEL,
+  DINGRY_COOKIE_BANNER_ANCHOR_CLASS,
+  DINGRY_COOKIE_NATIVE_DIALOG_CLASS,
+  DINGRY_COOKIE_PANEL_SAFE_AREA_CLASS,
   closeNativeCookieConsentDialog,
   openNativeCookieConsentDialog,
 } from "@/components/atoms/cookie-consent";
@@ -57,6 +60,16 @@ describe("cookie consent dialog (native)", () => {
 
   it("Échap : pas de handler cancel bloquant sur le bandeau natif", () => {
     expect(COOKIE_CONSENT_INTERCEPTS_DIALOG_CANCEL).toBe(false);
+  });
+
+  it("ancrage bandeau : fixe en bas (natif + legacy)", () => {
+    expect(DINGRY_COOKIE_BANNER_ANCHOR_CLASS).toContain("fixed");
+    expect(DINGRY_COOKIE_BANNER_ANCHOR_CLASS).toContain("bottom-0");
+    expect(DINGRY_COOKIE_NATIVE_DIALOG_CLASS).toContain(DINGRY_COOKIE_BANNER_ANCHOR_CLASS);
+  });
+
+  it("panneau : respecte safe-area-inset-bottom", () => {
+    expect(DINGRY_COOKIE_PANEL_SAFE_AREA_CLASS).toContain("safe-area-inset-bottom");
   });
 
   it("choix explicite : accepted/rejected enregistre le consentement", () => {
