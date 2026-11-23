@@ -408,6 +408,47 @@ export function useAdminProducts({ onUnauthorized }: Options) {
     [scheduleStockAutosave, syncPendingDelta],
   );
 
+  /** ± prix TTC (enregistrement immédiat, lot stock CRM). */
+  const changePrice = useCallback(
+    async (product: AdminProduct, delta: number) => {
+      const next = Math.round((product.price + delta) * 100) / 100;
+      if (next <= 0 || next > 10_000) return;
+      if (next === product.price) return;
+      setStockError("");
+      setBusyProductId(product.id);
+      try {
+        const response = await fetch(`/api/admin/products/${product.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ price: next }),
+        });
+        if (response.status === 401) {
+          onUnauthorized();
+          return;
+        }
+        const data = (await response.json().catch(() => ({}))) as {
+          product?: AdminProduct;
+          error?: string;
+        };
+        const updated = data.product;
+        if (response.ok && updated) {
+          setProducts((current) =>
+            sortAdminProductsForDisplay(
+              current.map((item) => (item.id === product.id ? updated : item)),
+            ),
+          );
+        } else {
+          setStockError(data.error || "Prix non enregistré.");
+        }
+      } catch {
+        setStockError("Prix non enregistré.");
+      } finally {
+        setBusyProductId(null);
+      }
+    },
+    [onUnauthorized],
+  );
+
   const togglePin = useCallback(
     async (product: AdminProduct) => {
       setStockError("");
@@ -592,6 +633,7 @@ export function useAdminProducts({ onUnauthorized }: Options) {
     save,
     changeStock,
     setStock,
+    changePrice,
     stockAutosaveStatus,
     stockToast,
     dismissStockToast,

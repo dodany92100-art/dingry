@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { AdminStockBulkEditBar } from "@/components/organisms/admin/admin-stock-bulk-edit-bar";
 import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
+import type { CatalogCategory } from "@/lib/catalog-category";
 import { normalizeProductCategory } from "@/lib/admin/types";
 import { AdminStockPublishToggle } from "@/components/organisms/admin/admin-stock-publish-toggle";
 import { AdminStockColorSortToggle } from "@/components/organisms/admin/admin-stock-color-sort-toggle";
@@ -39,6 +41,7 @@ type StockTabProps = {
   onVisibleDraftIdsChange?: (ids: string[]) => void;
   onChangeStock: (product: AdminProduct, delta: number) => void;
   onSetStock: (product: AdminProduct, nextStock: number) => void;
+  onChangePrice: (product: AdminProduct, delta: number) => void;
   onEdit: (product: AdminProduct) => void;
   onNew: () => void;
   onTogglePin: (product: AdminProduct) => void;
@@ -110,6 +113,7 @@ export function StockTab({
   onVisibleDraftIdsChange,
   onChangeStock,
   onSetStock,
+  onChangePrice,
   onEdit,
   onNew,
   onTogglePin,
@@ -135,6 +139,68 @@ export function StockTab({
   const [pendingDelete, setPendingDelete] = useState<AdminProduct | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [colorSortMode, setColorSortMode] = useState<StockColorSortMode>("default");
+  const [bulkEditAll, setBulkEditAll] = useState(false);
+  const [bulkEditSection, setBulkEditSection] = useState<CatalogCategory | null>(null);
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    setBulkEditAll(false);
+    setBulkEditSection(null);
+    setBulkSelectedIds(new Set());
+  }, [categoryFilter, searchQuery]);
+
+  const applyBulkStockDelta = useCallback(
+    (targets: readonly AdminProduct[], delta: number) => {
+      for (const product of targets) {
+        if (product.stock + delta < 0) continue;
+        onChangeStock(product, delta);
+      }
+    },
+    [onChangeStock],
+  );
+
+  const applyBulkPriceDelta = useCallback(
+    (targets: readonly AdminProduct[], delta: number) => {
+      for (const product of targets) {
+        const next = product.price + delta;
+        if (next <= 0 || next > 10_000) continue;
+        onChangePrice(product, delta);
+      }
+    },
+    [onChangePrice],
+  );
+
+  const onBulkSelectToggle = useCallback((productId: string, selected: boolean) => {
+    setBulkSelectedIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(productId);
+      else next.delete(productId);
+      return next;
+    });
+  }, []);
+
+  const onBulkSelectAllInTargets = useCallback((targets: readonly AdminProduct[], selected: boolean) => {
+    setBulkSelectedIds((current) => {
+      const next = new Set(current);
+      for (const product of targets) {
+        if (selected) next.add(product.id);
+        else next.delete(product.id);
+      }
+      return next;
+    });
+  }, []);
+
+  const onBulkEditSectionChange = useCallback((category: CatalogCategory | null) => {
+    setBulkEditSection(category);
+    if (category) setBulkEditAll(false);
+    setBulkSelectedIds(new Set());
+  }, []);
+
+  const toggleBulkEditAll = useCallback(() => {
+    setBulkEditAll((active) => !active);
+    setBulkEditSection(null);
+    setBulkSelectedIds(new Set());
+  }, []);
 
   const catalogCardProducts = useMemo(
     () => hideCrewneckVersoFromAdminStock(products),
@@ -306,6 +372,44 @@ export function StockTab({
       </div>
       {error ? <p className="mb-3 text-sm text-red-400">{error}</p> : null}
 
+      {!storefrontPreview && visibleProducts.length > 0 && viewMode === "grid" ? (
+        <div className="mb-4">
+          <AdminStockBulkEditBar
+            editActive={bulkEditAll}
+            onToggleEdit={toggleBulkEditAll}
+            targets={visibleProducts}
+            selectedCount={visibleProducts.filter((p) => bulkSelectedIds.has(p.id)).length}
+            allSelected={
+              visibleProducts.length > 0 &&
+              visibleProducts.every((p) => bulkSelectedIds.has(p.id))
+            }
+            someSelected={
+              visibleProducts.some((p) => bulkSelectedIds.has(p.id)) &&
+              !visibleProducts.every((p) => bulkSelectedIds.has(p.id))
+            }
+            onToggleSelectAll={() =>
+              onBulkSelectAllInTargets(
+                visibleProducts,
+                !visibleProducts.every((p) => bulkSelectedIds.has(p.id)),
+              )
+            }
+            onBulkStock={(delta) =>
+              applyBulkStockDelta(
+                visibleProducts.filter((p) => bulkSelectedIds.has(p.id)),
+                delta,
+              )
+            }
+            onBulkPrice={(delta) =>
+              applyBulkPriceDelta(
+                visibleProducts.filter((p) => bulkSelectedIds.has(p.id)),
+                delta,
+              )
+            }
+            disabled={stockControlsBusy}
+          />
+        </div>
+      ) : null}
+
       {storefrontPreview ? (
         <AdminStockStorefrontPreview
           categoryFilter={categoryFilter}
@@ -334,6 +438,15 @@ export function StockTab({
             onDelete={setPendingDelete}
             onDrop={moveProduct}
             stockAutosaveStatus={stockAutosaveStatus}
+            bulkEditAll={bulkEditAll}
+            bulkEditSection={bulkEditSection}
+            bulkSelectedIds={bulkSelectedIds}
+            onBulkEditSectionChange={onBulkEditSectionChange}
+            onBulkSelectToggle={onBulkSelectToggle}
+            onBulkSelectAllInSection={onBulkSelectAllInTargets}
+            onBulkStockDelta={applyBulkStockDelta}
+            onBulkPriceDelta={applyBulkPriceDelta}
+            bulkActionsDisabled={stockControlsBusy}
           />
         ) : (
           <div className={ADMIN_STOCK_PRODUCT_GRID_CLASS}>
@@ -351,6 +464,9 @@ export function StockTab({
                 onDrop={moveProduct}
                 disableReorder={reorderBlocked}
                 autosavePhase={stockAutosaveStatus[product.id]}
+                bulkSelectMode={bulkEditAll}
+                bulkSelected={bulkSelectedIds.has(product.id)}
+                onBulkSelectChange={(selected) => onBulkSelectToggle(product.id, selected)}
               />
             ))}
           </div>

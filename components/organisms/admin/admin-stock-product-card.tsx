@@ -28,6 +28,9 @@ type AdminStockProductCardProps = {
   onDrop: (fromIndex: number, toIndex: number) => void;
   disableReorder?: boolean;
   autosavePhase?: StockAutosavePhase;
+  bulkSelectMode?: boolean;
+  bulkSelected?: boolean;
+  onBulkSelectChange?: (selected: boolean) => void;
 };
 
 const priceFormat = new Intl.NumberFormat("fr-FR", {
@@ -69,6 +72,9 @@ export function AdminStockProductCard({
   onDrop,
   disableReorder = false,
   autosavePhase,
+  bulkSelectMode = false,
+  bulkSelected = false,
+  onBulkSelectChange,
 }: AdminStockProductCardProps) {
   const soldOut = product.stock <= 0;
   const variantLine = stockIndicativeVariants(product) || product.category;
@@ -111,6 +117,24 @@ export function AdminStockProductCard({
             ) : null}
             <AdminStockStatusBadge product={product} className="max-w-full truncate max-sm:px-1.5 max-sm:text-[8px] max-sm:tracking-[0.1em]" />
           </div>
+          {bulkSelectMode ? (
+            <div
+              className="absolute bottom-1.5 left-1.5 z-10 rounded-full bg-black/55 p-1 backdrop-blur-[2px]"
+              data-admin-no-reorder
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <label className="flex cursor-pointer items-center gap-1 px-1">
+                <input
+                  type="checkbox"
+                  checked={bulkSelected}
+                  onChange={(event) => onBulkSelectChange?.(event.target.checked)}
+                  className="h-4 w-4 rounded border-white/25 bg-black/50 accent-[#FF3D00]"
+                  aria-label={`Sélectionner ${product.name} pour édition en lot`}
+                />
+              </label>
+            </div>
+          ) : null}
           <div
             className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-full bg-black/50 p-0.5 backdrop-blur-[2px] md:right-1.5 md:top-1.5"
             data-admin-no-reorder

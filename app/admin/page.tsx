@@ -560,6 +560,7 @@ function AdminDashboard() {
             onVisibleDraftIdsChange={onVisibleDraftIdsChange}
             onChangeStock={(product, delta) => productsApi.changeStock(product, delta)}
             onSetStock={(product, next) => productsApi.setStock(product, next)}
+            onChangePrice={(product, delta) => void productsApi.changePrice(product, delta)}
             onEdit={openEdit}
             onNew={openNew}
             onTogglePin={(product) => void productsApi.togglePin(product)}
