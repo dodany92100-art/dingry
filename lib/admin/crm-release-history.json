@@ -1,5 +1,16 @@
 [
   {
+    "id": "2026-11-23-boutique-crm",
+    "deployedAtLabel": "23 nov. 2026",
+    "title": "Boutique MWG & stock CRM mobile",
+    "highlights": [
+      "Stock : bouton Nouveau en FAB fixe (safe area), création produit toujours accessible sur mobile.",
+      "Boutique (déjà en ligne) : cookies non bloquants, images catalogue optimisées, fiche produit accessibilité et priorité images.",
+      "Boutique : tiroir panier accessibilité (focus, Échap, image décorative), même logique de piège Tab que la fiche produit."
+    ],
+    "versionHint": "232"
+  },
+  {
     "id": "2026-11-19-editeur-securite",
     "deployedAtLabel": "19 nov. 2026",
     "versionHint": "231",
