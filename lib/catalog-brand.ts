@@ -42,6 +42,8 @@ export function filterByBrand<T extends { brand?: Brand }>(
   return products.filter((product) => shopProductBrand(product) === selected);
 }
 
+export { filterBrandCatalog, filterBrandCatalogExcludingCollection, brandPageVisibleProducts } from "@/lib/filter-brand-catalog";
+
 export function catalogBrandFilterLabel(brand: CatalogBrandFilter): string {
   if (!brand) return "Voir tous";
   return brand;

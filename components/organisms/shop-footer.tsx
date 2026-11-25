@@ -13,6 +13,8 @@ import type { CatalogFilter } from "@/lib/catalog-category";
 import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import { shopSectionHref } from "@/lib/shop-section-href";
 import type { ShopBasePath } from "@/lib/shop-base-path";
+import { BRAND_PAGE_SLUGS } from "@/lib/shop-brand-page-config";
+import { shopBrandPageHref } from "@/lib/shop-brand-page-slug";
 
 const DINGRY_INSTAGRAM_URL = "https://www.instagram.com/dingry_officiel/";
 
@@ -211,6 +213,17 @@ export function ShopFooter({
                   {t("nav.lookbook")}
                 </button>
               </li>
+              {BRAND_PAGE_SLUGS.map((slug) => (
+                <li key={slug}>
+                  <button
+                    type="button"
+                    onClick={() => router.push(shopBrandPageHref(resolvedBase, slug))}
+                    className={`${boutiqueLinkClass} text-white/40`}
+                  >
+                    {t(`brandPages.links.${slug}`)}
+                  </button>
+                </li>
+              ))}
               <li>
                 <button type="button" onClick={() => setContactOpen(true)} className={boutiqueLinkClass}>
                   {t("footer.navContact")}

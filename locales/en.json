@@ -55,6 +55,32 @@
     ],
     "paymentMethodsAria": "Accepted payment methods"
   },
+  "brandPages": {
+    "eyebrow": "Brand universe",
+    "backToShop": "Back to shop",
+    "backToFilteredShop": "Filtered catalog",
+    "productsHeading": "Brand pieces",
+    "madaProductsHeading": "DINGRY MADA collection",
+    "links": {
+      "dingry": "DINGRY",
+      "rock-the-street": "Rock The Street",
+      "fyma": "FYMA"
+    },
+    "dingry": {
+      "title": "DINGRY",
+      "lead": "Bold streetwear, oversized fits and signature pieces — built to last.",
+      "madaTitle": "DINGRY MADA",
+      "madaLead": "A dedicated line: Malagasy energy, same DINGRY quality standards."
+    },
+    "rock-the-street": {
+      "title": "Rock The Street",
+      "lead": "Royal Wear and urban attitude — music, fashion and creative heritage."
+    },
+    "fyma": {
+      "title": "FYMA",
+      "lead": "Selected FYMA pieces on the DINGRY storefront."
+    }
+  },
   "newsletter": {
     "title": "Newsletter",
     "subtitle": "Drops & exclusives — join us.",
