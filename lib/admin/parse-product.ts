@@ -197,7 +197,7 @@ export function parseProductFields(
     if (!isProductCollection(collection)) {
       return {
         fields,
-        error: "Collection invalide. Valeurs acceptées : Signature, DINGRY MADA.",
+        error: "Collection invalide. Valeurs acceptées : Signature, DINGRY MADA, Édition limitée.",
       };
     }
     fields.collection = collection;

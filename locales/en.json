@@ -29,6 +29,8 @@
   },
   "catalog": {
     "filtersAria": "DINGRY collection categories",
+    "brandEyebrow": "Brand",
+    "brandFiltersAria": "Filter collection by brand",
     "unavailable": "Catalog temporarily unavailable — checkout disabled. Try again shortly.",
     "categories": {
       "all": "Collection",

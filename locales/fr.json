@@ -29,6 +29,8 @@
   },
   "catalog": {
     "filtersAria": "Catégories de la collection DINGRY",
+    "brandEyebrow": "Marque",
+    "brandFiltersAria": "Filtrer la collection par marque",
     "unavailable": "Catalogue momentanément indisponible — achat désactivé. Réessayez dans un instant.",
     "categories": {
       "all": "Collection",

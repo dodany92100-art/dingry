@@ -88,7 +88,7 @@ export function normalizeProductCategory(value: string): ProductCategory {
 export const BRANDS = ["DINGRY", "ROCK THE STREET", "FYMA"] as const;
 export type Brand = (typeof BRANDS)[number];
 
-export const COLLECTIONS = ["Signature", "DINGRY MADA"] as const;
+export const COLLECTIONS = ["Signature", "DINGRY MADA", "Édition limitée"] as const;
 export type ProductCollection = (typeof COLLECTIONS)[number];
 
 export const DEFAULT_PRODUCT_BRAND: Brand = "DINGRY";

@@ -31,7 +31,9 @@ import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav, type ShopNavMagnet } from "@/components/organisms/shop/shop-nav";
 import { DingryI18nProvider } from "@/hooks/use-translation";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
+import { filterByBrand } from "@/lib/catalog-brand";
 import { parseCatalogFilter } from "@/lib/shop-catalog";
+import { buildFlipPairs, resolveSaleProduct, visibleCatalogProducts } from "@/lib/shop-view";
 import {
   enabledAtelierModels,
   resolvePersonalizationShopProduct,
@@ -40,7 +42,6 @@ import { PERSONALIZABLE_PRODUCT_ID, PRODUCTS } from "@/lib/shop-data";
 import { hasSupabaseOAuthQuery, searchWithoutOAuthQuery } from "@/lib/auth/scrub-public-oauth-query";
 import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import { bannerConfiguratorInitialLabel } from "@/lib/custom-city-banner";
-import { buildFlipPairs, resolveSaleProduct } from "@/lib/shop-view";
 import { toggleCatalogWishlistFavorite } from "@/lib/shop/catalog-wishlist-toggle";
 
 const ProductModal = dynamic(
@@ -134,7 +135,7 @@ function DingryShopPageInner() {
   const shopAuth = useShopAuth();
   const { authenticated: adminSession } = useAdminSessionProbe();
   const { launchFromElement } = useFlyAnimation();
-  const { activeFilter, selectFilter } = useCatalogFilter(scrollToSection);
+  const { activeFilter, activeBrand, selectFilter, selectBrand } = useCatalogFilter(scrollToSection);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -171,6 +172,13 @@ function DingryShopPageInner() {
   );
 
   const flipPairs = useMemo(() => buildFlipPairs(products), [products]);
+
+  const catalogGridProducts = useMemo(() => {
+    if (activeFilter === "all") return filterByBrand(products, activeBrand);
+    return visibleCatalogProducts(products, activeFilter, activeBrand);
+  }, [products, activeFilter, activeBrand]);
+
+  const catalogFilterKey = activeFilter === "all" ? "all" : activeFilter;
   const personalizationProduct = useMemo(
     () =>
       products.find((p) => p.id === PERSONALIZABLE_PRODUCT_ID) ??
@@ -377,10 +385,12 @@ function DingryShopPageInner() {
           <CatalogSection
             tabValue={tabValue}
             onTabChange={handleTabChange}
+            brandValue={activeBrand}
+            onBrandChange={selectBrand}
             catalogState={catalogState}
             onRetry={retry}
-            filterKey="all"
-            products={products}
+            filterKey={catalogFilterKey}
+            products={catalogGridProducts}
             flipPairs={flipPairs}
             onOpenProduct={modal.openProductModal}
             wishlistIds={wishlist.ids}

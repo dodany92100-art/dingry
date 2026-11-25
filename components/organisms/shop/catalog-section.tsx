@@ -9,7 +9,9 @@ import {
   CATALOG_SECTION_SURFACE_CLASS,
   CATALOG_VITRINE_SHELL_CLASS,
 } from "./catalog-layout";
+import type { CatalogBrandFilter } from "@/lib/catalog-brand";
 import { CatalogFilterBar, type CatalogTabValue } from "./catalog-filter-bar";
+import { CatalogBrandBar } from "./catalog-brand-bar";
 import { CatalogGrid } from "./catalog-grid";
 import type { CatalogState } from "./hooks/use-shop-catalog";
 import { useTranslation } from "@/hooks/use-translation";
@@ -17,6 +19,8 @@ import { useTranslation } from "@/hooks/use-translation";
 type CatalogSectionProps = {
   tabValue: CatalogTabValue;
   onTabChange: (tab: string) => void;
+  brandValue: CatalogBrandFilter;
+  onBrandChange: (brand: CatalogBrandFilter) => void;
   catalogState: CatalogState;
   onRetry: () => void;
   filterKey: string;
@@ -28,13 +32,14 @@ type CatalogSectionProps = {
   showAdminIdBadge?: boolean;
 };
 
-function CatalogSectionInner({ tabValue, onTabChange, ...grid }: CatalogSectionProps) {
+function CatalogSectionInner({ tabValue, onTabChange, brandValue, onBrandChange, ...grid }: CatalogSectionProps) {
   const { t } = useTranslation();
 
   return (
     <section id="catalogue" className={`${CATALOG_SECTION_SURFACE_CLASS} ${CATALOG_SCROLL_OFFSET_CLASS}`}>
       <div className={CATALOG_VITRINE_SHELL_CLASS}>
         <CatalogFilterBar value={tabValue} onChange={onTabChange} products={grid.products} />
+        <CatalogBrandBar value={brandValue} onChange={onBrandChange} />
 
         {grid.catalogState === "error" ? (
           <div

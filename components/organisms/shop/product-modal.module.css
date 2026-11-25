@@ -357,6 +357,19 @@
   color: rgb(22 22 22 / 0.42) !important;
 }
 
+.brandEyebrow {
+  margin-bottom: 0.35rem;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(22 22 22 / 0.5);
+}
+
+.brandSep {
+  margin-inline: 0.35rem;
+  color: rgb(22 22 22 / 0.35);
+}
+
 .title {
   margin-bottom: 0.5rem;
   font-family: var(--font-anton), "Arial Narrow", sans-serif;

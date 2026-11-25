@@ -2,7 +2,9 @@ import {
   normalizePrintPlacement,
   normalizeProductBrand,
   normalizeProductCollection,
+  type Brand,
   type CatalogProduct,
+  type ProductCollection,
   type ProductPrintPlacement,
 } from "@/lib/admin/types";
 import { shopOptionsFromProductOptions, shopOptionsFromColorDeclinations } from "@/lib/catalog/product-options";
@@ -29,6 +31,8 @@ export type ShopProduct = {
   sizeGuide?: string;
   printPlacement?: ProductPrintPlacement;
   category: ShopCategory | string;
+  brand?: Brand;
+  collection?: ProductCollection;
   sku?: string;
   sizes?: string[];
   colorDeclinations?: string[];
@@ -85,6 +89,8 @@ export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
     description: product.description,
     ...storyFieldsFromCatalog(product),
     category: resolveShopCategory(product.id, product.category),
+    brand: product.brand,
+    collection: product.collection,
     sku: product.sku,
     sizes: product.sizes,
     stock: product.stock,
@@ -187,6 +193,8 @@ function applyCatalogOverlay(
     description: overlay.description?.trim() || product.description,
     ...mergeStoryOverlay(product, overlay),
     category: resolveShopCategory(product.id, overlay.category || product.category),
+    brand: overlay.brand,
+    collection: overlay.collection,
     sku,
     sizes: overlay.sizes,
     stock: overlay.stock,

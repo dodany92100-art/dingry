@@ -20,6 +20,7 @@ import { ProductColorVariantGrid } from "@/components/molecules/product-color-va
 import { SimilarProductsStrip } from "@/components/molecules/similar-products-strip";
 import { isJerseyShopProduct, JERSEY_COLOR_OPTIONS } from "@/lib/jersey-shop";
 import { colorSwatchChipStyle } from "@/lib/storefront/color-swatch-chip";
+import { shopProductBrand, storefrontCollectionEyebrow } from "@/lib/catalog-brand";
 import { isShopTeeCategory, resolveShopCategory } from "@/lib/shop-catalog";
 import { isShopProductAtelierEligible, type ShopAtelierCustomConfig } from "@/lib/atelier-custom-config";
 import { IMAGES, TEE_VERSO_BY_RECTO_ID } from "@/lib/shop-data";
@@ -163,6 +164,8 @@ function ProductModalContent({
 
   const rectoId = catalogRectoId(product.id);
   const detail = productDetailCopy(product, products);
+  const storefrontBrand = shopProductBrand(product);
+  const storefrontCollection = storefrontCollectionEyebrow(product.collection);
   const similar = similarProductsForShop(product.id, products);
   const wishlistActive = wishlistIds.includes(rectoId);
 
@@ -352,6 +355,17 @@ function ProductModalContent({
             </div>
             <DingryLogo animate={false} tone="on-light" className="mb-3 h-8 w-auto opacity-90 md:mb-4 md:h-9" />
             <p className={`dingry-typo-manifesto ${styles.manifesto}`}>{DINGRY_MANIFESTO_FR}</p>
+            <p className={`dingry-section-eyebrow ${styles.brandEyebrow}`}>
+              {storefrontBrand}
+              {storefrontCollection ? (
+                <>
+                  <span className={styles.brandSep} aria-hidden>
+                    ·
+                  </span>
+                  {storefrontCollection}
+                </>
+              ) : null}
+            </p>
             <h2 id={DINGRY_PRODUCT_MODAL_TITLE_ID} className={styles.title}>
               {data.title}
             </h2>

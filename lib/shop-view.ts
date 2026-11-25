@@ -16,6 +16,8 @@ import {
   type CatalogFilter,
 } from "@/lib/shop-catalog";
 import { buildSweatCatalogPairs } from "@/lib/sweat-catalog-pairs";
+import type { CatalogBrandFilter } from "@/lib/catalog-brand";
+import { filterByBrand } from "@/lib/catalog-brand";
 
 export type CartLine = StoredCartItem;
 
@@ -157,8 +159,13 @@ export function formatPersonalizationForCart(
 
 /* ---------- Catalogue ---------- */
 
-export function visibleCatalogProducts(products: ShopProduct[], filter: CatalogFilter): ShopProduct[] {
-  return sortCatalogProducts(filterCatalogProducts(products, filter), "featured");
+export function visibleCatalogProducts(
+  products: ShopProduct[],
+  filter: CatalogFilter,
+  brand: CatalogBrandFilter = null,
+): ShopProduct[] {
+  const scoped = filterByBrand(products, brand);
+  return sortCatalogProducts(filterCatalogProducts(scoped, filter), "featured");
 }
 
 export function buildFlipPairs(products: ShopProduct[]): FlipPair[] {
