@@ -14,6 +14,8 @@ const sample: AdminProduct = {
   sizeGuide: "",
   printPlacement: "RECTO_ONLY",
   category: "Crop tops",
+  brand: "DINGRY",
+  collection: "Signature",
   price: 45,
   sizes: ["S", "M", "L"],
   stock: 4,
@@ -31,6 +33,16 @@ const sample: AdminProduct = {
 };
 
 describe("product-row mapping", () => {
+  it("sans colonnes brand/collection en base → défauts DINGRY / Signature", () => {
+    const row = adminProductToRow(sample);
+    const legacy = { ...row, brand: null, collection: null } as typeof row;
+    expect(rowToAdminProduct(legacy)).toMatchObject({
+      brand: "DINGRY",
+      collection: "Signature",
+      id: "31",
+    });
+  });
+
   it("round-trip AdminProduct ↔ row", () => {
     const row = adminProductToRow(sample);
     expect(row.publish_status).toBe("live");

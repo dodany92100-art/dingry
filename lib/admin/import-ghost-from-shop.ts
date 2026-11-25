@@ -1,5 +1,10 @@
 import type { AdminProduct } from "@/lib/admin/types";
-import { normalizePrintPlacement, normalizeProductCategory } from "@/lib/admin/types";
+import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
+  normalizePrintPlacement,
+  normalizeProductCategory,
+} from "@/lib/admin/types";
 import { isVersoCatalogId, resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 import type { ShopProduct } from "@/lib/catalog";
 import { SEEDED_PRODUCTS } from "@/lib/admin/seed";
@@ -47,6 +52,8 @@ export function shopProductToImportAdminProduct(shop: ShopProduct): AdminProduct
     sizeGuide: shop.sizeGuide ?? seed?.sizeGuide ?? "",
     printPlacement: normalizePrintPlacement(shop.printPlacement ?? seed?.printPlacement ?? ""),
     category,
+    brand: DEFAULT_PRODUCT_BRAND,
+    collection: DEFAULT_PRODUCT_COLLECTION,
     price: shop.price,
     sizes,
     stock,

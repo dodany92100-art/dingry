@@ -8,8 +8,13 @@ import {
   colorDeclinationsCanonicallyEqual,
   frenchLabelForColorPreset,
 } from "@/lib/admin/dingry-color-palette";
-import type { AdminProduct } from "@/lib/admin/types";
-import { isDraftPlaceholderImage, printPlacementDisplayLabel } from "@/lib/admin/types";
+import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
+  isDraftPlaceholderImage,
+  printPlacementDisplayLabel,
+  type AdminProduct,
+} from "@/lib/admin/types";
 import type {
   ProductCategory,
   ProductPrintPlacement,
@@ -52,6 +57,8 @@ function previewProductFromModel(model: AdminProductPreviewModel): AdminProduct 
     materials: "",
     sizeGuide: "",
     category: model.category,
+    brand: DEFAULT_PRODUCT_BRAND,
+    collection: DEFAULT_PRODUCT_COLLECTION,
     price: Number(model.price) || 0,
     sizes: model.sizes,
     stock: model.stock,

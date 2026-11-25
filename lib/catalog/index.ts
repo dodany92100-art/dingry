@@ -1,5 +1,7 @@
 import {
   normalizePrintPlacement,
+  normalizeProductBrand,
+  normalizeProductCollection,
   type CatalogProduct,
   type ProductPrintPlacement,
 } from "@/lib/admin/types";
@@ -310,6 +312,8 @@ export function shopProductFromUnknown(value: unknown): CatalogProduct | null {
     sizeGuide: typeof record.sizeGuide === "string" ? record.sizeGuide : undefined,
     ...(printPlacement ? { printPlacement } : {}),
     category: normalizeAdminCategory(typeof record.category === "string" ? record.category : "Tee"),
+    brand: normalizeProductBrand(typeof record.brand === "string" ? record.brand : ""),
+    collection: normalizeProductCollection(typeof record.collection === "string" ? record.collection : ""),
     price,
     image: record.image,
     sizes: sizesFromApiRecord(record),

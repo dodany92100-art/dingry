@@ -1,5 +1,11 @@
 import type { AdminProduct, ProductPrintPlacement, ProductPublishStatus } from "@/lib/admin/types";
-import { normalizePrintPlacement, normalizeProductCategory, normalizePublishStatus } from "@/lib/admin/types";
+import {
+  normalizePrintPlacement,
+  normalizeProductBrand,
+  normalizeProductCategory,
+  normalizeProductCollection,
+  normalizePublishStatus,
+} from "@/lib/admin/types";
 import { canonicalizeR2PublicImageUrl } from "@/lib/r2/config";
 
 export type ProductRow = {
@@ -14,6 +20,8 @@ export type ProductRow = {
   size_guide: string;
   print_placement: string;
   category: string;
+  brand?: string | null;
+  collection?: string | null;
   price: number;
   sizes: string[];
   stock: number;
@@ -43,6 +51,8 @@ export function adminProductToRow(product: AdminProduct): ProductRow {
     size_guide: product.sizeGuide,
     print_placement: product.printPlacement,
     category: product.category,
+    brand: product.brand,
+    collection: product.collection,
     price: product.price,
     sizes: [...product.sizes],
     stock: product.stock,
@@ -73,6 +83,8 @@ export function rowToAdminProduct(row: ProductRow): AdminProduct {
     sizeGuide: String(row.size_guide ?? ""),
     printPlacement: normalizePrintPlacement(row.print_placement) as ProductPrintPlacement,
     category: normalizeProductCategory(String(row.category ?? "T-shirts")),
+    brand: normalizeProductBrand(String(row.brand ?? "")),
+    collection: normalizeProductCollection(String(row.collection ?? "")),
     price: Number(row.price) || 0,
     sizes: Array.isArray(row.sizes) ? row.sizes.map(String) : [],
     stock: Math.max(0, Math.floor(Number(row.stock) || 0)),

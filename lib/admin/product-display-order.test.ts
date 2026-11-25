@@ -22,6 +22,8 @@ function admin(partial: Partial<AdminProduct> & Pick<AdminProduct, "id">): Admin
     sizeGuide: "",
     printPlacement: "",
     category: partial.category ?? "T-shirts",
+    brand: partial.brand ?? "DINGRY",
+    collection: partial.collection ?? "Signature",
     price: 35,
     sizes: ["M"],
     stock: 5,

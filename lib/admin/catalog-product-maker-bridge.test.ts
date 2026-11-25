@@ -12,6 +12,8 @@ function sampleProduct(overrides: Partial<AdminProduct> = {}): AdminProduct {
     name: "TEE",
     variant: "NOIR",
     category: "T-shirts",
+    brand: "DINGRY",
+    collection: "Signature",
     price: 35,
     sizes: ["M"],
     stock: 5,

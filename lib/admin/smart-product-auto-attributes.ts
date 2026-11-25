@@ -16,8 +16,12 @@ import {
   ADMIN_CATEGORY_SIZES,
   isValidPantWaistSize,
   normalizePantWaistSize,
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
   type AdminProduct,
+  type Brand,
   type ProductCategory,
+  type ProductCollection,
   type ProductPrintPlacement,
   type ProductSize,
 } from "@/lib/admin/types";
@@ -53,6 +57,8 @@ export type SmartProductAutoTagFormState = {
   variant: string;
   colorDeclinations: string[];
   category: ProductCategory;
+  brand: Brand;
+  collection: ProductCollection;
   price: string;
   stock: string;
   sizes: ProductSize[];
@@ -96,6 +102,8 @@ const EMPTY_AUTO_TAG_FORM_BASE: Omit<SmartProductAutoTagFormState, keyof Product
   name: "",
   variant: "",
   colorDeclinations: [],
+  brand: DEFAULT_PRODUCT_BRAND,
+  collection: DEFAULT_PRODUCT_COLLECTION,
   price: "",
   stock: "",
   sizes: [],

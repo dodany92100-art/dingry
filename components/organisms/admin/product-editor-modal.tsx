@@ -34,7 +34,11 @@ import {
   PANT_WAIST_MAX,
   PANT_WAIST_MIN,
   PANT_WAIST_PRESET_SIZES,
+  BRANDS,
+  COLLECTIONS,
   PRODUCT_CATEGORIES,
+  type Brand,
+  type ProductCollection,
   normalizePantWaistSize,
   normalizeProductCategory,
   isValidPantWaistSize,
@@ -614,6 +618,22 @@ export function ProductEditorModal({
         setColorListDraft(colorDeclinationsLabel(next.colorDeclinations));
       }
       return next;
+    });
+  }
+
+  function changeBrand(nextBrand: Brand) {
+    setForm((prev) => {
+      if (prev.collection === "DINGRY MADA" && nextBrand !== "DINGRY") return prev;
+      return { ...prev, brand: nextBrand };
+    });
+  }
+
+  function changeCollection(nextCollection: ProductCollection) {
+    setForm((prev) => {
+      if (nextCollection === "DINGRY MADA") {
+        return { ...prev, collection: nextCollection, brand: "DINGRY" };
+      }
+      return { ...prev, collection: nextCollection };
     });
   }
 
@@ -1589,6 +1609,55 @@ export function ProductEditorModal({
                             }`}
                           >
                             {PRODUCT_CATEGORIES.map((item) => (
+                              <option key={item} value={item} className="bg-zinc-950 text-white">
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label
+                          htmlFor="dingry-product-brand"
+                          className={`${FIELD_LABEL_COMPACT} sm:col-span-1`}
+                        >
+                          Marque
+                          <select
+                            id="dingry-product-brand"
+                            name="brand"
+                            aria-label="Marque produit"
+                            value={form.brand}
+                            disabled={form.collection === "DINGRY MADA"}
+                            onChange={(event) => changeBrand(event.target.value as Brand)}
+                            className={`${FIELD_SELECT.replace("mt-1.5 h-11", "mt-1 h-9")} px-3 text-[14px] font-medium ${
+                              sectionDirty.general && form.brand !== baselineForm.brand
+                                ? "border-white/40"
+                                : ""
+                            } ${form.collection === "DINGRY MADA" ? "opacity-60" : ""}`}
+                          >
+                            {BRANDS.map((item) => (
+                              <option key={item} value={item} className="bg-zinc-950 text-white">
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label
+                          htmlFor="dingry-product-collection"
+                          className={`${FIELD_LABEL_COMPACT} sm:col-span-1`}
+                        >
+                          Collection
+                          <select
+                            id="dingry-product-collection"
+                            name="collection"
+                            aria-label="Collection produit"
+                            value={form.collection}
+                            onChange={(event) => changeCollection(event.target.value as ProductCollection)}
+                            className={`${FIELD_SELECT.replace("mt-1.5 h-11", "mt-1 h-9")} px-3 text-[14px] font-medium ${
+                              sectionDirty.general && form.collection !== baselineForm.collection
+                                ? "border-white/40"
+                                : ""
+                            }`}
+                          >
+                            {COLLECTIONS.map((item) => (
                               <option key={item} value={item} className="bg-zinc-950 text-white">
                                 {item}
                               </option>

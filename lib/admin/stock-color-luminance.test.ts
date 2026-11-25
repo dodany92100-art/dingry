@@ -19,6 +19,8 @@ function sample(variant: string): AdminProduct {
     materials: "",
     sizeGuide: "",
     category: "T-shirts",
+    brand: "DINGRY",
+    collection: "Signature",
     price: 10,
     sizes: ["M"],
     stock: 1,

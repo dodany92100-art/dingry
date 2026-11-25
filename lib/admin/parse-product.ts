@@ -1,7 +1,11 @@
 import { trimStoryField } from "@/lib/admin/product-story";
 import { isPantsCategory } from "@/lib/admin/product-variant-presets";
 import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
+  isProductBrand,
   isProductCategory,
+  isProductCollection,
   isProductSize,
   normalizePrintPlacement,
   normalizeProductCategory,
@@ -10,7 +14,9 @@ import {
   parseColorDeclinations,
   PANT_WAIST_MAX,
   PANT_WAIST_MIN,
+  type Brand,
   type ProductCategory,
+  type ProductCollection,
   type ProductPrintPlacement,
   type ProductPublishStatus,
   type ProductSize,
@@ -28,6 +34,8 @@ export type ParsedProductFields = {
   sizeGuide: string;
   printPlacement: ProductPrintPlacement;
   category: ProductCategory;
+  brand: Brand;
+  collection: ProductCollection;
   price: number;
   sizes: ProductSize[];
   stock: number;
@@ -164,6 +172,52 @@ export function parseProductFields(
 
   if (!partial || has("colorDeclinations")) {
     fields.colorDeclinations = parseColorDeclinations(getValue("colorDeclinations"));
+  }
+
+  if (!partial || has("brand")) {
+    const brand = (getValue("brand").trim() || DEFAULT_PRODUCT_BRAND) as string;
+    if (!isProductBrand(brand)) {
+      return {
+        fields,
+        error: "Marque invalide. Valeurs acceptées : DINGRY, ROCK THE STREET, FYMA.",
+      };
+    }
+    fields.brand = brand;
+  } else if (!partial) {
+    fields.brand = DEFAULT_PRODUCT_BRAND;
+  }
+
+  if (!partial || has("collection")) {
+    const raw = getValue("collection").trim();
+    const collection =
+      raw || (!partial && !has("collection") ? DEFAULT_PRODUCT_COLLECTION : raw);
+    if (collection.length < 1 || collection.length > 40) {
+      return { fields, error: "Collection invalide (1 à 40 caractères)." };
+    }
+    if (!isProductCollection(collection)) {
+      return {
+        fields,
+        error: "Collection invalide. Valeurs acceptées : Signature, DINGRY MADA.",
+      };
+    }
+    fields.collection = collection;
+  } else if (!partial) {
+    fields.collection = DEFAULT_PRODUCT_COLLECTION;
+  }
+
+  if (fields.collection === "DINGRY MADA") {
+    if (fields.brand !== undefined && fields.brand !== "DINGRY") {
+      return {
+        fields,
+        error: "La collection DINGRY MADA exige la marque DINGRY.",
+      };
+    }
+    if (partial && fields.brand === undefined) {
+      return {
+        fields,
+        error: "Envoie la marque DINGRY avec la collection DINGRY MADA.",
+      };
+    }
   }
 
   const resolvedCategory =

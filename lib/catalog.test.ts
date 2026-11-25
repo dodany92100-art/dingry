@@ -28,6 +28,8 @@ const liveProduct = (partial: Partial<CatalogProduct> & Pick<CatalogProduct, "id
   variant: partial.variant ?? "CRM variant",
   description: partial.description ?? "",
   category: partial.category ?? "Crewnecks",
+  brand: partial.brand ?? "DINGRY",
+  collection: partial.collection ?? "Signature",
   price: partial.price,
   image: partial.image ?? "https://example.com/crm.jpg",
   sizes: partial.sizes ?? ["S", "M", "L", "XL"],
@@ -151,6 +153,8 @@ function crmCatalogWireRow(id: number, displayOrder: number): unknown {
     sizeGuide: "",
     printPlacement: "",
     category: shop.category,
+    brand: "DINGRY",
+    collection: "Signature",
     price: shop.price,
     sizes: ["S", "M", "L", "XL"],
     stock: 5,
@@ -221,6 +225,44 @@ describe("shopProductFromUnknown", () => {
       image: "https://example.com/y.jpg",
     });
     expect(parsed?.stock).toBeUndefined();
+  });
+});
+
+describe("toCatalogProduct — brand / collection", () => {
+  it("expose brand et collection, id produit inchangé", () => {
+    const admin = {
+      id: "42",
+      sku: "DGRY-X",
+      name: "TEE",
+      variant: "BLUE",
+      description: "",
+      fabrication: "",
+      limitedEdition: "",
+      materials: "",
+      sizeGuide: "",
+      printPlacement: "",
+      category: "T-shirts" as const,
+      brand: "FYMA" as const,
+      collection: "Signature" as const,
+      price: 55,
+      sizes: ["M"] as const,
+      stock: 2,
+      publishStatus: "live" as const,
+      colorDeclinations: [],
+      imageUrl: "https://example.com/z.webp",
+      blobUrl: null,
+      blobPathname: null,
+      imageBackUrl: "",
+      imageBackBlobUrl: null,
+      imageBackBlobPathname: null,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      isPinned: false,
+      displayOrder: 0,
+    } satisfies AdminProduct;
+    const catalog = toCatalogProduct(admin);
+    expect(catalog?.id).toBe(42);
+    expect(catalog?.brand).toBe("FYMA");
+    expect(catalog?.collection).toBe("Signature");
   });
 });
 

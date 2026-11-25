@@ -77,13 +77,19 @@ import {
 } from "@/lib/catalog-verso-recto";
 import { CATALOG_CANONICAL_IMAGE_BY_ID, DINGRY_JERSEY_PRODUCT_IDS, DINGRY_SWEAT_PRODUCT_IDS, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
 import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
   DRAFT_PRODUCT_PLACEHOLDER_IMAGE,
   isDraftPlaceholderImage,
   isProductCategory,
   isProductSize,
+  normalizeProductBrand,
   normalizeProductCategory,
+  normalizeProductCollection,
   normalizePublishStatus,
   normalizePrintPlacement,
+  type Brand,
+  type ProductCollection,
   STORE_VERSION,
   type AdminCatalogPersoBanner,
   type AdminLookbookSlide,
@@ -354,6 +360,8 @@ function normalizeProduct(value: unknown): AdminProduct | null {
     sizeGuide: String(record.sizeGuide ?? "").trim(),
     printPlacement: normalizePrintPlacement(record.printPlacement),
     category,
+    brand: normalizeProductBrand(String(record.brand ?? "")),
+    collection: normalizeProductCollection(String(record.collection ?? "")),
     price,
     sizes: sizes.length > 0 ? sizes : [],
     stock: Math.max(0, Math.floor(Number(record.stock) || 0)),
@@ -1029,6 +1037,8 @@ export type ProductInput = {
   sizeGuide: string;
   printPlacement?: ProductPrintPlacement;
   category: ProductCategory;
+  brand?: Brand;
+  collection?: ProductCollection;
   price: number;
   sizes: ProductSize[];
   stock: number;
@@ -1272,6 +1282,8 @@ export async function createProduct(
     sizeGuide: input.sizeGuide,
     printPlacement: input.printPlacement ?? "",
     category: input.category,
+    brand: input.brand ?? DEFAULT_PRODUCT_BRAND,
+    collection: input.collection ?? DEFAULT_PRODUCT_COLLECTION,
     price: input.price,
     sizes: input.sizes,
     stock: input.stock,
@@ -1335,6 +1347,8 @@ function applyFieldsToProduct(
   if (typeof fields.sizeGuide === "string") product.sizeGuide = fields.sizeGuide;
   if (fields.printPlacement !== undefined) product.printPlacement = fields.printPlacement;
   if (fields.category) product.category = fields.category;
+  if (fields.brand) product.brand = fields.brand;
+  if (fields.collection) product.collection = fields.collection;
   if (typeof fields.price === "number") product.price = fields.price;
   if (fields.sizes) product.sizes = fields.sizes;
   if (typeof fields.stock === "number") {

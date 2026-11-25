@@ -47,6 +47,8 @@ const sampleDraft: ProductEditorDraft = {
     sizeGuide: "",
     printPlacement: "",
     category: "T-shirts",
+    brand: "DINGRY",
+    collection: "Signature",
     price: "35",
     stock: "10",
     sizes: ["M"],

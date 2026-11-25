@@ -1,4 +1,12 @@
-import type { AdminOrder, AdminProduct, AdminStore, ProductCategory, ProductSize } from "@/lib/admin/types";
+import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
+  type AdminOrder,
+  type AdminProduct,
+  type AdminStore,
+  type ProductCategory,
+  type ProductSize,
+} from "@/lib/admin/types";
 import { STORE_VERSION } from "@/lib/admin/types";
 import { seededLookbookSlides } from "@/lib/admin/lookbook-seed";
 import { DINGRY_PRODUCT_MEDIA } from "@/lib/dingry-product-media";
@@ -35,6 +43,8 @@ function product(
     sizeGuide: "",
     printPlacement: "",
     category,
+    brand: DEFAULT_PRODUCT_BRAND,
+    collection: DEFAULT_PRODUCT_COLLECTION,
     price,
     sizes: [...sizes],
     stock,

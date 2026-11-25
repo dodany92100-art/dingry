@@ -18,6 +18,8 @@ function admin(partial: Partial<AdminProduct> & Pick<AdminProduct, "id" | "categ
     sizeGuide: "",
     printPlacement: "",
     category: partial.category,
+    brand: partial.brand ?? "DINGRY",
+    collection: partial.collection ?? "Signature",
     price: 80,
     sizes: ["M"],
     stock: 3,

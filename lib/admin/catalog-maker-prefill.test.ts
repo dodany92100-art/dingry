@@ -36,6 +36,8 @@ describe("catalog-maker-prefill", () => {
       name: "T-SHIRT SIGNATURE / WHITE",
       variant: "BLANC — RECTO",
       category: "T-shirts",
+      brand: "DINGRY",
+      collection: "Signature",
       price: 35,
       sizes: ["S", "M", "L"],
       stock: 10,
