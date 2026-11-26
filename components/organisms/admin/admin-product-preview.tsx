@@ -8,8 +8,13 @@ import {
   colorDeclinationsCanonicallyEqual,
   frenchLabelForColorPreset,
 } from "@/lib/admin/dingry-color-palette";
-import type { AdminProduct } from "@/lib/admin/types";
-import { isDraftPlaceholderImage, printPlacementDisplayLabel } from "@/lib/admin/types";
+import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
+  isDraftPlaceholderImage,
+  printPlacementDisplayLabel,
+  type AdminProduct,
+} from "@/lib/admin/types";
 import type {
   ProductCategory,
   ProductPrintPlacement,
@@ -52,6 +57,8 @@ function previewProductFromModel(model: AdminProductPreviewModel): AdminProduct 
     materials: "",
     sizeGuide: "",
     category: model.category,
+    brand: DEFAULT_PRODUCT_BRAND,
+    collection: DEFAULT_PRODUCT_COLLECTION,
     price: Number(model.price) || 0,
     sizes: model.sizes,
     stock: model.stock,
@@ -88,9 +95,13 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
 
   /** Même cadre recto seul ou flip — évite le plein rail vs l’ancien 14rem. */
   const previewImageFrameClass =
-    "mx-auto w-full max-w-[15rem] sm:max-w-[17rem]";
-  const previewImageClass =
+    "mx-auto w-full min-w-0 max-w-[15rem] sm:max-w-[17rem]";
+  const previewImageShellClass =
+    "w-full max-h-52 sm:max-h-56 lg:max-h-60";
+  const previewImageStaticClass =
     "mx-auto max-h-52 w-full object-contain object-center sm:max-h-56 lg:max-h-60";
+  /** Flip track : chaque face = 50 % du rail — ne pas passer `w-full` (écrase `w-1/2`). */
+  const previewImageFlipImgClass = "h-full w-1/2 shrink-0 object-contain object-center";
 
   return (
     <div
@@ -122,8 +133,8 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
               side={side}
               onDoubleTapFlip={() => setSide((current) => (current === "recto" ? "verso" : "recto"))}
               alt={product.name}
-              className="w-full max-h-52 sm:max-h-56 lg:max-h-[15rem]"
-              imgClassName={previewImageClass}
+              className={previewImageShellClass}
+              imgClassName={previewImageFlipImgClass}
             />
             <p className="mt-1.5 text-center text-[9px] uppercase tracking-[0.16em] text-zinc-500">
               Survol · recto / verso
@@ -131,7 +142,7 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
           </div>
         ) : hasRecto ? (
           <div className={previewImageFrameClass}>
-            <img src={recto} alt="" className={previewImageClass} decoding="async" />
+            <img src={recto} alt="" className={previewImageStaticClass} decoding="async" />
           </div>
         ) : (
           <div className="flex min-h-[10rem] items-center justify-center px-4 text-center text-[10px] uppercase tracking-[0.18em] text-zinc-600">
@@ -190,6 +201,3 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
     </div>
   );
 }
-
-/** Alias demandé spec Smart CRM */
-export const ProductPreview = AdminProductPreview;

@@ -13,8 +13,12 @@ import {
   storefrontProductTitle,
   type ProductLine,
 } from "@/lib/dingry-product-display";
+import { shopProductGroupingKey } from "@/lib/storefront/sku-model-grouping";
 
 export const SIMILAR_PRODUCTS_SECTION_LABEL = "Produits similaires";
+
+/** Bande vignettes sous la photo PDP : autres coloris du même modèle. */
+export const COLOR_LINE_GALLERY_LABEL = "Même gamme";
 
 export type SimilarProductCard = {
   product: ShopProduct;
@@ -81,9 +85,12 @@ function familySiblingCards(productId: number, catalog: readonly ShopProduct[]):
   const rectoId = catalogRectoId(productId);
   const anchor = catalog.find((item) => catalogRectoId(item.id) === rectoId);
   if (!anchor || !isRectoFacingProduct(anchor)) return [];
-  const key = shopProductFamilyKey(anchor);
-  const siblings = catalog
-    .filter((item) => isRectoFacingProduct(item) && shopProductFamilyKey(item) === key)
+  const familyKey = shopProductFamilyKey(anchor);
+  const key = shopProductGroupingKey(anchor, familyKey);
+  const siblings = catalog.filter((item) => {
+    if (!isRectoFacingProduct(item)) return false;
+    return shopProductGroupingKey(item, shopProductFamilyKey(item)) === key;
+  });
   if (siblings.length <= 1) return [];
   return siblings.map((product) => ({
     product,

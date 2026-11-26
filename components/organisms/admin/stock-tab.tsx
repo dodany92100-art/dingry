@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { BulkEditSnapshotRow } from "@/components/organisms/admin/hooks/use-admin-products";
+import {
+  selectedProductsForBulk,
+  shouldPropagateBulkEdit,
+} from "@/lib/admin/stock-bulk-session";
+import { AdminStockBulkEditBar } from "@/components/organisms/admin/admin-stock-bulk-edit-bar";
 import { sumProductStock } from "@/lib/admin/order-view";
 import type { AdminProduct } from "@/lib/admin/types";
+import type { CatalogCategory } from "@/lib/catalog-category";
 import { normalizeProductCategory } from "@/lib/admin/types";
 import { AdminStockPublishToggle } from "@/components/organisms/admin/admin-stock-publish-toggle";
 import { AdminStockColorSortToggle } from "@/components/organisms/admin/admin-stock-color-sort-toggle";
@@ -39,8 +46,16 @@ type StockTabProps = {
   onVisibleDraftIdsChange?: (ids: string[]) => void;
   onChangeStock: (product: AdminProduct, delta: number) => void;
   onSetStock: (product: AdminProduct, nextStock: number) => void;
+  onConfirmStockPending?: () => Promise<void>;
+  onRevertBulkEditSession?: (
+    snapshot: Record<string, BulkEditSnapshotRow>,
+    scope: readonly AdminProduct[],
+  ) => Promise<void>;
+  onChangePrice: (product: AdminProduct, delta: number) => void;
+  onSetPrice: (product: AdminProduct, nextPrice: number) => void;
   onEdit: (product: AdminProduct) => void;
   onNew: () => void;
+  onImportCatalog?: () => void;
   onTogglePin: (product: AdminProduct) => void;
   onDelete: (product: AdminProduct) => void;
   onReorderProducts: (orderedIds: string[]) => void;
@@ -110,8 +125,13 @@ export function StockTab({
   onVisibleDraftIdsChange,
   onChangeStock,
   onSetStock,
+  onConfirmStockPending,
+  onRevertBulkEditSession,
+  onChangePrice,
+  onSetPrice,
   onEdit,
   onNew,
+  onImportCatalog,
   onTogglePin,
   onDelete,
   onReorderProducts,
@@ -133,8 +153,94 @@ export function StockTab({
 }: StockTabProps) {
   const stockControlsBusy = productEditorOpen;
   const [pendingDelete, setPendingDelete] = useState<AdminProduct | null>(null);
+  const [filtersHighlight, setFiltersHighlight] = useState(false);
+  const filtersFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scrollToStockFilters = useCallback(() => {
+    document.getElementById("dingry-admin-stock-filters-anchor")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    setFiltersHighlight(true);
+    if (filtersFlashTimerRef.current) clearTimeout(filtersFlashTimerRef.current);
+    filtersFlashTimerRef.current = setTimeout(() => setFiltersHighlight(false), 900);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (filtersFlashTimerRef.current) clearTimeout(filtersFlashTimerRef.current);
+    },
+    [],
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [colorSortMode, setColorSortMode] = useState<StockColorSortMode>("default");
+  const [bulkEditAll, setBulkEditAll] = useState(false);
+  const [bulkEditSection, setBulkEditSection] = useState<CatalogCategory | null>(null);
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set());
+  const bulkEditSnapshotRef = useRef<Record<string, BulkEditSnapshotRow> | null>(null);
+
+  const captureBulkEditSnapshot = useCallback((targets: readonly AdminProduct[]) => {
+    const snapshot: Record<string, BulkEditSnapshotRow> = {};
+    for (const product of targets) {
+      snapshot[product.id] = { stock: product.stock, price: product.price };
+    }
+    bulkEditSnapshotRef.current = snapshot;
+  }, []);
+
+  useEffect(() => {
+    bulkEditSnapshotRef.current = null;
+    setBulkEditAll(false);
+    setBulkEditSection(null);
+    setBulkSelectedIds(new Set());
+  }, [categoryFilter, searchQuery]);
+
+  const applyBulkStockDelta = useCallback(
+    (targets: readonly AdminProduct[], delta: number) => {
+      for (const product of targets) {
+        if (product.stock + delta < 0) continue;
+        onChangeStock(product, delta);
+      }
+    },
+    [onChangeStock],
+  );
+
+  const applyBulkPriceDelta = useCallback(
+    (targets: readonly AdminProduct[], delta: number) => {
+      for (const product of targets) {
+        const next = product.price + delta;
+        if (next <= 0 || next > 10_000) continue;
+        void onChangePrice(product, delta);
+      }
+    },
+    [onChangePrice],
+  );
+
+  const onBulkSelectToggle = useCallback((productId: string, selected: boolean) => {
+    setBulkSelectedIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(productId);
+      else next.delete(productId);
+      return next;
+    });
+  }, []);
+
+  const onBulkSelectAllInTargets = useCallback((targets: readonly AdminProduct[], selected: boolean) => {
+    setBulkSelectedIds((current) => {
+      const next = new Set(current);
+      for (const product of targets) {
+        if (selected) next.add(product.id);
+        else next.delete(product.id);
+      }
+      return next;
+    });
+  }, []);
+
+  const closeBulkEdit = useCallback(() => {
+    bulkEditSnapshotRef.current = null;
+    setBulkEditAll(false);
+    setBulkEditSection(null);
+    setBulkSelectedIds(new Set());
+  }, []);
 
   const catalogCardProducts = useMemo(
     () => hideCrewneckVersoFromAdminStock(products),
@@ -171,6 +277,99 @@ export function StockTab({
     if (colorSortMode === "default") return base;
     return sortProductsByColorLuminance(base, colorSortMode);
   }, [searchFiltered, menuSections, colorSortMode]);
+
+  const enterBulkEditAll = useCallback(() => {
+    captureBulkEditSnapshot(visibleProducts);
+    setBulkEditAll(true);
+    setBulkEditSection(null);
+    setBulkSelectedIds(new Set());
+  }, [captureBulkEditSnapshot, visibleProducts]);
+
+  const enterBulkEditSection = useCallback(
+    (category: CatalogCategory, targets: readonly AdminProduct[]) => {
+      captureBulkEditSnapshot(targets);
+      setBulkEditSection(category);
+      setBulkEditAll(false);
+      setBulkSelectedIds(new Set());
+    },
+    [captureBulkEditSnapshot],
+  );
+
+  const confirmBulkEdit = useCallback(async () => {
+    if (onConfirmStockPending) await onConfirmStockPending();
+    closeBulkEdit();
+  }, [closeBulkEdit, onConfirmStockPending]);
+
+  const cancelBulkEdit = useCallback(
+    (scope: readonly AdminProduct[]) => {
+      const snapshot = bulkEditSnapshotRef.current;
+      if (snapshot && onRevertBulkEditSession) {
+        void onRevertBulkEditSession(snapshot, scope);
+      }
+      closeBulkEdit();
+    },
+    [closeBulkEdit, onRevertBulkEditSession],
+  );
+
+  const bulkEditActive = bulkEditAll || bulkEditSection !== null;
+
+  const selectedBulkProducts = useMemo(
+    () => selectedProductsForBulk(visibleProducts, bulkSelectedIds),
+    [visibleProducts, bulkSelectedIds],
+  );
+
+  const shouldApplyToBulkSelection = useCallback(
+    (product: AdminProduct) => shouldPropagateBulkEdit(bulkEditActive, product.id, bulkSelectedIds),
+    [bulkEditActive, bulkSelectedIds],
+  );
+
+  const changeStockForCard = useCallback(
+    (product: AdminProduct, delta: number) => {
+      if (shouldApplyToBulkSelection(product)) {
+        applyBulkStockDelta(selectedBulkProducts, delta);
+        return;
+      }
+      onChangeStock(product, delta);
+    },
+    [shouldApplyToBulkSelection, selectedBulkProducts, applyBulkStockDelta, onChangeStock],
+  );
+
+  const setStockForCard = useCallback(
+    (product: AdminProduct, nextStock: number) => {
+      if (shouldApplyToBulkSelection(product)) {
+        for (const target of selectedBulkProducts) {
+          onSetStock(target, nextStock);
+        }
+        return;
+      }
+      onSetStock(product, nextStock);
+    },
+    [shouldApplyToBulkSelection, selectedBulkProducts, onSetStock],
+  );
+
+  const changePriceForCard = useCallback(
+    (product: AdminProduct, delta: number) => {
+      if (shouldApplyToBulkSelection(product)) {
+        applyBulkPriceDelta(selectedBulkProducts, delta);
+        return;
+      }
+      void onChangePrice(product, delta);
+    },
+    [shouldApplyToBulkSelection, selectedBulkProducts, applyBulkPriceDelta, onChangePrice],
+  );
+
+  const setPriceForCard = useCallback(
+    (product: AdminProduct, nextPrice: number) => {
+      if (shouldApplyToBulkSelection(product)) {
+        for (const target of selectedBulkProducts) {
+          void onSetPrice(target, nextPrice);
+        }
+        return;
+      }
+      void onSetPrice(product, nextPrice);
+    },
+    [shouldApplyToBulkSelection, selectedBulkProducts, onSetPrice],
+  );
 
   const indexByProductId = useMemo(() => {
     const map = new Map<string, number>();
@@ -223,6 +422,7 @@ export function StockTab({
         categoryFilter={categoryFilter}
         onCategoryChange={onCategoryFilterChange}
         mobileContextSlot={mobileContextSlot}
+        highlight={filtersHighlight}
       >
         <div className="flex min-w-0 flex-col gap-2 md:flex-row md:flex-nowrap md:items-center md:justify-start md:gap-3">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5 md:flex-none">
@@ -244,6 +444,15 @@ export function StockTab({
             </div>
           </div>
           <div className="flex w-full min-w-0 items-center justify-between gap-2 md:w-auto md:flex-1 md:justify-end md:gap-2.5">
+            {onImportCatalog ? (
+              <button
+                type="button"
+                onClick={onImportCatalog}
+                className="hidden h-8 shrink-0 rounded-full border border-white/12 px-3 text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:border-[#FF3D00]/35 hover:text-white md:inline-flex"
+              >
+                Importer catalogue
+              </button>
+            ) : null}
             {mobileToolbarSlot ? (
               <div className="flex shrink-0 items-center md:hidden">{mobileToolbarSlot}</div>
             ) : null}
@@ -299,6 +508,46 @@ export function StockTab({
       </div>
       {error ? <p className="mb-3 text-sm text-red-400">{error}</p> : null}
 
+      {!storefrontPreview && visibleProducts.length > 0 && viewMode === "grid" ? (
+        <div className="mb-4">
+          <AdminStockBulkEditBar
+            editActive={bulkEditAll}
+            onEnterEdit={enterBulkEditAll}
+            onConfirmEdit={() => void confirmBulkEdit()}
+            onCancelEdit={() => cancelBulkEdit(visibleProducts)}
+            targets={visibleProducts}
+            selectedCount={visibleProducts.filter((p) => bulkSelectedIds.has(p.id)).length}
+            allSelected={
+              visibleProducts.length > 0 &&
+              visibleProducts.every((p) => bulkSelectedIds.has(p.id))
+            }
+            someSelected={
+              visibleProducts.some((p) => bulkSelectedIds.has(p.id)) &&
+              !visibleProducts.every((p) => bulkSelectedIds.has(p.id))
+            }
+            onToggleSelectAll={() =>
+              onBulkSelectAllInTargets(
+                visibleProducts,
+                !visibleProducts.every((p) => bulkSelectedIds.has(p.id)),
+              )
+            }
+            onBulkStock={(delta) =>
+              applyBulkStockDelta(
+                visibleProducts.filter((p) => bulkSelectedIds.has(p.id)),
+                delta,
+              )
+            }
+            onBulkPrice={(delta) =>
+              applyBulkPriceDelta(
+                visibleProducts.filter((p) => bulkSelectedIds.has(p.id)),
+                delta,
+              )
+            }
+            disabled={stockControlsBusy}
+          />
+        </div>
+      ) : null}
+
       {storefrontPreview ? (
         <AdminStockStorefrontPreview
           categoryFilter={categoryFilter}
@@ -320,13 +569,26 @@ export function StockTab({
             indexByProductId={indexByProductId}
             busyProductId={busyProductId}
             reorderBlocked={reorderBlocked}
-            onChangeStock={onChangeStock}
-            onSetStock={onSetStock}
+            onChangeStock={changeStockForCard}
+            onSetStock={setStockForCard}
+            onChangePrice={changePriceForCard}
+            onSetPrice={setPriceForCard}
             onEdit={onEdit}
             onTogglePin={onTogglePin}
             onDelete={setPendingDelete}
             onDrop={moveProduct}
             stockAutosaveStatus={stockAutosaveStatus}
+            bulkEditAll={bulkEditAll}
+            bulkEditSection={bulkEditSection}
+            bulkSelectedIds={bulkSelectedIds}
+            onEnterBulkEditSection={enterBulkEditSection}
+            onBulkSelectToggle={onBulkSelectToggle}
+            onBulkSelectAllInSection={onBulkSelectAllInTargets}
+            onBulkStockDelta={applyBulkStockDelta}
+            onBulkPriceDelta={applyBulkPriceDelta}
+            onBulkConfirmEdit={() => void confirmBulkEdit()}
+            onBulkCancelEdit={cancelBulkEdit}
+            bulkActionsDisabled={stockControlsBusy}
           />
         ) : (
           <div className={ADMIN_STOCK_PRODUCT_GRID_CLASS}>
@@ -336,14 +598,19 @@ export function StockTab({
                 product={product}
                 dragIndex={index}
                 busy={stockControlsBusy || busyProductId === product.id}
-                onChangeStock={onChangeStock}
-                onSetStock={onSetStock}
+                onChangeStock={changeStockForCard}
+                onSetStock={setStockForCard}
+                onChangePrice={changePriceForCard}
+                onSetPrice={setPriceForCard}
                 onEdit={onEdit}
                 onTogglePin={onTogglePin}
                 onDelete={setPendingDelete}
                 onDrop={moveProduct}
                 disableReorder={reorderBlocked}
                 autosavePhase={stockAutosaveStatus[product.id]}
+                bulkSelectMode={bulkEditAll}
+                bulkSelected={bulkSelectedIds.has(product.id)}
+                onBulkSelectChange={(selected) => onBulkSelectToggle(product.id, selected)}
               />
             ))}
           </div>
@@ -394,14 +661,33 @@ export function StockTab({
               ))}
         </div>
       )}
-      <button
-        type="button"
-        onClick={onNew}
-        className="dingry-gold-pill-btn dingry-admin-new-product-btn dingry-admin-new-product-fab fixed right-4 z-[92] h-10 rounded-full px-5 text-[11px] uppercase tracking-[0.12em] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm bottom-[calc(3.65rem+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-[4.75rem]"
-        aria-label="Créer un nouveau produit"
-      >
-        <span className="gold-text">Nouveau</span>
-      </button>
+      <div className="fixed right-4 z-[92] flex flex-col items-end gap-2 bottom-[calc(3.65rem+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-[4.75rem]">
+        {onImportCatalog ? (
+          <button
+            type="button"
+            onClick={onImportCatalog}
+            className="h-9 rounded-full border border-white/15 bg-[#0a0a0a]/90 px-4 text-[10px] uppercase tracking-[0.12em] text-white/65 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm transition hover:border-[#FF3D00]/35 hover:text-white md:hidden"
+          >
+            Importer catalogue
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={scrollToStockFilters}
+          className="h-9 rounded-full border border-white/18 bg-[#0a0a0a]/92 px-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm transition hover:border-[#c9a227]/45 hover:text-white"
+          aria-label="Afficher les filtres catalogue en haut"
+        >
+          Filtres
+        </button>
+        <button
+          type="button"
+          onClick={onNew}
+          className="dingry-gold-pill-btn dingry-admin-new-product-btn dingry-admin-new-product-fab h-10 rounded-full px-5 text-[11px] uppercase tracking-[0.12em] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm"
+          aria-label="Créer un nouveau produit"
+        >
+          <span className="gold-text">Nouveau</span>
+        </button>
+      </div>
       {pendingDelete ? (
         <div
           className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"

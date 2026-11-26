@@ -4,6 +4,8 @@ import { AnimatedTabs } from "@/components/atoms/ui/animated-tabs";
 import { CATALOG_FILTERS, CATALOG_MENU_TAB_CUSTOM, type CatalogFilter } from "@/lib/shop-catalog";
 import type { ShopProduct } from "@/lib/catalog";
 import { useTranslation } from "@/hooks/use-translation";
+import { useShopStorefrontCopy } from "@/hooks/shop-storefront-copy-context";
+import { AdminStorefrontCopyTrigger } from "@/components/molecules/shop/admin-storefront-copy-panel";
 
 export type CatalogTabValue = CatalogFilter | typeof CATALOG_MENU_TAB_CUSTOM;
 
@@ -15,11 +17,14 @@ type CatalogFilterBarProps = {
 
 export function CatalogFilterBar({ value, onChange, products: _products }: CatalogFilterBarProps) {
   const { t, catalogTabLabel } = useTranslation();
+  const { catalogTabLabel: resolveCatalogTab } = useShopStorefrontCopy();
   const categoryTabs = CATALOG_FILTERS;
   const categoryValue = value === CATALOG_MENU_TAB_CUSTOM ? categoryTabs[0] ?? "all" : value;
 
   return (
     <div className="dingry-catalog-bar dingry-catalog-bar--vitrine dingry-catalog-bar--mobile-bleed -mt-px mb-4 w-full border-b border-white/15 bg-black py-2.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] md:mb-6 md:py-3">
+      <div className="relative min-w-0">
+        <AdminStorefrontCopyTrigger mode="catalog" className="absolute right-1 top-0 z-20 md:right-2" />
       <AnimatedTabs
         className="dingry-catalog-tabs-scroll"
         tabs={[...categoryTabs]}
@@ -29,8 +34,9 @@ export function CatalogFilterBar({ value, onChange, products: _products }: Catal
         aria-label={t("catalog.filtersAria")}
         variant="underline"
         scrollActiveIntoView={false}
-        labelForTab={catalogTabLabel}
+        labelForTab={(tab) => resolveCatalogTab(tab, catalogTabLabel)}
       />
+      </div>
     </div>
   );
 }

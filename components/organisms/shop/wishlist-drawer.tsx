@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Share2 } from "lucide-react";
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
+import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryCopyToast } from "@/components/molecules/dingry-copy-toast";
 import { WishlistGridItem } from "@/components/molecules/wishlist-grid-item";
 import type { ShopProduct } from "@/lib/catalog";
@@ -11,6 +12,8 @@ import { catalogRectoId } from "@/lib/dingry-product-display";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
 import { useTranslation } from "@/hooks/use-translation";
+import { CART_DRAWER_DECORATIVE_IMG } from "@/components/organisms/shop/cart-drawer";
+import { useShopVitrineAmbience } from "@/hooks/use-shop-vitrine-ambience";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "./motion";
 
 type WishlistDrawerProps = {
@@ -44,6 +47,7 @@ export function WishlistDrawer({
   onAddToCart,
 }: WishlistDrawerProps) {
   const { t } = useTranslation();
+  const { ambience, objectPosition } = useShopVitrineAmbience();
   const [copyToastVisible, setCopyToastVisible] = useState(false);
 
   const items = useMemo(() => {
@@ -100,9 +104,35 @@ export function WishlistDrawer({
       <DingryCopyToast visible={copyToastVisible} />
       <AnimatePresence>
         {open ? (
-          <div key="dingry-wishlist-drawer" className="fixed inset-0 z-[70] flex justify-end">
+          <div key="dingry-wishlist-drawer" className="fixed inset-0 z-[70] flex justify-end md:justify-stretch">
+            <motion.aside
+              className="relative hidden min-w-0 flex-1 overflow-hidden md:block"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={MODAL_OVERLAY_TRANSITION}
+            >
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute inset-0 z-20 cursor-pointer"
+                aria-label={t("wishlist.closeAria")}
+              />
+              <img
+                src={ambience.imageUrl}
+                alt=""
+                aria-hidden
+                className="absolute inset-0 h-full w-full object-cover"
+                style={{ objectPosition }}
+                {...CART_DRAWER_DECORATIVE_IMG}
+              />
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent"
+                aria-hidden
+              />
+            </motion.aside>
             <motion.div
-              className="absolute inset-0 bg-[#050505]/85 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#050505]/85 backdrop-blur-sm md:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -111,7 +141,7 @@ export function WishlistDrawer({
               aria-hidden
             />
             <motion.aside
-              className="dingry-sale-ui relative z-10 flex h-full w-full max-w-xl flex-col border-l border-white/[0.08] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.5)]"
+              className="dingry-sale-ui relative z-10 flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-white/[0.08] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.5)] md:max-w-md"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -214,6 +244,9 @@ export function WishlistDrawer({
                   </button>
                 </div>
               ) : null}
+              <div className="dingry-gold-rule-top relative z-20 flex shrink-0 justify-center bg-[#0a0a0a] px-6 py-4">
+                <DingryLogo animate={false} tone="on-light" className="!h-9 !max-h-9 w-auto md:!h-9" />
+              </div>
             </motion.aside>
           </div>
         ) : null}

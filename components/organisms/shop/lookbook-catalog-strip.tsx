@@ -63,13 +63,13 @@ export function LookbookCatalogStrip() {
       ) : (
         <div className="relative -mx-1 md:-mx-0">
           <div
-            className="dingry-lookbook-carousel flex w-full gap-3 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 snap-x snap-mandatory [touch-action:pan-x_pan-y] md:gap-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="dingry-lookbook-carousel flex w-full gap-3 overflow-x-auto overflow-y-hidden scroll-smooth pb-1 snap-x snap-proximity [overscroll-behavior-y:auto] [touch-action:pan-x_pan-y] md:gap-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-label="Carrousel lookbook"
           >
             {slides.map((slide) => (
               <figure
                 key={slide.id}
-                className="w-[min(72vw,15.5rem)] shrink-0 snap-center snap-always overflow-hidden sm:w-[min(42vw,16rem)] md:w-[18rem]"
+                className="w-[min(72vw,15.5rem)] shrink-0 snap-center overflow-hidden sm:w-[min(42vw,16rem)] md:w-[18rem]"
               >
                 <img
                   src={slide.image}

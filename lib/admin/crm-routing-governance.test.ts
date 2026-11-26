@@ -20,6 +20,8 @@ function emptyForm(): SmartProductAutoTagFormState {
     variant: "NOIR",
     colorDeclinations: ["NOIR"],
     category: "Hoodies",
+    brand: "DINGRY",
+    collection: "Signature",
     price: "90",
     stock: "8",
     sizes: ["M", "L"],

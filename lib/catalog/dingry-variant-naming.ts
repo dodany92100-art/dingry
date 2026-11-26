@@ -1,5 +1,13 @@
 /** Conventions SKU / R2 / SEO — marque DINGRY. */
 
+import { normalizeProductCategory, type ProductCategory } from "@/lib/admin/types";
+import {
+  buildVariantSkuFromModelRef,
+  defaultSkuTailleForCategory,
+  getModelRef,
+  isValidModelRef,
+} from "@/lib/sku";
+
 export const DINGRY_BRAND = "DINGRY";
 
 export function dingrySlugSegment(raw: string): string {
@@ -29,9 +37,20 @@ export function buildDingryMarketingParentSku(family: string, handle: string): s
   return `${DINGRY_BRAND}-${fam}-${h}`;
 }
 
-/** SKU variante : `DINGRY-HOODIE-ESS-RED`. */
-export function buildDingryVariantSku(parentSku: string, colorLabel: string): string {
+/** SKU variante : `MARQUE-TYPE-MODELE-COLORIS-TAILLE` ou legacy `PARENT-BLK`. */
+export function buildDingryVariantSku(
+  parentSku: string,
+  colorLabel: string,
+  category?: ProductCategory | string,
+): string {
   const base = parentSku.trim().toUpperCase();
+  const modelRef = isValidModelRef(base) ? base : getModelRef(base);
+  if (modelRef) {
+    const cat = category ? normalizeProductCategory(String(category)) : "T-shirts";
+    const taille = defaultSkuTailleForCategory(cat);
+    const structured = buildVariantSkuFromModelRef(modelRef, colorLabel, taille);
+    if (structured) return structured;
+  }
   const color = dingrySlugSegment(colorLabel).toUpperCase().replace(/-/g, "_") || "STD";
   if (!base) return `${DINGRY_BRAND}-${color}`;
   if (base.endsWith(`-${color}`)) return base;

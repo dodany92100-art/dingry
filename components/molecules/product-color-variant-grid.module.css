@@ -58,3 +58,102 @@
 .cardActive .caption {
   color: #161616;
 }
+
+.rootPdp {
+  margin-bottom: 1.25rem;
+}
+
+.labelPdp {
+  color: var(--pdp-muted, rgb(235 230 222 / 0.55));
+}
+
+.gridPdp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.cardPdp {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: visible;
+  border: none;
+  background: transparent;
+}
+
+.cardPdp:hover:not(:disabled) .swatchPdp:not(.swatchPdpBlack) {
+  transform: scale(1.06);
+  box-shadow: 0 0 0 2px rgb(191 149 63 / 0.45);
+}
+
+.cardPdp:hover:not(:disabled) .swatchPdpBlack {
+  transform: scale(1.04);
+}
+
+.swatchPdp {
+  position: relative;
+  pointer-events: none;
+  display: block;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+/* Noir sur fond PDP : deux arcs or (haut + bas) — pas un anneau « sélectionné ». */
+.swatchPdpBlack::before,
+.swatchPdpBlack::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.9;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+}
+
+.swatchPdpBlack::before {
+  background: conic-gradient(
+    from 235deg,
+    transparent 0deg,
+    rgb(170 119 28 / 0.2) 18deg,
+    #bf953f 42deg,
+    #fcf6ba 58deg,
+    #bf953f 78deg,
+    rgb(170 119 28 / 0.18) 102deg,
+    transparent 128deg,
+    transparent 360deg
+  );
+}
+
+.swatchPdpBlack::after {
+  background: conic-gradient(
+    from 55deg,
+    transparent 0deg,
+    rgb(170 119 28 / 0.2) 18deg,
+    #bf953f 42deg,
+    #fcf6ba 58deg,
+    #bf953f 78deg,
+    rgb(170 119 28 / 0.18) 102deg,
+    transparent 128deg,
+    transparent 360deg
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swatchPdpBlack::before,
+  .swatchPdpBlack::after {
+    opacity: 0.82;
+  }
+}

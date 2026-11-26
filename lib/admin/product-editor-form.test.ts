@@ -16,6 +16,8 @@ const sampleProduct = (overrides: Partial<AdminProduct> = {}): AdminProduct => (
   variant: "Noir",
   colorDeclinations: ["Noir"],
   category: "T-shirts",
+  brand: "DINGRY",
+  collection: "Signature",
   price: 45,
   stock: 10,
   sizes: ["S", "M", "L"],

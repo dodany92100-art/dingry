@@ -5,9 +5,6 @@ export const DINGRY_SHOP_SHELL_CLASS =
 /** Conteneur vitrine catalogue (barre filtres + grille), aligné sur la grille 3 col. */
 export const CATALOG_VITRINE_SHELL_CLASS = "mx-auto w-full max-w-6xl px-4 max-md:px-0";
 
-/** @deprecated Préférer {@link CATALOG_VITRINE_SHELL_CLASS} */
-export const CATALOG_PRODUCT_GRID_SHELL_CLASS = CATALOG_VITRINE_SHELL_CLASS;
-
 /** Grille catalogue : 2 col. mobile · 3 col. tablette/desktop. */
 export const CATALOG_PRODUCT_GRID_CLASS =
   "grid w-full grid-cols-2 items-stretch gap-4 sm:gap-5 md:grid-cols-3 md:gap-6 lg:grid-cols-3";

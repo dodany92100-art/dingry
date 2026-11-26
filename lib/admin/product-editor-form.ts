@@ -8,9 +8,15 @@ import { isPantsCategory } from "@/lib/admin/product-variant-presets";
 import { resolveProductSkuForSave, sanitizeSkuFieldInput } from "@/lib/admin/product-sku";
 import { createNewProductFormState } from "@/lib/admin/smart-product-auto-attributes";
 import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
   type AdminProduct,
+  type Brand,
   normalizePantWaistSize,
   normalizeProductCategory,
+  normalizeProductBrand,
+  normalizeProductCollection,
+  type ProductCollection,
   type ProductPublishStatus,
   type ProductSize,
 } from "@/lib/admin/types";
@@ -90,6 +96,9 @@ export function formWithSkuForSave(
   return {
     ...form,
     sku: resolveProductSkuForSave(form.category, form.sku, existingSkus, {
+      brand: form.brand,
+      collection: form.collection,
+      productName: form.name,
       excludeNormalizedSku: editingId ? form.sku : undefined,
     }),
   };
@@ -114,6 +123,8 @@ export function productEditorFormFrom(
     sizeGuide: product.sizeGuide,
     printPlacement: product.printPlacement,
     category: normalizeProductCategory(product.category),
+    brand: normalizeProductBrand(product.brand),
+    collection: normalizeProductCollection(product.collection),
     price: String(product.price),
     stock: String(product.stock),
     sizes: [...product.sizes],
@@ -153,6 +164,8 @@ export function formStateMatchesBaseline(
     form.name.trim() === ref.name.trim() &&
     form.variant.trim() === ref.variant.trim() &&
     form.category === ref.category &&
+    form.brand === ref.brand &&
+    form.collection === ref.collection &&
     Number(form.price) === Number(ref.price) &&
     Number(form.stock) === Number(ref.stock) &&
     sizesEqual(form.sizes, ref.sizes) &&
@@ -170,6 +183,8 @@ export function sectionDirtyFlags(
   const pants = isPantsCategory(form.category);
   const general =
     form.category !== baseline.category ||
+    form.brand !== baseline.brand ||
+    form.collection !== baseline.collection ||
     form.sku.trim() !== baseline.sku.trim() ||
     form.name.trim() !== baseline.name.trim() ||
     form.printPlacement !== baseline.printPlacement ||
@@ -256,6 +271,8 @@ export function buildFormDataForScope(
     formData.set("name", form.name.trim());
     formData.set("variant", (pantsVariantOverride ?? form.variant).trim());
     formData.set("category", form.category);
+    formData.set("brand", form.brand);
+    formData.set("collection", form.collection);
     formData.set("price", form.price);
     formData.set("stock", form.stock.trim());
     formData.set("sizes", form.sizes.join(","));

@@ -1,0 +1,102 @@
+{
+  "sheet": "CATALOGUE",
+  "brand": "FYMA",
+  "rows": [
+    {
+      "Marque": "FYMA",
+      "NOM MODÈLE": "Casquette brodée FYMA noire",
+      "SKU": "FYM-CAP-BRO-NOI-U",
+      "Réf. Modèle": "FYM-CAP-BRO",
+      "PrixU": "40 €",
+      "Catégorie": "Caps",
+      "Coloris": "Noir",
+      "Taille": "TU",
+      "Genre": "Unisexe",
+      "Description courte": "",
+      "Description longue": "",
+      "Composition": "",
+      "Points forts": ""
+    },
+    {
+      "Marque": "FYMA",
+      "NOM MODÈLE": "Casquette brodée FYMA rouge",
+      "SKU": "FYM-CAP-BRO-ROU-U",
+      "Réf. Modèle": "FYM-CAP-BRO",
+      "PrixU": "40 €",
+      "Catégorie": "Caps",
+      "Coloris": "Rouge",
+      "Taille": "TU",
+      "Genre": "Unisexe"
+    },
+    {
+      "Marque": "FYMA",
+      "NOM MODÈLE": "Pull maille fluffy brodé FYMA beige",
+      "SKU": "FYM-PUL-FLU-BEI-M",
+      "Réf. Modèle": "FYM-PUL-FLU",
+      "PrixU": "120 €",
+      "Catégorie": "Crewnecks",
+      "Coloris": "Beige",
+      "Taille": "M",
+      "Genre": "Unisexe",
+      "Description courte": "Un pull en maille ultra douce, une broderie qui ose et une allure de nuit parisienne : le pull fluffy Fuck You Mon Amour se remarque sans en faire trop.",
+      "Description longue": "Impossible de passer inaperçu dans ce pull. Sa maille fluffy, aussi douce qu'un nuage, enveloppe sans alourdir, et son beige crémeux va avec tout, du jean brut au pantalon de costume.",
+      "Composition": "100% Nylon",
+      "Points forts": "Douceur et style"
+    },
+    {
+      "Marque": "FYMA",
+      "NOM MODÈLE": "Pull fluffy brodé FYMA beige",
+      "SKU": "FYM-PUL-FLU-BEI-L",
+      "Réf. Modèle": "FYM-PUL-FLU",
+      "PrixU": "120 €",
+      "Catégorie": "Crewnecks",
+      "Coloris": "Beige",
+      "Taille": "L",
+      "Genre": "Unisexe"
+    },
+    {
+      "Marque": "FYMA",
+      "NOM MODÈLE": "Pull fluffy brodé FYMA beige",
+      "SKU": "FYM-PUL-FLU-BEI-XL",
+      "Réf. Modèle": "FYM-PUL-FLU",
+      "PrixU": "120 €",
+      "Catégorie": "Crewnecks",
+      "Coloris": "Beige",
+      "Taille": "XL",
+      "Genre": "Unisexe"
+    },
+    {
+      "Marque": "FYMA",
+      "NOM MODÈLE": "T-shirt bouclette FYMA noir",
+      "SKU": "FYM-TSH-BOU-NOI-L",
+      "Réf. Modèle": "FYM-TSH-BOU",
+      "PrixU": "40 €",
+      "Catégorie": "T-shirts",
+      "Coloris": "Noir",
+      "Taille": "L",
+      "Genre": "Unisexe"
+    },
+    {
+      "Marque": "FYMA",
+      "NOM MODÈLE": "T-shirt FYMA blanc",
+      "SKU": "FYM-TSH-BAS-BLA-S",
+      "Réf. Modèle": "FYM-TSH-BAS",
+      "PrixU": "35 €",
+      "Catégorie": "T-shirts",
+      "Coloris": "Blanc",
+      "Taille": "S",
+      "Genre": "Unisexe"
+    },
+    {
+      "Marque": "FYMA",
+      "NOM MODÈLE": "T-shirt FYMA noir",
+      "SKU": "FYM-TSH-BAS-NOI-M",
+      "Réf. Modèle": "FYM-TSH-BAS",
+      "PrixU": "35 €",
+      "Catégorie": "T-shirts",
+      "Coloris": "Noir",
+      "Taille": "M",
+      "Genre": "Unisexe"
+    }
+  ]
+}

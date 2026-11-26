@@ -1,5 +1,9 @@
 import { resolveRectoCatalogId } from "@/lib/catalog-verso-recto";
 import type { ShopProduct } from "@/lib/catalog";
+import {
+  DINGRY_HOODIE_BLACK_ORIGINAL_ID,
+  DINGRY_HOODIE_BLACK_PARIS_ID,
+} from "@/lib/shop-catalog";
 
 /** URL boutique : `/?produit=hoodie-dingry-original-black` */
 export const DINGRY_PRODUCT_SLUG_BY_RECTO_ID: Readonly<Record<number, string>> = {
@@ -26,8 +30,14 @@ const RECTO_BY_SLUG = new Map<string, number>(
   Object.entries(DINGRY_PRODUCT_SLUG_BY_RECTO_ID).map(([id, slug]) => [slug, Number(id)]),
 );
 
+/** Slug canonique : Paris noir (#25) partage l’URL du recto seed #6. */
+function rectoIdForProductSlug(rectoId: number): number {
+  if (rectoId === DINGRY_HOODIE_BLACK_PARIS_ID) return DINGRY_HOODIE_BLACK_ORIGINAL_ID;
+  return rectoId;
+}
+
 export function productSlugForCatalogId(catalogId: number): string | null {
-  const rectoId = resolveRectoCatalogId(catalogId);
+  const rectoId = rectoIdForProductSlug(resolveRectoCatalogId(catalogId));
   return DINGRY_PRODUCT_SLUG_BY_RECTO_ID[rectoId] ?? null;
 }
 

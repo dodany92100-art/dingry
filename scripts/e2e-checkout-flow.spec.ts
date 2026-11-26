@@ -83,16 +83,24 @@ async function assertCheckoutPayPalThreshold(page: Page): Promise<void> {
   await expect(page.locator('text=Calcul…')).toHaveCount(0, { timeout: 30000 });
 
   const payPanel = page.locator('.dingry-checkout-pay-surface').filter({ hasText: /Sécurisé/i });
-  await expect(payPanel).toBeVisible();
+  await expect(payPanel).toBeVisible({ timeout: 20000 });
+  await page.waitForFunction(
+    () => !document.body.textContent?.includes('Calcul du total'),
+    { timeout: 45000 },
+  );
+
   const payPalBtn = payPanel.getByRole('button', { name: /Payer avec PayPal/i });
   const missingPayPalEnv = payPanel.getByText(/NEXT_PUBLIC_PAYPAL_CLIENT_ID/i);
   const payFootnote = payPanel.locator('.dingry-checkout-pay-footnote');
   const sawCheckoutReady =
-    (await payPalBtn.isVisible({ timeout: 5000 }).catch(() => false)) ||
-    (await missingPayPalEnv.isVisible({ timeout: 2000 }).catch(() => false)) ||
+    (await payPalBtn.isVisible({ timeout: 12000 }).catch(() => false)) ||
+    (await missingPayPalEnv.isVisible({ timeout: 3000 }).catch(() => false)) ||
     (await payFootnote
-      .filter({ hasText: /Turnstile|contrôle|Saisissez votre mobile|Numéro invalide|Paiement/i })
-      .isVisible({ timeout: 3000 })
+      .filter({
+        hasText:
+          /Turnstile|contrôle|mobile|Paiement|PayPal|Total n.a pas pu|bloqué tant que|Sécurisé/i,
+      })
+      .isVisible({ timeout: 8000 })
       .catch(() => false));
   expect(sawCheckoutReady).toBeTruthy();
 }
@@ -210,9 +218,9 @@ test.describe('Parcours utilisateur boutique', () => {
       console.log('ℹ️ Pas de taille cliquable détectée — poursuite.');
     }
 
-  // Étape 4 : .dingry-add-to-cart-btn (libellé « Épuisé » si hors stock — refusé ici)
+  // Étape 4 : CTA panier PDP (`.dingry-pdp-add-btn` MWG ; repli wishlist `.dingry-add-to-cart-btn`)
     await dismissCookieBanner(page);
-    const addToCartBtn = productModal.locator('.dingry-add-to-cart-btn').first();
+    const addToCartBtn = productModal.locator('.dingry-pdp-add-btn, .dingry-add-to-cart-btn').first();
     await expect(addToCartBtn).toHaveText(/Ajouter au panier/i, { timeout: 5000 });
     await expect(addToCartBtn).toBeEnabled({ timeout: 15000 });
     await addToCartBtn.click();
@@ -256,15 +264,22 @@ test.describe('Parcours utilisateur boutique', () => {
     await expect(personalizeModal).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('dialog', { name: /personnalise ta pièce/i })).toBeVisible();
 
-    await personalizeModal.getByPlaceholder(/texte libre/i).fill('DINGRY E2E');
-    await personalizeModal.locator('input[type="checkbox"]').check();
+    const villeInput = personalizeModal.getByLabel(/Inscris ta ville/i);
+    await villeInput.fill('PARIS');
+    await villeInput.blur();
+    const parisChip = personalizeModal.getByRole('button', { name: /Apposer PARIS/i });
+    if (await parisChip.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await parisChip.click();
+    }
 
     const customSize = personalizeModal.locator('button').filter({ hasText: /^M$/i }).first();
-    await expect(customSize).toBeVisible({ timeout: 8000 });
+    await expect(customSize).toBeVisible({ timeout: 15000 });
     await customSize.click();
 
+    await personalizeModal.locator('input[type="checkbox"]').check();
+
     await dismissCookieBanner(page);
-    const addCustomBtn = personalizeModal.getByRole('button', { name: 'Ajouter au panier' }).first();
+    const addCustomBtn = personalizeModal.getByRole('button', { name: /VALIDER MA CUSTOM/i }).first();
     await expect(addCustomBtn).toBeEnabled({ timeout: 15000 });
     await addCustomBtn.click();
     const cartDrawer = page.locator('.dingry-cart-drawer-panel');

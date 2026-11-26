@@ -33,7 +33,7 @@ export const WEBHOOK_CODES = {
 
 export type WebhookDiagCode = (typeof WEBHOOK_CODES)[keyof typeof WEBHOOK_CODES];
 
-export function logCheckoutDiag(
+function logCheckoutDiag(
   code: CheckoutDiagCode,
   details: Record<string, string | number | boolean | undefined> = {},
 ): void {

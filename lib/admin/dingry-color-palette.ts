@@ -259,6 +259,7 @@ export function buildColorDeclinationBackendFields(input: {
   productName: string;
   parentSku: string;
   colorLabel: string;
+  category?: string;
 }): ColorDeclinationBackendFields {
   const colorLabel = input.colorLabel.trim();
   const optionKey = normalizeOptionKey(colorLabel);
@@ -266,7 +267,7 @@ export function buildColorDeclinationBackendFields(input: {
   const labelFr = frenchLabelForColorPreset(colorLabel);
   return {
     optionKey,
-    variantSku: buildDingryVariantSku(input.parentSku, abbrev),
+    variantSku: buildDingryVariantSku(input.parentSku, abbrev, input.category),
     imageBlobPathname: dingryR2VariantObjectKey(input.productId, input.productName, abbrev),
     altText: buildVariantAltText(input.productName, labelFr),
   };

@@ -1,6 +1,10 @@
 import {
   normalizePrintPlacement,
+  normalizeProductBrand,
+  normalizeProductCollection,
+  type Brand,
   type CatalogProduct,
+  type ProductCollection,
   type ProductPrintPlacement,
 } from "@/lib/admin/types";
 import { shopOptionsFromProductOptions, shopOptionsFromColorDeclinations } from "@/lib/catalog/product-options";
@@ -27,6 +31,8 @@ export type ShopProduct = {
   sizeGuide?: string;
   printPlacement?: ProductPrintPlacement;
   category: ShopCategory | string;
+  brand?: Brand;
+  collection?: ProductCollection;
   sku?: string;
   sizes?: string[];
   colorDeclinations?: string[];
@@ -66,6 +72,7 @@ function shopOptionsForCatalog(product: CatalogProduct) {
     return shopOptionsFromColorDeclinations(product.colorDeclinations, product.variant, {
       parentSku: product.sku,
       productName: product.name,
+      category: product.category,
     });
   }
   return undefined;
@@ -83,6 +90,8 @@ export function catalogToShopProduct(product: CatalogProduct): ShopProduct {
     description: product.description,
     ...storyFieldsFromCatalog(product),
     category: resolveShopCategory(product.id, product.category),
+    brand: product.brand,
+    collection: product.collection,
     sku: product.sku,
     sizes: product.sizes,
     stock: product.stock,
@@ -185,6 +194,8 @@ function applyCatalogOverlay(
     description: overlay.description?.trim() || product.description,
     ...mergeStoryOverlay(product, overlay),
     category: resolveShopCategory(product.id, overlay.category || product.category),
+    brand: overlay.brand,
+    collection: overlay.collection,
     sku,
     sizes: overlay.sizes,
     stock: overlay.stock,
@@ -310,6 +321,8 @@ export function shopProductFromUnknown(value: unknown): CatalogProduct | null {
     sizeGuide: typeof record.sizeGuide === "string" ? record.sizeGuide : undefined,
     ...(printPlacement ? { printPlacement } : {}),
     category: normalizeAdminCategory(typeof record.category === "string" ? record.category : "Tee"),
+    brand: normalizeProductBrand(typeof record.brand === "string" ? record.brand : ""),
+    collection: normalizeProductCollection(typeof record.collection === "string" ? record.collection : ""),
     price,
     image: record.image,
     sizes: sizesFromApiRecord(record),

@@ -1,8 +1,36 @@
 import { z } from "zod";
 import { dingrySlugSegment } from "@/lib/catalog/dingry-variant-naming";
-import { isProductCategory, type ProductCategory, type ProductSize } from "@/lib/admin/types";
+import { PRODUCT_STORY_FIELD_MAX } from "@/lib/admin/product-story";
+import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
+  isProductCategory,
+  normalizePrintPlacement,
+  normalizeProductBrand,
+  normalizeProductCollection,
+  type Brand,
+  type ProductCategory,
+  type ProductCollection,
+  type ProductPrintPlacement,
+  type ProductSize,
+} from "@/lib/admin/types";
 
 const VAT_FACTOR = 1.2;
+
+/** Story + identité produit mémorisée avec le modèle maker (hors visuels / SKU). */
+export type CatalogMakerFicheSnapshot = {
+  name: string;
+  variant: string;
+  brand: Brand;
+  collection: ProductCollection;
+  description: string;
+  materials: string;
+  fabrication: string;
+  limitedEdition: string;
+  printPlacement: ProductPrintPlacement;
+  colorDeclinations: string[];
+  stock: string;
+};
 
 export type CatalogMakerTemplate = {
   id: string;
@@ -14,6 +42,8 @@ export type CatalogMakerTemplate = {
   sizes: ProductSize[];
   /** Grammage indicatif (g/m²) — fiche story. */
   sizeGuide: string;
+  /** Champs fiche CRM au moment de « Ajouter au catalogue » (optionnel — rétrocompat). */
+  fiche?: CatalogMakerFicheSnapshot;
   createdAt: string;
   updatedAt: string;
 };
@@ -61,6 +91,25 @@ export function findCatalogMakerTemplateDuplicate(
 
 const productSizeSchema = z.string().trim().min(1).max(8);
 
+const storyFieldSchema = z.string().trim().max(PRODUCT_STORY_FIELD_MAX);
+
+export const catalogMakerFicheSchema = z.object({
+  name: z.string().trim().max(120).optional().default(""),
+  variant: z.string().trim().max(120).optional().default(""),
+  brand: z.string().trim().max(48).optional().default(""),
+  collection: z.string().trim().max(48).optional().default(""),
+  description: storyFieldSchema.optional().default(""),
+  materials: storyFieldSchema.optional().default(""),
+  fabrication: storyFieldSchema.optional().default(""),
+  limitedEdition: storyFieldSchema.optional().default(""),
+  printPlacement: z
+    .union([z.literal(""), z.literal("RECTO_VERSO"), z.literal("RECTO_ONLY"), z.literal("VERSO_ONLY")])
+    .optional()
+    .default(""),
+  colorDeclinations: z.array(z.string().trim().min(1).max(48)).max(24).optional().default([]),
+  stock: z.string().trim().max(8).optional().default(""),
+});
+
 export const catalogMakerTemplateSchema = z.object({
   label: z
     .string()
@@ -76,6 +125,7 @@ export const catalogMakerTemplateSchema = z.object({
   priceHt: z.number().finite().positive().max(9_999).optional(),
   sizes: z.array(productSizeSchema).min(1, "Au moins une taille."),
   sizeGuide: z.string().trim().max(64).optional().default(""),
+  fiche: catalogMakerFicheSchema.optional(),
 });
 
 export type CatalogMakerTemplateInput = z.infer<typeof catalogMakerTemplateSchema>;
@@ -98,12 +148,42 @@ export function makerLabelHintForCategory(category: ProductCategory): string {
   return hints[category] ?? "MODELE";
 }
 
-export function makerTemplateFromFormDefaults(input: {
+export function makerFicheFromFormState(input: {
+  name: string;
+  variant: string;
+  brand: Brand;
+  collection: ProductCollection;
+  description: string;
+  materials: string;
+  fabrication: string;
+  limitedEdition: string;
+  printPlacement: ProductPrintPlacement;
+  colorDeclinations: readonly string[];
+  stock: string;
+}): CatalogMakerFicheSnapshot {
+  const colors = input.colorDeclinations.map((c) => c.trim()).filter(Boolean);
+  return {
+    name: input.name.trim(),
+    variant: input.variant.trim(),
+    brand: input.brand,
+    collection: input.collection,
+    description: input.description.trim(),
+    materials: input.materials.trim(),
+    fabrication: input.fabrication.trim(),
+    limitedEdition: input.limitedEdition.trim(),
+    printPlacement: normalizePrintPlacement(input.printPlacement),
+    colorDeclinations: colors,
+    stock: input.stock.trim(),
+  };
+}
+
+export function makerTemplateFromFormState(input: {
   label: string;
   category: ProductCategory;
   price: number;
   sizes: readonly ProductSize[];
   sizeGuide?: string;
+  fiche: CatalogMakerFicheSnapshot;
 }): CatalogMakerTemplateInput {
   return {
     label: input.label,
@@ -111,7 +191,34 @@ export function makerTemplateFromFormDefaults(input: {
     priceTtc: input.price,
     sizes: [...input.sizes],
     sizeGuide: (input.sizeGuide ?? "").trim(),
+    fiche: input.fiche,
   };
+}
+
+/** @deprecated Préférer `makerTemplateFromFormState` (fiche complète). */
+export function makerTemplateFromFormDefaults(input: {
+  label: string;
+  category: ProductCategory;
+  price: number;
+  sizes: readonly ProductSize[];
+  sizeGuide?: string;
+}): CatalogMakerTemplateInput {
+  return makerTemplateFromFormState({
+    ...input,
+    fiche: makerFicheFromFormState({
+      name: "",
+      variant: "",
+      brand: DEFAULT_PRODUCT_BRAND,
+      collection: DEFAULT_PRODUCT_COLLECTION,
+      description: "",
+      materials: "",
+      fabrication: "",
+      limitedEdition: "",
+      printPlacement: "",
+      colorDeclinations: [],
+      stock: "",
+    }),
+  });
 }
 
 export function catalogMakerTemplateOptionLabel(template: CatalogMakerTemplate): string {
@@ -150,12 +257,43 @@ export function validateCatalogMakerTemplate(
   return { ok: true, data, id };
 }
 
+function materializeMakerFiche(
+  raw: z.infer<typeof catalogMakerFicheSchema> | undefined,
+): CatalogMakerFicheSnapshot | undefined {
+  if (!raw) return undefined;
+  const hasContent =
+    raw.name.length > 0 ||
+    raw.variant.length > 0 ||
+    raw.description.length > 0 ||
+    raw.materials.length > 0 ||
+    raw.fabrication.length > 0 ||
+    raw.limitedEdition.length > 0 ||
+    raw.colorDeclinations.length > 0 ||
+    raw.stock.length > 0 ||
+    raw.printPlacement.length > 0;
+  if (!hasContent && !raw.brand && !raw.collection) return undefined;
+  return {
+    name: raw.name,
+    variant: raw.variant,
+    brand: normalizeProductBrand(raw.brand),
+    collection: normalizeProductCollection(raw.collection),
+    description: raw.description,
+    materials: raw.materials,
+    fabrication: raw.fabrication,
+    limitedEdition: raw.limitedEdition,
+    printPlacement: raw.printPlacement,
+    colorDeclinations: [...raw.colorDeclinations],
+    stock: raw.stock,
+  };
+}
+
 export function materializeCatalogMakerTemplate(
   draft: CatalogMakerTemplateInput,
   id: string,
   nowIso: string,
 ): CatalogMakerTemplate {
   const priceHt = draft.priceHt ?? roundPriceHtFromTtc(draft.priceTtc);
+  const fiche = materializeMakerFiche(draft.fiche);
   return {
     id,
     label: draft.label,
@@ -164,7 +302,14 @@ export function materializeCatalogMakerTemplate(
     priceHt,
     sizes: draft.sizes as ProductSize[],
     sizeGuide: draft.sizeGuide?.trim() ?? "",
+    ...(fiche ? { fiche } : {}),
     createdAt: nowIso,
     updatedAt: nowIso,
   };
+}
+
+export function parseCatalogMakerFicheSnapshot(raw: unknown): CatalogMakerFicheSnapshot | undefined {
+  const parsed = catalogMakerFicheSchema.safeParse(raw);
+  if (!parsed.success) return undefined;
+  return materializeMakerFiche(parsed.data);
 }

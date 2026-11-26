@@ -1,4 +1,4 @@
-import type { ProductCategory, ProductSize } from "@/lib/admin/types";
+import type { Brand, ProductCategory, ProductCollection, ProductSize } from "@/lib/admin/types";
 import type { ProductStoryFormFields } from "@/lib/admin/product-story";
 
 const DRAFT_VERSION = 1 as const;
@@ -10,6 +10,8 @@ export type ProductEditorDraftForm = {
   variant: string;
   colorDeclinations: string[];
   category: ProductCategory;
+  brand: Brand;
+  collection: ProductCollection;
   price: string;
   stock: string;
   sizes: ProductSize[];
@@ -39,6 +41,8 @@ function isDraftForm(value: unknown): value is ProductEditorDraftForm {
     typeof value.variant === "string" &&
     Array.isArray(value.colorDeclinations) &&
     typeof value.category === "string" &&
+    typeof value.brand === "string" &&
+    typeof value.collection === "string" &&
     typeof value.price === "string" &&
     typeof value.stock === "string" &&
     Array.isArray(value.sizes) &&

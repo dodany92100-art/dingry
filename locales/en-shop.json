@@ -105,6 +105,10 @@
     "sectionEyebrow": "Custom atelier",
     "sectionTitle": "Every city its own DINGRY",
     "sectionLead": "Personalize your piece with your city name",
+    "sectionHeadline": "YOUR STYLE. YOUR CITY. YOUR SIGNATURE.",
+    "sectionBody": "Make your piece one of a kind. Pick your tee or hoodie and personalize it with your city name.",
+    "sectionTagline": "DINGRY: Represent your city.",
+    "sectionSurcharge": "Made-to-order personalization: +€5 per item (on top of the product price).",
     "banner": {
       "eyebrow": "CUSTOM • CONFIGURATOR",
       "title": "Every city its own Dingry",
@@ -115,7 +119,9 @@
     }
   },
   "heritageTeaser": {
-    "eyebrow": "Heritage"
+    "eyebrow": "Origins",
+    "closeDetails": "Close",
+    "closeDetailsAria": "Close Origins detail"
   },
   "lookbookTeaser": {
     "eyebrow": "Lookbook",
@@ -134,7 +140,8 @@
     "adminCategoryHintEnd": "listing to the right category.",
     "emptyCategory": "No items live yet · check category",
     "emptyCategoryEnd": "on CRM product records.",
-    "productsAria": "Products {{label}}"
+    "productsAria": "Products {{label}}",
+    "customCta": "CUSTOM"
   },
   "product": {
     "selectSize": "Select a size",

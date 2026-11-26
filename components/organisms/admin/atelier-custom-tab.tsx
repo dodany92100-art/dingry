@@ -101,7 +101,7 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
   }
 
   return (
-    <div className="dingry-admin-stock max-w-3xl">
+    <div className="dingry-admin-stock mx-auto w-full max-w-3xl">
       <div className="mb-6">
         <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Atelier CUSTOM</p>
         <p className="mt-1 text-[10px] leading-relaxed tracking-[0.08em] text-white/30">
@@ -257,11 +257,12 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
                 />
               </label>
 
-              <div className="mt-5 border-t border-white/10 pt-5">
-                <p className={ADMIN_CRM_EYEBROW}>Aperçu ville · couleur · taille</p>
+              <div className="mt-5 flex flex-col items-center border-t border-white/10 pt-5">
+                <p className={`${ADMIN_CRM_EYEBROW} w-full max-w-sm`}>Aperçu ville · couleur · taille</p>
                 {modelPreviewError?.modelId === model.id ? (
-                  <p className="mt-2 text-sm text-red-400">{modelPreviewError.message}</p>
+                  <p className="mt-2 w-full max-w-sm text-sm text-red-400">{modelPreviewError.message}</p>
                 ) : null}
+                <div className="w-full max-w-sm">
                 <AtelierModelPreviewTune
                   model={model}
                   uploadDisabled={busy}
@@ -271,6 +272,7 @@ export function AtelierCustomTab({ config, customized, saving, error, onSave }: 
                   onCityColorChange={(previewCityColor) => patchModel(model.id, { previewCityColor })}
                   onCitySizeChange={(citySize) => patchModel(model.id, { citySize })}
                 />
+                </div>
               </div>
             </article>
           ))}

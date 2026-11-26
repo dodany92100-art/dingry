@@ -16,6 +16,8 @@ import {
   type CatalogFilter,
 } from "@/lib/shop-catalog";
 import { buildSweatCatalogPairs } from "@/lib/sweat-catalog-pairs";
+import type { CatalogBrandFilter } from "@/lib/catalog-brand";
+import { filterByBrand } from "@/lib/catalog-brand";
 
 export type CartLine = StoredCartItem;
 
@@ -136,6 +138,12 @@ export type PersonalizationCartMeta = {
 };
 
 /** Ajoute couleur / taille pour le CRM (`… · #d4af37 · 0.50rem`). */
+/** Ligne panier · personnalisation sans nom de ville (logo DINGRY seul). */
+export function formatPersonalizationSansVille(shirtLabel: string): string {
+  const base = `Logo DINGRY — ${shirtLabel.trim()} (recto · sans ville)`;
+  return base.length <= PERSONALIZATION_CART_MAX ? base : base.slice(0, PERSONALIZATION_CART_MAX).trim();
+}
+
 export function formatPersonalizationForCart(
   label: string,
   shirtLabel: string,
@@ -157,8 +165,13 @@ export function formatPersonalizationForCart(
 
 /* ---------- Catalogue ---------- */
 
-export function visibleCatalogProducts(products: ShopProduct[], filter: CatalogFilter): ShopProduct[] {
-  return sortCatalogProducts(filterCatalogProducts(products, filter), "featured");
+export function visibleCatalogProducts(
+  products: ShopProduct[],
+  filter: CatalogFilter,
+  brand: CatalogBrandFilter = null,
+): ShopProduct[] {
+  const scoped = filterByBrand(products, brand);
+  return sortCatalogProducts(filterCatalogProducts(scoped, filter), "featured");
 }
 
 export function buildFlipPairs(products: ShopProduct[]): FlipPair[] {

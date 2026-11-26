@@ -8,8 +8,8 @@ describe("ADMIN_CRM_RELEASE_HISTORY", () => {
     expect(ADMIN_CRM_RELEASE_HISTORY).toHaveLength(history.length);
     const sorted = sortCrmReleaseHistoryNewestFirst(history);
     expect(ADMIN_CRM_RELEASE_HISTORY.map((e) => e.id)).toEqual(sorted.map((e) => e.id));
-    expect(ADMIN_CRM_RELEASE_HISTORY[0]?.versionHint).toBe("232");
-    expect(adminCrmDisplayVersion()).toBe("1.2.232");
+    expect(ADMIN_CRM_RELEASE_HISTORY[0]?.versionHint).toBe("233");
+    expect(adminCrmDisplayVersion()).toBe("1.2.233");
   });
 
   it("ids uniques", () => {

@@ -9,6 +9,7 @@ import {
 describe("dingry variant naming", () => {
   it("SKU variante", () => {
     expect(buildDingryVariantSku("DINGRY-HOODIE-ESS", "RED")).toBe("DINGRY-HOODIE-ESS-RED");
+    expect(buildDingryVariantSku("DIN-HOO-ESS", "BLK", "Hoodies")).toBe("DIN-HOO-ESS-NOI-M");
   });
 
   it("fichier R2", () => {

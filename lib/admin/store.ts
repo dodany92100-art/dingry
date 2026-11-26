@@ -55,7 +55,7 @@ import {
 import { primaryPersoBannerFromCityVisuals } from "@/lib/catalog-perso-banner-cities";
 import { readBannerFocusFields } from "@/lib/catalog-perso-banner-focus";
 import { getSharedRedis } from "@/lib/ratelimit";
-import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
+import { adjustStock, readStockQuantity, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { buildStorefrontOnlineProducts } from "@/lib/admin/storefront-online-catalog";
 import {
   createSeededStore,
@@ -77,13 +77,19 @@ import {
 } from "@/lib/catalog-verso-recto";
 import { CATALOG_CANONICAL_IMAGE_BY_ID, DINGRY_JERSEY_PRODUCT_IDS, DINGRY_SWEAT_PRODUCT_IDS, DINGRY_TEE_PRODUCT_IDS } from "@/lib/dingry-product-media";
 import {
+  DEFAULT_PRODUCT_BRAND,
+  DEFAULT_PRODUCT_COLLECTION,
   DRAFT_PRODUCT_PLACEHOLDER_IMAGE,
   isDraftPlaceholderImage,
   isProductCategory,
   isProductSize,
+  normalizeProductBrand,
   normalizeProductCategory,
+  normalizeProductCollection,
   normalizePublishStatus,
   normalizePrintPlacement,
+  type Brand,
+  type ProductCollection,
   STORE_VERSION,
   type AdminCatalogPersoBanner,
   type AdminLookbookSlide,
@@ -111,8 +117,6 @@ import {
   PRODUCT_IMAGE_MAX_BYTES,
   PRODUCT_IMAGE_MAX_LABEL,
 } from "@/lib/admin/image-limits";
-
-export { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
 
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
 const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
@@ -354,6 +358,8 @@ function normalizeProduct(value: unknown): AdminProduct | null {
     sizeGuide: String(record.sizeGuide ?? "").trim(),
     printPlacement: normalizePrintPlacement(record.printPlacement),
     category,
+    brand: normalizeProductBrand(String(record.brand ?? "")),
+    collection: normalizeProductCollection(String(record.collection ?? "")),
     price,
     sizes: sizes.length > 0 ? sizes : [],
     stock: Math.max(0, Math.floor(Number(record.stock) || 0)),
@@ -613,8 +619,9 @@ function normalizeMakerTemplate(value: unknown): CatalogMakerTemplate | null {
   const updatedAt =
     typeof record.updatedAt === "string" ? record.updatedAt : createdAt;
   const sizeGuide = typeof record.sizeGuide === "string" ? record.sizeGuide.trim() : "";
+  const fiche = "fiche" in record ? record.fiche : undefined;
   const draft = validateCatalogMakerTemplate(
-    { label, category, priceTtc, sizes, sizeGuide },
+    { label, category, priceTtc, sizes, sizeGuide, fiche },
     [],
   );
   if (!draft.ok) return null;
@@ -842,41 +849,6 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
   }
 }
 
-async function ensureInitialStore(): Promise<AdminStore> {
-  const seeded = normalizeStore(createSeededStore());
-  try {
-    await writeStoreSnapshot(seeded, null, true);
-    await seedCatalogStockFromProducts(seeded.products);
-    return seeded;
-  } catch (error) {
-    if (isStoreWriteConflict(error)) {
-      const again = await readStoreSnapshot();
-      if (again !== "missing") return again.store;
-    }
-    throw error;
-  }
-}
-
-/** Charge le magasin ; peut créer le fichier initial (admin, écritures). */
-export async function loadStore(): Promise<AdminStore> {
-  const snapshot = await readStoreSnapshot();
-  if (snapshot === "missing") {
-    return ensureInitialStore();
-  }
-  if (snapshot.migratedFromVersion !== undefined) {
-    try {
-      await enqueueStoreWrite(async () => {
-        const fresh = await readStoreSnapshot();
-        if (fresh === "missing") return;
-        await writeStoreSnapshot(fresh.store, fresh.etag);
-      });
-    } catch (error) {
-      console.error("[store] persistance migration version", error instanceof Error ? error.name : "erreur");
-    }
-  }
-  return snapshot.store;
-}
-
 function safeFileName(name: string): string {
   const base = name.trim() || "image";
   return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 60);
@@ -943,7 +915,7 @@ async function uploadAdminImageFile(
   throw new StoreUnavailableError(IMAGE_STORAGE_UNAVAILABLE);
 }
 
-export async function uploadProductImage(
+async function uploadProductImage(
   productId: string,
   file: File,
   face: ProductImageFace = "recto",
@@ -991,7 +963,7 @@ async function deleteBlobOrLocal(
 }
 
 /** Supprime le média recto ou verso sans toucher l’autre face. */
-export async function deleteProductFaceMedia(
+async function deleteProductFaceMedia(
   product: AdminProduct,
   face: ProductImageFace,
 ): Promise<void> {
@@ -1005,7 +977,7 @@ export async function deleteProductFaceMedia(
   await deleteBlobOrLocal(product.imageBackBlobUrl, product.imageBackBlobPathname, back);
 }
 
-export async function deleteProductImage(product: AdminProduct): Promise<void> {
+async function deleteProductImage(product: AdminProduct): Promise<void> {
   await deleteProductFaceMedia(product, "recto");
   await deleteProductFaceMedia(product, "verso");
 }
@@ -1029,6 +1001,8 @@ export type ProductInput = {
   sizeGuide: string;
   printPlacement?: ProductPrintPlacement;
   category: ProductCategory;
+  brand?: Brand;
+  collection?: ProductCollection;
   price: number;
   sizes: ProductSize[];
   stock: number;
@@ -1272,6 +1246,8 @@ export async function createProduct(
     sizeGuide: input.sizeGuide,
     printPlacement: input.printPlacement ?? "",
     category: input.category,
+    brand: input.brand ?? DEFAULT_PRODUCT_BRAND,
+    collection: input.collection ?? DEFAULT_PRODUCT_COLLECTION,
     price: input.price,
     sizes: input.sizes,
     stock: input.stock,
@@ -1335,6 +1311,8 @@ function applyFieldsToProduct(
   if (typeof fields.sizeGuide === "string") product.sizeGuide = fields.sizeGuide;
   if (fields.printPlacement !== undefined) product.printPlacement = fields.printPlacement;
   if (fields.category) product.category = fields.category;
+  if (fields.brand) product.brand = fields.brand;
+  if (fields.collection) product.collection = fields.collection;
   if (typeof fields.price === "number") product.price = fields.price;
   if (fields.sizes) product.sizes = fields.sizes;
   if (typeof fields.stock === "number") {
@@ -1677,7 +1655,7 @@ export async function patchOrder(
   });
 }
 
-export async function uploadLookbookImage(slideId: string, file: File): Promise<UploadedAdminImage> {
+async function uploadLookbookImage(slideId: string, file: File): Promise<UploadedAdminImage> {
   return uploadAdminImageFile(file, {
     supabaseFolder: `lookbook/${slideId}`,
     blobPathPrefix: `lookbook/${slideId}`,
@@ -1972,7 +1950,7 @@ export async function reorderLookbookSlide(id: string, direction: "up" | "down")
 
 const PERSO_BANNER_UPLOAD_ID = "perso";
 
-export async function uploadCatalogPersoBannerImage(file: File): Promise<UploadedAdminImage> {
+async function uploadCatalogPersoBannerImage(file: File): Promise<UploadedAdminImage> {
   return uploadAdminImageFile(file, {
     supabaseFolder: `banner/${PERSO_BANNER_UPLOAD_ID}`,
     blobPathPrefix: `banner/${PERSO_BANNER_UPLOAD_ID}`,
@@ -2126,30 +2104,6 @@ export async function upsertCatalogPersoBanner(
 export async function listPriceFamilies(): Promise<PriceFamily[]> {
   const store = await loadStoreReadOnly();
   return store.priceFamilies ?? [];
-}
-
-export function assertPriceFamilyAvailable(
-  families: readonly PriceFamily[],
-  draft: unknown,
-): void {
-  const validated = validatePriceFamilyDraft(draft, families);
-  if (!validated.ok) {
-    throw new PriceFamilyDuplicateError(validated.error);
-  }
-}
-
-export async function registerPriceFamilyFromProduct(
-  product: AdminProduct,
-): Promise<PriceFamily> {
-  const draft = priceFamilyDraftFromProductFields({
-    name: product.name,
-    category: product.category,
-    variant: product.variant,
-    price: product.price,
-    sizes: product.sizes,
-    sourceProductId: product.id,
-  });
-  return registerPriceFamily(draft);
 }
 
 export async function registerPriceFamily(draft: unknown): Promise<PriceFamily> {

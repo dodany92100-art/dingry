@@ -186,6 +186,3 @@ export function DingryProductImage({
     />
   );
 }
-
-/** @deprecated Nom historique — utiliser DingryProductImage. */
-export const DingryCloudinaryImage = DingryProductImage;

@@ -43,9 +43,8 @@ export const DINGRY_EDITORIAL_IMAGE_URL =
 /** Portrait éditorial · section Heritage (StickyScroll). */
 export const DINGRY_HERITAGE_EDITORIAL_SRC = "/dingry-heritage-editorial.jpg";
 
-/** Couverture chapitre Philosophie (Royal Wear / Rock The Street). */
-export const DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC =
-  "https://www.streetpress.com/1413466121-sully-sefil-rock-the-street-royal-wear/featured_image.jpg";
+/** Couverture chapitre Philosophie (Royal Wear / Rock The Street) · R2 (Streetpress bloque le hotlink). */
+export const DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC = DINGRY_EDITORIAL_IMAGE_URL;
 
 /** Portrait · onglet Héritage « Le fondateur » (Sully Sefil). */
 export const DINGRY_HERITAGE_FOUNDER_SRC = "/dingry-heritage-founder.jpg";

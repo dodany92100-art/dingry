@@ -8,6 +8,7 @@ import { getAuthCallbackOrigin } from "@/lib/auth/auth-callback-origin";
 import { getSupabaseBrowser, isSupabaseBrowserAuthEnabled } from "@/lib/supabase/browser";
 import { isSupabaseOAuthProviderEnabled } from "@/lib/supabase/oauth-flags";
 import { mapShopAuthError } from "@/lib/auth/map-auth-error";
+import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { ShopOrderHistory } from "@/components/molecules/shop-order-history";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "@/components/organisms/shop/motion";
 import { useShopOrders } from "@/hooks/use-shop-orders";
@@ -492,6 +493,9 @@ export function AuthModal({
                   ) : null}
                 </>
               )}
+            </div>
+            <div className="flex shrink-0 justify-center px-6 pb-6 pt-2">
+              <DingryLogo animate={false} tone="on-light" className="h-8 w-auto" />
             </div>
           </motion.aside>
         </div>

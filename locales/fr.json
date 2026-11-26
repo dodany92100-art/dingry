@@ -6,7 +6,7 @@
   "nav": {
     "collection": "Collection",
     "atelier": "Atelier",
-    "heritage": "Héritage",
+    "heritage": "Origines",
     "lookbook": "Lookbook",
     "custom": "Atelier custom",
     "openMenu": "Ouvrir le menu",
@@ -29,6 +29,8 @@
   },
   "catalog": {
     "filtersAria": "Catégories de la collection DINGRY",
+    "brandEyebrow": "SHOP",
+    "brandFiltersAria": "Filtrer la collection par marque",
     "unavailable": "Catalogue momentanément indisponible — achat désactivé. Réessayez dans un instant.",
     "categories": {
       "all": "Collection",
@@ -52,6 +54,32 @@
       "Paiement via PayPal (compte ou carte lorsque proposé par PayPal). Commande ferme après confirmation du paiement."
     ],
     "paymentMethodsAria": "Moyens de paiement acceptés"
+  },
+  "brandPages": {
+    "eyebrow": "Univers marque",
+    "backToShop": "Retour boutique",
+    "backToFilteredShop": "Catalogue filtré",
+    "productsHeading": "Pièces de la marque",
+    "madaProductsHeading": "Collection DINGRY MADA",
+    "links": {
+      "dingry": "DINGRY",
+      "rock-the-street": "Rock The Street",
+      "fyma": "FYMA"
+    },
+    "dingry": {
+      "title": "DINGRY",
+      "lead": "Streetwear affirmé, silhouettes oversize et pièces signature — conçues pour durer.",
+      "madaTitle": "DINGRY MADA",
+      "madaLead": "Ligne dédiée : énergie Malagasy, même exigence qualité DINGRY."
+    },
+    "rock-the-street": {
+      "title": "Rock The Street",
+      "lead": "Royal Wear et attitude urbaine — entre musique, mode et héritage créateur."
+    },
+    "fyma": {
+      "title": "FYMA",
+      "lead": "Pièces FYMA sélectionnées sur la vitrine DINGRY."
+    }
   },
   "newsletter": {
     "title": "Newsletter",

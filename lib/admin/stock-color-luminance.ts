@@ -3,6 +3,47 @@ import type { AdminProduct } from "@/lib/admin/types";
 
 export type StockColorSortMode = "default" | "light" | "dark";
 
+/** Ordre boutique « clair → foncé » : Blanc · Gris · Vert · Bleu · Noir (puis autres). */
+const COLOR_FAMILY_RANK: { labels: readonly string[]; rank: number }[] = [
+  { labels: ["BLANC", "WHITE"], rank: 0 },
+  { labels: ["GRIS", "GREY", "GRAY", "GRIS CHINE", "GRIS CHINÉ"], rank: 1 },
+  { labels: ["VERT", "GREEN"], rank: 2 },
+  { labels: ["BLEU", "BLUE", "BLEU ROI", "BLEU ROYAL", "ROYAL BLUE", "KING BLUE"], rank: 3 },
+  { labels: ["NOIR", "BLACK"], rank: 4 },
+];
+
+function normalizeColorLabelKey(value: string): string {
+  return value
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ");
+}
+
+function colorFamilyRankForLabel(label: string): number | null {
+  const key = normalizeColorLabelKey(label);
+  if (!key) return null;
+  for (const entry of COLOR_FAMILY_RANK) {
+    if (entry.labels.some((token) => key === token || key.includes(token))) return entry.rank;
+  }
+  return null;
+}
+
+/** Rang métier (0 = blanc … 4 = noir) pour départager luminosités proches. */
+export function productColorFamilyRank(product: AdminProduct): number {
+  const labels = [product.variant, ...product.colorDeclinations]
+    .map((v) => v.trim())
+    .filter(Boolean);
+  let best: number | null = null;
+  for (const label of labels) {
+    const rank = colorFamilyRankForLabel(label);
+    if (rank === null) continue;
+    if (best === null || rank < best) best = rank;
+  }
+  return best ?? 5;
+}
+
 function relativeLuminanceFromHex(hex: string): number {
   let h = hex.replace(/^#/, "").trim();
   if (h.length === 3) h = [...h].map((c) => c + c).join("");
@@ -38,6 +79,12 @@ export function sortProductsByColorLuminance(
   return [...products].sort((a, b) => {
     const la = productPerceivedLuminance(a);
     const lb = productPerceivedLuminance(b);
+    const luminanceClose = Math.abs(la - lb) < 0.06;
+    if (luminanceClose) {
+      const ra = productColorFamilyRank(a);
+      const rb = productColorFamilyRank(b);
+      if (ra !== rb) return mode === "light" ? ra - rb : rb - ra;
+    }
     if (la === lb) return a.id.localeCompare(b.id);
     if (mode === "light") return lb - la;
     return la - lb;

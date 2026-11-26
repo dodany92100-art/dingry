@@ -33,9 +33,6 @@ export function compareAdminProductDisplay(a: AdminProduct, b: AdminProduct): nu
   return compareAdminProductIds(a, b);
 }
 
-/** Alias explicite pour l’onglet Stock (miroir vitrine). */
-export const compareAdminProductLikeShop = compareAdminProductDisplay;
-
 export function sortAdminProductsLikeShop(products: readonly AdminProduct[]): AdminProduct[] {
   return sortAdminProductsForDisplay(products);
 }

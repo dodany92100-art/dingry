@@ -12,7 +12,14 @@ import {
 } from "@/lib/jersey-shop";
 import { normalizeOptionKey, resolveOptionVisual } from "@/lib/catalog/product-options";
 import { assertShopProductModalReady } from "@/lib/shop-product-integrity";
-import { catalogRectoId } from "@/lib/dingry-product-display";
+import {
+  catalogRectoId,
+  shopProductForRectoId,
+} from "@/lib/dingry-product-display";
+import {
+  DINGRY_HOODIE_BLACK_ORIGINAL_ID,
+  DINGRY_HOODIE_BLACK_PARIS_ID,
+} from "@/lib/shop-catalog";
 import { shopBasePathFromPathname } from "@/lib/shop-base-path";
 import { shopProductColorVariants } from "@/lib/storefront/similar-products";
 import type { CatalogState } from "./use-shop-catalog";
@@ -67,10 +74,10 @@ export function useProductModal({ products, catalogState }: Options) {
     if (!slug) return;
     const rectoId = rectoIdFromProductSlug(slug);
     if (!rectoId) return;
-    const product = products.find((item) => item.id === rectoId);
-    if (!product) return;
+    const resolved = shopProductForRectoId(rectoId, products);
+    if (!resolved) return;
 
-    const live = resolveCatalogProduct(product);
+    const live = resolved.product;
     if (selectedProduct?.id === live.id) return;
     setSelectedProduct(live);
     setSelectedSize("");
@@ -93,6 +100,7 @@ export function useProductModal({ products, catalogState }: Options) {
           pendingSlug = slug;
         } else {
           params.delete("produit");
+          pendingSlug = "";
         }
       } else {
         params.delete("produit");
@@ -123,9 +131,21 @@ export function useProductModal({ products, catalogState }: Options) {
     return defaultOptionKey(product);
   }
 
+  function sameColorLineRecto(a: number, b: number): boolean {
+    if (a === b) return true;
+    const blackPair =
+      (a === DINGRY_HOODIE_BLACK_ORIGINAL_ID || a === DINGRY_HOODIE_BLACK_PARIS_ID) &&
+      (b === DINGRY_HOODIE_BLACK_ORIGINAL_ID || b === DINGRY_HOODIE_BLACK_PARIS_ID);
+    return blackPair;
+  }
+
   function resolveCatalogProduct(product: ShopProduct): ShopProduct {
     const rectoId = catalogRectoId(product.id);
-    return products.find((item) => catalogRectoId(item.id) === rectoId) ?? product;
+    const fromRecto = shopProductForRectoId(rectoId, products);
+    if (fromRecto) return fromRecto.product;
+    return (
+      products.find((item) => sameColorLineRecto(catalogRectoId(item.id), rectoId)) ?? product
+    );
   }
 
   function applyProductSelection(product: ShopProduct, side: ProductFlipSide) {
@@ -183,9 +203,16 @@ export function useProductModal({ products, catalogState }: Options) {
         warnModalBlocked(product, ready.reason);
         return;
       }
-      if (selectedIdRef.current === product.id) return;
-      applyProductSelection(product, "recto");
-      window.requestAnimationFrame(() => syncProductInUrl(product));
+      const live = resolveCatalogProduct(product);
+      const currentId = selectedIdRef.current;
+      if (
+        currentId !== null &&
+        sameColorLineRecto(catalogRectoId(currentId), catalogRectoId(live.id))
+      ) {
+        return;
+      }
+      applyProductSelection(live, "recto");
+      window.requestAnimationFrame(() => syncProductInUrl(live));
     },
     [syncProductInUrl],
   );

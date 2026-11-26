@@ -1695,6 +1695,33 @@ html[data-theme="light"]:has(.dingry-admin-crm-shell) body {
   z-index: 1;
 }
 
+.dingry-admin-stock-filters-plaque--flash {
+  animation: dingry-admin-stock-filters-flash 0.85s ease-out;
+}
+
+@keyframes dingry-admin-stock-filters-flash {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 3px 8px rgba(255, 255, 255, 0.02),
+      inset 0 -14px 22px rgba(0, 0, 0, 0.62),
+      0 4px 0 rgba(0, 0, 0, 0.72),
+      0 14px 32px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(0, 0, 0, 0.4);
+  }
+  35% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 3px 8px rgba(255, 255, 255, 0.02),
+      inset 0 -14px 22px rgba(0, 0, 0, 0.62),
+      0 4px 0 rgba(0, 0, 0, 0.72),
+      0 14px 32px rgba(0, 0, 0, 0.55),
+      0 0 0 2px rgba(201, 162, 39, 0.65),
+      0 0 28px rgba(201, 162, 39, 0.22);
+  }
+}
+
 /** Rail catégories · gouttière verre dans la plaque. */
 .dingry-admin-category-track-bottle {
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1968,6 +1995,53 @@ html[data-theme="light"]:has(.dingry-admin-crm-shell) body {
   line-height: 1.1;
 }
 
+.dingry-atelier-hero__copy-static,
+.dingry-atelier-hero__copy-static * {
+  pointer-events: none;
+  cursor: default;
+}
+
+/** Bandeau éditorial sous le hero atelier — même lecture que titres catalogue (CAPS…). */
+.dingry-atelier-editorial {
+  background-color: #000;
+}
+
+.dingry-atelier-editorial__copy {
+  color: rgb(255 255 255 / 0.85);
+}
+
+.dingry-atelier-editorial__body {
+  max-width: none;
+  text-wrap: nowrap;
+}
+
+@media (max-width: 767px) {
+  .dingry-atelier-editorial__body {
+    text-wrap: wrap;
+    white-space: normal;
+  }
+}
+
+.dingry-atelier-editorial__tagline {
+  color: rgb(255 255 255 / 0.95);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-atelier-editorial {
+  background-color: #fff;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-atelier-editorial__copy {
+  color: rgb(14 17 24 / 0.82);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-atelier-editorial__tagline {
+  color: rgb(14 17 24 / 0.92);
+}
+
+html[data-theme="light"] .dingry-shop .dingry-atelier-editorial__surcharge {
+  color: #8a6a1e;
+}
+
 /** CTA hero · au-dessus du titre or, colonne gauche. */
 .dingry-atelier-hero__cta-dock {
   position: relative;
@@ -1993,14 +2067,86 @@ html[data-theme="light"]:has(.dingry-admin-crm-shell) body {
   }
 }
 
+/** CTA flottant · calé sur le port / manche gauche (hero Marseille) — ne pas regrouper avec le logo. */
+.dingry-atelier-hero__cta-dock.dingry-atelier-hero__cta-dock--harbor {
+  position: absolute;
+  margin: 0;
+  left: clamp(0.75rem, 7vw, 6.5rem);
+  bottom: clamp(12.5rem, 53vh, 20rem);
+  translate: var(--atelier-hero-cta-x, 0px) var(--atelier-hero-cta-y, 0px);
+}
+
+@media (min-width: 768px) {
+  .dingry-atelier-hero__cta-dock--harbor {
+    left: clamp(1.5rem, 18vw, 14rem);
+    bottom: clamp(14rem, 58vh, 22rem);
+  }
+}
+
+@media (min-width: 1280px) {
+  .dingry-atelier-hero__cta-dock--harbor {
+    left: max(2rem, calc((100vw - 1400px) / 2 + 5.5rem));
+    bottom: 54%;
+  }
+}
+
+/** Bloc logo seul · centré sous le CTA CUSTOM (même axe que --harbor). */
+.dingry-atelier-hero__logo-block .dingry-atelier-hero__mark-wrap--harbor {
+  position: absolute;
+  left: calc(clamp(0.75rem, 7vw, 6.5rem) + 2.75rem);
+  bottom: clamp(1.5rem, 8vh, 4rem);
+  margin: 0;
+  z-index: 1;
+  translate: var(--atelier-hero-logo-x, 0px) var(--atelier-hero-logo-y, 0px);
+  cursor: default;
+}
+
+@media (min-width: 768px) {
+  .dingry-atelier-hero__logo-block .dingry-atelier-hero__mark-wrap--harbor {
+    left: calc(clamp(1.5rem, 18vw, 14rem) + 2.75rem);
+    bottom: clamp(1.75rem, 9vh, 4.5rem);
+  }
+}
+
+@media (min-width: 1280px) {
+  .dingry-atelier-hero__logo-block .dingry-atelier-hero__mark-wrap--harbor {
+    left: calc(max(2rem, (100vw - 1400px) / 2 + 5.5rem) + 2.75rem);
+  }
+}
+
 .dingry-atelier-hero__mark-wrap {
   display: flex;
   width: 100%;
   max-width: 100%;
   justify-content: flex-start;
   align-items: flex-start;
-  margin-bottom: 0.35rem;
+  margin-top: 0.15rem;
   overflow: visible;
+}
+
+/** Emblème globe · bloc logo port. */
+.dingry-atelier-hero__mark-wrap--harbor {
+  display: block;
+  width: auto;
+  margin: 0;
+  margin-top: 0;
+}
+
+.dingry-atelier-hero__mark-wrap--harbor .dingry-atelier-hero__mark {
+  width: 152px;
+  height: 151px;
+  max-width: none;
+  margin: 0 0 0 -111px;
+  transform: none;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+@media (min-width: 768px) {
+  .dingry-atelier-hero__mark-wrap--harbor .dingry-atelier-hero__mark {
+    width: 152px;
+    height: 151px;
+  }
 }
 
 .dingry-atelier-hero__mark {
@@ -2033,6 +2179,51 @@ html[data-theme="light"]:has(.dingry-admin-crm-shell) body {
 .dingry-tab-underline-gold {
   background: linear-gradient(90deg, #bf953f 0%, #fcf6ba 45%, #b38728 100%);
   box-shadow: 0 0 12px rgb(191 149 63 / 0.55);
+}
+
+/** Bandeau marque : largeur = contenu (s’arrête après le dernier onglet). */
+.dingry-catalog-brand-bar .dingry-catalog-brand-tabs-scroll {
+  width: max-content;
+  max-width: 100%;
+}
+
+.dingry-catalog-brand-bar .dingry-catalog-brand-tabs-scroll [role="tablist"] {
+  width: max-content;
+  max-width: 100%;
+}
+
+/** Filtre marque boutique : onglet actif = trait doré (sans cadran / pilule). */
+.dingry-catalog-brand-bar--gold-frame [role="tab"][aria-selected="true"] {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dingry-catalog-brand-bar--gold-frame [role="tab"][aria-selected="true"] .dingry-tab-underline-gold {
+  display: block;
+  right: auto;
+  left: 50%;
+  width: 72%;
+  bottom: 0.3rem;
+  height: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #bf953f 18%,
+    #fcf6ba 50%,
+    #b38728 82%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 10px rgb(255 255 255 / 0.45),
+    0 0 14px rgb(191 149 63 / 0.45);
+}
+
+.dingry-catalog-brand-bar--gold-frame [role="tab"]:not([aria-selected="true"]):hover {
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .dingry-catalog-bar--silver [role="tab"][aria-selected="true"] .dingry-tab-underline-gold {
@@ -2386,7 +2577,8 @@ html[data-theme="light"]:has(.dingry-admin-crm-shell) body {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.65);
 }
 
-.dingry-admin .dingry-admin-new-product-btn .gold-text {
+.dingry-admin .dingry-admin-new-product-btn .gold-text,
+.dingry-admin .dingry-gold-pill-btn .gold-text {
   background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -2425,6 +2617,28 @@ html[data-theme="light"]:has(.dingry-admin-crm-shell) body {
 .dingry-shop .dingry-sale-ui .dingry-add-to-cart-btn:not(:disabled):hover {
   background-color: #2a2a2a !important;
   transform: none !important;
+}
+
+.dingry-shop .dingry-pdp-add-btn:not(:disabled) {
+  background: var(--dingry-gold-foil-metal) !important;
+  color: #0a0a0a !important;
+  border-color: rgb(191 149 63 / 0.65) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(252 246 186 / 0.35),
+    0 14px 36px rgb(0 0 0 / 0.45) !important;
+}
+
+.dingry-shop .dingry-pdp-add-btn:not(:disabled):hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgb(252 246 186 / 0.4),
+    0 16px 40px rgb(110 76 17 / 0.35) !important;
+}
+
+.dingry-shop .dingry-pdp-dark .dingry-pdp-add-btn:disabled {
+  background: rgb(191 149 63 / 0.12) !important;
+  box-shadow: none !important;
 }
 
 html[data-theme="light"] .dingry-hero,
@@ -3498,13 +3712,6 @@ html[data-theme="light"] .dingry-shop .dingry-product-id-badge {
   color: #fff !important;
 }
 
-/* HoverBorderGradient : ne pas blanchir le fond (thème clair × règle bg-[#12151c]). */
-html[data-theme="light"] .dingry-catalog-bar .dingry-hover-border-fill,
-html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border-fill {
-  background-color: #12151c !important;
-  color: #fff;
-}
-
 @keyframes dingry-marquee {
   from {
     transform: translateX(0);
@@ -3841,6 +4048,52 @@ html[data-theme="light"] .dingry-shop .dingry-auth-drawer {
 
 .dingry-footer-classic {
   text-transform: uppercase;
+}
+
+@media (min-width: 1024px) {
+  .dingry-footer-col-shift {
+    transform: translateX(var(--footer-shift, 0px));
+  }
+}
+
+.dingry-footer-shift-range {
+  width: 100%;
+  height: 2.25rem;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+.dingry-footer-shift-range::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(201 162 39 / 0.45);
+}
+
+.dingry-footer-shift-range::-webkit-slider-thumb {
+  width: 28px;
+  height: 28px;
+  margin-top: -9px;
+  appearance: none;
+  border: 2px solid #050505;
+  border-radius: 999px;
+  background: #c9a227;
+}
+
+.dingry-footer-shift-range::-moz-range-track {
+  height: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(201 162 39 / 0.45);
+}
+
+.dingry-footer-shift-range::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #050505;
+  border-radius: 999px;
+  background: #c9a227;
 }
 
 .dingry-footer-classic .dingry-footer-eyebrow {
@@ -4624,12 +4877,21 @@ html[data-theme="light"] .dingry-shop .dingry-footer-stage {
 }
 
 .dingry-shop-lower-band .dingry-footer-payment-band .dingry-pay-badge {
-  min-height: 2rem;
-  padding: 0.3rem 0.55rem;
-  border: 0.5px solid rgb(216 185 106 / 0.42);
-  border-radius: 2px;
-  background: rgb(5 5 5 / 0.72);
-  box-shadow: inset 0 0.5px 0 rgb(252 246 186 / 0.08);
+  box-sizing: border-box;
+  width: 4.35rem;
+  height: 2.55rem;
+  min-height: 0;
+  padding: 0.12rem 0.16rem;
+  border: 1.5px solid #d4b36a;
+  border-radius: 0.5rem;
+  background: #050505;
+  box-shadow: none;
+}
+
+.dingry-shop-lower-band .dingry-footer-payment-band .dingry-pay-badge svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .dingry-shop-lower-band .dingry-footer-payment-band .dingry-pay-badge--apple {

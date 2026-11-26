@@ -14,24 +14,25 @@ type AdminStockColorSortToggleProps = {
 
 const MODE_META: Record<StockColorSortMode, { title: string; label: string }> = {
   default: {
-    title: "Tri des couleurs du stock (luminosité · clic : clair → sombre)",
+    title: "Tri couleurs · clic : du clair au foncé (Blanc → Gris → Vert → Bleu → Noir)",
     label: "Tri couleurs",
   },
   light: {
-    title: "Du plus clair au plus sombre — valide pour appliquer sur le site",
-    label: "Clair vers sombre",
+    title: "Ordre clair → foncé : Blanc, Gris, Vert, Bleu, Noir — Valider pour la boutique",
+    label: "Clair → foncé",
   },
   dark: {
-    title: "Du plus sombre au plus clair — valide pour appliquer sur le site",
-    label: "Sombre vers clair",
+    title: "Ordre foncé → clair : Noir, Bleu, Vert, Gris, Blanc — Valider pour la boutique",
+    label: "Foncé → clair",
   },
 };
 
+/** Pastilles du bouton = même logique que le tri (blanc · gris · vert · bleu · noir). */
 const GRADIENT_LIGHT_TO_DARK =
-  "linear-gradient(90deg, #fafaf6 0%, #c8f5dc 11%, #b8e4ff 22%, #fff3a8 34%, #e8c84a 44%, #52c47a 56%, #4a9cf0 68%, #1b4a3a 80%, #152a52 90%, #080808 100%)";
+  "linear-gradient(90deg, #f4f4ef 0%, #a8a29e 24%, #22c55e 48%, #2563eb 72%, #0a0a0a 100%)";
 
 const GRADIENT_DARK_TO_LIGHT =
-  "linear-gradient(90deg, #080808 0%, #152a52 10%, #1b4a3a 20%, #4a9cf0 32%, #52c47a 44%, #e8c84a 56%, #fff3a8 66%, #b8e4ff 78%, #c8f5dc 89%, #fafaf6 100%)";
+  "linear-gradient(90deg, #0a0a0a 0%, #2563eb 28%, #22c55e 52%, #a8a29e 76%, #f4f4ef 100%)";
 
 function StockColorSortSwatches({ mode }: { mode: StockColorSortMode }) {
   const inactive = mode === "default";

@@ -4,7 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { adminProductToRow } from "../lib/supabase/product-row";
 import type { AdminProduct } from "../lib/admin/types";
-import { normalizePrintPlacement, normalizeProductCategory, normalizePublishStatus } from "../lib/admin/types";
+import {
+  normalizePrintPlacement,
+  normalizeProductBrand,
+  normalizeProductCategory,
+  normalizeProductCollection,
+  normalizePublishStatus,
+} from "../lib/admin/types";
 
 config({ path: path.join(process.cwd(), ".env.local") });
 config({ path: path.join(process.cwd(), ".env") });
@@ -29,6 +35,8 @@ function asProduct(raw: Record<string, unknown>, index: number): AdminProduct {
     sizeGuide: String(raw.sizeGuide ?? ""),
     printPlacement: normalizePrintPlacement(raw.printPlacement),
     category: normalizeProductCategory(String(raw.category ?? "T-shirts")),
+    brand: normalizeProductBrand(String(raw.brand ?? "")),
+    collection: normalizeProductCollection(String(raw.collection ?? "")),
     price: Number(raw.price) || 0,
     sizes: Array.isArray(raw.sizes) ? raw.sizes.map(String) : ["S", "M", "L", "XL"],
     stock: Math.max(0, Math.floor(Number(raw.stock) || 0)),

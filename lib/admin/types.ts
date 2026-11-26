@@ -85,6 +85,35 @@ export function normalizeProductCategory(value: string): ProductCategory {
   return "T-shirts";
 }
 
+export const BRANDS = ["DINGRY", "ROCK THE STREET", "FYMA"] as const;
+export type Brand = (typeof BRANDS)[number];
+
+export const COLLECTIONS = ["Signature", "DINGRY MADA", "Édition limitée"] as const;
+export type ProductCollection = (typeof COLLECTIONS)[number];
+
+export const DEFAULT_PRODUCT_BRAND: Brand = "DINGRY";
+export const DEFAULT_PRODUCT_COLLECTION: ProductCollection = "Signature";
+
+export function isProductBrand(value: string): value is Brand {
+  return (BRANDS as readonly string[]).includes(value);
+}
+
+export function normalizeProductBrand(value: string): Brand {
+  const trimmed = value.trim();
+  if (isProductBrand(trimmed)) return trimmed;
+  return DEFAULT_PRODUCT_BRAND;
+}
+
+export function isProductCollection(value: string): value is ProductCollection {
+  return (COLLECTIONS as readonly string[]).includes(value);
+}
+
+export function normalizeProductCollection(value: string): ProductCollection {
+  const trimmed = value.trim();
+  if (isProductCollection(trimmed)) return trimmed;
+  return DEFAULT_PRODUCT_COLLECTION;
+}
+
 /** Tailles proposées dans le formulaire admin par catégorie. */
 export const ADMIN_CATEGORY_SIZES: Record<ProductCategory, readonly ProductSize[]> = {
   Hoodies: PRODUCT_SIZES,
@@ -184,6 +213,8 @@ export type AdminProduct = {
   /** Impression recto/verso (vide = non affiché boutique). */
   printPlacement: ProductPrintPlacement;
   category: ProductCategory;
+  brand: Brand;
+  collection: ProductCollection;
   price: number;
   sizes: ProductSize[];
   stock: number;
@@ -218,6 +249,8 @@ export type CatalogProduct = {
   sizeGuide?: string;
   printPlacement?: ProductPrintPlacement;
   category: ProductCategory;
+  brand: Brand;
+  collection: ProductCollection;
   price: number;
   image: string;
   /** Photo dos pour flip (produits CRM avec recto + verso sur une même fiche). */
@@ -382,6 +415,8 @@ export function toCatalogProduct(product: AdminProduct): CatalogProduct | null {
     ...(product.sizeGuide.trim() ? { sizeGuide: product.sizeGuide.trim() } : {}),
     ...(product.printPlacement ? { printPlacement: product.printPlacement } : {}),
     category: product.category,
+    brand: product.brand,
+    collection: product.collection,
     price: product.price,
     image: catalogImageUrl(product.imageUrl),
     ...(product.imageBackUrl.trim() ? { imageBack: catalogImageUrl(product.imageBackUrl) } : {}),

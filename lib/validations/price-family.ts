@@ -36,9 +36,6 @@ export function normalizeCrmProductNameField(raw: string): string {
   return raw.trim().replace(/\s+/g, " ").toUpperCase();
 }
 
-/** @deprecated alias — utiliser `normalizeCrmProductNameField`. */
-export const normalizePriceFamilyNameField = normalizeCrmProductNameField;
-
 const crmProductNameSchema = z
   .string()
   .transform((value) => normalizeCrmProductNameField(value))

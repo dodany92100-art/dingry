@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import { stockIndicativeVariants } from "@/lib/admin/stock-indicative";
 import { LOW_STOCK_THRESHOLD } from "@/lib/admin/order-view";
 import type { StockAutosavePhase } from "@/lib/admin/stock-autosave-types";
@@ -9,8 +9,9 @@ import { CATALOG_THUMB_IMAGE_WIDTH } from "@/lib/media/catalog-image-sizes";
 import { deliveryImageUrl as cldOpt } from "@/lib/media/delivery-image-url";
 import {
   AdminStockControls,
-  AdminStockControlsCardTrigger,
+  AdminStockQtyControls,
 } from "@/components/organisms/admin/admin-stock-controls";
+import { AdminStockPriceControls } from "@/components/organisms/admin/admin-price-input";
 import { AdminStockStatusBadge } from "@/components/organisms/admin/admin-stock-status-badge";
 import { AdminProductOrderControls } from "@/components/organisms/admin/admin-product-order-controls";
 import { AdminReorderSurface } from "@/components/organisms/admin/admin-reorder-surface";
@@ -22,12 +23,17 @@ type AdminStockProductCardProps = {
   busy: boolean;
   onChangeStock: (product: AdminProduct, delta: number) => void;
   onSetStock: (product: AdminProduct, nextStock: number) => void;
+  onChangePrice?: (product: AdminProduct, delta: number) => void;
+  onSetPrice?: (product: AdminProduct, nextPrice: number) => void;
   onEdit: (product: AdminProduct) => void;
   onTogglePin: (product: AdminProduct) => void;
   onDelete: (product: AdminProduct) => void;
   onDrop: (fromIndex: number, toIndex: number) => void;
   disableReorder?: boolean;
   autosavePhase?: StockAutosavePhase;
+  bulkSelectMode?: boolean;
+  bulkSelected?: boolean;
+  onBulkSelectChange?: (selected: boolean) => void;
 };
 
 const priceFormat = new Intl.NumberFormat("fr-FR", {
@@ -63,16 +69,20 @@ export function AdminStockProductCard({
   busy,
   onChangeStock,
   onSetStock,
+  onChangePrice,
+  onSetPrice,
   onEdit,
   onTogglePin,
   onDelete,
   onDrop,
   disableReorder = false,
   autosavePhase,
+  bulkSelectMode = false,
+  bulkSelected = false,
+  onBulkSelectChange,
 }: AdminStockProductCardProps) {
   const soldOut = product.stock <= 0;
   const variantLine = stockIndicativeVariants(product) || product.category;
-  const [stockOpen, setStockOpen] = useState(false);
   const stockPanelReactId = useId();
   const stockPanelId = `dingry-stock-controls-${product.id}${stockPanelReactId}`;
 
@@ -112,6 +122,24 @@ export function AdminStockProductCard({
             ) : null}
             <AdminStockStatusBadge product={product} className="max-w-full truncate max-sm:px-1.5 max-sm:text-[8px] max-sm:tracking-[0.1em]" />
           </div>
+          {bulkSelectMode ? (
+            <div
+              className="absolute bottom-1.5 left-1.5 z-10 rounded-full bg-black/55 p-1 backdrop-blur-[2px]"
+              data-admin-no-reorder
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <label className="flex cursor-pointer items-center gap-1 px-1">
+                <input
+                  type="checkbox"
+                  checked={bulkSelected}
+                  onChange={(event) => onBulkSelectChange?.(event.target.checked)}
+                  className="h-4 w-4 rounded border-white/25 bg-black/50 accent-[#FF3D00]"
+                  aria-label={`Sélectionner ${product.name} pour édition en lot`}
+                />
+              </label>
+            </div>
+          ) : null}
           <div
             className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-full bg-black/50 p-0.5 backdrop-blur-[2px] md:right-1.5 md:top-1.5"
             data-admin-no-reorder
@@ -161,22 +189,45 @@ export function AdminStockProductCard({
           </div>
 
           <div
-            className="flex min-w-0 items-center justify-between gap-1 pt-0.5"
+            className={`flex min-w-0 pt-0.5 ${bulkSelectMode ? "flex-col gap-1.5" : "items-center justify-between gap-1"}`}
             data-admin-no-reorder
             onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
-            <p className="shrink-0 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs">
-              {priceFormat.format(product.price)}
-            </p>
-            <AdminStockControlsCardTrigger
-              product={product}
-              open={stockOpen}
-              panelId={stockPanelId}
-              onToggle={() => setStockOpen((value) => !value)}
-            />
+            {bulkSelectMode && bulkSelected && onChangePrice && onSetPrice ? (
+              <AdminStockPriceControls
+                product={product}
+                disabled={busy}
+                onChangePrice={onChangePrice}
+                onSetPrice={onSetPrice}
+              />
+            ) : (
+              <p
+                className={`shrink-0 text-[11px] font-bold tabular-nums tracking-tight text-white md:text-xs ${
+                  bulkSelectMode && !bulkSelected ? "text-white/45" : ""
+                }`}
+              >
+                {priceFormat.format(product.price)}
+              </p>
+            )}
+            <div
+              className={
+                bulkSelectMode
+                  ? "flex w-full min-w-0 justify-end"
+                  : "min-w-0 max-w-[62%] shrink"
+              }
+            >
+              <AdminStockQtyControls
+                product={product}
+                disabled={busy || (bulkSelectMode && !bulkSelected)}
+                onChangeStock={onChangeStock}
+                onSetStock={onSetStock}
+                compact
+              />
+            </div>
           </div>
 
-          <div className="mt-auto shrink-0">
+          <div className="mt-auto shrink-0 pt-0.5">
             <AdminStockControls
               product={product}
               busy={busy}
@@ -185,8 +236,9 @@ export function AdminStockProductCard({
               onEdit={onEdit}
               layout="card"
               cardTriggerVariant="inline"
-              open={stockOpen}
-              onOpenChange={setStockOpen}
+              hideQtyInPanel
+              hideEditInPanel
+              open
               panelId={stockPanelId}
               autosavePhase={autosavePhase}
             />

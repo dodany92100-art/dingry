@@ -110,6 +110,7 @@ export async function syncProductOptionsFromDeclinations(input: {
       productName: input.productName,
       parentSku: marketingParentSku,
       colorLabel: label,
+      category: input.category,
     });
     const variantSku = prev?.variantSku?.trim() || auto.variantSku;
     const isDefault =

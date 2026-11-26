@@ -19,6 +19,8 @@ function sample(variant: string): AdminProduct {
     materials: "",
     sizeGuide: "",
     category: "T-shirts",
+    brand: "DINGRY",
+    collection: "Signature",
     price: 10,
     sizes: ["M"],
     stock: 1,
@@ -49,6 +51,14 @@ describe("stock-color-luminance", () => {
       "light",
     );
     expect(sorted.map((p) => p.variant)).toEqual(["BLANC", "GRIS", "NOIR"]);
+  });
+
+  it("ordre famille Blanc · Gris · Vert · Bleu · Noir", () => {
+    const sorted = sortProductsByColorLuminance(
+      [sample("NOIR"), sample("BLEU"), sample("VERT"), sample("GRIS"), sample("BLANC")],
+      "light",
+    );
+    expect(sorted.map((p) => p.variant)).toEqual(["BLANC", "GRIS", "VERT", "BLEU", "NOIR"]);
   });
 
   it("cycle tri", () => {
