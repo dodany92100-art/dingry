@@ -49,6 +49,7 @@ export const R2_LOOKBOOK_STAGING_FOLDER = `dingry/lookbook/staging`;
 export const R2_PERSO_BANNER_FOLDER = `dingry/banner/perso`;
 export const R2_ATELIER_SECTION_HERO_FOLDER = `dingry/atelier/section-hero`;
 export const R2_VITRINE_AMBIENCE_FOLDER = `dingry/vitrine/modal-ambience`;
+export const R2_VITRINE_HERITAGE_DETAIL_FOLDER = `dingry/vitrine/heritage-details`;
 export const R2_VITRINE_HERO_FOLDER = (slideId: string) =>
   `dingry/vitrine/hero/${slideId.replace(/[^a-z0-9-]+/gi, "-").toLowerCase()}`;
 export const R2_ATELIER_MODEL_PREVIEW_FOLDER = (modelId: string) =>

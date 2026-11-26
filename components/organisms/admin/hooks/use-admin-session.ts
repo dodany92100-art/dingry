@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { shouldClientProbeAdminSession } from "@/lib/shop-api-client-access";
+import { usePathname } from "next/navigation";
+import { fetchClientAdminAuthenticated } from "@/lib/admin/client-admin-session-probe";
 
 export const DINGRY_ADMIN_SESSION_EVENT = "dingry:admin-session";
 
@@ -14,6 +15,7 @@ function broadcastAdminSession(authenticated: boolean) {
 
 /** Cookie session admin (sans enrôlement TOTP) — barre Alto, garde UI. */
 export function useAdminSessionProbe() {
+  const pathname = usePathname() ?? "/";
   const [booting, setBooting] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -30,17 +32,12 @@ export function useAdminSessionProbe() {
   }, []);
 
   useEffect(() => {
-    if (!shouldClientProbeAdminSession()) {
-      setAuthenticated(false);
-      setBooting(false);
-      return;
-    }
     let cancelled = false;
     async function boot() {
       try {
-        const response = await fetch("/api/admin/session", { cache: "no-store" });
+        const next = await fetchClientAdminAuthenticated(pathname);
         if (cancelled) return;
-        setAuthenticated(response.ok);
+        setAuthenticated(next);
       } catch {
         if (!cancelled) setAuthenticated(false);
       } finally {
@@ -48,10 +45,18 @@ export function useAdminSessionProbe() {
       }
     }
     void boot();
+
+    function refreshOnFocus() {
+      void fetchClientAdminAuthenticated(pathname).then((next) => {
+        if (!cancelled) setAuthenticated(next);
+      });
+    }
+    window.addEventListener("focus", refreshOnFocus);
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", refreshOnFocus);
     };
-  }, []);
+  }, [pathname]);
 
   return { booting, authenticated, setAuthenticated };
 }

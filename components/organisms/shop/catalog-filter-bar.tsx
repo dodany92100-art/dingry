@@ -24,7 +24,7 @@ export function CatalogFilterBar({ value, onChange, products: _products }: Catal
   return (
     <div className="dingry-catalog-bar dingry-catalog-bar--vitrine dingry-catalog-bar--mobile-bleed -mt-px mb-4 w-full border-b border-white/15 bg-black py-2.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] md:mb-6 md:py-3">
       <div className="relative min-w-0">
-        <AdminStorefrontCopyTrigger mode="catalog" className="absolute right-1 top-0 z-20 md:right-2" />
+        <AdminStorefrontCopyTrigger mode="catalog" className="absolute right-0 top-1/2 z-30 -translate-y-1/2 md:right-1" />
       <AnimatedTabs
         className="dingry-catalog-tabs-scroll"
         tabs={[...categoryTabs]}

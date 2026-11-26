@@ -224,17 +224,26 @@
 
 .detailVisual {
   margin: 0;
+  width: 100%;
+  min-width: 0;
   overflow: hidden;
   border-radius: 0.65rem;
   border: 1px solid rgb(179 135 40 / 0.4);
-  background: #000;
+  background: #0a0a0a;
+}
+
+@media (min-width: 768px) {
+  .detailVisual {
+    max-width: 13.5rem;
+  }
 }
 
 .detailVisualMedia {
   display: block;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 3 / 4;
   width: 100%;
-  object-fit: cover;
+  max-height: 22rem;
+  object-fit: contain;
   object-position: center;
   filter: brightness(0.96) contrast(1.04);
 }

@@ -11,6 +11,9 @@ import { useShopStorefrontCopy } from "@/hooks/shop-storefront-copy-context";
 
 type PanelMode = "catalog" | "heritage" | "footer";
 
+export const ADMIN_STOREFRONT_PENCIL_BTN_CLASS =
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#c9a227]/50 bg-black/70 text-[#c9a227] shadow-[0_0_0_1px_rgb(0_0_0/0.35)] transition-colors hover:border-[#c9a227]/75 hover:bg-black/85";
+
 const MODE_TITLES: Record<PanelMode, string> = {
   catalog: "Titres du menu collection",
   heritage: "Bloc Origines (accueil)",
@@ -38,7 +41,7 @@ export function AdminStorefrontCopyTrigger({
     <>
       <button
         type="button"
-        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center text-[#c9a227] ${className}`}
+        className={`${ADMIN_STOREFRONT_PENCIL_BTN_CLASS} ${className}`}
         aria-label={ariaLabel ?? `Modifier ${MODE_TITLES[mode]}`}
         onClick={() => setOpen(true)}
       >
@@ -72,7 +75,7 @@ function AdminStorefrontCopyPanel({ mode, onClose }: AdminStorefrontCopyPanelPro
       mode === "catalog"
         ? { catalog: draft.catalog }
         : mode === "heritage"
-          ? { heritagePreview: draft.heritagePreview }
+          ? { heritagePreview: draft.heritagePreview, heritageDetails: draft.heritageDetails }
           : { footer: draft.footer };
     const ok = await saveCopy(patch);
     setStatus(ok ? "saved" : "error");
@@ -186,6 +189,83 @@ function AdminStorefrontCopyPanel({ mode, onClose }: AdminStorefrontCopyPanelPro
                   />
                 )}
               </label>
+            ))}
+            <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-white/40">Cartes détaillées</p>
+            {(
+              [
+                ["philosophy", "Philosophie"],
+                ["founder", "Fondateur"],
+              ] as const
+            ).map(([key, label]) => (
+              <div key={key} className="grid gap-2 rounded border border-white/10 p-3">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#c9a227]/85">{label}</p>
+                <label className="block">
+                  <span className="mb-1 flex justify-between gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45">
+                    Titre
+                    <CharCount
+                      value={draft.heritageDetails[key].title}
+                      max={STOREFRONT_COPY_LIMITS.heritageDetailTitle}
+                    />
+                  </span>
+                  <input
+                    type="text"
+                    maxLength={STOREFRONT_COPY_LIMITS.heritageDetailTitle}
+                    value={draft.heritageDetails[key].title}
+                    className="w-full border border-white/15 bg-black/50 px-3 py-2 text-sm text-white"
+                    onChange={(event) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        heritageDetails: {
+                          ...prev.heritageDetails,
+                          [key]: { ...prev.heritageDetails[key], title: event.target.value },
+                        },
+                      }))
+                    }
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 flex justify-between gap-2 text-[9px] uppercase tracking-[0.14em] text-white/45">
+                    Texte
+                    <CharCount
+                      value={draft.heritageDetails[key].body}
+                      max={STOREFRONT_COPY_LIMITS.heritageDetailBody}
+                    />
+                  </span>
+                  <textarea
+                    rows={4}
+                    maxLength={STOREFRONT_COPY_LIMITS.heritageDetailBody}
+                    value={draft.heritageDetails[key].body}
+                    className="w-full resize-y border border-white/15 bg-black/50 px-3 py-2 text-sm leading-relaxed text-white"
+                    onChange={(event) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        heritageDetails: {
+                          ...prev.heritageDetails,
+                          [key]: { ...prev.heritageDetails[key], body: event.target.value },
+                        },
+                      }))
+                    }
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 text-[9px] uppercase tracking-[0.14em] text-white/45">URL image</span>
+                  <input
+                    type="url"
+                    maxLength={STOREFRONT_COPY_LIMITS.heritageDetailImageUrl}
+                    value={draft.heritageDetails[key].imageUrl}
+                    className="w-full border border-white/15 bg-black/50 px-3 py-2 text-sm text-white"
+                    onChange={(event) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        heritageDetails: {
+                          ...prev.heritageDetails,
+                          [key]: { ...prev.heritageDetails[key], imageUrl: event.target.value },
+                        },
+                      }))
+                    }
+                  />
+                </label>
+              </div>
             ))}
           </div>
         ) : null}
