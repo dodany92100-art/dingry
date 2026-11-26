@@ -201,6 +201,3 @@ export function AdminProductPreview({ model, className = "" }: AdminProductPrevi
     </div>
   );
 }
-
-/** Alias demandé spec Smart CRM */
-export const ProductPreview = AdminProductPreview;

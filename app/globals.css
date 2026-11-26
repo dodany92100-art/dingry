@@ -3712,13 +3712,6 @@ html[data-theme="light"] .dingry-shop .dingry-product-id-badge {
   color: #fff !important;
 }
 
-/* HoverBorderGradient : ne pas blanchir le fond (thème clair × règle bg-[#12151c]). */
-html[data-theme="light"] .dingry-catalog-bar .dingry-hover-border-fill,
-html[data-theme="light"] .dingry-shop .dingry-custom-banner .dingry-hover-border-fill {
-  background-color: #12151c !important;
-  color: #fff;
-}
-
 @keyframes dingry-marquee {
   from {
     transform: translateX(0);
