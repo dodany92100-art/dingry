@@ -55,7 +55,7 @@ import {
 import { primaryPersoBannerFromCityVisuals } from "@/lib/catalog-perso-banner-cities";
 import { readBannerFocusFields } from "@/lib/catalog-perso-banner-focus";
 import { getSharedRedis } from "@/lib/ratelimit";
-import { adjustStock, readStockQuantity, seedCatalogStockFromProducts, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
+import { adjustStock, readStockQuantity, seedStockIfMissing, writeStockQuantity } from "@/lib/stock";
 import { buildStorefrontOnlineProducts } from "@/lib/admin/storefront-online-catalog";
 import {
   createSeededStore,
@@ -117,8 +117,6 @@ import {
   PRODUCT_IMAGE_MAX_BYTES,
   PRODUCT_IMAGE_MAX_LABEL,
 } from "@/lib/admin/image-limits";
-
-export { orderPatchHasChanges } from "@/lib/admin/store-order-patch";
 
 const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "admin-uploads");
 const ALLOWED_IMAGE_TYPES = new Set(["image/webp"]);
@@ -851,41 +849,6 @@ export async function loadStoreReadOnly(): Promise<AdminStore> {
   }
 }
 
-async function ensureInitialStore(): Promise<AdminStore> {
-  const seeded = normalizeStore(createSeededStore());
-  try {
-    await writeStoreSnapshot(seeded, null, true);
-    await seedCatalogStockFromProducts(seeded.products);
-    return seeded;
-  } catch (error) {
-    if (isStoreWriteConflict(error)) {
-      const again = await readStoreSnapshot();
-      if (again !== "missing") return again.store;
-    }
-    throw error;
-  }
-}
-
-/** Charge le magasin ; peut créer le fichier initial (admin, écritures). */
-export async function loadStore(): Promise<AdminStore> {
-  const snapshot = await readStoreSnapshot();
-  if (snapshot === "missing") {
-    return ensureInitialStore();
-  }
-  if (snapshot.migratedFromVersion !== undefined) {
-    try {
-      await enqueueStoreWrite(async () => {
-        const fresh = await readStoreSnapshot();
-        if (fresh === "missing") return;
-        await writeStoreSnapshot(fresh.store, fresh.etag);
-      });
-    } catch (error) {
-      console.error("[store] persistance migration version", error instanceof Error ? error.name : "erreur");
-    }
-  }
-  return snapshot.store;
-}
-
 function safeFileName(name: string): string {
   const base = name.trim() || "image";
   return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 60);
@@ -952,7 +915,7 @@ async function uploadAdminImageFile(
   throw new StoreUnavailableError(IMAGE_STORAGE_UNAVAILABLE);
 }
 
-export async function uploadProductImage(
+async function uploadProductImage(
   productId: string,
   file: File,
   face: ProductImageFace = "recto",
@@ -1000,7 +963,7 @@ async function deleteBlobOrLocal(
 }
 
 /** Supprime le média recto ou verso sans toucher l’autre face. */
-export async function deleteProductFaceMedia(
+async function deleteProductFaceMedia(
   product: AdminProduct,
   face: ProductImageFace,
 ): Promise<void> {
@@ -1014,7 +977,7 @@ export async function deleteProductFaceMedia(
   await deleteBlobOrLocal(product.imageBackBlobUrl, product.imageBackBlobPathname, back);
 }
 
-export async function deleteProductImage(product: AdminProduct): Promise<void> {
+async function deleteProductImage(product: AdminProduct): Promise<void> {
   await deleteProductFaceMedia(product, "recto");
   await deleteProductFaceMedia(product, "verso");
 }
@@ -1692,7 +1655,7 @@ export async function patchOrder(
   });
 }
 
-export async function uploadLookbookImage(slideId: string, file: File): Promise<UploadedAdminImage> {
+async function uploadLookbookImage(slideId: string, file: File): Promise<UploadedAdminImage> {
   return uploadAdminImageFile(file, {
     supabaseFolder: `lookbook/${slideId}`,
     blobPathPrefix: `lookbook/${slideId}`,
@@ -1987,7 +1950,7 @@ export async function reorderLookbookSlide(id: string, direction: "up" | "down")
 
 const PERSO_BANNER_UPLOAD_ID = "perso";
 
-export async function uploadCatalogPersoBannerImage(file: File): Promise<UploadedAdminImage> {
+async function uploadCatalogPersoBannerImage(file: File): Promise<UploadedAdminImage> {
   return uploadAdminImageFile(file, {
     supabaseFolder: `banner/${PERSO_BANNER_UPLOAD_ID}`,
     blobPathPrefix: `banner/${PERSO_BANNER_UPLOAD_ID}`,
@@ -2141,30 +2104,6 @@ export async function upsertCatalogPersoBanner(
 export async function listPriceFamilies(): Promise<PriceFamily[]> {
   const store = await loadStoreReadOnly();
   return store.priceFamilies ?? [];
-}
-
-export function assertPriceFamilyAvailable(
-  families: readonly PriceFamily[],
-  draft: unknown,
-): void {
-  const validated = validatePriceFamilyDraft(draft, families);
-  if (!validated.ok) {
-    throw new PriceFamilyDuplicateError(validated.error);
-  }
-}
-
-export async function registerPriceFamilyFromProduct(
-  product: AdminProduct,
-): Promise<PriceFamily> {
-  const draft = priceFamilyDraftFromProductFields({
-    name: product.name,
-    category: product.category,
-    variant: product.variant,
-    price: product.price,
-    sizes: product.sizes,
-    sourceProductId: product.id,
-  });
-  return registerPriceFamily(draft);
 }
 
 export async function registerPriceFamily(draft: unknown): Promise<PriceFamily> {
