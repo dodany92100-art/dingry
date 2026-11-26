@@ -11,6 +11,8 @@ import { mapShopAuthError } from "@/lib/auth/map-auth-error";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { ShopOrderHistory } from "@/components/molecules/shop-order-history";
 import { DRAWER_PANEL_SPRING, MODAL_OVERLAY_TRANSITION } from "@/components/organisms/shop/motion";
+import { CART_DRAWER_DECORATIVE_IMG } from "@/components/organisms/shop/cart-drawer";
+import { useShopVitrineAmbience } from "@/hooks/use-shop-vitrine-ambience";
 import { useShopOrders } from "@/hooks/use-shop-orders";
 import { isFulfillmentOwnerClient } from "@/lib/shop/fulfillment-owner-client";
 import Link from "next/link";
@@ -62,6 +64,7 @@ export function AuthModal({
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState<"google" | "password" | "magic" | "signup" | "signout" | null>(null);
   const isAccountView = Boolean(accountUser?.email);
+  const { ambience, objectPosition } = useShopVitrineAmbience();
   const shopOrders = useShopOrders(accessToken, open && isAccountView);
   const showFulfillmentLink = isAccountView && isFulfillmentOwnerClient(accountUser?.email);
   const [error, setError] = useState<string | null>(null);
@@ -206,7 +209,7 @@ export function AuthModal({
   return (
     <AnimatePresence>
       {open ? (
-        <div key="dingry-auth-modal" className="fixed inset-0 z-[75] flex justify-end">
+        <div key="dingry-auth-modal" className="fixed inset-0 z-[75] flex justify-end md:justify-stretch">
           <motion.button
             type="button"
             className="absolute inset-0 bg-[#050505]/80 backdrop-blur-sm md:hidden"
@@ -219,8 +222,8 @@ export function AuthModal({
               if (!busy) onClose();
             }}
           />
-          <motion.div
-            className="dingry-auth-drawer-visual relative z-[1] hidden min-h-0 min-w-0 flex-1 overflow-hidden bg-black/50 backdrop-blur-md md:block"
+          <motion.aside
+            className="dingry-auth-drawer-visual relative z-[1] hidden min-h-0 min-w-0 flex-1 overflow-hidden md:block"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -229,14 +232,26 @@ export function AuthModal({
           >
             <button
               type="button"
-              className="absolute inset-0 z-0"
+              className="absolute inset-0 z-20 cursor-pointer"
               aria-label="Fermer"
               disabled={Boolean(busy)}
               onClick={() => {
                 if (!busy) onClose();
               }}
             />
-          </motion.div>
+            <img
+              src={ambience.imageUrl}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ objectPosition }}
+              {...CART_DRAWER_DECORATIVE_IMG}
+            />
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent"
+              aria-hidden
+            />
+          </motion.aside>
           <motion.aside
             role="dialog"
             aria-modal="true"

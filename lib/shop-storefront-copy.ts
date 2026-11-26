@@ -1,6 +1,14 @@
 import { CATALOG_FILTER_LABEL, type CatalogCategory, type CatalogFilter } from "@/lib/catalog-category";
 import {
+  DINGRY_HERITAGE_FOUNDER_SRC,
+  DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC,
+} from "@/lib/dingry-brand";
+import {
   DINGRY_HERITAGE_HOMEPAGE_HOOK,
+  DINGRY_ORIGINES_FOUNDER_BODY,
+  DINGRY_ORIGINES_FOUNDER_TITLE,
+  DINGRY_ORIGINES_PHILOSOPHY_BODY,
+  DINGRY_ORIGINES_PHILOSOPHY_TITLE,
   DINGRY_ORIGINES_PREVIEW_FOUNDER_HOOK,
   DINGRY_ORIGINES_PREVIEW_FOUNDER_KICKER,
   DINGRY_ORIGINES_PREVIEW_FOUNDER_OUTRO,
@@ -17,6 +25,9 @@ export const STOREFRONT_COPY_LIMITS = {
   footerManifesto: 40,
   footerColumn: 22,
   heritageCta: 32,
+  heritageDetailTitle: 96,
+  heritageDetailBody: 900,
+  heritageDetailImageUrl: 2048,
 } as const;
 
 export type ShopStorefrontCatalogCopy = Partial<Record<CatalogFilter, string>>;
@@ -34,6 +45,17 @@ export type ShopStorefrontHeritagePreviewCopy = {
   ctaFounder: string;
 };
 
+export type ShopStorefrontHeritageDetailBlock = {
+  title: string;
+  body: string;
+  imageUrl: string;
+};
+
+export type ShopStorefrontHeritageDetailsCopy = {
+  philosophy: ShopStorefrontHeritageDetailBlock;
+  founder: ShopStorefrontHeritageDetailBlock;
+};
+
 export type ShopStorefrontFooterCopy = {
   manifesto: string;
   brandColumn: string;
@@ -44,7 +66,22 @@ export type ShopStorefrontFooterCopy = {
 export type ShopStorefrontCopyConfig = {
   catalog: ShopStorefrontCatalogCopy;
   heritagePreview: ShopStorefrontHeritagePreviewCopy;
+  /** Cartes repliables (philosophie + fondateur) après « Découvrir son histoire ». */
+  heritageDetails: ShopStorefrontHeritageDetailsCopy;
   footer: ShopStorefrontFooterCopy;
+};
+
+export const DEFAULT_SHOP_STOREFRONT_HERITAGE_DETAILS: ShopStorefrontHeritageDetailsCopy = {
+  philosophy: {
+    title: DINGRY_ORIGINES_PHILOSOPHY_TITLE,
+    body: DINGRY_ORIGINES_PHILOSOPHY_BODY,
+    imageUrl: DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC,
+  },
+  founder: {
+    title: DINGRY_ORIGINES_FOUNDER_TITLE,
+    body: DINGRY_ORIGINES_FOUNDER_BODY,
+    imageUrl: DINGRY_HERITAGE_FOUNDER_SRC,
+  },
 };
 
 export const DEFAULT_SHOP_STOREFRONT_HERITAGE_PREVIEW: ShopStorefrontHeritagePreviewCopy = {
@@ -70,6 +107,7 @@ export const DEFAULT_SHOP_STOREFRONT_FOOTER: ShopStorefrontFooterCopy = {
 export const DEFAULT_SHOP_STOREFRONT_COPY: ShopStorefrontCopyConfig = {
   catalog: {},
   heritagePreview: DEFAULT_SHOP_STOREFRONT_HERITAGE_PREVIEW,
+  heritageDetails: DEFAULT_SHOP_STOREFRONT_HERITAGE_DETAILS,
   footer: DEFAULT_SHOP_STOREFRONT_FOOTER,
 };
 
@@ -79,6 +117,45 @@ function clampText(value: unknown, max: number, fallback: string): string {
   if (!trimmed) return fallback;
   if (trimmed.length <= max) return trimmed;
   return trimmed.slice(0, max).trimEnd();
+}
+
+function clampMultilineBody(value: unknown, max: number, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  if (trimmed.length <= max) return trimmed;
+  return trimmed.slice(0, max).trimEnd();
+}
+
+function normalizeHeritageImageUrl(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  if (trimmed.startsWith("/") || trimmed.startsWith("https://")) {
+    return trimmed.slice(0, STOREFRONT_COPY_LIMITS.heritageDetailImageUrl);
+  }
+  return fallback;
+}
+
+function normalizeHeritageDetailBlock(
+  raw: unknown,
+  defaults: ShopStorefrontHeritageDetailBlock,
+): ShopStorefrontHeritageDetailBlock {
+  const record = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return {
+    title: clampText(record.title, STOREFRONT_COPY_LIMITS.heritageDetailTitle, defaults.title),
+    body: clampMultilineBody(record.body, STOREFRONT_COPY_LIMITS.heritageDetailBody, defaults.body),
+    imageUrl: normalizeHeritageImageUrl(record.imageUrl, defaults.imageUrl),
+  };
+}
+
+function normalizeHeritageDetails(input: unknown): ShopStorefrontHeritageDetailsCopy {
+  const defaults = DEFAULT_SHOP_STOREFRONT_HERITAGE_DETAILS;
+  const record = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  return {
+    philosophy: normalizeHeritageDetailBlock(record.philosophy, defaults.philosophy),
+    founder: normalizeHeritageDetailBlock(record.founder, defaults.founder),
+  };
 }
 
 function normalizeCatalogCopy(input: unknown): ShopStorefrontCatalogCopy {
@@ -95,7 +172,15 @@ function normalizeCatalogCopy(input: unknown): ShopStorefrontCatalogCopy {
 
 export function normalizeShopStorefrontCopy(input: unknown): ShopStorefrontCopyConfig {
   const base = DEFAULT_SHOP_STOREFRONT_COPY;
-  if (!input || typeof input !== "object") return { ...base, catalog: {}, heritagePreview: { ...base.heritagePreview }, footer: { ...base.footer } };
+  if (!input || typeof input !== "object") {
+    return {
+      ...base,
+      catalog: {},
+      heritagePreview: { ...base.heritagePreview },
+      heritageDetails: { ...base.heritageDetails, philosophy: { ...base.heritageDetails.philosophy }, founder: { ...base.heritageDetails.founder } },
+      footer: { ...base.footer },
+    };
+  }
   const record = input as Record<string, unknown>;
   const heritageRaw = record.heritagePreview;
   const footerRaw = record.footer;
@@ -159,6 +244,7 @@ export function normalizeShopStorefrontCopy(input: unknown): ShopStorefrontCopyC
         heritageDefaults.ctaFounder,
       ),
     },
+    heritageDetails: normalizeHeritageDetails(record.heritageDetails),
     footer: {
       manifesto: clampText(
         footerRecord.manifesto,
@@ -202,6 +288,11 @@ export function mergeShopStorefrontCopyPatch(
       }
     }
   }
+  const heritageDetailsPatch =
+    record.heritageDetails && typeof record.heritageDetails === "object"
+      ? (record.heritageDetails as Record<string, unknown>)
+      : null;
+
   return normalizeShopStorefrontCopy({
     catalog: nextCatalog,
     heritagePreview: {
@@ -210,6 +301,22 @@ export function mergeShopStorefrontCopyPatch(
         ? record.heritagePreview
         : {}),
     },
+    heritageDetails: heritageDetailsPatch
+      ? {
+          philosophy: {
+            ...current.heritageDetails.philosophy,
+            ...(heritageDetailsPatch.philosophy && typeof heritageDetailsPatch.philosophy === "object"
+              ? heritageDetailsPatch.philosophy
+              : {}),
+          },
+          founder: {
+            ...current.heritageDetails.founder,
+            ...(heritageDetailsPatch.founder && typeof heritageDetailsPatch.founder === "object"
+              ? heritageDetailsPatch.founder
+              : {}),
+          },
+        }
+      : current.heritageDetails,
     footer: {
       ...current.footer,
       ...(record.footer && typeof record.footer === "object" ? record.footer : {}),

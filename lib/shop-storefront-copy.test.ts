@@ -23,6 +23,8 @@ describe("shop-storefront-copy", () => {
   it("conserve les défauts heritage", () => {
     const next = normalizeShopStorefrontCopy(null);
     expect(next.heritagePreview.titleLine1.length).toBeGreaterThan(3);
+    expect(next.heritageDetails.philosophy.title.length).toBeGreaterThan(3);
+    expect(next.heritageDetails.founder.imageUrl.length).toBeGreaterThan(1);
     expect(next.footer.manifesto).toContain("ATTITUDE");
     expect(CATALOG_FILTER_LABEL.all).toBe("Collection");
   });

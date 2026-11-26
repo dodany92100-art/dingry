@@ -26,7 +26,7 @@ export function CrmChangelogDialog({ open, onClose }: CrmChangelogDialogProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-6">
       <button
         type="button"
         aria-label="Fermer le journal des versions"

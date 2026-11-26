@@ -2,22 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
-import {
-  DINGRY_FAVICON_SRC,
-  DINGRY_HERITAGE_EDITORIAL_SRC,
-  DINGRY_HERITAGE_FOUNDER_SRC,
-  DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC,
-} from "@/lib/dingry-brand";
-import {
-  DINGRY_HERITAGE_CHRONOLOGY,
-  DINGRY_ORIGINES_FOUNDER_BODY,
-  DINGRY_ORIGINES_FOUNDER_TITLE,
-  DINGRY_ORIGINES_PHILOSOPHY_BODY,
-  DINGRY_ORIGINES_PHILOSOPHY_TITLE,
-} from "@/lib/dingry-heritage-content";
+import { DINGRY_FAVICON_SRC, DINGRY_HERITAGE_EDITORIAL_SRC } from "@/lib/dingry-brand";
+import { DINGRY_HERITAGE_CHRONOLOGY } from "@/lib/dingry-heritage-content";
 import { useTranslation } from "@/hooks/use-translation";
 import { useShopStorefrontCopy } from "@/hooks/shop-storefront-copy-context";
-import { AdminStorefrontCopyTrigger } from "@/components/molecules/shop/admin-storefront-copy-panel";
+import {
+  ADMIN_STOREFRONT_PENCIL_BTN_CLASS,
+  AdminStorefrontCopyTrigger,
+} from "@/components/molecules/shop/admin-storefront-copy-panel";
 import {
   clampOriginesPreviewFocusY,
   clampOriginesPreviewOpacity,
@@ -84,6 +76,7 @@ export function HeritageSection({
     dict.heritage.chronology.length > 0 ? dict.heritage.chronology : DINGRY_HERITAGE_CHRONOLOGY;
   const { copy } = useShopStorefrontCopy();
   const preview = copy.heritagePreview;
+  const details = copy.heritageDetails;
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [focusY, setFocusY] = useState(DEFAULT_ORIGINES_PREVIEW_FOCUS_Y);
   const [opacity, setOpacity] = useState(DEFAULT_ORIGINES_PREVIEW_OPACITY);
@@ -192,7 +185,7 @@ export function HeritageSection({
           {adminAdjust && !focusEditorOpen ? (
             <button
               type="button"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center text-[#c9a227]"
+              className={ADMIN_STOREFRONT_PENCIL_BTN_CLASS}
               aria-label="Régler le visuel Origines"
               onClick={() => setFocusEditorOpen(true)}
             >
@@ -304,30 +297,32 @@ export function HeritageSection({
             <article id="origines-philosophie" className={styles.detailCard}>
               <figure className={styles.detailVisual}>
                 <img
-                  src={DINGRY_HERITAGE_PHILOSOPHY_COVER_SRC}
+                  src={details.philosophy.imageUrl}
                   alt=""
                   className={styles.detailVisualMedia}
                   loading="lazy"
+                  decoding="async"
                 />
               </figure>
               <div className={styles.detailCopy}>
-                <h3 className={styles.detailHeadline}>{DINGRY_ORIGINES_PHILOSOPHY_TITLE}</h3>
-                <p className={styles.detailBody}>{DINGRY_ORIGINES_PHILOSOPHY_BODY}</p>
+                <h3 className={styles.detailHeadline}>{details.philosophy.title}</h3>
+                <p className={styles.detailBody}>{details.philosophy.body}</p>
               </div>
             </article>
 
             <article id="origines-fondateur" className={styles.detailCard}>
               <figure className={styles.detailVisual}>
                 <img
-                  src={DINGRY_HERITAGE_FOUNDER_SRC}
+                  src={details.founder.imageUrl}
                   alt=""
                   className={styles.detailVisualMedia}
                   loading="lazy"
+                  decoding="async"
                 />
               </figure>
               <div className={styles.detailCopy}>
-                <h3 className={styles.detailHeadline}>{DINGRY_ORIGINES_FOUNDER_TITLE}</h3>
-                <p className={styles.detailBody}>{DINGRY_ORIGINES_FOUNDER_BODY}</p>
+                <h3 className={styles.detailHeadline}>{details.founder.title}</h3>
+                <p className={styles.detailBody}>{details.founder.body}</p>
               </div>
             </article>
           </div>
