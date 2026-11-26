@@ -9,6 +9,6 @@ describe("ShopHero LCP image", () => {
   it("déclare priority + fetchPriority high sur l’image hero", () => {
     const source = readFileSync(heroPath, "utf8");
     expect(source).toMatch(/\bpriority\b/);
-    expect(source).toMatch(/fetchPriority="high"/);
+    expect(source).toMatch(/fetchPriority=\{index === 0 \? "high" : "auto"\}/);
   });
 });

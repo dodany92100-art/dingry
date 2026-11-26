@@ -15,6 +15,10 @@ type AtelierModelPickerProps = {
   onSelect: (model: AtelierCustomModel) => void;
   className?: string;
   compact?: boolean;
+  /** Compact + familles en ligne (ex. colonne photo CUSTOM). */
+  inlineGroups?: boolean;
+  /** Vignettes seules (libellé en `aria-label` / `title`). */
+  hideCardLabels?: boolean;
 };
 
 export function AtelierModelPicker({
@@ -23,6 +27,8 @@ export function AtelierModelPicker({
   onSelect,
   className,
   compact = false,
+  inlineGroups = false,
+  hideCardLabels = false,
 }: AtelierModelPickerProps) {
   const groups = groupAtelierModelsForPicker(models);
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -40,7 +46,14 @@ export function AtelierModelPicker({
   }
 
   return (
-    <div className={cn(styles.root, compact && styles.rootCompact, className)}>
+    <div
+      className={cn(
+        styles.root,
+        compact && styles.rootCompact,
+        compact && inlineGroups && styles.rootCompactInline,
+        className,
+      )}
+    >
       {groups.map((group) => (
         <section key={group.id} className={styles.group} aria-labelledby={`atelier-picker-${group.id}`}>
           <p id={`atelier-picker-${group.id}`} className={styles.groupLabel}>
@@ -56,8 +69,12 @@ export function AtelierModelPicker({
                   type="button"
                   role="option"
                   aria-selected={active}
+                  aria-label={model.label}
+                  title={model.label}
                   onClick={() => onSelect(model)}
-                  className={`${styles.card} ${active ? styles.cardActive : ""}`}
+                  className={`${styles.card} ${active ? styles.cardActive : ""} ${
+                    hideCardLabels ? styles.cardIconOnly : ""
+                  }`}
                 >
                   <span className={styles.thumbWrap}>
                     <DingryProductImage
@@ -69,9 +86,11 @@ export function AtelierModelPicker({
                       className={styles.thumb}
                     />
                   </span>
-                  <span className={styles.meta}>
-                    <span className={styles.name}>{model.label}</span>
-                  </span>
+                  {hideCardLabels ? null : (
+                    <span className={styles.meta}>
+                      <span className={styles.name}>{model.label}</span>
+                    </span>
+                  )}
                 </button>
               );
             })}

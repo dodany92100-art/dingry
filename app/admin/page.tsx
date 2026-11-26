@@ -15,6 +15,7 @@ import { useAdminProducts } from "@/components/organisms/admin/hooks/use-admin-p
 import { useAdminSession } from "@/components/organisms/admin/hooks/use-admin-session";
 import { AtelierCustomTab } from "@/components/organisms/admin/atelier-custom-tab";
 import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
+import { VitrinePublishTab } from "@/components/organisms/admin/vitrine-publish-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
 import { PromoCodesTab } from "@/components/organisms/admin/promo-codes-tab";
 import { CrmChangelogDialog } from "@/components/organisms/admin/crm-changelog-dialog";
@@ -26,6 +27,7 @@ import { AdminStockMobileContextSelect } from "@/components/organisms/admin/admi
 import { AdminStockPreviewToggle } from "@/components/organisms/admin/admin-stock-preview-toggle";
 import { AdminStockViewToggle } from "@/components/organisms/admin/admin-stock-view-toggle";
 import { useAdminStockViewPrefs } from "@/components/organisms/admin/hooks/use-admin-stock-view-prefs";
+import { AdminCatalogSheetImportDialog } from "@/components/organisms/admin/admin-catalog-sheet-import-dialog";
 import { StockTab } from "@/components/organisms/admin/stock-tab";
 import { type TabId } from "@/components/organisms/admin/tab-nav";
 import {
@@ -80,6 +82,7 @@ function parseTabParam(value: string | null): TabId {
     value === "commandes" ||
     value === "lookbook" ||
     value === "atelier" ||
+    value === "vitrine" ||
     value === "promos"
   ) {
     return value;
@@ -128,6 +131,7 @@ function AdminDashboard() {
   const [loadError, setLoadError] = useState("");
   const [visibleDraftIds, setVisibleDraftIds] = useState<string[]>([]);
   const [changelogOpen, setChangelogOpen] = useState(false);
+  const [catalogImportOpen, setCatalogImportOpen] = useState(false);
   const loginNext = useMemo(
     () => sanitizeAdminLoginNext(searchParams.get("next")),
     [searchParams],
@@ -509,6 +513,15 @@ function AdminDashboard() {
       />
       <ReleaseBanner onOpenChangelog={() => setChangelogOpen(true)} />
       <CrmChangelogDialog open={changelogOpen} onClose={() => setChangelogOpen(false)} />
+      <AdminCatalogSheetImportDialog
+        open={catalogImportOpen}
+        onClose={() => setCatalogImportOpen(false)}
+        onApplied={() => {
+          void productsApi.load();
+          selectTab("brouillons");
+        }}
+        onUnauthorized={expire}
+      />
       <CrmAdminMemoPostit />
 
       <div
@@ -568,6 +581,7 @@ function AdminDashboard() {
             onSetPrice={(product, next) => void productsApi.setPrice(product, next)}
             onEdit={openEdit}
             onNew={openNew}
+            onImportCatalog={() => setCatalogImportOpen(true)}
             onTogglePin={(product) => void productsApi.togglePin(product)}
             onDelete={(product) => {
               void productsApi.remove(product).then((error) => {
@@ -647,6 +661,8 @@ function AdminDashboard() {
             }}
           />
           </>
+        ) : tab === "vitrine" ? (
+          <VitrinePublishTab lookbookSlides={lookbookApi.slides} onUnauthorized={expire} />
         ) : tab === "promos" ? (
           <PromoCodesTab />
         ) : tab === "commandes" ? (

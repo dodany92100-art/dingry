@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { PERSONALIZATION_SURCHARGE_EUR } from "@/lib/checkout-draft";
 import {
+  atelierModelPickerGroupForProduct,
   enabledAtelierModels,
   findAtelierModelForProduct,
   formatCitySizeClamp,
   type AtelierCustomModel,
+  type AtelierModelPickerGroupId,
   fallbackAtelierCityColorForModel,
   isAtelierCityColorAllowedForModel,
   normalizeAtelierCityColor,
@@ -25,15 +27,18 @@ import { PERSONALIZATION_MAX_LABEL_LENGTH, PRODUCTS } from "@/lib/shop-data";
 import {
   clampPersonalizationLabel,
   formatPersonalizationForCart,
+  formatPersonalizationSansVille,
   personalizationPreviewLabel,
 } from "@/lib/shop-view";
-import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { MODAL_OVERLAY_TRANSITION, MODAL_PANEL_SPRING } from "./motion";
 import modalStyles from "./product-modal.module.css";
 import {
   PERSONALIZE_STEPS,
   PersonalizeStepPane,
+  PersonalizeStepSection,
   PersonalizeStepTabs,
+  nextPersonalizeStep,
+  personalizeStepHeading,
   type PersonalizeStep,
 } from "./personalize-modal-steps";
 import styles from "./personalize-modal.module.css";
@@ -55,6 +60,7 @@ type PersonalizeModalProps = {
   onBannerSeedConsumed?: () => void;
   initialProductId?: number | null;
   initialSize?: string | null;
+  initialModelGroup?: AtelierModelPickerGroupId | null;
   onProductSeedConsumed?: () => void;
   onClose: () => void;
   onSubmit: (line: PersonalizedLineInput) => void;
@@ -70,12 +76,18 @@ export function PersonalizeModal({
   onBannerSeedConsumed,
   initialProductId,
   initialSize,
+  initialModelGroup,
   onProductSeedConsumed,
   onClose,
   onSubmit,
 }: PersonalizeModalProps) {
-  const models = useMemo(() => enabledAtelierModels(atelierConfig), [atelierConfig]);
+  const models = useMemo(() => {
+    const all = enabledAtelierModels(atelierConfig);
+    if (!initialModelGroup) return all;
+    return all.filter((entry) => atelierModelPickerGroupForProduct(entry.productId) === initialModelGroup);
+  }, [atelierConfig, initialModelGroup]);
   const [label, setLabel] = useState("");
+  const [sansVille, setSansVille] = useState(false);
   const [size, setSize] = useState("");
   const [surchargeAccepted, setSurchargeAccepted] = useState(false);
   const [qty, setQty] = useState(1);
@@ -87,6 +99,118 @@ export function PersonalizeModal({
   const [previewZoomOpen, setPreviewZoomOpen] = useState(false);
   const [mobileStepMount, setMobileStepMount] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(max-width: 767px)").matches : false,
+  );
+
+  const sheetScrollRef = useRef<HTMLDivElement>(null);
+  const sheetBodyInnerRef = useRef<HTMLDivElement>(null);
+  const validateActionsRef = useRef<HTMLDivElement>(null);
+  const stepSectionRefs = useRef<Partial<Record<PersonalizeStep, HTMLElement | null>>>({});
+  const scrollStepRafRef = useRef<number | null>(null);
+  const stepAdvanceCooldownRef = useRef(false);
+  const skipStepScrollOnOpenRef = useRef(false);
+  const textAutoAdvancedRef = useRef(false);
+
+  const registerStepSectionRef = useCallback((targetStep: PersonalizeStep, el: HTMLElement | null) => {
+    stepSectionRefs.current[targetStep] = el;
+  }, []);
+
+  const scrollToPersonalizeStep = useCallback(
+    (targetStep: PersonalizeStep) => {
+      if (typeof window === "undefined") return;
+
+      const run = () => {
+        const target = stepSectionRefs.current[targetStep];
+        if (!target) return;
+
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const behavior: ScrollBehavior = reducedMotion ? "auto" : "smooth";
+        const scrollRoot = mobileStepMount ? sheetScrollRef.current : sheetBodyInnerRef.current;
+
+        if (scrollRoot && !mobileStepMount) {
+          const rootTop = scrollRoot.getBoundingClientRect().top;
+          const targetTop = target.getBoundingClientRect().top;
+          /** Laisse une partie de l’étape précédente visible (choix pièce pas « coupé »). */
+          const stepScrollPeekPx = 88;
+          const nextTop = Math.max(0, targetTop - rootTop + scrollRoot.scrollTop - stepScrollPeekPx);
+          scrollRoot.scrollTo({ top: nextTop, behavior });
+          return;
+        }
+
+        target.scrollIntoView({ behavior, block: "start", inline: "nearest" });
+      };
+
+      if (scrollStepRafRef.current !== null) {
+        cancelAnimationFrame(scrollStepRafRef.current);
+      }
+      scrollStepRafRef.current = requestAnimationFrame(() => {
+        scrollStepRafRef.current = requestAnimationFrame(() => {
+          scrollStepRafRef.current = null;
+          run();
+        });
+      });
+    },
+    [mobileStepMount],
+  );
+
+  const scrollValidateActionsIntoView = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const run = () => {
+      const target = validateActionsRef.current;
+      if (!target) return;
+
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const behavior: ScrollBehavior = reducedMotion ? "auto" : "smooth";
+      const scrollRoot = mobileStepMount ? sheetScrollRef.current : sheetBodyInnerRef.current;
+      const tailPaddingPx = 20;
+
+      if (scrollRoot) {
+        const rootRect = scrollRoot.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const overflowBottom = targetRect.bottom - rootRect.bottom + tailPaddingPx;
+        if (overflowBottom > 0) {
+          scrollRoot.scrollTo({ top: scrollRoot.scrollTop + overflowBottom, behavior });
+          return;
+        }
+        const overflowTop = rootRect.top - targetRect.top + 12;
+        if (targetRect.top < rootRect.top) {
+          scrollRoot.scrollTo({ top: Math.max(0, scrollRoot.scrollTop - overflowTop), behavior });
+        }
+        return;
+      }
+
+      target.scrollIntoView({ behavior, block: "end", inline: "nearest" });
+    };
+
+    if (scrollStepRafRef.current !== null) {
+      cancelAnimationFrame(scrollStepRafRef.current);
+    }
+    scrollStepRafRef.current = requestAnimationFrame(() => {
+      scrollStepRafRef.current = requestAnimationFrame(() => {
+        scrollStepRafRef.current = null;
+        run();
+      });
+    });
+  }, [mobileStepMount]);
+
+  const advanceToNextStep = useCallback(
+    (completedStep: PersonalizeStep) => {
+      const next = nextPersonalizeStep(completedStep);
+      if (!next) return;
+      if (stepAdvanceCooldownRef.current) return;
+
+      stepAdvanceCooldownRef.current = true;
+      window.setTimeout(() => {
+        stepAdvanceCooldownRef.current = false;
+      }, 420);
+
+      if (mobileStepMount) {
+        setStep(next);
+        return;
+      }
+      scrollToPersonalizeStep(next);
+    },
+    [mobileStepMount, scrollToPersonalizeStep],
   );
 
   useEffect(() => {
@@ -101,9 +225,31 @@ export function PersonalizeModal({
   useEffect(() => {
     if (!open) {
       setSurchargeAccepted(false);
+      setSansVille(false);
       return;
     }
+    skipStepScrollOnOpenRef.current = true;
+    textAutoAdvancedRef.current = false;
     setStep("model");
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (skipStepScrollOnOpenRef.current) {
+      skipStepScrollOnOpenRef.current = false;
+      return;
+    }
+    scrollToPersonalizeStep(step);
+  }, [open, scrollToPersonalizeStep, step]);
+
+  useEffect(() => {
+    if (!open) return;
+    return () => {
+      if (scrollStepRafRef.current !== null) {
+        cancelAnimationFrame(scrollStepRafRef.current);
+        scrollStepRafRef.current = null;
+      }
+    };
   }, [open]);
 
   useEffect(() => {
@@ -164,14 +310,12 @@ export function PersonalizeModal({
     );
   }, [fallbackProduct, model, products]);
 
-  const previewLabel = label.trim() ? personalizationPreviewLabel(label) : "";
+  const previewLabel = sansVille ? "" : label.trim() ? personalizationPreviewLabel(label) : "";
   const inStock = saleProduct ? isShopProductInStock(saleProduct) : false;
+  const cityChoiceOk = sansVille || Boolean(label.trim());
   const canSubmit =
-    Boolean(model) &&
-    Boolean(size) &&
-    Boolean(label.trim()) &&
-    surchargeAccepted &&
-    inStock;
+    Boolean(model) && Boolean(size) && cityChoiceOk && surchargeAccepted && inStock;
+  const citySuggestions = atelierConfig.suggestedCities;
   const unitPrice = (saleProduct?.price ?? 0) + PERSONALIZATION_SURCHARGE_EUR;
   const cityPresentation = model
     ? resolveAtelierCityTextStyle(model, previewCityColor)
@@ -186,10 +330,12 @@ export function PersonalizeModal({
     const color =
       normalizeAtelierCityColor(previewCityColor) ||
       normalizeAtelierCityColor(model.previewCityColor);
-    const line = formatPersonalizationForCart(label, shirtLabel, {
-      cityColor: color || undefined,
-      citySizeRem: parseCitySizeMaxRem(previewCitySize),
-    });
+    const line = sansVille
+      ? formatPersonalizationSansVille(shirtLabel)
+      : formatPersonalizationForCart(label, shirtLabel, {
+          cityColor: color || undefined,
+          citySizeRem: parseCitySizeMaxRem(previewCitySize),
+        });
     if (!line) return;
     onSubmit({
       size,
@@ -200,22 +346,43 @@ export function PersonalizeModal({
     });
   }
 
-  const mobileStepTitle = PERSONALIZE_STEPS.find((entry) => entry.id === step)?.title ?? "Atelier custom";
-  const addBtnClass = `${modalStyles.addBtn} dingry-add-to-cart-btn w-full ${canSubmit ? modalStyles.addBtnOn : modalStyles.addBtnOff}`;
-  const addLabel = saleProduct && !inStock ? "Épuisé" : "Ajouter au panier";
+  const mobileStepTitle = PERSONALIZE_STEPS.find((entry) => entry.id === step)?.title ?? "DINGRY CUSTOM";
+  const addBtnClass = `dingry-pdp-add-btn dingry-gold-foil-bg w-full ${modalStyles.addBtnGold}`;
+  const addLabel =
+    saleProduct && !inStock ? "Épuisé" : canSubmit ? "VALIDER MA CUSTOM" : "VALIDER MA CUSTOM";
+
+  const customBrandHeader = (
+    <div className={styles.customBrandHeader}>
+      <h2 className={`${modalStyles.title} ${styles.customDisplayTitle}`}>DINGRY CUSTOM</h2>
+      <p className={`${modalStyles.description} ${styles.customBodySans}`} aria-live="polite">
+        Personnalisation atelier — supplément{" "}
+        <span className="dingry-numeric dingry-gold-foil-text font-semibold">
+          +{PERSONALIZATION_SURCHARGE_EUR}&nbsp;€
+        </span>{" "}
+        par pièce.
+      </p>
+    </div>
+  );
 
   const surchargeField = (
-    <label className={`${styles.fieldInputWrap} flex items-start gap-3`}>
+    <label
+      className={`${styles.fieldInputWrap} flex items-start gap-3`}
+      onClick={() => {
+        window.setTimeout(() => scrollValidateActionsIntoView(), 0);
+      }}
+    >
       <input
         type="checkbox"
         checked={surchargeAccepted}
         onChange={(event) => setSurchargeAccepted(event.target.checked)}
-        className="mt-1 h-4 w-4 shrink-0 accent-[#d4af37]"
+        className="mt-1 h-4 w-4 shrink-0 accent-[#bf953f]"
       />
-      <span className="text-sm leading-snug text-neutral-800">
+      <span className={`${modalStyles.metaText} ${styles.customBodySans} text-sm leading-snug`}>
         J&apos;accepte le supplément personnalisation de{" "}
-        <strong className="text-[#a88420]">+{PERSONALIZATION_SURCHARGE_EUR}&nbsp;€</strong> par pièce
-        (en plus du prix affiché).
+        <strong className="dingry-numeric dingry-gold-foil-text">
+          +{PERSONALIZATION_SURCHARGE_EUR}&nbsp;€
+        </strong>{" "}
+        par pièce (en plus du prix affiché).
       </span>
     </label>
   );
@@ -229,57 +396,201 @@ export function PersonalizeModal({
     <AtelierModelPicker models={models} activeModelId={modelId} onSelect={pickModel} />
   );
 
+  const cityPicker = (
+    <fieldset className={`${styles.fieldInputWrap} border-0 p-0`}>
+      <legend className={modalStyles.sectionLabel}>Inscris ta ville</legend>
+      <div
+        className={`${styles.cityChipRow} ${modalStyles.chipRow} mt-2`}
+        role="group"
+        aria-label="Villes suggérées pour la pièce"
+      >
+        {citySuggestions.map((city) => {
+          const active = !sansVille && personalizationPreviewLabel(label) === city;
+          return (
+            <button
+              key={city}
+              type="button"
+              onClick={() => {
+                setSansVille(false);
+                setLabel(clampPersonalizationLabel(city));
+              }}
+              aria-pressed={active}
+              aria-label={`Apposer ${city} sur la pièce`}
+              className={`${styles.cityChip} ${active ? styles.cityChipActive : ""}`}
+            >
+              {city}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+
   const labelField = (
     <label className={`block ${styles.fieldInputWrap}`}>
-      <span className={styles.fieldInputLabel}>Texte personnalisé</span>
+      <span className={modalStyles.sectionLabel}>Ville sur la pièce</span>
       <input
         type="text"
         value={label}
-        onChange={(e) => setLabel(clampPersonalizationLabel(e.target.value))}
-        placeholder="Texte libre (sans ville imposée)"
+        onChange={(e) => {
+          setSansVille(false);
+          setLabel(clampPersonalizationLabel(e.target.value));
+        }}
+        onBlur={() => {
+          if (textAutoAdvancedRef.current || !label.trim()) return;
+          textAutoAdvancedRef.current = true;
+          advanceToNextStep("text");
+        }}
+        placeholder="Ex. PARIS, MARSEILLE, LYON"
         className={styles.fieldInput}
-        aria-label="Texte personnalisé"
+        aria-label="Inscris ta ville"
         maxLength={PERSONALIZATION_MAX_LABEL_LENGTH}
         autoComplete="off"
+        disabled={sansVille}
       />
     </label>
   );
 
-  const modelTextDesktopSection = (
-    <div className={`${modalStyles.section} ${styles.sheetStepSection} ${styles.sheetDesktopModelText}`}>
-      <p className={`${modalStyles.sectionLabel} ${styles.sheetDesktopGroupTitle}`}>Texte &amp; validation</p>
-      {labelField}
-      <div className="mt-4">{surchargeField}</div>
+  const qtyRow = (
+    <div className={`${modalStyles.qtyRow} ${styles.qtyRowSpaced}`}>
+      <div className={modalStyles.qtyLead}>
+        <span className={modalStyles.qtyLabel}>Quantité</span>
+        <p className={`${modalStyles.qtyPrice} dingry-gold-foil-text`}>{unitPrice * qty}€</p>
+      </div>
+      <div className={modalStyles.qtyControl}>
+        <button
+          type="button"
+          onClick={() => setQty((q) => Math.max(1, q - 1))}
+          className={modalStyles.qtyBtn}
+          aria-label="Diminuer la quantité"
+        >
+          −
+        </button>
+        <span className={modalStyles.qtyValue}>{qty}</span>
+        <button
+          type="button"
+          onClick={() => setQty((q) => Math.min(99, q + 1))}
+          className={modalStyles.qtyBtn}
+          aria-label="Augmenter la quantité"
+        >
+          +
+        </button>
+      </div>
     </div>
   );
 
   const modelSection = (
     <div className={`${modalStyles.section} ${styles.sheetStepSection}`}>
-      <p className={`${modalStyles.sectionLabel} ${styles.mobileOnlyBlock}`}>1 — Modèle</p>
-      {modelPicker}
+      <p className={`${modalStyles.sectionLabel} ${styles.mobileOnlyBlock}`}>
+        {personalizeStepHeading("model")}
+      </p>
+      <div className={styles.mobileOnlyBlock}>{modelPicker}</div>
     </div>
   );
 
   const textSection = (
     <div className={`${modalStyles.section} ${styles.sheetStepSection}`}>
-      <p className={`${modalStyles.sectionLabel} ${styles.mobileOnlyBlock}`}>2 — Texte</p>
+      <p className={`${modalStyles.sectionLabel} ${styles.mobileOnlyBlock}`}>
+        {personalizeStepHeading("text")}
+      </p>
+      <div className={styles.textCityBlock}>{cityPicker}</div>
       <div>{labelField}</div>
-      <div className="mt-4">{surchargeField}</div>
+    </div>
+  );
+
+  const recapSummaryLine = [
+    model?.label ?? "—",
+    sansVille ? "Sans ville" : previewLabel || "—",
+    size || "—",
+  ].join(" · ");
+
+  const validateSection = (
+    <div className={`${modalStyles.section} ${styles.sheetStepSection}`}>
+      <p className={`${modalStyles.sectionLabel} ${styles.mobileOnlyBlock}`}>
+        {personalizeStepHeading("validate")}
+      </p>
+      <details className={styles.customRecapAccordion}>
+        <summary className={styles.customRecapSummary}>
+          <span className={styles.customRecapSummaryLead}>
+            <span className={modalStyles.metaLabel}>Récapitulatif</span>
+            <span className={styles.customRecapSummaryHint}>{recapSummaryLine}</span>
+          </span>
+          <span className={styles.customRecapSummaryEnd}>
+            <span className={`${styles.customRecapSummaryTotal} dingry-gold-foil-text dingry-numeric`}>
+              {saleProduct ? `${unitPrice * qty}€` : "—"}
+            </span>
+            <span className={styles.customRecapSummaryChevron} aria-hidden>
+              ▾
+            </span>
+          </span>
+        </summary>
+        <div className={styles.customRecapAccordionBody}>
+          <dl className={styles.customRecap}>
+            <div className={styles.customRecapRow}>
+              <dt className={modalStyles.metaLabel}>Pièce</dt>
+              <dd className={modalStyles.metaText}>{model?.label ?? "—"}</dd>
+            </div>
+            <div className={styles.customRecapRow}>
+              <dt className={modalStyles.metaLabel}>Ville</dt>
+              <dd className={modalStyles.metaText}>{sansVille ? "Sans ville" : previewLabel || "—"}</dd>
+            </div>
+            <div className={styles.customRecapRow}>
+              <dt className={modalStyles.metaLabel}>Taille</dt>
+              <dd className={`${modalStyles.metaText} dingry-numeric`}>{size || "—"}</dd>
+            </div>
+            <div className={styles.customRecapRow}>
+              <dt className={modalStyles.metaLabel}>Quantité</dt>
+              <dd className={`${modalStyles.metaText} dingry-numeric`}>{qty}</dd>
+            </div>
+            <div className={styles.customRecapRow}>
+              <dt className={modalStyles.metaLabel}>Prix unitaire</dt>
+              <dd className={`${modalStyles.metaText} dingry-numeric`}>
+                {saleProduct ? `${unitPrice}€` : "—"}
+                <span className={styles.customRecapSurcharge}>
+                  {" "}
+                  (incl. +{PERSONALIZATION_SURCHARGE_EUR}&nbsp;€ custom)
+                </span>
+              </dd>
+            </div>
+            <div className={`${styles.customRecapRow} ${styles.customRecapTotal}`}>
+              <dt className={modalStyles.metaLabel}>Total</dt>
+              <dd className={`${modalStyles.metaText} dingry-numeric dingry-gold-foil-text font-semibold`}>
+                {saleProduct ? `${unitPrice * qty}€` : "—"}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </details>
+      <div ref={validateActionsRef} className={styles.validateActions}>
+        <div className="mt-3">{surchargeField}</div>
+        {!mobileStepMount ? (
+          <button type="button" onClick={handleAdd} disabled={!canSubmit} className={`${addBtnClass} mt-4`}>
+            {addLabel}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 
   const sizeSection = (
     <div className={`${modalStyles.section} ${styles.sheetStepSection}`}>
-      <p className={`${modalStyles.sizeLabel} ${styles.desktopOnlyBlock}`}>3 — Taille &amp; quantité</p>
+      <p className={`${modalStyles.sizeLabel} ${styles.mobileOnlyBlock}`}>
+        {personalizeStepHeading("size")}
+      </p>
       <div className={`${modalStyles.sizeGrid} ${modalStyles.sizeGridTight} ${styles.sheetSizeGrid}`} style={sizeGridVars}>
         {sizeOptions.map((s) => (
           <button
             key={s}
             type="button"
             aria-pressed={size === s}
-            onClick={() => setSize(s)}
+            onClick={() => {
+              setSize(s);
+              advanceToNextStep("size");
+            }}
             onPointerDown={(event) => {
-              if (event.pointerType === "touch") setSize(s);
+              if (event.pointerType === "touch") {
+                setSize(s);
+              }
             }}
             className={`${modalStyles.sizeBtn} ${size === s ? modalStyles.sizeOn : ""}`}
           >
@@ -287,30 +598,7 @@ export function PersonalizeModal({
           </button>
         ))}
       </div>
-      <div className={`${modalStyles.qtyRow} ${styles.qtyRowSpaced} ${styles.mobileOnlyBlock}`}>
-        <div className={modalStyles.qtyLead}>
-          <span className={modalStyles.qtyLabel}>Quantité</span>
-        </div>
-        <div className={modalStyles.qtyControl}>
-          <button
-            type="button"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
-            className={modalStyles.qtyBtn}
-            aria-label="Diminuer la quantité"
-          >
-            −
-          </button>
-          <span className={modalStyles.qtyValue}>{qty}</span>
-          <button
-            type="button"
-            onClick={() => setQty((q) => Math.min(99, q + 1))}
-            className={modalStyles.qtyBtn}
-            aria-label="Augmenter la quantité"
-          >
-            +
-          </button>
-        </div>
-      </div>
+      {qtyRow}
     </div>
   );
 
@@ -332,7 +620,7 @@ export function PersonalizeModal({
             onClick={onClose}
           />
           <motion.div
-            className={`${modalStyles.panel} ${styles.sheetPanel} dingry-sale-ui`}
+            className={`${modalStyles.panel} ${modalStyles.dingryPdpDark} ${styles.sheetPanel} dingry-pdp-dark dingry-sale-ui`}
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
@@ -342,7 +630,10 @@ export function PersonalizeModal({
             aria-label="Personnalise ta pièce"
           >
             <header className={`${styles.sheetHeader} ${styles.mobileOnlyBlock}`}>
-              <p className={styles.sheetHeaderTitle}>{mobileStepTitle}</p>
+              <div className={styles.sheetHeaderCopy}>
+                {customBrandHeader}
+                <p className={`${modalStyles.brandEyebrow} ${styles.sheetHeaderStep}`}>{mobileStepTitle}</p>
+              </div>
               <button type="button" onClick={onClose} className={styles.sheetHeaderClose} aria-label="Fermer">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -352,7 +643,7 @@ export function PersonalizeModal({
             </header>
 
             <div className={styles.sheetChrome}>
-              <div className={styles.sheetScroll}>
+              <div ref={sheetScrollRef} className={styles.sheetScroll}>
                 <div className={`${modalStyles.photo} ${styles.sheetPhoto}`}>
               {model ? (
                 <PersonalizePreviewStage
@@ -365,31 +656,32 @@ export function PersonalizeModal({
                   cityStyle={cityPresentation.style}
                   rootClassName={styles.sheetPreviewStage}
                   onOpenZoom={() => setPreviewZoomOpen(true)}
+                  showCityOverlay={!sansVille && Boolean(previewLabel)}
                 />
               ) : null}
               {!mobileStepMount ? (
                 <div className={`${styles.desktopOnlyBlock} ${styles.photoModelPicker}`}>
-                  <p className={styles.photoModelPickerLabel}>Choisis ton modèle</p>
+                  <p className={`${modalStyles.sectionLabel} ${styles.photoModelPickerLabel}`}>
+                    {personalizeStepHeading("model")}
+                  </p>
                   <AtelierModelPicker
                     models={models}
                     activeModelId={modelId}
                     onSelect={pickModel}
                     compact
+                    inlineGroups
+                    hideCardLabels
+                    className={styles.photoModelPickerStrip}
                   />
                 </div>
               ) : null}
                 </div>
 
                 <div className={`${modalStyles.body} ${styles.sheetBodyMobile}`}>
-                  <div className={styles.sheetBodyInner}>
+                  <div ref={sheetBodyInnerRef} className={styles.sheetBodyInner}>
                     {!mobileStepMount ? (
                       <div className={`${styles.desktopOnlyBlock} ${styles.sheetDesktopIntro}`}>
                         <div className={styles.sheetDesktopIntroHead}>
-                          <DingryLogo
-                            animate={false}
-                            tone="on-light"
-                            className={`${styles.sheetDesktopLogo} h-6 w-auto`}
-                          />
                           <button
                             type="button"
                             onClick={onClose}
@@ -402,78 +694,76 @@ export function PersonalizeModal({
                             </svg>
                           </button>
                         </div>
-                        <h2 className={`${modalStyles.title} ${styles.sheetDesktopTitle}`}>
-                          Personnalise ta pièce
-                        </h2>
-                        <p className={`${modalStyles.description} ${styles.sheetDesktopDescription}`}>
-                          Choisis le modèle, ton texte et ta taille. Supplément +{PERSONALIZATION_SURCHARGE_EUR}&nbsp;€
-                          par pièce.
-                        </p>
+                        {customBrandHeader}
                       </div>
                     ) : null}
 
                     <PersonalizeStepTabs active={step} onChange={setStep} />
-                    {!mobileStepMount ? modelTextDesktopSection : null}
+
                     {mobileStepMount ? (
                       <>
-                        <PersonalizeStepPane step="model" active={step} mountActiveOnly>
+                        <PersonalizeStepPane
+                          step="model"
+                          active={step}
+                          mountActiveOnly
+                          sectionRef={registerStepSectionRef}
+                        >
                           {modelSection}
                         </PersonalizeStepPane>
-                        <PersonalizeStepPane step="text" active={step} mountActiveOnly>
+                        <PersonalizeStepPane
+                          step="text"
+                          active={step}
+                          mountActiveOnly
+                          sectionRef={registerStepSectionRef}
+                        >
                           {textSection}
                         </PersonalizeStepPane>
+                        <PersonalizeStepPane
+                          step="size"
+                          active={step}
+                          mountActiveOnly
+                          sectionRef={registerStepSectionRef}
+                        >
+                          {sizeSection}
+                        </PersonalizeStepPane>
+                        <PersonalizeStepPane
+                          step="validate"
+                          active={step}
+                          mountActiveOnly
+                          sectionRef={registerStepSectionRef}
+                        >
+                          {validateSection}
+                        </PersonalizeStepPane>
                       </>
-                    ) : null}
-                    <PersonalizeStepPane step="size" active={step} mountActiveOnly={mobileStepMount}>
-                      {sizeSection}
-                    </PersonalizeStepPane>
+                    ) : (
+                      <>
+                        <PersonalizeStepSection step="text" sectionRef={registerStepSectionRef}>
+                          {textSection}
+                        </PersonalizeStepSection>
+                        <PersonalizeStepSection step="size" sectionRef={registerStepSectionRef}>
+                          {sizeSection}
+                        </PersonalizeStepSection>
+                        <PersonalizeStepSection step="validate" sectionRef={registerStepSectionRef}>
+                          {validateSection}
+                        </PersonalizeStepSection>
+                      </>
+                    )}
                   </div>
-
-                  {!mobileStepMount ? (
-                  <div className={`${styles.desktopOnlyBlock} ${styles.sheetDesktopCta}`}>
-                    <div className={`${modalStyles.qtyRow} ${styles.qtyRowSpaced}`}>
-                      <div className={modalStyles.qtyLead}>
-                        <span className={modalStyles.qtyLabel}>Quantité</span>
-                        <p className={modalStyles.qtyPrice}>{unitPrice * qty}€</p>
-                      </div>
-                      <div className={modalStyles.qtyControl}>
-                        <button
-                          type="button"
-                          onClick={() => setQty((q) => Math.max(1, q - 1))}
-                          className={modalStyles.qtyBtn}
-                          aria-label="Diminuer la quantité"
-                        >
-                          −
-                        </button>
-                        <span className={modalStyles.qtyValue}>{qty}</span>
-                        <button
-                          type="button"
-                          onClick={() => setQty((q) => Math.min(99, q + 1))}
-                          className={modalStyles.qtyBtn}
-                          aria-label="Augmenter la quantité"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                    <button type="button" onClick={handleAdd} disabled={!canSubmit} className={addBtnClass}>
-                      {addLabel}
-                    </button>
-                  </div>
-                  ) : null}
                 </div>
               </div>
             </div>
 
-            <footer className={`${styles.sheetFooter} ${styles.mobileOnlyBlock}`}>
-              <div className={styles.sheetFooterMeta}>
-                <span>Total</span>
-                <span className={styles.sheetFooterPrice}>{unitPrice * qty}€</span>
-              </div>
-              <button type="button" onClick={handleAdd} disabled={!canSubmit} className={addBtnClass}>
-                {addLabel}
-              </button>
-            </footer>
+            {mobileStepMount && step === "validate" ? (
+              <footer className={`${styles.sheetFooter} ${styles.mobileOnlyBlock}`}>
+                <div className={styles.sheetFooterMeta}>
+                  <span>Total</span>
+                  <span className={`${styles.sheetFooterPrice} dingry-gold-foil-text`}>{unitPrice * qty}€</span>
+                </div>
+                <button type="button" onClick={handleAdd} disabled={!canSubmit} className={addBtnClass}>
+                  {addLabel}
+                </button>
+              </footer>
+            ) : null}
           </motion.div>
         </div>
       ) : null}
@@ -488,6 +778,7 @@ export function PersonalizeModal({
         previewCitySize={previewCitySize}
         cityClassName={cityPresentation.className}
         cityStyle={cityPresentation.style}
+        showCityOverlay={!sansVille && Boolean(previewLabel)}
       />
     ) : null}
     </>

@@ -55,6 +55,7 @@ type StockTabProps = {
   onSetPrice: (product: AdminProduct, nextPrice: number) => void;
   onEdit: (product: AdminProduct) => void;
   onNew: () => void;
+  onImportCatalog?: () => void;
   onTogglePin: (product: AdminProduct) => void;
   onDelete: (product: AdminProduct) => void;
   onReorderProducts: (orderedIds: string[]) => void;
@@ -130,6 +131,7 @@ export function StockTab({
   onSetPrice,
   onEdit,
   onNew,
+  onImportCatalog,
   onTogglePin,
   onDelete,
   onReorderProducts,
@@ -422,6 +424,15 @@ export function StockTab({
             </div>
           </div>
           <div className="flex w-full min-w-0 items-center justify-between gap-2 md:w-auto md:flex-1 md:justify-end md:gap-2.5">
+            {onImportCatalog ? (
+              <button
+                type="button"
+                onClick={onImportCatalog}
+                className="hidden h-8 shrink-0 rounded-full border border-white/12 px-3 text-[10px] uppercase tracking-[0.12em] text-white/55 transition hover:border-[#FF3D00]/35 hover:text-white md:inline-flex"
+              >
+                Importer catalogue
+              </button>
+            ) : null}
             {mobileToolbarSlot ? (
               <div className="flex shrink-0 items-center md:hidden">{mobileToolbarSlot}</div>
             ) : null}
@@ -630,14 +641,25 @@ export function StockTab({
               ))}
         </div>
       )}
-      <button
-        type="button"
-        onClick={onNew}
-        className="dingry-gold-pill-btn dingry-admin-new-product-btn dingry-admin-new-product-fab fixed right-4 z-[92] h-10 rounded-full px-5 text-[11px] uppercase tracking-[0.12em] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm bottom-[calc(3.65rem+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-[4.75rem]"
-        aria-label="Créer un nouveau produit"
-      >
-        <span className="gold-text">Nouveau</span>
-      </button>
+      <div className="fixed right-4 z-[92] flex flex-col items-end gap-2 bottom-[calc(3.65rem+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-[4.75rem]">
+        {onImportCatalog ? (
+          <button
+            type="button"
+            onClick={onImportCatalog}
+            className="h-9 rounded-full border border-white/15 bg-[#0a0a0a]/90 px-4 text-[10px] uppercase tracking-[0.12em] text-white/65 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm transition hover:border-[#FF3D00]/35 hover:text-white md:hidden"
+          >
+            Importer catalogue
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onNew}
+          className="dingry-gold-pill-btn dingry-admin-new-product-btn dingry-admin-new-product-fab h-10 rounded-full px-5 text-[11px] uppercase tracking-[0.12em] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm"
+          aria-label="Créer un nouveau produit"
+        >
+          <span className="gold-text">Nouveau</span>
+        </button>
+      </div>
       {pendingDelete ? (
         <div
           className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"

@@ -21,6 +21,7 @@ import { useShopCatalog } from "@/components/organisms/shop/hooks/use-shop-catal
 import { useShopAtelierCustom } from "@/components/organisms/shop/hooks/use-shop-atelier-custom";
 import { FlyAnimationProvider, useFlyAnimation } from "@/hooks/use-fly-animation";
 import { useAdminSessionProbe } from "@/components/organisms/admin/hooks/use-admin-session";
+import { ShopStorefrontCopyProvider } from "@/hooks/shop-storefront-copy-context";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useShopAuth } from "@/hooks/use-shop-auth";
 import {
@@ -32,6 +33,8 @@ import { ShopNav, type ShopNavMagnet } from "@/components/organisms/shop/shop-na
 import { DingryI18nProvider } from "@/hooks/use-translation";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
 import { filterByBrand } from "@/lib/catalog-brand";
+import { brandPageVisibleProducts, filterBrandCatalogExcludingCollection } from "@/lib/filter-brand-catalog";
+import { DINGRY_MADA_COLLECTION } from "@/lib/shop-brand-page-config";
 import { parseCatalogFilter } from "@/lib/shop-catalog";
 import { buildFlipPairs, resolveSaleProduct, visibleCatalogProducts } from "@/lib/shop-view";
 import {
@@ -174,9 +177,20 @@ function DingryShopPageInner() {
   const flipPairs = useMemo(() => buildFlipPairs(products), [products]);
 
   const catalogGridProducts = useMemo(() => {
-    if (activeFilter === "all") return filterByBrand(products, activeBrand);
+    if (activeFilter === "all") {
+      const scoped = filterByBrand(products, activeBrand);
+      if (activeBrand === "DINGRY") {
+        return filterBrandCatalogExcludingCollection(scoped, "DINGRY", DINGRY_MADA_COLLECTION);
+      }
+      return scoped;
+    }
     return visibleCatalogProducts(products, activeFilter, activeBrand);
   }, [products, activeFilter, activeBrand]);
+
+  const dingryMadaCatalogProducts = useMemo(() => {
+    if (activeBrand !== "DINGRY" || activeFilter !== "all") return [];
+    return brandPageVisibleProducts(products, "DINGRY", { collection: DINGRY_MADA_COLLECTION });
+  }, [products, activeBrand, activeFilter]);
 
   const catalogFilterKey = activeFilter === "all" ? "all" : activeFilter;
   const personalizationProduct = useMemo(
@@ -187,7 +201,6 @@ function DingryShopPageInner() {
   );
 
   const tabValue = activeFilter;
-  const [cartScrollLocked, setCartScrollLocked] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("heritage") === "1") {
@@ -203,25 +216,12 @@ function DingryShopPageInner() {
   }, [scrollToSection]);
 
   useEffect(() => {
-    if (cart.open) setCartScrollLocked(true);
-  }, [cart.open]);
-
-  useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
   }, []);
-
-  useEffect(() => {
-    const scroller = pageScrollRef.current;
-    if (!scroller) return;
-    scroller.style.overflow = cartScrollLocked ? "hidden" : "";
-    return () => {
-      scroller.style.overflow = "";
-    };
-  }, [cartScrollLocked, pageScrollRef]);
 
   useEffect(() => {
     if (catalogState !== "ready") return;
@@ -358,6 +358,7 @@ function DingryShopPageInner() {
 
   return (
     <DingryI18nProvider>
+    <ShopStorefrontCopyProvider adminAdjust={adminSession}>
     <div className="dingry-shop relative h-dvh w-full overflow-x-hidden overflow-hidden bg-black text-white">
       <BackgroundGradientAnimation
         interactive={false}
@@ -377,9 +378,11 @@ function DingryShopPageInner() {
       />
       <div
         ref={pageScrollRef}
-        className="dingry-page relative z-10 h-full overflow-x-hidden overflow-y-auto overscroll-y-contain bg-transparent [overflow-anchor:none]"
+        className={`dingry-page relative z-10 h-full overscroll-y-contain bg-transparent [overflow-anchor:none] ${
+          cart.open ? "overflow-hidden" : "overflow-x-hidden overflow-y-auto"
+        }`}
       >
-        <ShopHero onDiscoverCollection={scrollToCatalogueWithNavMagnet} />
+        <ShopHero onDiscoverCollection={scrollToCatalogueWithNavMagnet} adminAdjust={adminSession} />
         <div className={DINGRY_SHOP_SHELL_CLASS}>
           <div id="catalogue-landing" className={CATALOG_SCROLL_OFFSET_CLASS} aria-hidden />
           <CatalogSection
@@ -391,6 +394,7 @@ function DingryShopPageInner() {
             onRetry={retry}
             filterKey={catalogFilterKey}
             products={catalogGridProducts}
+            dingryMadaProducts={dingryMadaCatalogProducts}
             flipPairs={flipPairs}
             onOpenProduct={modal.openProductModal}
             wishlistIds={wishlist.ids}
@@ -404,7 +408,11 @@ function DingryShopPageInner() {
             rootMargin="480px 0px 48px 0px"
             placeholderClassName="dingry-gold-rule-top min-h-[min(100dvh,56rem)] [contain-intrinsic-size:auto_56rem]"
           >
-            <AtelierCustomSection config={atelierConfig} onOpenCustom={openCustom} />
+            <AtelierCustomSection
+              config={atelierConfig}
+              onOpenCustom={openCustom}
+              adminAdjust={adminSession}
+            />
           </LazyWhenVisible>
           <div className={DINGRY_SHOP_LOWER_BAND_CLASS}>
             <LazyWhenVisible
@@ -414,7 +422,7 @@ function DingryShopPageInner() {
               rootMargin="420px 0px 48px 0px"
               placeholderClassName="dingry-gold-rule-top min-h-[14rem] [contain-intrinsic-size:auto_14rem]"
             >
-              <HeritageSection />
+              <HeritageSection scrollToBlock={scrollToSection} adminAdjust={adminSession} />
             </LazyWhenVisible>
             <LazyWhenVisible
               scrollRootRef={pageScrollRef}
@@ -432,6 +440,7 @@ function DingryShopPageInner() {
               placeholderClassName="min-h-32 [contain-intrinsic-size:auto_8rem]"
             >
               <ShopFooter
+                adminAdjust={adminSession}
                 shopBasePath={shopBasePath}
                 onScrollToCatalogue={() => scrollToSection("catalogue")}
                 onScrollToSection={scrollToSection}
@@ -474,7 +483,6 @@ function DingryShopPageInner() {
       <CartDrawer
         open={cart.open}
         onClose={() => cart.setOpen(false)}
-        onExitComplete={() => setCartScrollLocked(false)}
         items={cart.items}
         count={cart.count}
         total={cart.total}
@@ -523,6 +531,7 @@ function DingryShopPageInner() {
         }}
       />
     </div>
+    </ShopStorefrontCopyProvider>
     </DingryI18nProvider>
   );
 }

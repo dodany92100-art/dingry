@@ -68,14 +68,19 @@ export function buildVariantSku(parentSku: string, option: Pick<ShopProductOptio
   return `${base}-${suffix}`;
 }
 
-function dingryOptionMeta(parentSku: string, productName: string, label: string) {
+function dingryOptionMeta(
+  parentSku: string,
+  productName: string,
+  label: string,
+  category?: string,
+) {
   const display = displayLabelFromColorDeclination(label);
   const color = normalizeOptionKey(abbrevSourceFromColorDeclination(label));
   const abbrev = colorAbbrevFromDeclinationLabel(label);
   return {
     brand: DINGRY_BRAND,
     color,
-    variantSku: buildDingryVariantSku(parentSku, abbrev),
+    variantSku: buildDingryVariantSku(parentSku, abbrev, category),
     altText: buildVariantAltText(productName, display),
   };
 }
@@ -83,7 +88,7 @@ function dingryOptionMeta(parentSku: string, productName: string, label: string)
 export function shopOptionsFromColorDeclinations(
   colors: readonly string[],
   defaultVariant: string,
-  context?: { parentSku?: string; productName?: string },
+  context?: { parentSku?: string; productName?: string; category?: string },
 ): ShopProductOption[] {
   const parentSku = context?.parentSku?.trim() ?? "";
   const productName = context?.productName?.trim() ?? "";
@@ -101,7 +106,7 @@ export function shopOptionsFromColorDeclinations(
       optionKey,
       label: display.toUpperCase(),
       skuSuffix: colorAbbrevFromDeclinationLabel(label),
-      ...dingryOptionMeta(parentSku, productName, label),
+      ...dingryOptionMeta(parentSku, productName, label, context?.category),
       priceDelta: 0,
       imageUrl: "",
       isDefault: defaultKey.length > 0 ? optionKey === defaultKey : options.length === 0,
@@ -117,7 +122,7 @@ export function mergeDbOptionsWithDeclinations(
   dbOptions: ProductOption[],
   colorDeclinations: readonly string[],
   defaultVariant: string,
-  context?: { parentSku?: string; productName?: string },
+  context?: { parentSku?: string; productName?: string; category?: string },
 ): ProductOption[] {
   if (dbOptions.length > 0) return [...dbOptions].sort((a, b) => a.sortOrder - b.sortOrder);
   const shop = shopOptionsFromColorDeclinations(colorDeclinations, defaultVariant, context);

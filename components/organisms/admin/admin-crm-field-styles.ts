@@ -9,3 +9,11 @@ export const ADMIN_CRM_GLASS_PANEL =
 
 export const ADMIN_CRM_SUBMIT_BTN =
   "h-10 w-full bg-[#FF3D00] text-[11px] font-medium uppercase tracking-[0.2em] text-white transition hover:bg-[#ff5720] disabled:opacity-40 sm:w-auto sm:min-w-[14rem] sm:px-8";
+
+/** CTA « Mettre en ligne » vitrine — pill or + `.gold-text` (pas l’orange stock). */
+export const ADMIN_CRM_VITRINE_PUBLISH_BTN =
+  "dingry-gold-pill-btn relative z-[1] h-10 rounded-full px-5 text-[10px] font-semibold uppercase tracking-[0.16em] disabled:opacity-40 sm:min-w-[10rem]";
+
+/** Réinitialiser un bloc vitrine (cadrage, texte, etc.). */
+export const ADMIN_CRM_VITRINE_RESET_BTN =
+  "inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-[#c9a227]/35 px-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#c9a227] transition hover:border-[#c9a227]/55 disabled:opacity-35";

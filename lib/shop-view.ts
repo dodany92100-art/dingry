@@ -138,6 +138,12 @@ export type PersonalizationCartMeta = {
 };
 
 /** Ajoute couleur / taille pour le CRM (`… · #d4af37 · 0.50rem`). */
+/** Ligne panier · personnalisation sans nom de ville (logo DINGRY seul). */
+export function formatPersonalizationSansVille(shirtLabel: string): string {
+  const base = `Logo DINGRY — ${shirtLabel.trim()} (recto · sans ville)`;
+  return base.length <= PERSONALIZATION_CART_MAX ? base : base.slice(0, PERSONALIZATION_CART_MAX).trim();
+}
+
 export function formatPersonalizationForCart(
   label: string,
   shirtLabel: string,

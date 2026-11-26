@@ -105,6 +105,10 @@
     "sectionEyebrow": "Atelier custom",
     "sectionTitle": "À chaque ville sa DINGRY",
     "sectionLead": "Personnalise ta pièce avec le nom de ta ville",
+    "sectionHeadline": "TON STYLE. TA VILLE. TA SIGNATURE.",
+    "sectionBody": "Donne une touche unique à ta pièce ! Choisis ton T-shirt ou ton Hoodie et personnalise-le avec le nom de ta ville.",
+    "sectionTagline": "DINGRY : Représente ta ville.",
+    "sectionSurcharge": "Personnalisation sur-mesure : +5 € par pièce (en plus du prix du produit).",
     "banner": {
       "eyebrow": "CUSTOM • CONFIGURATEUR",
       "title": "À chaque ville sa Dingry",
@@ -115,7 +119,9 @@
     }
   },
   "heritageTeaser": {
-    "eyebrow": "Héritage"
+    "eyebrow": "Origines",
+    "closeDetails": "Refermer",
+    "closeDetailsAria": "Refermer le détail Origines"
   },
   "lookbookTeaser": {
     "eyebrow": "Lookbook",
@@ -134,7 +140,8 @@
     "adminCategoryHintEnd": "mise en ligne avec la bonne catégorie.",
     "emptyCategory": "Aucune pièce en ligne pour le moment · vérifie la catégorie",
     "emptyCategoryEnd": "sur les fiches CRM.",
-    "productsAria": "Produits {{label}}"
+    "productsAria": "Produits {{label}}",
+    "customCta": "CUSTOM"
   },
   "product": {
     "selectSize": "Sélectionnez une taille",

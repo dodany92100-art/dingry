@@ -5,6 +5,31 @@ export const DINGRY_HERITAGE_BASELINE = "LE LUXE EST DANS L'ATTITUDE";
 export const DINGRY_HERITAGE_HOMEPAGE_HOOK =
   "DINGRY s'affranchit des codes traditionnels pour imposer sa propre définition du luxe.";
 
+/** Bandeau ORIGINES (home uniquement) — textes validés mot pour mot. */
+export const DINGRY_ORIGINES_PHILOSOPHY_TITLE = "Le luxe est dans l'attitude";
+
+export const DINGRY_ORIGINES_PHILOSOPHY_BODY =
+  "DINGRY redéfinit le luxe : non pas ce que l'on possède ou affiche, mais ce que l'on est et la manière dont on se comporte. Guidée par une élégance libre, une identité non négociable et un refus des codes imposés, la marque revendique une distinction authentique (Attitude Before Status, Timeless by Nature).";
+
+export const DINGRY_ORIGINES_FOUNDER_TITLE = "Sully Sefil — Un esprit créatif, une vision indépendante";
+
+export const DINGRY_ORIGINES_FOUNDER_BODY =
+  "Artiste, producteur, entrepreneur et créateur de mode issu de la culture hip-hop, Sully Sefil a bâti un parcours transversal. De ses productions et titres marquants dans le rap français (dont « That's my people » pour Suprême NTM et son succès « J'voulais » en 2001) à la création de Royal Wear à la fin des années 1990 — devenant le premier rappeur français à développer sa marque de streetwear — puis Rock The Street, il a toujours conçu le vêtement comme un langage et une affirmation de soi. Avec DINGRY, il ouvre un nouveau chapitre où culture urbaine et luxe contemporain se rencontrent.";
+
+export const DINGRY_ORIGINES_PREVIEW_PHILOSOPHY_LEAD =
+  "Une philosophie libre et engagée, née d'un parcours indépendant.";
+
+export const DINGRY_ORIGINES_PREVIEW_PHILOSOPHY_HOOK =
+  "DINGRY est une attitude : celle de ne pas suivre les règles, de se réinventer, de représenter sa ville et sa culture avec fierté.";
+
+export const DINGRY_ORIGINES_PREVIEW_FOUNDER_KICKER = "DE LA CULTURE HIP-HOP AU STREETWEAR";
+
+export const DINGRY_ORIGINES_PREVIEW_FOUNDER_HOOK =
+  "Sully Sefil, fondateur de DINGRY, grandit avec le hip-hop, une culture qui façonne son regard sur le monde. Entre musique, mode et indépendance, il fait de DINGRY un projet à son image : authentique, exigeant, et sans compromis.";
+
+export const DINGRY_ORIGINES_PREVIEW_FOUNDER_OUTRO =
+  "Un parcours guidé par la passion, et une volonté constante de créer autrement.";
+
 export type HeritageChronologyMilestone = {
   year: string;
   label: string;

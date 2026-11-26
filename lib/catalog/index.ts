@@ -72,6 +72,7 @@ function shopOptionsForCatalog(product: CatalogProduct) {
     return shopOptionsFromColorDeclinations(product.colorDeclinations, product.variant, {
       parentSku: product.sku,
       productName: product.name,
+      category: product.category,
     });
   }
   return undefined;

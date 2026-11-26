@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DingryProductImage } from "@/components/atoms/dingry-product-image";
+import { PdpImageZoom } from "@/components/molecules/pdp-image-zoom";
 import { DingryVariantProductImage } from "@/components/molecules/dingry-variant-product-image";
 import { WishlistIconButton } from "@/components/atoms/wishlist-icon-button";
 import { ProductImageFlip } from "@/components/molecules/product-image-flip";
@@ -12,17 +12,30 @@ import {
   ProductCaptchaTest,
 } from "@/components/molecules/product-captcha-test";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
-import { DINGRY_PRODUCT_MODAL_AMBIENCE_SRC } from "@/lib/dingry-brand";
-import { DINGRY_MANIFESTO_FR } from "@/lib/dingry-brand-voice";
+import { useShopVitrineAmbience } from "@/hooks/use-shop-vitrine-ambience";
 import { catalogRectoId, productDetailCopy, storefrontProductTitle } from "@/lib/dingry-product-display";
+import {
+  PDP_ADDED_FR,
+  PDP_CHOOSE_SIZE_FR,
+  PDP_SECURE_PAYMENT_FR,
+  hasPdpSizeGuide,
+  pdpDisplayTitle,
+  pdpFreeShippingMessage,
+  pdpKeySellingPoints,
+  pdpLimitedEditionBadge,
+  pdpSubtitle,
+  showPdpCustomButton,
+  showPdpFreeShippingReassurance,
+} from "@/lib/storefront/pdp-display";
+import { shouldShowPdpColorPicker } from "@/lib/storefront/pdp-color-swatches";
+import { SHIPPING_FREE_THRESHOLD } from "@/lib/storefront/shipping-free-threshold";
 import { shopProductColorVariants, similarProductsForShop } from "@/lib/storefront/similar-products";
 import { ProductColorVariantGrid } from "@/components/molecules/product-color-variant-grid";
 import { SimilarProductsStrip } from "@/components/molecules/similar-products-strip";
 import { isJerseyShopProduct, JERSEY_COLOR_OPTIONS } from "@/lib/jersey-shop";
 import { colorSwatchChipStyle } from "@/lib/storefront/color-swatch-chip";
-import { shopProductBrand, storefrontCollectionEyebrow } from "@/lib/catalog-brand";
 import { isShopTeeCategory, resolveShopCategory } from "@/lib/shop-catalog";
-import { isShopProductAtelierEligible, type ShopAtelierCustomConfig } from "@/lib/atelier-custom-config";
+import type { ShopAtelierCustomConfig } from "@/lib/atelier-custom-config";
 import { IMAGES, TEE_VERSO_BY_RECTO_ID } from "@/lib/shop-data";
 import {
   findActiveFlipPair,
@@ -108,12 +121,15 @@ function ProductModalContent({
   wishlistIds,
   onToggleWishlist,
   onAddToCart,
-  atelierConfig,
   onOpenCustom,
   purchaseDisabled = false,
 }: ContentProps) {
+  const { ambience, objectPosition } = useShopVitrineAmbience();
   const { modalSide, jerseyColor, selectedSize, selectedQuantity, selectedOptionKey, switchParentOption, modalHeroImage } =
     modal;
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [addFeedback, setAddFeedback] = useState<"idle" | "added">("idle");
   const parentOptions = product.options ?? [];
   const isJersey = isJerseyShopProduct(product);
   const catalogColorVariants = shopProductColorVariants(product.id, products);
@@ -126,10 +142,7 @@ function ProductModalContent({
   const saleProduct = resolveSaleProduct(product, products, jerseyColor);
   const outOfStock = !isShopProductInStock(saleProduct);
   const cannotPurchase = purchaseDisabled || outOfStock;
-  const atelierEligible =
-    Boolean(atelierConfig?.enabled) &&
-    Boolean(onOpenCustom) &&
-    isShopProductAtelierEligible(product, atelierConfig!);
+  const showCustomCta = Boolean(onOpenCustom) && showPdpCustomButton(product.id);
   const displayProduct = isJersey ? saleProduct : product;
 
   const activeView: Pick<ShopProduct, "image" | "name"> = activeFlipPair
@@ -164,11 +177,17 @@ function ProductModalContent({
 
   const rectoId = catalogRectoId(product.id);
   const detail = productDetailCopy(product, products);
-  const storefrontBrand = shopProductBrand(product);
-  const storefrontCollection = storefrontCollectionEyebrow(product.collection);
-  const similar = similarProductsForShop(product.id, products);
+  const showGalleryColorLine = catalogColorVariants.length > 1;
+  const crossSellProducts = similarProductsForShop(product.id, products).crossSell;
   const wishlistActive = wishlistIds.includes(rectoId);
-
+  const limitedBadge = pdpLimitedEditionBadge(product);
+  const displayTitle = pdpDisplayTitle(product, products);
+  const displaySubtitle = pdpSubtitle(product, products);
+  const sellingPoints = pdpKeySellingPoints(product);
+  const shortDescription = product.description?.trim() || "";
+  const sizeGuideCopy = detail.sizeGuide?.trim();
+  const showSizeGuide = hasPdpSizeGuide(sizeGuideCopy ?? undefined);
+  const showFreeShipping = showPdpFreeShippingReassurance(SHIPPING_FREE_THRESHOLD);
   const sizes = modalSizesFor(product);
   const sizeCols = sizeGridColumns(sizes);
 
@@ -179,6 +198,12 @@ function ProductModalContent({
   const data = shell.data;
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const openerFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setZoomOpen(false);
+    setSizeGuideOpen(false);
+    setAddFeedback("idle");
+  }, [product.id]);
 
   useEffect(() => {
     const opener = document.activeElement;
@@ -224,6 +249,63 @@ function ProductModalContent({
     "--size-cols": String(sizeCols),
   } as CSSProperties;
 
+  const heroAlt = storefrontProductTitle(product, products);
+  const heroZoomSrc = activeView.image;
+
+  const onGalleryKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!effectiveShowSideToggle) return;
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      modal.showProductSide("recto");
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      modal.showProductSide("verso");
+    }
+  };
+
+  const addButtonLabel =
+    addFeedback === "added"
+      ? PDP_ADDED_FR
+      : purchaseDisabled
+        ? "Catalogue indisponible"
+        : outOfStock
+          ? "Épuisé"
+          : "Ajouter au panier";
+
+  const handleAddToCart = (from: HTMLElement) => {
+    if (!selectedSize || cannotPurchase) return;
+    setAddFeedback("added");
+    onAddToCart(from);
+  };
+
+  const renderPurchaseActions = (className: string | undefined) => (
+    <div className={className ?? styles.ctaStack}>
+      {showCustomCta ? (
+        <button
+          type="button"
+          onClick={() => {
+            if (!selectedSize || !onOpenCustom) return;
+            onOpenCustom(product, selectedSize);
+          }}
+          disabled={!selectedSize || cannotPurchase}
+          className={`dingry-gold-pill-btn ${styles.addCustomBtn} ${selectedSize && !cannotPurchase ? styles.addBtnOn : styles.addBtnOff}`}
+        >
+          <span className="gold-text">CUSTOM</span>
+        </button>
+      ) : null}
+      <button
+        type="button"
+        onClick={(event) => handleAddToCart(event.currentTarget)}
+        disabled={!selectedSize || cannotPurchase || addFeedback === "added"}
+        className={`dingry-pdp-add-btn dingry-gold-foil-bg ${styles.addBtnGold}`}
+        aria-live="polite"
+      >
+        {addButtonLabel}
+      </button>
+    </div>
+  );
+
   return (
     <div className={styles.root}>
       <motion.div
@@ -238,7 +320,7 @@ function ProductModalContent({
       <motion.div
         ref={modal.productModalRef}
         data-product-modal=""
-        className={`${styles.panel} dingry-sale-ui`}
+        className={`${styles.panel} ${styles.dingryPdpDark} dingry-pdp-dark dingry-sale-ui`}
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
@@ -249,91 +331,115 @@ function ProductModalContent({
       >
         <div className={styles.ambience} aria-hidden>
           <img
-            src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC}
+            src={ambience.imageUrl}
             alt=""
             className={styles.ambienceImg}
+            style={{ objectPosition }}
             {...PRODUCT_MODAL_DECORATIVE_IMG}
           />
           <div className={styles.ambienceVeil} />
         </div>
         <div ref={modal.productImageRef} className={styles.photo}>
-          <div className={styles.photoStage}>
-            {effectiveFlipImages ? (
-              <ProductImageFlip
-                frontImage={effectiveFlipImages.front}
-                backImage={effectiveFlipImages.back}
-                side={modalSide}
-                presentation="modal"
-                alt={storefrontProductTitle(product, products)}
-                className={styles.photoFallback}
-                imgClassName={styles.photoCover}
-                onRequestSide={modal.showProductSide}
-              />
-            ) : useParentOptions ? (
-              <DingryVariantProductImage
-                productName={product.name}
-                parentImage={product.image}
-                parentAlt={activeView.name}
-                options={parentOptions}
-                selectedOptionKey={selectedOptionKey}
-                presentation="modal"
-                className={styles.photoFallback}
-                imgClassName={styles.photoCover}
-              />
-            ) : (
-              <div className={styles.photoFallback}>
-                <DingryProductImage
-                  src={activeView.image}
-                  alt={activeView.name}
-                  width={600}
-                  height={800}
-                  deliveryWidth={720}
-                  priority
-                  className={styles.photoCover}
-                  sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
-                  fitContent
+          <div className={styles.galleryLayout}>
+            <div
+              className={styles.galleryMain}
+              tabIndex={effectiveShowSideToggle ? 0 : undefined}
+              role={effectiveShowSideToggle ? "group" : undefined}
+              aria-label={effectiveShowSideToggle ? "Galerie produit" : undefined}
+              onKeyDown={onGalleryKeyDown}
+            >
+              {effectiveShowSideToggle && effectiveFlipImages ? (
+                <button
+                  type="button"
+                  className={`${styles.galleryNavBtn} ${styles.galleryNavFlip}`}
+                  aria-label={modalSide === "recto" ? "Voir le verso" : "Voir le recto"}
+                  onClick={() =>
+                    modal.showProductSide(modalSide === "recto" ? "verso" : "recto")
+                  }
+                >
+                  {modalSide === "recto" ? "›" : "‹"}
+                </button>
+              ) : null}
+              <div className={styles.photoStage}>
+                {effectiveFlipImages ? (
+                  <ProductImageFlip
+                    frontImage={effectiveFlipImages.front}
+                    backImage={effectiveFlipImages.back}
+                    side={modalSide}
+                    presentation="modal"
+                    alt={heroAlt}
+                    className={styles.photoFallback}
+                    imgClassName={styles.photoCover}
+                    onRequestSide={modal.showProductSide}
+                    onModalImageClick={() => setZoomOpen(true)}
+                  />
+                ) : useParentOptions ? (
+                  <div
+                    className={styles.photoFallback}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setZoomOpen(true)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setZoomOpen(true);
+                      }
+                    }}
+                    aria-label="Agrandir l’image produit"
+                  >
+                    <DingryVariantProductImage
+                      productName={product.name}
+                      parentImage={product.image}
+                      parentAlt={activeView.name}
+                      options={parentOptions}
+                      selectedOptionKey={selectedOptionKey}
+                      presentation="modal"
+                      className={styles.photoFallback}
+                      imgClassName={styles.photoCover}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={styles.photoFallback}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setZoomOpen(true)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setZoomOpen(true);
+                      }
+                    }}
+                    aria-label="Agrandir l’image produit"
+                  >
+                    <DingryProductImage
+                      src={activeView.image}
+                      alt={activeView.name}
+                      width={600}
+                      height={800}
+                      deliveryWidth={720}
+                      priority
+                      className={styles.photoCover}
+                      sizes="(max-width: 768px) 100vw, min(50vw, 600px)"
+                      fitContent
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            {showGalleryColorLine ? (
+              <div className={styles.similarStripGallery}>
+                <SimilarProductsStrip
+                  variantCards={catalogColorVariants}
+                  catalog={products}
+                  onPickCrossSell={modal.switchProductVariant}
+                  tone="pdp-dark"
+                  presentation="pdp-gallery"
                 />
               </div>
-            )}
+            ) : null}
           </div>
-          {effectiveShowSideToggle && effectiveFlipImages ? (
-            <div className={styles.viewThumbs} role="tablist" aria-label="Vues produit">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={modalSide === "recto"}
-                onClick={() => modal.showProductSide("recto")}
-                className={`${styles.viewThumb} ${modalSide === "recto" ? styles.viewThumbOn : ""}`}
-              >
-                <img
-                  src={effectiveFlipImages.front}
-                  alt=""
-                  className={styles.viewThumbImg}
-                  width={56}
-                  height={56}
-                  {...PRODUCT_MODAL_DECORATIVE_IMG}
-                />
-                <span className={styles.viewThumbLabel}>Recto</span>
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={modalSide === "verso"}
-                onClick={() => modal.showProductSide("verso")}
-                className={`${styles.viewThumb} ${modalSide === "verso" ? styles.viewThumbOn : ""}`}
-              >
-                <img
-                  src={effectiveFlipImages.back}
-                  alt=""
-                  className={styles.viewThumbImg}
-                  width={56}
-                  height={56}
-                  {...PRODUCT_MODAL_DECORATIVE_IMG}
-                />
-                <span className={styles.viewThumbLabel}>Verso</span>
-              </button>
-            </div>
-          ) : null}
+          <PdpImageZoom open={zoomOpen} src={heroZoomSrc} alt={heroAlt} onClose={() => setZoomOpen(false)} />
         </div>
         <div className={styles.body}>
           <div className={styles.bodyScroll}>
@@ -351,42 +457,23 @@ function ProductModalContent({
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
+                <WishlistIconButton
+                  size="md"
+                  active={wishlistActive}
+                  label={wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
+                  onClick={() => onToggleWishlist(rectoId)}
+                  className={styles.wishlist}
+                />
               </div>
             </div>
-            <DingryLogo animate={false} tone="on-light" className="mb-3 h-8 w-auto opacity-90 md:mb-4 md:h-9" />
-            <p className={`dingry-typo-manifesto ${styles.manifesto}`}>{DINGRY_MANIFESTO_FR}</p>
-            <p className={`dingry-section-eyebrow ${styles.brandEyebrow}`}>
-              {storefrontBrand}
-              {storefrontCollection ? (
-                <>
-                  <span className={styles.brandSep} aria-hidden>
-                    ·
-                  </span>
-                  {storefrontCollection}
-                </>
-              ) : null}
-            </p>
+            {limitedBadge ? <p className={styles.limitedBadge}>Édition limitée</p> : null}
             <h2 id={DINGRY_PRODUCT_MODAL_TITLE_ID} className={styles.title}>
-              {data.title}
+              {displayTitle}
             </h2>
-            {detail.description ? (
-              <p className={styles.description}>{detail.description}</p>
-            ) : null}
-            {detail.printPlacement ? (
-              <div className={styles.metaBlock}>
-                <p className={styles.metaLabel}>Impression</p>
-                <p className={styles.metaText}>{detail.printPlacement}</p>
-              </div>
-            ) : null}
-            {detail.limitedEdition ? (
-              <div className={styles.metaBlock}>
-                <p className={styles.metaLabel}>Édition limitée</p>
-                <p className={styles.metaText}>{detail.limitedEdition}</p>
-              </div>
-            ) : null}
-            <div className={styles.qtyRow}>
-              <p className={styles.qtyPrice} aria-live="polite">
-                {saleProduct.price * selectedQuantity}€
+            {displaySubtitle ? <p className={styles.subtitle}>{displaySubtitle}</p> : null}
+            <div className={styles.priceBlock}>
+              <p className={`${styles.priceValue} dingry-gold-foil-text`} aria-live="polite">
+                {saleProduct.price}€
               </p>
               <div className={styles.qtyControlColumn}>
                 <span className={styles.qtyLabel}>Quantité</span>
@@ -399,7 +486,9 @@ function ProductModalContent({
                   >
                     −
                   </button>
-                  <span className={styles.qtyValue}>{selectedQuantity}</span>
+                  <span className={styles.qtyValue} aria-live="polite">
+                    {selectedQuantity}
+                  </span>
                   <button
                     type="button"
                     onClick={() => modal.setSelectedQuantity((quantity) => Math.min(99, quantity + 1))}
@@ -411,10 +500,27 @@ function ProductModalContent({
                 </div>
               </div>
             </div>
-            {showCatalogColorGrid ? (
+            {shortDescription ? <p className={styles.description}>{shortDescription}</p> : null}
+            {sellingPoints.length > 0 ? (
+              <ul className={styles.keyPoints}>
+                {sellingPoints.map((point) => (
+                  <li key={point} className={styles.keyPoint}>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {detail.printPlacement ? (
+              <div className={styles.metaBlock}>
+                <p className={styles.metaLabel}>Impression</p>
+                <p className={styles.metaText}>{detail.printPlacement}</p>
+              </div>
+            ) : null}
+            {showCatalogColorGrid && shouldShowPdpColorPicker(catalogColorVariants) ? (
               <ProductColorVariantGrid
                 variants={catalogColorVariants}
                 onPickVariant={modal.switchProductVariant}
+                presentation="pdp"
               />
             ) : useParentOptions ? (
               <div className={styles.section}>
@@ -460,71 +566,71 @@ function ProductModalContent({
                 </div>
               </div>
             ) : null}
-            <div className={styles.purchaseStack}>
-              <p className={styles.sizeLabel}>
-                {selectedSize ? "Taille" : "Choisissez une taille"}
-              </p>
-              <div className={styles.sizeGrid} style={sizeGridVars}>
-                {sizes.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={selectedSize === s}
-                    onClick={() => modal.setSelectedSize(s)}
-                    onPointerDown={(event) => {
-                      if (event.pointerType === "touch") modal.setSelectedSize(s);
-                    }}
-                    className={`${styles.sizeBtn} ${selectedSize === s ? styles.sizeOn : ""}`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-              <div className={styles.ctaRow}>
-                {atelierEligible ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!selectedSize || !onOpenCustom) return;
-                      onOpenCustom(product, selectedSize);
-                    }}
-                    disabled={!selectedSize || cannotPurchase}
-                    className={`dingry-gold-pill-btn ${styles.addBtn} ${selectedSize && !cannotPurchase ? styles.addBtnOn : styles.addBtnOff}`}
-                  >
-                    <span className="gold-text">CUSTOM</span>
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={(event) => onAddToCart(event.currentTarget)}
-                  disabled={!selectedSize || cannotPurchase}
-                  className={`dingry-add-to-cart-btn ${styles.addBtn} ${selectedSize && !cannotPurchase ? styles.addBtnOn : styles.addBtnOff}`}
-                >
-                  {purchaseDisabled
-                    ? "Catalogue indisponible"
-                    : outOfStock
-                      ? "Épuisé"
-                      : "Ajouter au panier"}
-                </button>
-                <WishlistIconButton
-                  size="md"
-                  active={wishlistActive}
-                  label={wishlistActive ? "Retirer de la wishlist" : "Ajouter à la wishlist"}
-                  onClick={() => onToggleWishlist(rectoId)}
-                  className={styles.wishlist}
+            {crossSellProducts.length > 0 ? (
+              <div className={styles.similarCrossSellScroll}>
+                <SimilarProductsStrip
+                  crossSell={crossSellProducts}
+                  catalog={products}
+                  onPickCrossSell={modal.openProductModal}
+                  tone="pdp-dark"
                 />
               </div>
+            ) : null}
+          </div>
+          <div className={`${styles.purchasePrimary} ${styles.purchaseDock}`}>
+            <div className={styles.sizeGuideRow}>
+              <p className={styles.sizeLabel} aria-live="polite">
+                {selectedSize ? "Taille" : PDP_CHOOSE_SIZE_FR}
+              </p>
+              {showSizeGuide ? (
+                <button
+                  type="button"
+                  className={styles.sizeGuideLink}
+                  aria-expanded={sizeGuideOpen}
+                  onClick={() => setSizeGuideOpen((open) => !open)}
+                >
+                  Guide des tailles
+                </button>
+              ) : null}
             </div>
+            {sizeGuideOpen && showSizeGuide && sizeGuideCopy !== undefined ? (
+              <div className={styles.sizeGuidePanel} id="dingry-pdp-size-guide">
+                {sizeGuideCopy}
+              </div>
+            ) : null}
+            <div className={styles.sizeGrid} style={sizeGridVars}>
+              {sizes.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={selectedSize === s}
+                  onClick={() => modal.setSelectedSize(s)}
+                  onPointerDown={(event) => {
+                    if (event.pointerType === "touch") modal.setSelectedSize(s);
+                  }}
+                  className={`${styles.sizeBtn} ${selectedSize === s ? styles.sizeOn : ""}`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div className={`${styles.ctaStack} ${styles.ctaStackDesktop}`}>
+              {renderPurchaseActions(styles.ctaStack)}
+            </div>
+            <motion.div
+              className={styles.reassurance}
+              initial={false}
+              transition={MODAL_OVERLAY_TRANSITION}
+            >
+              {showFreeShipping && SHIPPING_FREE_THRESHOLD !== null ? (
+                <p className={styles.reassuranceItem}>
+                  {pdpFreeShippingMessage(SHIPPING_FREE_THRESHOLD)}
+                </p>
+              ) : null}
+              <p className={styles.reassuranceItem}>{PDP_SECURE_PAYMENT_FR}</p>
+            </motion.div>
           </div>
-          <div className={styles.similarStripWrap}>
-            <SimilarProductsStrip
-              variants={similar.variants}
-              crossSell={similar.crossSell}
-              catalog={products}
-              onPickVariant={modal.switchProductVariant}
-              onPickCrossSell={modal.openProductModal}
-            />
-          </div>
+          <div className={styles.mobileStickyBar}>{renderPurchaseActions(styles.ctaStack)}</div>
           {showTurnstileProductTest ? <ProductCaptchaTest /> : null}
         </div>
       </motion.div>

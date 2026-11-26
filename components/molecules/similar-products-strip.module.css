@@ -108,3 +108,89 @@
   text-transform: uppercase;
   color: rgb(22 22 22 / 0.58);
 }
+
+.rootPdp {
+  border-top-color: var(--pdp-border, rgb(235 230 222 / 0.12));
+  background: transparent;
+}
+
+.labelPdp {
+  font-size: 10px;
+  color: var(--pdp-muted, rgb(235 230 222 / 0.5));
+}
+
+.rootPdp .rowOuterScrollable::after {
+  background: linear-gradient(to left, rgb(5 5 5 / 0.92), transparent);
+}
+
+.rootPdp .rowOuterScrolled::before {
+  background: linear-gradient(to right, rgb(5 5 5 / 0.75), transparent);
+}
+
+.rootPdp .card {
+  border-color: var(--pdp-border, rgb(235 230 222 / 0.14));
+  background: var(--pdp-surface, #0c0c0c);
+}
+
+.rootPdp .card:hover {
+  border-color: var(--pdp-accent, #d4af37);
+}
+
+.rootPdp .cardActive {
+  border-color: var(--pdp-accent, #d4af37);
+  box-shadow: 0 0 0 1px rgb(191 149 63 / 0.45);
+}
+
+.rootPdp .caption {
+  color: var(--pdp-muted, rgb(235 230 222 / 0.55));
+}
+
+.rootGallery {
+  margin-bottom: 0;
+  border-top: none;
+  padding-top: 0;
+  width: 100%;
+}
+
+.labelGallery {
+  margin-bottom: 0.35rem;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+}
+
+.rootGallery .row {
+  gap: 0.45rem;
+}
+
+.cardGallery {
+  width: 4.35rem;
+  border-width: 1px;
+}
+
+.cardGallery .thumb {
+  aspect-ratio: 3 / 4;
+}
+
+.cardGallery .caption {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  .rootGallery {
+    padding: 0 0.15rem 0.25rem;
+  }
+
+  .cardGallery {
+    width: 5rem;
+  }
+
+  .cardGallery .caption {
+    display: block;
+    padding: 0.35rem 0.25rem;
+    font-size: 7px;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

@@ -8,6 +8,7 @@ import {
   cartSubtotal,
   modalSizesFor,
   formatPersonalizationForCart,
+  formatPersonalizationSansVille,
   personalizationLine,
   personalizationPreviewLabel,
   removeCartLine,
@@ -90,6 +91,12 @@ describe("personnalisation", () => {
         citySizeRem: 0.5,
       }),
     ).toBe("lyon — T-shirt blanc #11 (recto) · #d4af37 · 0.50rem");
+  });
+
+  it("ligne panier sans ville", () => {
+    expect(formatPersonalizationSansVille("T-shirt blanc #11")).toBe(
+      "Logo DINGRY — T-shirt blanc #11 (recto · sans ville)",
+    );
   });
 
   it("aperçu : défaut PARIS, majuscules, 28 caractères max", () => {

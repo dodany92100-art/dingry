@@ -18,6 +18,64 @@
   width: 4.85rem;
 }
 
+.rootCompactInline {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(191 149 63 / 0.45) transparent;
+}
+
+.rootCompactInline .group {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.rootCompactInline .group + .group {
+  margin-left: 0.7rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgb(243 239 232 / 0.22);
+}
+
+.rootCompactInline .groupLabel {
+  margin-bottom: 0.4rem;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+
+.rootCompactInline .card {
+  width: 4.25rem;
+}
+
+.rootCompactInline .track {
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+}
+
+.cardIconOnly {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.cardIconOnly .thumbWrap {
+  border-radius: 0.3rem;
+  background: #000;
+}
+
+.cardIconOnly.cardActive {
+  border: 2px solid rgb(191 149 63 / 0.9);
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(191 149 63 / 0.35);
+}
+
 .group + .group {
   padding-top: 1rem;
   border-top: 1px solid rgb(22 22 22 / 0.1);

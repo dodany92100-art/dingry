@@ -13,10 +13,9 @@ type CatalogBrandBarProps = {
   onChange: (brand: CatalogBrandFilter) => void;
 };
 
-const BRAND_TAB_KEYS = CATALOG_BRAND_FILTER_VALUES.map((brand) => (brand ?? "all") as string);
+const BRAND_TAB_KEYS = CATALOG_BRAND_FILTER_VALUES.flatMap((brand) => (brand ? [brand] : []));
 
 function tabKeyToBrand(key: string): CatalogBrandFilter {
-  if (key === "all") return null;
   return key as CatalogBrandFilter;
 }
 
@@ -25,7 +24,7 @@ export function CatalogBrandBar({ value, onChange }: CatalogBrandBarProps) {
   const tabValue = value ?? "all";
 
   return (
-    <div className="dingry-catalog-brand-bar mb-3 w-full border-b border-white/10 pb-2.5 md:mb-4">
+    <div className="dingry-catalog-brand-bar dingry-catalog-brand-bar--gold-frame dingry-catalog-bar--silver mb-3 w-max max-w-full border-b border-white/10 pb-2.5 md:mb-4">
       <p className="dingry-section-eyebrow mb-2 text-[9px] tracking-[0.2em] text-white/45">
         {t("catalog.brandEyebrow")}
       </p>
@@ -36,7 +35,7 @@ export function CatalogBrandBar({ value, onChange }: CatalogBrandBarProps) {
         onValueChange={(next) => onChange(tabKeyToBrand(next))}
         layoutId="dingry-catalog-brand-tabs"
         aria-label={t("catalog.brandFiltersAria")}
-        variant="filled"
+        variant="underline"
         scrollActiveIntoView={false}
         labelForTab={(tab) => catalogBrandFilterLabel(tabKeyToBrand(tab))}
       />

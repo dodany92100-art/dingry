@@ -34,13 +34,13 @@ function emptyForm(category: ProductCategory = "T-shirts"): SmartProductAutoTagF
 }
 
 describe("smart-product-auto-attributes", () => {
-  it("nouveau Hoodie : grille catégorie (sans TU), SKU DGRY-HD, sans matières auto", () => {
+  it("nouveau Hoodie : grille catégorie (sans TU), réf. modèle DIN-HOO, sans matières auto", () => {
     const next = applyCategoryDefaults(emptyForm(), "Hoodies", {
       editingId: null,
-      existingSkus: ["DGRY-HD-01"],
+      existingSkus: ["DGRY-HD-01", "DIN-HOO-AAB"],
     });
     expect(next.sizes).toEqual(defaultSelectedSizesForCategory("Hoodies"));
-    expect(next.sku).toBe("DGRY-HD-02");
+    expect(next.sku).toBe("DIN-HOO-AAC");
     expect(next.materials).toBe("");
     expect(next.sizeGuide).toBe("400 g/m²");
     expect(next.price).toBe(String(CATEGORY_DEFAULT_PROFILES.Hoodies.suggestedPriceLabel));

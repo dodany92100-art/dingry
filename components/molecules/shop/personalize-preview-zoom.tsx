@@ -30,6 +30,7 @@ type PersonalizePreviewZoomProps = {
   previewCitySize: string;
   cityClassName: string;
   cityStyle: CSSProperties;
+  showCityOverlay?: boolean;
 };
 
 export function PersonalizePreviewZoom({
@@ -41,6 +42,7 @@ export function PersonalizePreviewZoom({
   previewCitySize,
   cityClassName,
   cityStyle,
+  showCityOverlay = true,
 }: PersonalizePreviewZoomProps) {
   const [mounted, setMounted] = useState(false);
   const [side, setSide] = useState<"recto" | "verso">("recto");
@@ -230,7 +232,7 @@ export function PersonalizePreviewZoom({
                   cityClassName={cityClassName}
                   cityStyle={cityStyle}
                   sideLabel={sideLabel}
-                  showCityOverlay={side === "recto"}
+                  showCityOverlay={showCityOverlay && side === "recto"}
                 />
               </div>
             </div>

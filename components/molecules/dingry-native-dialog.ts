@@ -6,7 +6,7 @@ export const DINGRY_MODAL_PANEL_TRANSITION = {
 };
 
 export const DINGRY_NATIVE_DIALOG_CLASS =
-  "dingry-contact-native-dialog fixed inset-0 z-[70] m-0 flex h-dvh max-h-dvh w-full max-w-none items-center justify-center border-0 bg-transparent p-4 open:flex md:p-8 [&::backdrop]:animate-[dingry-overlay-in_0.22s_cubic-bezier(0.16,1,0.3,1)_both] [&::backdrop]:bg-[#050505]/92 [&::backdrop]:overscroll-contain";
+  "dingry-contact-native-dialog fixed inset-0 z-[70] m-0 h-dvh max-h-dvh w-full max-w-none items-center justify-center border-0 bg-transparent p-4 open:flex md:p-8 [&::backdrop]:animate-[dingry-overlay-in_0.22s_cubic-bezier(0.16,1,0.3,1)_both] [&::backdrop]:bg-[#050505]/92 [&::backdrop]:overscroll-contain";
 
 /** Menu mobile ShopNav : panneau sous la barre, fond transparent (pas d’assombrissement). */
 export const DINGRY_NAV_MOBILE_DIALOG_CLASS =

@@ -51,6 +51,8 @@ type ProductImageFlipProps = {
   onDoubleTapFlip?: () => void;
   /** Modale : bascule recto / verso (flèches au pointeur souris). */
   onRequestSide?: (side: ProductFlipSide) => void;
+  /** Modale : clic image (ex. zoom) — remplace le flip au clic si fourni. */
+  onModalImageClick?: () => void;
 };
 
 export function ProductImageFlip({
@@ -71,6 +73,7 @@ export function ProductImageFlip({
   onTap,
   onDoubleTapFlip,
   onRequestSide,
+  onModalImageClick,
 }: ProductImageFlipProps) {
   const flippable = Boolean(backImage);
   const finePointer = useFinePointer();
@@ -175,10 +178,20 @@ export function ProductImageFlip({
       onRequestSide(side === "recto" ? "verso" : "recto");
     };
 
+    const handleModalSurfaceClick = onModalImageClick
+      ? onModalImageClick
+      : showModalNav
+        ? toggleModalSide
+        : undefined;
+
     return (
       <div
-        className={cn("group relative", showModalNav && "cursor-pointer", className)}
-        onClick={showModalNav ? toggleModalSide : undefined}
+        className={cn(
+          "group relative",
+          (showModalNav || onModalImageClick) && "cursor-pointer",
+          className,
+        )}
+        onClick={handleModalSurfaceClick}
       >
         <DingryProductImage
           src={src}

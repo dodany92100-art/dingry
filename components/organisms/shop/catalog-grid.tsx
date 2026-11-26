@@ -5,6 +5,7 @@ import type { ShopProduct } from "@/lib/catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
 import { buildCatalogMenuSections } from "@/lib/shop-catalog";
 import type { CatalogState } from "./hooks/use-shop-catalog";
+import type { AtelierModelPickerGroupId } from "@/lib/atelier-custom-config";
 import { CatalogProductCell } from "./catalog-product-cell";
 import { CollectionFeed } from "./collection-feed";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
@@ -21,6 +22,8 @@ type CatalogGridProps = {
   wishlistIds: readonly number[];
   onToggleWishlist: (rectoId: number) => void;
   showAdminIdBadge?: boolean;
+  atelierEnabled?: boolean;
+  onOpenAtelierFromCategory?: (group: AtelierModelPickerGroupId) => void;
 };
 
 function EmptyCategory() {
@@ -44,6 +47,8 @@ export function CatalogGrid({
   wishlistIds,
   onToggleWishlist,
   showAdminIdBadge = false,
+  atelierEnabled = false,
+  onOpenAtelierFromCategory,
 }: CatalogGridProps) {
   if (catalogState === "error") {
     return (
@@ -78,6 +83,8 @@ export function CatalogGrid({
         wishlistIds={wishlistIds}
         onToggleWishlist={onToggleWishlist}
         showAdminIdBadge={showAdminIdBadge}
+        atelierEnabled={atelierEnabled}
+        onOpenAtelierFromCategory={onOpenAtelierFromCategory}
       />
     );
   }

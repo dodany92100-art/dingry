@@ -1,0 +1,398 @@
+.previewCard {
+  position: relative;
+  isolation: isolate;
+  margin-inline: auto;
+  width: 100%;
+  max-width: 72rem;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  border: 1px solid rgb(191 149 63 / 0.45);
+  background: #0a0a0a;
+}
+
+.focusControls {
+  display: grid;
+  gap: 0.75rem 1.5rem;
+  max-width: 36rem;
+  margin: 0 0 0.85rem;
+  align-items: end;
+}
+
+@media (min-width: 768px) {
+  .focusControls {
+    grid-template-columns: repeat(2, minmax(0, 18rem));
+  }
+}
+
+.focusControl {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(201 162 39 / 0.9);
+}
+
+.previewMedia {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+}
+
+.previewVeil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.78) 0%, rgb(0 0 0 / 0.42) 46%, rgb(0 0 0 / 0.22) 100%);
+}
+
+.previewGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.75rem;
+  padding: 1.75rem 1.25rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .previewGrid {
+    grid-template-columns: minmax(0, 1.08fr) auto minmax(0, 0.92fr);
+    align-items: stretch;
+    gap: 0;
+    padding: 2.35rem 2.15rem 2rem;
+  }
+}
+
+.previewDivider {
+  display: none;
+  width: 1px;
+  align-self: stretch;
+  margin: 0.15rem 1.65rem;
+  background: rgb(196 154 74 / 0.85);
+}
+
+@media (min-width: 768px) {
+  .previewDivider {
+    display: block;
+  }
+}
+
+.previewCol {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.previewKicker {
+  margin: 0;
+  font-size: clamp(0.72rem, 1.15vw, 0.92rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  color: #c9a227;
+}
+
+.previewTitle {
+  margin: 0;
+  max-width: none;
+  font-size: clamp(1.65rem, 2.6vw, 2.35rem);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.previewLead {
+  margin: 0.35rem 0 0;
+  max-width: 28rem;
+  font-size: clamp(0.92rem, 1.25vw, 1.05rem);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: #fff;
+}
+
+.previewHook {
+  margin: 0;
+  max-width: 28rem;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(0.82rem, 1.05vw, 0.95rem);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.01em;
+  line-height: 1.45;
+  text-transform: none;
+  color: rgb(255 255 255 / 0.88);
+}
+
+.ctaRow {
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+.ctaBtn {
+  border-radius: 9999px;
+  border: 1px solid rgb(191 149 63 / 0.65);
+  background: rgb(0 0 0 / 0.42);
+  padding: 0.6rem 1.15rem;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(216 185 106 / 0.95);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.ctaBtn:hover {
+  border-color: rgb(216 185 106 / 0.9);
+  background: rgb(0 0 0 / 0.58);
+}
+
+.ctaBtn:focus-visible {
+  outline: 2px solid rgb(191 149 63 / 0.75);
+  outline-offset: 3px;
+}
+
+.detailExpand {
+  margin-top: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .detailExpand {
+    margin-top: 2.25rem;
+  }
+}
+
+.detailHeritageEyebrow {
+  margin: 0 0 1rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgb(179 135 40 / 0.45);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgb(252 246 186 / 0.88);
+}
+
+.detailBlocks {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .detailBlocks {
+    gap: 1.75rem;
+  }
+}
+
+.detailCard {
+  scroll-margin-top: 6.5rem;
+  display: grid;
+  gap: 1.15rem;
+  overflow: hidden;
+  border: 1px solid rgb(179 135 40 / 0.35);
+  border-radius: 0.875rem;
+  background: rgb(255 255 255 / 0.03);
+  padding: 1.15rem;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.35);
+}
+
+@media (min-width: 768px) {
+  .detailCard {
+    grid-template-columns: minmax(0, 11.5rem) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.35rem 1.5rem;
+    padding: 1.35rem 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .detailCard {
+    grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr);
+  }
+}
+
+.detailVisual {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  border: 1px solid rgb(179 135 40 / 0.4);
+  background: #000;
+}
+
+.detailVisualMedia {
+  display: block;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(0.96) contrast(1.04);
+}
+
+.detailCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.detailHeadline {
+  margin: 0;
+  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.94);
+}
+
+.detailBody {
+  margin: 0;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(0.82rem, 1.05vw, 0.9375rem);
+  font-weight: 400;
+  line-height: 1.72;
+  letter-spacing: 0.01em;
+  color: rgb(255 255 255 / 0.76);
+}
+
+.detailChronology {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.detailChronologyTitle {
+  margin: 0 0 1rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.48);
+}
+
+.detailChronologyTrack {
+  position: relative;
+  padding: 0 0.25rem 0.25rem;
+}
+
+.detailChronologyLine {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0.4375rem;
+  height: 1px;
+  background: rgb(179 135 40 / 0.7);
+  pointer-events: none;
+}
+
+.detailChronologyList {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 0.35rem;
+}
+
+@media (min-width: 640px) {
+  .detailChronologyList {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+}
+
+.detailChronologyItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.detailChronologyMarker {
+  position: relative;
+  z-index: 1;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #b38728;
+  box-shadow: 0 0 0 3px #050505;
+}
+
+.detailChronologyYear {
+  margin: 0;
+  font-size: clamp(0.625rem, 2.4vw, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgb(255 255 255 / 0.92);
+}
+
+.detailChronologyLabel {
+  margin: 0;
+  font-size: clamp(0.5625rem, 2.1vw, 0.6875rem);
+  line-height: 1.35;
+  color: rgb(255 255 255 / 0.5);
+}
+
+.detailFooter {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.75rem;
+  padding-bottom: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .detailFooter {
+    margin-top: 2.25rem;
+  }
+}
+
+.detailCloseBtn {
+  display: inline-flex;
+  height: 2.85rem;
+  width: 2.85rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgb(191 149 63 / 0.65);
+  background: rgb(0 0 0 / 0.48);
+  color: #c9a227;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.detailCloseBtn:hover {
+  border-color: rgb(216 185 106 / 0.9);
+  background: rgb(0 0 0 / 0.62);
+  color: #e8d48a;
+}
+
+.detailCloseBtn:focus-visible {
+  outline: 2px solid rgb(191 149 63 / 0.75);
+  outline-offset: 3px;
+}
+
+.detailCloseMark {
+  display: block;
+  height: 1.45rem;
+  width: 1.45rem;
+  object-fit: contain;
+  filter: brightness(1.08) contrast(1.05);
+}

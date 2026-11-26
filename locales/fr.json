@@ -6,7 +6,7 @@
   "nav": {
     "collection": "Collection",
     "atelier": "Atelier",
-    "heritage": "Héritage",
+    "heritage": "Origines",
     "lookbook": "Lookbook",
     "custom": "Atelier custom",
     "openMenu": "Ouvrir le menu",
@@ -29,7 +29,7 @@
   },
   "catalog": {
     "filtersAria": "Catégories de la collection DINGRY",
-    "brandEyebrow": "Marque",
+    "brandEyebrow": "SHOP",
     "brandFiltersAria": "Filtrer la collection par marque",
     "unavailable": "Catalogue momentanément indisponible — achat désactivé. Réessayez dans un instant.",
     "categories": {

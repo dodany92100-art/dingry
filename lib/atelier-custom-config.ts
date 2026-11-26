@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { CatalogCategory } from "@/lib/catalog-category";
 import type { ShopProduct } from "@/lib/catalog";
 import { DINGRY_ATELIER_HERO_SRC } from "@/lib/dingry-brand";
 import { CUSTOM_BANNER_SUGGESTED_CITIES } from "@/lib/custom-city-banner";
@@ -291,6 +292,22 @@ export const SHOP_ATELIER_CUSTOM_DEFAULT: AdminAtelierCustomConfig = {
       previewCityColor: "#000000",
     },
     {
+      id: "hoodie-bleu-rose",
+      label: "Hoodie bleu & rose",
+      catalogRef: "#2",
+      productId: 2,
+      enabled: true,
+      basePriceEur: 80,
+      sizes: ATELIER_CUSTOM_SIZES,
+      previewImageUrl: IMAGES.hoodie2,
+      swatch: "#1e3a8a",
+      swatchText: "#ffffff",
+      cityTop: "46%",
+      citySize: "clamp(0.38rem, 1.85vw, 0.56rem)",
+      previewTextStyle: "light",
+      previewCityColor: "#ffffff",
+    },
+    {
       id: "hoodie-chocolat",
       label: "Hoodie chocolat",
       catalogRef: "#29",
@@ -335,8 +352,7 @@ function isAtelierTunnelShopCategory(category: string): boolean {
     isShopTeeCategory(category) ||
     category === "Hoodie" ||
     category === "Hoodzip" ||
-    category === "Hoodie zippé" ||
-    category === "Sweats"
+    category === "Hoodie zippé"
   );
 }
 
@@ -428,6 +444,20 @@ export type AtelierModelPickerGroup = {
   label: string;
   models: AtelierCustomModel[];
 };
+
+const ATELIER_CATALOG_CUSTOM_CATEGORIES = new Set<CatalogCategory>(["t-shirts", "hoodies", "hoodie-zip"]);
+
+export function isAtelierCatalogCustomSection(category: CatalogCategory): boolean {
+  return ATELIER_CATALOG_CUSTOM_CATEGORIES.has(category);
+}
+
+export function catalogCategoryToAtelierModelGroup(
+  category: CatalogCategory,
+): AtelierModelPickerGroupId | null {
+  if (category === "t-shirts") return "tees";
+  if (category === "hoodies" || category === "hoodie-zip") return "hoodies";
+  return null;
+}
 
 export function groupAtelierModelsForPicker(models: readonly AtelierCustomModel[]): AtelierModelPickerGroup[] {
   const buckets: Record<AtelierModelPickerGroupId, AtelierCustomModel[]> = {

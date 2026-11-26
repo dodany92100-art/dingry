@@ -2,10 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { cldOpt } from "@/components/molecules/product-card";
 import type { CheckoutConfirmation } from "@/lib/checkout-draft";
-import { DINGRY_PRODUCT_MODAL_AMBIENCE_SRC } from "@/lib/dingry-brand";
 import { useTranslation } from "@/hooks/use-translation";
+import { useShopVitrineAmbience } from "@/hooks/use-shop-vitrine-ambience";
 import { storefrontProductSubtitle, storefrontProductTitle } from "@/lib/dingry-product-display";
 import {
   DINGRY_SHIPPING_AMOUNT_HINT,
@@ -67,6 +68,7 @@ export function CartDrawer({
   catalogProducts,
 }: CartDrawerProps) {
   const { t } = useTranslation();
+  const { ambience, objectPosition } = useShopVitrineAmbience();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const openerFocusRef = useRef<HTMLElement | null>(null);
@@ -152,10 +154,11 @@ export function CartDrawer({
               aria-label={t("cart.drawer.closeContinueAria")}
             />
             <img
-              src={DINGRY_PRODUCT_MODAL_AMBIENCE_SRC}
+              src={ambience.imageUrl}
               alt=""
               aria-hidden
-              className="absolute inset-0 h-full w-full object-cover object-[center_35%]"
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ objectPosition }}
               {...CART_DRAWER_DECORATIVE_IMG}
             />
             <div
@@ -177,7 +180,7 @@ export function CartDrawer({
             role="dialog"
             aria-modal="true"
             aria-labelledby={DINGRY_CART_DRAWER_TITLE_ID}
-            className="dingry-sale-ui dingry-cart-drawer-panel relative z-10 flex h-full min-h-0 w-full max-w-md flex-col border-l border-white/[0.06] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.45)] will-change-transform"
+            className="dingry-sale-ui dingry-cart-drawer-panel relative z-10 flex h-full min-h-0 w-full max-w-md flex-col overflow-hidden border-l border-white/[0.06] bg-[#0a0a0a] shadow-[-24px_0_80px_rgba(0,0,0,0.45)] will-change-transform"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -407,6 +410,9 @@ export function CartDrawer({
                 </button>
               </div>
             )}
+            <div className="dingry-gold-rule-top relative z-20 flex shrink-0 justify-center bg-[#0a0a0a] px-6 py-4">
+              <DingryLogo animate={false} tone="on-light" className="!h-9 !max-h-9 w-auto md:!h-9" />
+            </div>
           </motion.div>
         </div>
       ) : null}

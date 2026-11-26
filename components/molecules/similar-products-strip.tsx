@@ -2,9 +2,9 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { DingryProductImage } from "@/components/atoms/dingry-product-image";
-import { ProductColorVariantGrid } from "@/components/molecules/product-color-variant-grid";
 import type { ShopProduct } from "@/lib/catalog";
 import {
+  COLOR_LINE_GALLERY_LABEL,
   SIMILAR_PRODUCTS_SECTION_LABEL,
   crossSellProductCaption,
   type SimilarProductCard,
@@ -12,20 +12,41 @@ import {
 import styles from "./similar-products-strip.module.css";
 
 type SimilarProductsStripProps = {
-  variants: SimilarProductCard[];
-  crossSell: ShopProduct[];
+  crossSell?: ShopProduct[];
+  /** Coloris du même modèle (prioritaire sur crossSell). */
+  variantCards?: SimilarProductCard[];
   catalog: readonly ShopProduct[];
-  onPickVariant: (product: ShopProduct) => void;
   onPickCrossSell: (product: ShopProduct) => void;
+  tone?: "default" | "pdp-dark";
+  /** Vignettes compactes sous la photo PDP (colonne gauche). */
+  presentation?: "default" | "pdp-gallery";
+  sectionLabel?: string;
 };
 
 function SimilarProductsStripInner({
-  variants,
-  crossSell,
+  crossSell = [],
+  variantCards,
   catalog,
-  onPickVariant,
   onPickCrossSell,
+  tone = "default",
+  presentation = "default",
+  sectionLabel,
 }: SimilarProductsStripProps) {
+  const pdp = tone === "pdp-dark";
+  const gallery = presentation === "pdp-gallery";
+  const entries = variantCards
+    ? variantCards.map((card) => ({
+        key: card.product.id,
+        product: card.product,
+        caption: card.label,
+        isActive: card.isActive,
+      }))
+    : crossSell.map((item) => ({
+        key: item.id,
+        product: item,
+        caption: crossSellProductCaption(item, catalog),
+        isActive: false,
+      }));
   const rowRef = useRef<HTMLDivElement>(null);
   const [scrollState, setScrollState] = useState({ left: false, right: false });
 
@@ -47,25 +68,23 @@ function SimilarProductsStripInner({
     const ro = new ResizeObserver(refreshScrollHints);
     ro.observe(row);
     return () => ro.disconnect();
-  }, [variants, crossSell, refreshScrollHints]);
+  }, [entries.length, refreshScrollHints]);
 
-  if (variants.length === 0 && crossSell.length === 0) return null;
+  if (entries.length === 0) return null;
+
+  const heading =
+    sectionLabel ?? (gallery && variantCards ? COLOR_LINE_GALLERY_LABEL : SIMILAR_PRODUCTS_SECTION_LABEL);
 
   const showRightFade = scrollState.right;
   const showLeftFade = scrollState.left;
 
-  if (variants.length > 0) {
-    return (
-      <div className={styles.root}>
-        <p className={styles.label}>{SIMILAR_PRODUCTS_SECTION_LABEL}</p>
-        <ProductColorVariantGrid variants={variants} onPickVariant={onPickVariant} showLabel={false} />
-      </div>
-    );
-  }
-
   return (
-    <div className={styles.root}>
-      <p className={styles.label}>{SIMILAR_PRODUCTS_SECTION_LABEL}</p>
+    <div
+      className={`${styles.root} ${pdp ? styles.rootPdp : ""} ${gallery ? styles.rootGallery : ""}`}
+    >
+      <p className={`${styles.label} ${pdp ? styles.labelPdp : ""} ${gallery ? styles.labelGallery : ""}`}>
+        {heading}
+      </p>
       <div
         className={`${styles.rowOuter} ${showRightFade ? styles.rowOuterScrollable : ""} ${showLeftFade ? styles.rowOuterScrolled : ""}`}
       >
@@ -77,24 +96,25 @@ function SimilarProductsStripInner({
           </span>
         ) : null}
         <div ref={rowRef} className={styles.row} onScroll={refreshScrollHints}>
-          {crossSell.map((product) => (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => onPickCrossSell(product)}
-                  className={styles.card}
-                >
-                  <DingryProductImage
-                    src={product.image}
-                    alt=""
-                    width={96}
-                    height={128}
-                    deliveryWidth={192}
-                    className={styles.thumb}
-                  />
-                  <span className={styles.caption}>{crossSellProductCaption(product, catalog)}</span>
-                </button>
-              ))}
+          {entries.map((entry) => (
+            <button
+              key={entry.key}
+              type="button"
+              aria-pressed={entry.isActive}
+              onClick={() => onPickCrossSell(entry.product)}
+              className={`${styles.card} ${gallery ? styles.cardGallery : ""} ${entry.isActive ? styles.cardActive : ""}`}
+            >
+              <DingryProductImage
+                src={entry.product.image}
+                alt=""
+                width={96}
+                height={128}
+                deliveryWidth={192}
+                className={styles.thumb}
+              />
+              <span className={styles.caption}>{entry.caption}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

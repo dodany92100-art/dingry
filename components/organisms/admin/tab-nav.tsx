@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 
-export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "atelier" | "promos";
+export type TabId = "produits" | "brouillons" | "commandes" | "lookbook" | "atelier" | "vitrine" | "promos";
 
 const TABS: readonly (readonly [TabId, string])[] = [
   ["produits", "Stock"],
@@ -10,6 +10,7 @@ const TABS: readonly (readonly [TabId, string])[] = [
   ["commandes", "Commandes"],
   ["atelier", "Atelier CUSTOM"],
   ["lookbook", "Lookbook"],
+  ["vitrine", "Mise en ligne"],
   ["promos", "Codes promo"],
 ];
 

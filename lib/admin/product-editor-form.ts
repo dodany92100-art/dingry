@@ -96,6 +96,9 @@ export function formWithSkuForSave(
   return {
     ...form,
     sku: resolveProductSkuForSave(form.category, form.sku, existingSkus, {
+      brand: form.brand,
+      collection: form.collection,
+      productName: form.name,
       excludeNormalizedSku: editingId ? form.sku : undefined,
     }),
   };
