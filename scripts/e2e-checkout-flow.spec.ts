@@ -210,9 +210,9 @@ test.describe('Parcours utilisateur boutique', () => {
       console.log('ℹ️ Pas de taille cliquable détectée — poursuite.');
     }
 
-  // Étape 4 : .dingry-add-to-cart-btn (libellé « Épuisé » si hors stock — refusé ici)
+  // Étape 4 : CTA panier PDP (`.dingry-pdp-add-btn` MWG ; repli wishlist `.dingry-add-to-cart-btn`)
     await dismissCookieBanner(page);
-    const addToCartBtn = productModal.locator('.dingry-add-to-cart-btn').first();
+    const addToCartBtn = productModal.locator('.dingry-pdp-add-btn, .dingry-add-to-cart-btn').first();
     await expect(addToCartBtn).toHaveText(/Ajouter au panier/i, { timeout: 5000 });
     await expect(addToCartBtn).toBeEnabled({ timeout: 15000 });
     await addToCartBtn.click();
