@@ -16,7 +16,7 @@ import {
 } from "@/lib/sku";
 
 /** En-têtes feuille CATALOGUE (FR) → clés internes. */
-export const CATALOG_SHEET_HEADER_ALIASES: Record<string, CatalogSheetFieldKey> = {
+const CATALOG_SHEET_HEADER_ALIASES: Record<string, CatalogSheetFieldKey> = {
   marque: "brand",
   brand: "brand",
   "nom modele": "modelName",
@@ -268,7 +268,7 @@ export function catalogSheetFieldLabel(field: CatalogSheetFieldKey | "" | undefi
   return FIELD_LABELS[field] ?? field;
 }
 
-export function catalogSheetMakeIssue(input: {
+function catalogSheetMakeIssue(input: {
   level: CatalogSheetRowIssue["level"];
   code: string;
   message?: string;
@@ -393,7 +393,7 @@ export function normalizeCatalogSheetHeader(raw: string): CatalogSheetFieldKey |
 }
 
 /** Nettoyage codes catalogue (`SKU`, réf. modèle). */
-export function normalizeCatalogSheetCodeToken(raw: string): string {
+function normalizeCatalogSheetCodeToken(raw: string): string {
   return raw
     .trim()
     .normalize("NFD")
@@ -416,7 +416,7 @@ export function normalizeCatalogSheetSku(raw: string): string {
   return sku;
 }
 
-export function normalizeCatalogSheetModelRef(raw: string): string {
+function normalizeCatalogSheetModelRef(raw: string): string {
   return normalizeCatalogSheetCodeToken(raw);
 }
 
@@ -439,7 +439,7 @@ function normalizeBrandLabelKey(raw: string): string {
 }
 
 /** Marque feuille → marque admin (tolérant casse / alias). */
-export function normalizeCatalogSheetBrand(raw: string, sku?: string): Brand | null {
+function normalizeCatalogSheetBrand(raw: string, sku?: string): Brand | null {
   const label = normalizeBrandLabelKey(raw);
   if (label) {
     if (label === "fyma" || label === "fym") return "FYMA";
@@ -474,7 +474,7 @@ const COLOR_DISPLAY_ALIASES: Record<string, string> = {
   gray: "Gris",
 };
 
-export function normalizeCatalogSheetColorDisplay(raw: string): string {
+function normalizeCatalogSheetColorDisplay(raw: string): string {
   const key = normalizeBrandLabelKey(raw).replace(/\s+/g, " ");
   if (COLOR_DISPLAY_ALIASES[key]) return COLOR_DISPLAY_ALIASES[key]!;
   const trimmed = raw.trim();
@@ -736,53 +736,6 @@ export function parseCatalogSheetRow(
   };
 
   return { row, issues };
-}
-
-export function validateCatalogSheetRow(row: CatalogSheetRow): CatalogSheetRowIssue[] {
-  const issues: CatalogSheetRowIssue[] = [];
-  const rowNumber = row.sourceLine;
-  const parsed = parseSku(row.sku);
-  if (!parsed) {
-    issues.push(
-      catalogSheetMakeIssue({
-        level: "error",
-        code: "sku_invalid",
-        rowNumber,
-        sku: row.sku,
-        modelName: row.modelName,
-        field: "sku",
-      }),
-    );
-    return issues;
-  }
-  if (getModelRef(row.sku) !== row.modelRef) {
-    issues.push(
-      catalogSheetMakeIssue({
-        level: "error",
-        code: "model_ref_sku_mismatch",
-        message: `Réf. modèle ${row.modelRef} incohérente avec ${row.sku}.`,
-        rowNumber,
-        sku: row.sku,
-        modelName: row.modelName,
-        field: "modelRef",
-      }),
-    );
-  }
-  const displayTaille = catalogDisplaySizeToSkuTaille(String(row.size));
-  if (displayTaille !== parsed.taille) {
-    issues.push(
-      catalogSheetMakeIssue({
-        level: "error",
-        code: "size_sku_mismatch",
-        message: `Taille « ${row.size} » incompatible avec le SKU (${parsed.taille}).`,
-        rowNumber,
-        sku: row.sku,
-        modelName: row.modelName,
-        field: "size",
-      }),
-    );
-  }
-  return issues;
 }
 
 export function groupCatalogSheetByModelRef(rows: readonly CatalogSheetRow[]): CatalogSheetModelGroup[] {
@@ -1053,7 +1006,7 @@ export function parseCatalogSheetJson(
 
 const CATALOG_SIZE_SORT_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "TU", "U"] as const;
 
-export function catalogSheetSizeSortIndex(size: string): number {
+function catalogSheetSizeSortIndex(size: string): number {
   const index = CATALOG_SIZE_SORT_ORDER.indexOf(size as (typeof CATALOG_SIZE_SORT_ORDER)[number]);
   return index >= 0 ? index : 99;
 }

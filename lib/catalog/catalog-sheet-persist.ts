@@ -213,7 +213,7 @@ function arraysEqualStrings<T extends string>(a: readonly T[], b: readonly T[]):
 }
 
 /** Aucune écriture DB utile si le patch fusionné est vide ou redondant avec l'existant. */
-export function catalogSheetPersistPatchIsNoop(
+function catalogSheetPersistPatchIsNoop(
   existing: AdminProduct,
   patch: Partial<ProductInput> & { colorDeclinations?: string[] },
 ): boolean {
@@ -245,7 +245,7 @@ export function catalogSheetPersistPatchIsNoop(
 }
 
 /** Payload réseau compact (champs texte trim, pas de sur-colonnes). */
-export function compactCatalogSheetCandidate(candidate: CatalogSheetCrmCandidate): CatalogSheetCrmCandidate {
+function compactCatalogSheetCandidate(candidate: CatalogSheetCrmCandidate): CatalogSheetCrmCandidate {
   const trim = (value: string) => value.trim();
   return {
     modelRef: trim(candidate.modelRef),
