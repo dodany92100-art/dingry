@@ -621,8 +621,9 @@ function normalizeMakerTemplate(value: unknown): CatalogMakerTemplate | null {
   const updatedAt =
     typeof record.updatedAt === "string" ? record.updatedAt : createdAt;
   const sizeGuide = typeof record.sizeGuide === "string" ? record.sizeGuide.trim() : "";
+  const fiche = "fiche" in record ? record.fiche : undefined;
   const draft = validateCatalogMakerTemplate(
-    { label, category, priceTtc, sizes, sizeGuide },
+    { label, category, priceTtc, sizes, sizeGuide, fiche },
     [],
   );
   if (!draft.ok) return null;

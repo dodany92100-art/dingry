@@ -24,11 +24,30 @@ import {
   ADMIN_CRM_VITRINE_RESET_BTN,
 } from "@/components/organisms/admin/admin-crm-field-styles";
 import { useAdminUploadGuard } from "./hooks/use-admin-upload-guard";
+import { AtelierCustomTab } from "@/components/organisms/admin/atelier-custom-tab";
+import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
 import { VitrineStorefrontCopySection } from "@/components/organisms/admin/vitrine-storefront-copy-section";
+import type { AdminAtelierCustomConfig } from "@/lib/atelier-custom-config";
+import type { SaveAtelierCustomResult } from "@/components/organisms/admin/hooks/use-admin-atelier-custom";
+
+export type VitrinePublishPanel = "vitrine" | "lookbook" | "atelier";
 
 type VitrinePublishTabProps = {
   lookbookSlides: readonly AdminLookbookSlideView[];
   onUnauthorized: () => void;
+  panel: VitrinePublishPanel;
+  onPanelChange: (panel: VitrinePublishPanel) => void;
+  lookbookBusySlideId: string | null;
+  lookbookError: string;
+  onLookbookNew: () => void;
+  onLookbookEdit: (slide: AdminLookbookSlideView) => void;
+  onLookbookDelete: (slide: AdminLookbookSlideView) => void;
+  onLookbookReorder: (slide: AdminLookbookSlideView, direction: "up" | "down") => void;
+  atelierConfig: AdminAtelierCustomConfig;
+  atelierCustomized: boolean;
+  atelierSaving: boolean;
+  atelierError: string;
+  onAtelierSave: (config: AdminAtelierCustomConfig) => Promise<SaveAtelierCustomResult>;
 };
 
 type AmbienceSaveStatus = "idle" | "saving" | "saved" | "error";
@@ -45,7 +64,29 @@ function resolveHeroSlideSrc(
   return first?.imageUrl.trim() ? first.imageUrl : slide.src;
 }
 
-export function VitrinePublishTab({ lookbookSlides, onUnauthorized }: VitrinePublishTabProps) {
+const VITRINE_SUB_PANELS: readonly (readonly [VitrinePublishPanel, string])[] = [
+  ["vitrine", "Mise en ligne"],
+  ["lookbook", "Lookbook"],
+  ["atelier", "Atelier CUSTOM"],
+];
+
+export function VitrinePublishTab({
+  lookbookSlides,
+  onUnauthorized,
+  panel,
+  onPanelChange,
+  lookbookBusySlideId,
+  lookbookError,
+  onLookbookNew,
+  onLookbookEdit,
+  onLookbookDelete,
+  onLookbookReorder,
+  atelierConfig,
+  atelierCustomized,
+  atelierSaving,
+  atelierError,
+  onAtelierSave,
+}: VitrinePublishTabProps) {
   const [framingMap, setFramingMap] = useState<ShopHeroFramingMap>({ ...DEFAULT_SHOP_HERO_FRAMING_DEFAULTS });
   const [framingBaseline, setFramingBaseline] = useState<ShopHeroFramingMap>({ ...DEFAULT_SHOP_HERO_FRAMING_DEFAULTS });
   const [framingLoaded, setFramingLoaded] = useState(false);
@@ -263,12 +304,60 @@ export function VitrinePublishTab({ lookbookSlides, onUnauthorized }: VitrinePub
 
   return (
     <div className="space-y-10">
+      <nav
+        className="flex flex-wrap gap-x-6 gap-y-2 border-b border-white/[0.08] pb-2.5"
+        role="tablist"
+        aria-label="Mise en ligne · sections"
+      >
+        {VITRINE_SUB_PANELS.map(([id, label]) => {
+          const active = panel === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onPanelChange(id)}
+              className={`text-[11px] font-semibold uppercase tracking-[0.2em] transition-colors ${
+                active ? "text-white" : "text-white/45 hover:text-white/70"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {panel === "lookbook" ? (
+        <section className={ADMIN_CRM_GLASS_PANEL}>
+          <LookbookTab
+            slides={[...lookbookSlides]}
+            busySlideId={lookbookBusySlideId}
+            error={lookbookError}
+            onNew={onLookbookNew}
+            onEdit={onLookbookEdit}
+            onDelete={onLookbookDelete}
+            onReorder={onLookbookReorder}
+          />
+        </section>
+      ) : panel === "atelier" ? (
+        <section className={`${ADMIN_CRM_GLASS_PANEL} flex justify-center`}>
+          <AtelierCustomTab
+            config={atelierConfig}
+            customized={atelierCustomized}
+            saving={atelierSaving}
+            error={atelierError}
+            onSave={onAtelierSave}
+          />
+        </section>
+      ) : (
+      <>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-2xl">
           <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Mise en ligne vitrine</p>
           <p className="mt-2 text-sm leading-relaxed text-white/50">
             Cadrage au scalpel des visuels d&apos;accueil et des panneaux panier, favoris et fiche produit. Les images
-            lookbook du hero proviennent de l&apos;onglet Lookbook.
+            lookbook du hero se gèrent dans l&apos;onglet Lookbook ci-dessus.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 self-start sm:mt-1">
@@ -414,6 +503,8 @@ export function VitrinePublishTab({ lookbookSlides, onUnauthorized }: VitrinePub
         resetVersion={resetVersion}
         onDirtyChange={setCopyDirty}
       />
+      </>
+      )}
     </div>
   );
 }

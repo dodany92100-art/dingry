@@ -55,7 +55,7 @@ export function AtelierModelPreviewTune({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto flex w-full max-w-sm flex-col items-center space-y-4">
       {onPreviewImageFile ? (
         <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">
           Visuel vierge · glisser-déposer sur l&apos;aperçu (WebP · 1 Mo max)
@@ -65,7 +65,7 @@ export function AtelierModelPreviewTune({
         onDragOver={onDragOver}
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
-        className={`relative mx-auto max-w-[14rem] ${dropEnabled && dragOver ? "ring-2 ring-[#FF3D00]/50 ring-offset-2 ring-offset-[#070b14]" : ""}`}
+        className={`relative w-full max-w-[14rem] ${dropEnabled && dragOver ? "ring-2 ring-[#FF3D00]/50 ring-offset-2 ring-offset-[#070b14]" : ""}`}
       >
         <div
           className={`${previewStyles.previewStage} ${
@@ -102,7 +102,7 @@ export function AtelierModelPreviewTune({
           </span>
         ) : null}
       </div>
-      <div className="space-y-4">
+      <div className="w-full space-y-4">
         <AtelierCityColorControl
           id={`atelier-city-color-${model.id}`}
           value={model.previewCityColor}

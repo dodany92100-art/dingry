@@ -26,7 +26,42 @@ function withMakerTemplateFields(
   };
 }
 
-/** Injection maker — défauts tarifaires / tailles, sans imposer nom, SKU, couleur. */
+function applyMakerFicheSnapshot(
+  prev: SmartProductAutoTagFormState,
+  template: CatalogMakerTemplate,
+  ctx: MakerPrefillCtx,
+): SmartProductAutoTagFormState {
+  const fiche = template.fiche;
+  if (!fiche) return prev;
+  const gram = (template.sizeGuide ?? "").trim();
+  const fromMatrix = applyCatalogProductMatrix(
+    prev,
+    {
+      category: template.category,
+      price: template.priceTtc,
+      sizes: template.sizes,
+      description: fiche.description,
+      materials: fiche.materials,
+      sizeGuide: gram,
+      fabrication: fiche.fabrication,
+      limitedEdition: fiche.limitedEdition,
+      printPlacement: fiche.printPlacement,
+    },
+    { editingId: ctx.editingId, existingSkus: ctx.existingSkus, mergeMode: "replace" },
+  );
+  return {
+    ...fromMatrix,
+    name: fiche.name || fromMatrix.name,
+    variant: fiche.variant || fromMatrix.variant,
+    brand: fiche.brand || fromMatrix.brand,
+    collection: fiche.collection || fromMatrix.collection,
+    colorDeclinations: fiche.colorDeclinations.length > 0 ? [...fiche.colorDeclinations] : fromMatrix.colorDeclinations,
+    stock: fiche.stock || fromMatrix.stock,
+    printPlacement: fiche.printPlacement || fromMatrix.printPlacement,
+  };
+}
+
+/** Modèle mémorisé — tarif / tailles ; si `fiche` présente, repris comme une base CRM. */
 export function applyMakerTemplateToFormState(
   prev: SmartProductAutoTagFormState,
   template: CatalogMakerTemplate,
@@ -43,9 +78,10 @@ export function applyMakerTemplateToFormState(
   const afterDefaults = applyCategoryDefaults(merged, template.category, {
     editingId: ctx.editingId,
     existingSkus: ctx.existingSkus,
-    mergeMode: "fill-empty",
+    mergeMode: template.fiche ? "replace" : "fill-empty",
   });
-  return withMakerTemplateFields(afterDefaults, template, prev);
+  const withTemplate = withMakerTemplateFields(afterDefaults, template, prev);
+  return applyMakerFicheSnapshot(withTemplate, template, ctx);
 }
 
 /** Fiche CRM catalogue — story, tarif, tailles + nom / variante / couleurs pour cloner la base. */

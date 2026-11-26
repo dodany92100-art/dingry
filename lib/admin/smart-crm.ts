@@ -87,7 +87,7 @@ export function buildSmartCrmHints(input: SmartCrmInput): SmartCrmHint[] {
   if (!input.description.trim()) {
     hints.push({
       id: "story-empty",
-      message: "Smart CRM · Ajoute une description (bouton ✨ Smart Description) pour enrichir la fiche boutique.",
+      message: "Smart CRM · Ajoute une description pour enrichir la fiche boutique.",
       tone: "info",
     });
   }

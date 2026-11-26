@@ -308,6 +308,7 @@ export function ProductImageFlip({
           className={cn(
             "h-full w-1/2 shrink-0 object-cover",
             imgClassName,
+            "w-1/2 shrink-0",
             soldOut && "opacity-50",
           )}
         />
@@ -317,7 +318,12 @@ export function ProductImageFlip({
           deliveryWidth={cardW}
           width={cardW}
           height={Math.round((cardW * 4) / 3)}
-          className={cn("h-full w-1/2 shrink-0 object-cover", imgClassName, soldOut && "opacity-50")}
+          className={cn(
+            "h-full w-1/2 shrink-0 object-cover",
+            imgClassName,
+            "w-1/2 shrink-0",
+            soldOut && "opacity-50",
+          )}
         />
       </div>
       {isFirstInGrid && side === "recto" ? (

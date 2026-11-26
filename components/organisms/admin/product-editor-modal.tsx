@@ -62,7 +62,6 @@ import {
 } from "@/lib/client/admin-upload-image";
 import { PRODUCT_IMAGE_EDITOR_SUBTITLE } from "@/lib/admin/image-limits";
 import { prepareProductImage } from "@/lib/client/prepare-product-image";
-import { buildSmartDescriptionDraft } from "@/lib/admin/smart-crm";
 import {
   buildSmartParseRecap,
   parseSmartProductText,
@@ -102,7 +101,8 @@ import { adminBulkSelectSizesForCategory } from "@/lib/admin/standard-sizes";
 import {
   catalogMakerTemplateOptionLabel,
   makerLabelHintForCategory,
-  makerTemplateFromFormDefaults,
+  makerFicheFromFormState,
+  makerTemplateFromFormState,
   normalizeCatalogMakerLabel,
   validateCatalogMakerTemplate,
   type CatalogMakerTemplate,
@@ -116,7 +116,6 @@ import {
   AdminEditorAccordion,
   ADMIN_BTN,
   ADMIN_BTN_ACTIVE,
-  ADMIN_BTN_GEMINI_DESCRIPTION,
   ADMIN_BTN_GOLD_DETECT,
   ADMIN_BTN_VIOLET_SMART_OFF,
   ADMIN_BTN_VIOLET_SMART_ON,
@@ -317,8 +316,6 @@ export function ProductEditorModal({
       (typeof window !== "undefined" ? readProductEditorSplitPct() : null) ??
       PRODUCT_EDITOR_SPLIT_DEFAULT_PCT,
   );
-  /** Description avant « Smart Description » · permet d’annuler sans recharger. */
-  const [storyUndoDescription, setStoryUndoDescription] = useState<string | null>(null);
   const [makerTemplateId, setMakerTemplateId] = useState("");
   const [makerTemplateLabelDraft, setMakerTemplateLabelDraft] = useState("");
 
@@ -366,16 +363,17 @@ export function ProductEditorModal({
       return null;
     }
     const sizeGuide = form.sizeGuide.trim() || categoryStandardGrammage(form.category) || "";
-    const payload = makerTemplateFromFormDefaults({
+    const payload = makerTemplateFromFormState({
       label,
       category: form.category,
       price,
       sizes: form.sizes,
       sizeGuide,
+      fiche: makerFicheFromFormState(form),
     });
     const check = validateCatalogMakerTemplate(payload, makerTemplates);
     return check.ok ? null : check.error;
-  }, [form.category, form.price, form.sizeGuide, form.sizes, makerTemplateLabelDraft, makerTemplates]);
+  }, [form, makerTemplateLabelDraft, makerTemplates]);
   const bootstrapSessionRef = useRef<string | null>(null);
   const productNameInputRef = useRef<HTMLInputElement>(null);
   const smartPasteInputRef = useRef<HTMLTextAreaElement>(null);
@@ -469,7 +467,6 @@ export function ProductEditorModal({
     setSmartPasteOpen(ui.smartPasteOpen);
     setSmartPasteText(ui.smartPasteText);
     setPrintSheetOpen(false);
-    setStoryUndoDescription(null);
     setMakerTemplateId("");
     setMakerTemplateLabelDraft("");
   }, [editorSessionKey]);
@@ -791,8 +788,10 @@ export function ProductEditorModal({
 
     const successDetail = catalogProduct
       ? `Fiche ${catalogProduct.name} — données, stock, couleurs et visuels repris (nouveau SKU à l’enregistrement).`
-      : `Modèle ${template.label} — catégorie, prix, tailles${
-          (template.sizeGuide ?? "").trim() ? `, grammage ${(template.sizeGuide ?? "").trim()}` : ""
+      : template.fiche
+        ? `Modèle ${template.label} — fiche complète reprise (textes, identité, couleurs, stock ; visuels à toi).`
+        : `Modèle ${template.label} — catégorie, prix, tailles${
+            (template.sizeGuide ?? "").trim() ? `, grammage ${(template.sizeGuide ?? "").trim()}` : ""
         } (nom / couleur libres).`;
     showFormSuccess(successDetail, "neutral");
   }
@@ -817,12 +816,13 @@ export function ProductEditorModal({
     }
     const sizeGuide =
       form.sizeGuide.trim() || categoryStandardGrammage(form.category) || "";
-    const payload = makerTemplateFromFormDefaults({
+    const payload = makerTemplateFromFormState({
       label,
       category: form.category,
       price,
       sizes: form.sizes,
       sizeGuide,
+      fiche: makerFicheFromFormState(form),
     });
     const clientCheck = validateCatalogMakerTemplate(payload, makerTemplates);
     if (!clientCheck.ok) {
@@ -1325,24 +1325,6 @@ export function ProductEditorModal({
     [form.name, form.variant, form.sku, form.sizes, form.stock, current?.name],
   );
 
-  function applySmartDescription() {
-    setFormError("");
-    setFormSuccess(null);
-    setStoryUndoDescription(form.description);
-    const draft = buildSmartDescriptionDraft(form.name, form.category, form.variant);
-    patch({ description: draft });
-    showFormSuccess("Smart Description · texte ajouté à la fiche boutique.", "neutral");
-    setEditorTab("story");
-  }
-
-  function undoSmartDescription() {
-    if (storyUndoDescription === null) return;
-    patch({ description: storyUndoDescription });
-    setStoryUndoDescription(null);
-    setFormSuccess(null);
-    setFormError("");
-  }
-
   function applySmartPaste() {
     setFormError("");
     setFormSuccess(null);
@@ -1752,9 +1734,8 @@ export function ProductEditorModal({
                           />
                         </label>
                       </div>
-                      {!editingId ? (
-                        <div className={`${FIELD_LABEL} sm:col-span-2 space-y-3`}>
-                          <span className="block">Base catalogue mémorisée (modèles maker)</span>
+                      <div className={`${FIELD_LABEL} sm:col-span-2 space-y-3`}>
+                          <span className="block">Familles déjà enregistrées (modèles maker)</span>
                           <select
                             value={makerTemplateId}
                             onChange={(event) => loadMakerTemplate(event.target.value)}
@@ -1829,10 +1810,10 @@ export function ProductEditorModal({
                             </p>
                           ) : null}
                           <span className="block text-[11px] font-normal leading-relaxed text-white/45">
-                            Un modèle préremplit catégorie, prix et tailles. Nom, couleurs et photos restent à toi.
+                            « Ajouter au catalogue » enregistre la fiche complète du formulaire (hors photos).
+                            Le menu ci-dessus la recharge sur une nouvelle base.
                           </span>
                         </div>
-                      ) : null}
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
@@ -1866,14 +1847,6 @@ export function ProductEditorModal({
                             )}
                             Smart collage
                           </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={applySmartDescription}
-                          disabled={saving || convertingImage}
-                          className={`${ADMIN_BTN_GEMINI_DESCRIPTION} shrink-0`}
-                        >
-                          Smart Description
                         </button>
                       </div>
                       {smartPasteOpen ? (
@@ -2210,15 +2183,6 @@ export function ProductEditorModal({
                   >
                     ← Produit · tailles & couleurs
                   </button>
-                  {storyUndoDescription !== null ? (
-                    <button
-                      type="button"
-                      onClick={undoSmartDescription}
-                      className={`${ADMIN_BTN} border-white/14 text-white/75 hover:border-white/20 hover:bg-[#1c1c1c]`}
-                    >
-                      Annuler Smart Description
-                    </button>
-                  ) : null}
                 </div>
                 </div>
                 }

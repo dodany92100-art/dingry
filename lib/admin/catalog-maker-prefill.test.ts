@@ -28,6 +28,43 @@ describe("catalog-maker-prefill", () => {
     expect(next.sizeGuide).toContain("400");
   });
 
+  it("reprend la fiche mémorisée complète quand le modèle inclut fiche", () => {
+    const prev = createNewProductFormState("T-shirts", []);
+    const template: CatalogMakerTemplate = {
+      id: "maker-fiche",
+      label: "FICHE TEST",
+      category: "Hoodies",
+      priceTtc: 80,
+      priceHt: 66.67,
+      sizes: ["S", "M", "L"],
+      sizeGuide: "400 g/m²",
+      fiche: {
+        name: "HOODIE TEST",
+        variant: "NOIR — RECTO",
+        brand: "DINGRY",
+        collection: "Signature",
+        description: "Molleton premium",
+        materials: "Coton",
+        fabrication: "Portugal",
+        limitedEdition: "50 ex.",
+        printPlacement: "RECTO_ONLY",
+        colorDeclinations: ["NOIR"],
+        stock: "12",
+      },
+      createdAt: "",
+      updatedAt: "",
+    };
+    const next = applyMakerTemplateToFormState(prev, template, {
+      editingId: null,
+      existingSkus: [],
+    });
+    expect(next.name).toBe("HOODIE TEST");
+    expect(next.description).toBe("Molleton premium");
+    expect(next.colorDeclinations).toEqual(["NOIR"]);
+    expect(next.stock).toBe("12");
+    expect(next.price).toBe("80");
+  });
+
   it("reprend la fiche CRM catalogue (replace)", () => {
     const prev = createNewProductFormState("T-shirts", []);
     const source = {

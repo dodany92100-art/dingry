@@ -14,8 +14,10 @@ import { useAdminOrders } from "@/components/organisms/admin/hooks/use-admin-ord
 import { useAdminProducts } from "@/components/organisms/admin/hooks/use-admin-products";
 import { useAdminSession } from "@/components/organisms/admin/hooks/use-admin-session";
 import { AtelierCustomTab } from "@/components/organisms/admin/atelier-custom-tab";
-import { LookbookTab } from "@/components/organisms/admin/lookbook-tab";
-import { VitrinePublishTab } from "@/components/organisms/admin/vitrine-publish-tab";
+import {
+  VitrinePublishTab,
+  type VitrinePublishPanel,
+} from "@/components/organisms/admin/vitrine-publish-tab";
 import { OrdersTab } from "@/components/organisms/admin/orders-tab";
 import { PromoCodesTab } from "@/components/organisms/admin/promo-codes-tab";
 import { CrmChangelogDialog } from "@/components/organisms/admin/crm-changelog-dialog";
@@ -76,11 +78,11 @@ type LookbookEditorState = { slide: AdminLookbookSlideView | null } | null;
 
 function parseTabParam(value: string | null): TabId {
   if (value === "banniere") return "atelier";
+  if (value === "lookbook") return "vitrine";
   if (
     value === "produits" ||
     value === "brouillons" ||
     value === "commandes" ||
-    value === "lookbook" ||
     value === "atelier" ||
     value === "vitrine" ||
     value === "promos"
@@ -88,6 +90,12 @@ function parseTabParam(value: string | null): TabId {
     return value;
   }
   return "produits";
+}
+
+function vitrinePanelFromSearch(section: string | null, tab: string | null): VitrinePublishPanel {
+  if (section === "lookbook" || tab === "lookbook") return "lookbook";
+  if (section === "atelier" || tab === "atelier" || tab === "banniere") return "atelier";
+  return "vitrine";
 }
 
 function LoadingScreen({ status = "CRM · chargement" }: { status?: string }) {
@@ -187,13 +195,25 @@ function AdminDashboard() {
     setCategoryFilter(parseAdminCategoryParam(searchParams.get("cat")));
   }, [searchParams]);
 
+  const vitrinePanel = vitrinePanelFromSearch(searchParams.get("section"), searchParams.get("tab"));
+
   const replaceAdminQuery = useCallback(
-    (patch: { tab?: TabId; cat?: AdminProductCategoryFilter; product?: string | null }) => {
+    (patch: {
+      tab?: TabId;
+      cat?: AdminProductCategoryFilter;
+      product?: string | null;
+      section?: string | null;
+    }) => {
       startDingryRouteProgress();
       const params = new URLSearchParams(searchParams.toString());
       if (patch.tab !== undefined) {
         if (patch.tab === "produits") params.delete("tab");
         else params.set("tab", patch.tab);
+        if (patch.tab !== "vitrine") params.delete("section");
+      }
+      if (patch.section !== undefined) {
+        if (patch.section) params.set("section", patch.section);
+        else params.delete("section");
       }
       if (patch.cat !== undefined) {
         const catValue = adminCategoryQueryValue(patch.cat);
@@ -279,7 +299,14 @@ function AdminDashboard() {
   function selectTab(next: TabId) {
     setTab(next);
     persistListScroll();
-    replaceAdminQuery({ tab: next });
+    replaceAdminQuery({ tab: next, section: next === "vitrine" ? null : undefined });
+  }
+
+  function selectVitrinePanel(next: VitrinePublishPanel) {
+    replaceAdminQuery({
+      tab: "vitrine",
+      section: next === "vitrine" ? null : next,
+    });
   }
 
   function selectCategory(next: AdminProductCategoryFilter) {
@@ -642,27 +669,38 @@ function AdminDashboard() {
               onSave={atelierApi.save}
             />
           </>
-        ) : tab === "lookbook" ? (
-          <>
-            <AdminActionToast toast={lookbookApi.toast} onDismiss={lookbookApi.dismissToast} />
-          <LookbookTab
-            slides={lookbookApi.slides}
-            busySlideId={lookbookApi.busySlideId}
-            error={lookbookApi.error}
-            onNew={() => setLookbookEditor({ slide: null })}
-            onEdit={(slide) => setLookbookEditor({ slide })}
-            onReorder={(slide, direction) => {
-              void lookbookApi.reorder(slide, direction).then((err) => {
-                if (err) lookbookApi.setError(err);
-              });
-            }}
-            onDelete={(slide) => {
-              void handleDeleteLookbookSlide(slide);
-            }}
-          />
-          </>
         ) : tab === "vitrine" ? (
-          <VitrinePublishTab lookbookSlides={lookbookApi.slides} onUnauthorized={expire} />
+          <>
+            {vitrinePanel === "lookbook" ? (
+              <AdminActionToast toast={lookbookApi.toast} onDismiss={lookbookApi.dismissToast} />
+            ) : null}
+            {vitrinePanel === "atelier" ? (
+              <AdminActionToast toast={atelierApi.toast} onDismiss={atelierApi.dismissToast} />
+            ) : null}
+            <VitrinePublishTab
+              lookbookSlides={lookbookApi.slides}
+              onUnauthorized={expire}
+              panel={vitrinePanel}
+              onPanelChange={selectVitrinePanel}
+              lookbookBusySlideId={lookbookApi.busySlideId}
+              lookbookError={lookbookApi.error}
+              onLookbookNew={() => setLookbookEditor({ slide: null })}
+              onLookbookEdit={(slide) => setLookbookEditor({ slide })}
+              onLookbookReorder={(slide, direction) => {
+                void lookbookApi.reorder(slide, direction).then((err) => {
+                  if (err) lookbookApi.setError(err);
+                });
+              }}
+              onLookbookDelete={(slide) => {
+                void handleDeleteLookbookSlide(slide);
+              }}
+              atelierConfig={atelierApi.config}
+              atelierCustomized={atelierApi.customized}
+              atelierSaving={atelierApi.saving}
+              atelierError={atelierApi.error}
+              onAtelierSave={atelierApi.save}
+            />
+          </>
         ) : tab === "promos" ? (
           <PromoCodesTab />
         ) : tab === "commandes" ? (

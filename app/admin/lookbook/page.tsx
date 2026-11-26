@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function AdminLookbookRoutePage() {
-  redirect("/admin?tab=lookbook");
+  redirect("/admin?tab=vitrine&section=lookbook");
 }

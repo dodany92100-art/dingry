@@ -153,6 +153,25 @@ export function StockTab({
 }: StockTabProps) {
   const stockControlsBusy = productEditorOpen;
   const [pendingDelete, setPendingDelete] = useState<AdminProduct | null>(null);
+  const [filtersHighlight, setFiltersHighlight] = useState(false);
+  const filtersFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scrollToStockFilters = useCallback(() => {
+    document.getElementById("dingry-admin-stock-filters-anchor")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    setFiltersHighlight(true);
+    if (filtersFlashTimerRef.current) clearTimeout(filtersFlashTimerRef.current);
+    filtersFlashTimerRef.current = setTimeout(() => setFiltersHighlight(false), 900);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (filtersFlashTimerRef.current) clearTimeout(filtersFlashTimerRef.current);
+    },
+    [],
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [colorSortMode, setColorSortMode] = useState<StockColorSortMode>("default");
   const [bulkEditAll, setBulkEditAll] = useState(false);
@@ -403,6 +422,7 @@ export function StockTab({
         categoryFilter={categoryFilter}
         onCategoryChange={onCategoryFilterChange}
         mobileContextSlot={mobileContextSlot}
+        highlight={filtersHighlight}
       >
         <div className="flex min-w-0 flex-col gap-2 md:flex-row md:flex-nowrap md:items-center md:justify-start md:gap-3">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5 md:flex-none">
@@ -651,6 +671,14 @@ export function StockTab({
             Importer catalogue
           </button>
         ) : null}
+        <button
+          type="button"
+          onClick={scrollToStockFilters}
+          className="h-9 rounded-full border border-white/18 bg-[#0a0a0a]/92 px-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/75 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-sm transition hover:border-[#c9a227]/45 hover:text-white"
+          aria-label="Afficher les filtres catalogue en haut"
+        >
+          Filtres
+        </button>
         <button
           type="button"
           onClick={onNew}
