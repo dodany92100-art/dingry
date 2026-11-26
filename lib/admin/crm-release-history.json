@@ -1,5 +1,16 @@
 [
   {
+    "id": "2026-11-26-import-catalogue-crm",
+    "deployedAtLabel": "26 nov. 2026",
+    "title": "Import catalogue & hygiène code CRM",
+    "highlights": [
+      "Import feuille catalogue : code modulaire (fiabilité parsing SKU, diagnostics et fusion CRM) — comportement boutique inchangé.",
+      "CRM : suppression de modules orphelins et réduction des exports internes du magasin admin (moins de risque de régression).",
+      "Pipeline qualité : contrôles anti-régression et tests Vitest import feuille maintenus au vert."
+    ],
+    "versionHint": "233"
+  },
+  {
     "id": "2026-11-23-boutique-crm",
     "deployedAtLabel": "23 nov. 2026",
     "title": "Boutique MWG & stock CRM mobile",
