@@ -1,15 +1,6 @@
-import {
-  DINGRY_ATELIER_HERO_SRC,
-  DINGRY_TEASING_HERO_SRC,
-} from "@/lib/dingry-brand";
+import { DINGRY_TEASING_HERO_SRC } from "@/lib/dingry-brand";
+import { EDITORIAL_BANNER_ASSETS } from "@/lib/editorial-sections";
 import type { ShopHeroFramingMap, ShopHeroSlideFraming } from "@/lib/shop-hero-framing";
-import { LOOKBOOK_ENTRIES } from "@/lib/shop-data";
-
-const LOOKBOOK_HERO_SEED = LOOKBOOK_ENTRIES[0];
-const LOOKBOOK_HERO_SEED_SRC = LOOKBOOK_HERO_SEED?.[0] ?? DINGRY_TEASING_HERO_SRC;
-const LOOKBOOK_HERO_SEED_ALT =
-  typeof LOOKBOOK_HERO_SEED?.[1] === "string" ? LOOKBOOK_HERO_SEED[1] : "DINGRY Lookbook";
-
 export type ShopHeroSlide = {
   id: string;
   src: string;
@@ -35,15 +26,15 @@ export const SHOP_HERO_SLIDES: readonly ShopHeroSlide[] = [
   },
   {
     id: "lookbook-hero",
-    src: LOOKBOOK_HERO_SEED_SRC,
-    alt: LOOKBOOK_HERO_SEED_ALT,
+    src: EDITORIAL_BANNER_ASSETS.rockTheStreet,
+    alt: "ROCK THE STREET",
     imageClassName: "object-cover",
     defaultFraming: DEFAULT_SHOP_HERO_FRAMING_DEFAULTS["lookbook-hero"]!,
   },
   {
     id: "atelier-marseille",
-    src: DINGRY_ATELIER_HERO_SRC,
-    alt: "DINGRY Custom — Marseille",
+    src: "/dingry/editorial/fyma-mon-amour.jpg",
+    alt: "Hero FYMA",
     imageClassName: "object-cover md:object-cover",
     defaultFraming: DEFAULT_SHOP_HERO_FRAMING_DEFAULTS["atelier-marseille"]!,
   },

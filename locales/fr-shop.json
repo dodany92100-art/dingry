@@ -125,7 +125,18 @@
   },
   "lookbookTeaser": {
     "eyebrow": "Lookbook",
-    "title": "Édito & campagnes"
+    "title": "Édito & campagnes",
+    "brandLine": "DINGRY PARIS",
+    "subtitle": "LOOKBOOK - ARCHIVES",
+    "titleLine1": "LOOKBOOK",
+    "titleLine2": "ARCHIVES",
+    "muteAria": "Couper le son de la vidéo lookbook",
+    "unmuteAria": "Activer le son de la vidéo lookbook",
+    "closeLightboxAria": "Fermer l'aperçu plein écran",
+    "prevSlideAria": "Slide précédente",
+    "nextSlideAria": "Slide suivante",
+    "shopTheLook": "Shop the look",
+    "viewProduct": "Voir la pièce"
   },
   "heritageReader": {
     "overlayCloseAria": "Fermer le lecteur Héritage",
@@ -150,5 +161,33 @@
   "common": {
     "ttc": "TTC",
     "close": "Fermer"
+  },
+  "editorialBanners": {
+    "sectionAria": "Bandeaux éditoriaux des marques",
+    "adminFrameAria": "Cadrer le visuel {{brand}}",
+    "adminDragHint": "Mode cadrage : cliquez et glissez sur la carte pour déplacer le visuel",
+    "discoverCta": "DÉCOUVRIR LA COLLECTION",
+    "dingry": {
+      "sectionEyebrow": "DINGRY",
+      "title": "LE LUXE EST DANS L'ATTITUDE",
+      "lead": "Une philosophie libre et engagée, née d'un parcours indépendant.",
+      "kickerRight": "L'IDENTITÉ DINGRY",
+      "bodyRight": "DINGRY incarne une maison de mode Parisienne qui lie streetwear, savoir-faire et storytelling culturel. Une signature sans compromis, où chaque pièce porte l'attitude avant le label."
+    },
+    "rockTheStreet": {
+      "sectionEyebrow": "ROCK THE STREET",
+      "title": "À LA CROISÉE DES RUES, DES STYLES ET DES CULTURES",
+      "lead": "Crossroad of streets, styles & cultures",
+      "hookLeft": "Le symbole X est le carrefour : là où les énergies urbaines se rencontrent et s'affrontent pour créer quelque chose de neuf.",
+      "kickerRight": "C'EST DE L'ART AVEC UN GRAND X",
+      "bodyRight": "Le X symbolise le point de rencontre entre les différences, les influences et les identités culturelles les plus fortes. ROCKTHESTREET, c'est de la musique, du sport, du cinéma, de la mode, de la danse et de la culture urbaine."
+    },
+    "fyma": {
+      "sectionEyebrow": "FYMA",
+      "title": "FUCK YOU MON AMOUR",
+      "lead": "L'ÉLÉGANCE DE L'INSOLENCE",
+      "kickerRight": "PARIS",
+      "bodyRight": "\"Fuck you\", ce n'est pas renier l'amour. C'est lui parler franchement. C'est refuser de mentir sur ce qu'il est. Ce slogan s'adresse à ceux qui aiment sans filtre. À ceux qui ont aimé trop fort. À ceux qui savent que l'amour n'est pas fragile — il est brutal, profond, vivant."
+    }
   }
 }

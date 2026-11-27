@@ -1,4 +1,10 @@
-const ALLOWED_PREFIXES = ["dingry/products/", "dingry/lookbook/", "dingry/banner/"] as const;
+const ALLOWED_PREFIXES = [
+  "dingry/products/",
+  "dingry/lookbook/",
+  "dingry/banner/",
+  "dingry/vitrine/",
+  "dingry/atelier/",
+] as const;
 
 /** Dossier R2 autorisé pour `/api/upload` (pas de `..`, préfixe whitelist). */
 export function sanitizeAdminUploadFolder(raw: string): string | null {

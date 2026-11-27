@@ -11,7 +11,11 @@ export const CATALOG_CATEGORIES = [
 ] as const;
 
 export type CatalogCategory = (typeof CATALOG_CATEGORIES)[number];
-export type CatalogFilter = "all" | CatalogCategory;
+
+/** Onglet tête de barre : toutes marques, toutes catégories. */
+export const CATALOG_FILTER_ALL_BRANDS = "all-brands" as const;
+
+export type CatalogFilter = typeof CATALOG_FILTER_ALL_BRANDS | "all" | CatalogCategory;
 
 const CATEGORY_SET = new Set<string>(CATALOG_CATEGORIES);
 
@@ -85,11 +89,22 @@ export function matchCatalogCategoryInText(text: string): CatalogCategory | null
 export function parseCatalogFilter(value: string | null | undefined): CatalogFilter {
   if (!value) return "all";
   const key = slugKey(value);
+  if (
+    key === "all-brands" ||
+    key === "toutes-les-marques" ||
+    key === "toutes-marques" ||
+    key === "toutes-marque"
+  ) {
+    return CATALOG_FILTER_ALL_BRANDS;
+  }
   if (key === "all" || key === "tout" || key === "collection" || key === "custom") return "all";
   return normalizeCatalogCategory(value) ?? "all";
 }
 
 export const CATALOG_FILTERS: readonly CatalogFilter[] = ["all", ...CATALOG_CATEGORIES];
+
+/** Barre catalogue vitrine : univers multi-marques puis collection / familles. */
+export const CATALOG_BAR_TABS = [CATALOG_FILTER_ALL_BRANDS, ...CATALOG_FILTERS] as const;
 
 /** Onglet menu n°10 — ouvre le configurateur (pas un filtre produit). */
 export const CATALOG_MENU_TAB_CUSTOM = "custom" as const;
@@ -104,6 +119,7 @@ export function catalogMenuTabLabel(tab: string): string {
 }
 
 export const CATALOG_FILTER_LABEL: Record<CatalogFilter, string> = {
+  [CATALOG_FILTER_ALL_BRANDS]: "Toutes les marques",
   all: "Collection",
   hoodies: "Hoodies",
   "hoodie-zip": "Hoodzip",
@@ -119,6 +135,6 @@ export function filterByCategory<T extends { category: string }>(
   products: readonly T[],
   selected: CatalogFilter,
 ): T[] {
-  if (selected === "all") return [...products];
+  if (selected === "all" || selected === CATALOG_FILTER_ALL_BRANDS) return [...products];
   return products.filter((product) => normalizeCatalogCategory(product.category) === selected);
 }

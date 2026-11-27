@@ -125,7 +125,18 @@
   },
   "lookbookTeaser": {
     "eyebrow": "Lookbook",
-    "title": "Editorials & campaigns"
+    "title": "Editorials & campaigns",
+    "brandLine": "DINGRY PARIS",
+    "subtitle": "LOOKBOOK - ARCHIVES",
+    "titleLine1": "LOOKBOOK",
+    "titleLine2": "ARCHIVES",
+    "muteAria": "Mute lookbook video",
+    "unmuteAria": "Unmute lookbook video",
+    "closeLightboxAria": "Close full-screen preview",
+    "prevSlideAria": "Previous slide",
+    "nextSlideAria": "Next slide",
+    "shopTheLook": "Shop the look",
+    "viewProduct": "View product"
   },
   "heritageReader": {
     "overlayCloseAria": "Close Heritage reader",
@@ -150,5 +161,33 @@
   "common": {
     "ttc": "incl. VAT",
     "close": "Close"
+  },
+  "editorialBanners": {
+    "sectionAria": "Brand editorial banners",
+    "adminFrameAria": "Frame the {{brand}} visual",
+    "adminDragHint": "Framing mode: click and drag anywhere on the card to move the visual",
+    "discoverCta": "DISCOVER THE COLLECTION",
+    "dingry": {
+      "sectionEyebrow": "DINGRY",
+      "title": "LUXURY IS IN THE ATTITUDE",
+      "lead": "A free, committed philosophy born from an independent journey.",
+      "kickerRight": "THE DINGRY IDENTITY",
+      "bodyRight": "DINGRY is a Parisian fashion house linking streetwear, craft and cultural storytelling. An uncompromising signature where attitude comes before the label."
+    },
+    "rockTheStreet": {
+      "sectionEyebrow": "ROCK THE STREET",
+      "title": "WHERE STREETS, STYLES AND CULTURES MEET",
+      "lead": "Crossroad of streets, styles & cultures",
+      "hookLeft": "The X symbol is the crossroads — where urban energies collide and merge into something new.",
+      "kickerRight": "IT'S ART WITH A CAPITAL X",
+      "bodyRight": "The X stands for the meeting point between differences, influences and the strongest cultural identities. ROCKTHESTREET is music, sport, film, fashion, dance and urban culture."
+    },
+    "fyma": {
+      "sectionEyebrow": "FYMA",
+      "title": "FUCK YOU MON AMOUR",
+      "lead": "THE ELEGANCE OF INSOLENCE",
+      "kickerRight": "PARIS",
+      "bodyRight": "\"Fuck you\" isn't denying love. It's speaking to it honestly. It's refusing to lie about what it is. This line is for those who love without filters. For those who loved too hard. For those who know love isn't fragile — it's brutal, deep and alive."
+    }
   }
 }

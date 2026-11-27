@@ -70,6 +70,7 @@ import {
   RETIRED_LOOKBOOK_SEED_TITLES,
   seededLookbookSlides,
 } from "@/lib/admin/lookbook-seed";
+import { validateLookbookOrderedIds } from "@/lib/admin/lookbook-limits";
 import {
   isVersoCatalogId,
   resolveRectoCatalogId,
@@ -1942,6 +1943,47 @@ export async function reorderLookbookSlide(id: string, direction: "up" | "down")
           return item;
         }),
       );
+      return { store, result: sortLookbook(store.lookbook) };
+    },
+    LOOKBOOK_STORE_WRITE_OPTIONS,
+  );
+}
+
+export async function reorderLookbookSlidesOrdered(
+  orderedIds: string[],
+): Promise<AdminLookbookSlide[] | null> {
+  if (isSupabaseStoreEnabled()) {
+    const existing = sortLookbook(await listSupabaseLookbookSlides());
+    const validationError = validateLookbookOrderedIds(
+      orderedIds,
+      existing.map((item) => item.id),
+    );
+    if (validationError) {
+      throw new StoreUnavailableError(validationError);
+    }
+    return reorderSupabaseLookbookSlides(orderedIds);
+  }
+
+  const snapshot = await readStoreSnapshot();
+  const base = snapshot === "missing" ? normalizeStore(createSeededStore()) : snapshot.store;
+  const existing = sortLookbook(base.lookbook);
+  const validationError = validateLookbookOrderedIds(
+    orderedIds,
+    existing.map((item) => item.id),
+  );
+  if (validationError) {
+    throw new StoreUnavailableError(validationError);
+  }
+
+  return withStoreOptimistic(
+    (store) => {
+      const byId = new Map(sortLookbook(store.lookbook).map((item) => [item.id, item] as const));
+      store.lookbook = orderedIds
+        .map((id, index) => {
+          const slide = byId.get(id);
+          return slide ? { ...slide, sortOrder: index } : null;
+        })
+        .filter((item): item is AdminLookbookSlide => item !== null);
       return { store, result: sortLookbook(store.lookbook) };
     },
     LOOKBOOK_STORE_WRITE_OPTIONS,

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { DINGRY_STREET_LINE } from "@/lib/dingry-brand-voice";
 import {
   buildCatalogMenuSections,
+  CATALOG_FILTER_ALL_BRANDS,
   CATALOG_MENU_TAB_CUSTOM,
   filterByCategory,
   parseCatalogFilter,
@@ -49,7 +50,7 @@ const ADMIN_CATEGORY_FROM_CATALOG: Record<
 function catalogTabToAdminCategory(tab: CatalogTabValue): AdminProductCategoryFilter | null {
   if (tab === CATALOG_MENU_TAB_CUSTOM) return null;
   const parsed = parseCatalogFilter(tab);
-  if (parsed === "all") return "Collection";
+  if (parsed === "all" || parsed === CATALOG_FILTER_ALL_BRANDS) return "Collection";
   return ADMIN_CATEGORY_FROM_CATALOG[parsed] ?? null;
 }
 

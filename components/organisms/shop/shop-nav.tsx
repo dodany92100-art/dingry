@@ -7,6 +7,8 @@ import { LayoutGroup, motion, useAnimation, useReducedMotion } from "motion/reac
 import { useFlyAnimationOptional } from "@/hooks/use-fly-animation";
 import { DingryLogo } from "@/components/atoms/dingry-logo";
 import { DINGRY_SHOP_SHELL_CLASS } from "@/components/organisms/shop/catalog-layout";
+import type { CatalogBrandFilter } from "@/lib/catalog-brand";
+import { CatalogBrandTabs } from "@/components/organisms/shop/catalog-brand-tabs";
 import { shopHref, type ShopBasePath } from "@/lib/shop-base-path";
 import { shopSectionHref } from "@/lib/shop-section-href";
 import { cn } from "@/lib/utils";
@@ -19,11 +21,9 @@ import {
   supportsNativeModalDialog,
 } from "@/components/molecules/dingry-native-dialog";
 
-const NAV_SECTION_LINKS = [["catalogue", "nav.collection"]] as const;
-
 const NAV_LOOKBOOK_LINK = ["lookbook", "nav.lookbook"] as const;
 
-type ShopNavSectionId = (typeof NAV_SECTION_LINKS)[number][0] | (typeof NAV_LOOKBOOK_LINK)[0];
+type ShopNavSectionId = "catalogue" | (typeof NAV_LOOKBOOK_LINK)[0];
 type ShopNavActiveSection = ShopNavSectionId | "custom";
 
 const NAV_MENU_INDICATOR_LAYOUT_ID = "dingry-shop-nav-menu-indicator";
@@ -62,6 +62,7 @@ function ShopNavMobileMenuPanel({
   onOpenCustom,
   onGoSection,
   onOpenCustomClick,
+  catalogBrand,
   t,
 }: {
   accountActive: boolean;
@@ -69,6 +70,7 @@ function ShopNavMobileMenuPanel({
   onOpenCustom?: () => void;
   onGoSection: (id: ShopNavSectionId) => void;
   onOpenCustomClick: () => void;
+  catalogBrand?: { value: CatalogBrandFilter; onChange: (brand: CatalogBrandFilter) => void };
   t: (key: string) => string;
 }) {
   return (
@@ -90,16 +92,20 @@ function ShopNavMobileMenuPanel({
           <span>{accountActive ? t("nav.myAccount") : t("nav.signIn")}</span>
         </button>
       ) : null}
-      <p className="dingry-typo-manifesto mb-1 text-[10px] text-white/55">{t("brand.manifesto")}</p>
       <ul className="mt-2 flex flex-col gap-0.5">
-        <li key="catalogue-street">
-          <button
-            type="button"
-            onClick={() => onGoSection("catalogue")}
-            className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
-          >
-            {t("brand.streetLine")}
-          </button>
+        {catalogBrand ? (
+          <li key="nav-brands" className="border-b border-white/10 pb-3">
+            <CatalogBrandTabs
+              value={catalogBrand.value}
+              onChange={catalogBrand.onChange}
+              layoutId="dingry-nav-brand-tabs-mobile"
+              placement="menu"
+              scrollActiveIntoView
+            />
+          </li>
+        ) : null}
+        <li className="pb-1" aria-hidden>
+          <p className="dingry-typo-manifesto text-[10px] text-white/45">{t("brand.manifesto")}</p>
         </li>
         {onOpenCustom ? (
           <li>
@@ -114,17 +120,6 @@ function ShopNavMobileMenuPanel({
             </button>
           </li>
         ) : null}
-        {NAV_SECTION_LINKS.filter(([id]) => id !== "catalogue").map(([id, labelKey]) => (
-          <li key={id}>
-            <button
-              type="button"
-              onClick={() => onGoSection(id)}
-              className="dingry-interactive-luxe w-full py-3 text-left text-xs tracking-[0.25em] text-white/75 uppercase transition-colors hover:text-white"
-            >
-              {t(labelKey)}
-            </button>
-          </li>
-        ))}
         <li key={NAV_LOOKBOOK_LINK[0]}>
           <button
             type="button"
@@ -290,6 +285,8 @@ type ShopNavProps = {
   embedded?: boolean;
   /** `/` ou `/websitedx` — logo renvoie au sommet de la boutique courante. */
   shopBasePath?: ShopBasePath;
+  /** Filtre marque boutique (DINGRY · RTS · FYMA) — barre principale. */
+  catalogBrand?: { value: CatalogBrandFilter; onChange: (brand: CatalogBrandFilter) => void };
 };
 
 export function ShopNav({
@@ -304,6 +301,7 @@ export function ShopNav({
   navMagnet,
   embedded = false,
   shopBasePath = "/",
+  catalogBrand,
 }: ShopNavProps) {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
@@ -314,7 +312,6 @@ export function ShopNav({
   const favorisControls = useAnimation();
   const cartControls = useAnimation();
   const navMenuControls = useAnimation();
-  const catalogueLinkControls = useAnimation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<ShopNavActiveSection | null>(null);
   const [navMagnetFlash, setNavMagnetFlash] = useState(false);
@@ -452,19 +449,30 @@ export function ShopNav({
         onOpenCustom?.();
         closeMobileMenu();
       }}
+      catalogBrand={
+        catalogBrand
+          ? {
+              value: catalogBrand.value,
+              onChange: (brand) => {
+                catalogBrand.onChange(brand);
+                closeMobileMenu();
+              },
+            }
+          : undefined
+      }
       t={t}
     />
   );
 
   function renderDesktopNavSection([id, labelKey]: readonly [ShopNavSectionId, string]) {
     const isActive = activeSection === id;
-    const linkButton = (
+    return (
       <button
         key={id}
         type="button"
         onClick={() => goSection(id)}
         className={cn(
-          "dingry-nav-menu-link dingry-interactive-luxe relative min-h-11 px-1.5 text-xs tracking-[0.26em] text-white/45 uppercase hover:text-white lg:px-2 lg:text-[0.8125rem] lg:tracking-[0.28em]",
+          "dingry-nav-menu-link dingry-interactive-luxe relative min-h-10 px-1 text-[11px] tracking-[0.14em] text-white/45 uppercase hover:text-white lg:min-h-11 lg:px-1.5 lg:text-xs lg:tracking-[0.18em]",
           isActive && "dingry-nav-menu-link--active",
         )}
       >
@@ -481,14 +489,6 @@ export function ShopNav({
         <span className="relative z-[1]">{t(labelKey)}</span>
       </button>
     );
-    if (id === "catalogue" && !reduceMotion) {
-      return (
-        <motion.span key={id} animate={catalogueLinkControls} className="inline-flex">
-          {linkButton}
-        </motion.span>
-      );
-    }
-    return linkButton;
   }
 
   return (
@@ -551,27 +551,38 @@ export function ShopNav({
           </div>
           <motion.div
             animate={navMenuControls}
-            className="dingry-nav-menu hidden shrink-0 items-center justify-center gap-3 justify-self-center md:flex lg:gap-5"
+            className="dingry-nav-menu hidden max-w-[min(100vw-10rem,58rem)] shrink-0 flex-nowrap items-center justify-center gap-0 justify-self-center overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden"
           >
             <LayoutGroup id="dingry-shop-nav-menu">
-              {renderDesktopNavSection(NAV_SECTION_LINKS[0])}
-              {onOpenCustom ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveSection("custom");
-                    onOpenCustom();
-                  }}
-                  className={cn(
-                    "dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe min-h-11 shrink-0 px-3.5 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] lg:px-4 lg:text-[10px] lg:tracking-[0.18em]",
-                    activeSection === "custom" && "dingry-nav-custom-tab--active",
-                  )}
-                >
-                  <span className="gold-text">{t("nav.custom")}</span>
-                </button>
+              {catalogBrand ? (
+                <span className="dingry-nav-menu-brands inline-flex shrink-0 items-center">
+                  <CatalogBrandTabs
+                    value={catalogBrand.value}
+                    onChange={catalogBrand.onChange}
+                    layoutId="dingry-nav-brand-tabs"
+                    placement="nav"
+                    showNavActiveRule={activeSection === "catalogue"}
+                  />
+                </span>
               ) : null}
-              {NAV_SECTION_LINKS.slice(1).map((entry) => renderDesktopNavSection(entry))}
-              {renderDesktopNavSection(NAV_LOOKBOOK_LINK)}
+              <span className="dingry-nav-menu-trailing inline-flex shrink-0 flex-nowrap items-center gap-2 lg:gap-2.5">
+                {onOpenCustom ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveSection("custom");
+                      onOpenCustom();
+                    }}
+                    className={cn(
+                      "dingry-catalog-custom-tab dingry-nav-custom-tab dingry-interactive-luxe min-h-10 shrink-0 px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.12em] lg:min-h-11 lg:px-3 lg:text-[10px] lg:tracking-[0.14em]",
+                      activeSection === "custom" && "dingry-nav-custom-tab--active",
+                    )}
+                  >
+                    <span className="gold-text">{t("nav.custom")}</span>
+                  </button>
+                ) : null}
+                {renderDesktopNavSection(NAV_LOOKBOOK_LINK)}
+              </span>
             </LayoutGroup>
           </motion.div>
           <div className="relative z-10 ml-auto flex shrink-0 items-center gap-2 justify-self-end md:ml-0 md:gap-3">

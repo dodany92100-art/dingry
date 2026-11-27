@@ -38,11 +38,13 @@ type VitrinePublishTabProps = {
   panel: VitrinePublishPanel;
   onPanelChange: (panel: VitrinePublishPanel) => void;
   lookbookBusySlideId: string | null;
+  lookbookBatchImporting: boolean;
   lookbookError: string;
   onLookbookNew: () => void;
   onLookbookEdit: (slide: AdminLookbookSlideView) => void;
   onLookbookDelete: (slide: AdminLookbookSlideView) => void;
-  onLookbookReorder: (slide: AdminLookbookSlideView, direction: "up" | "down") => void;
+  onLookbookReorderDrop: (fromIndex: number, toIndex: number) => void;
+  onLookbookImportBatch: (files: File[]) => void;
   atelierConfig: AdminAtelierCustomConfig;
   atelierCustomized: boolean;
   atelierSaving: boolean;
@@ -76,11 +78,13 @@ export function VitrinePublishTab({
   panel,
   onPanelChange,
   lookbookBusySlideId,
+  lookbookBatchImporting,
   lookbookError,
   onLookbookNew,
   onLookbookEdit,
   onLookbookDelete,
-  onLookbookReorder,
+  onLookbookReorderDrop,
+  onLookbookImportBatch,
   atelierConfig,
   atelierCustomized,
   atelierSaving,
@@ -333,11 +337,13 @@ export function VitrinePublishTab({
           <LookbookTab
             slides={[...lookbookSlides]}
             busySlideId={lookbookBusySlideId}
+            batchImporting={lookbookBatchImporting}
             error={lookbookError}
             onNew={onLookbookNew}
             onEdit={onLookbookEdit}
             onDelete={onLookbookDelete}
-            onReorder={onLookbookReorder}
+            onReorderDrop={onLookbookReorderDrop}
+            onImportBatch={onLookbookImportBatch}
           />
         </section>
       ) : panel === "atelier" ? (

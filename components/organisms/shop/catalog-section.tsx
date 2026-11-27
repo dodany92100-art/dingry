@@ -13,7 +13,6 @@ import {
 } from "./catalog-layout";
 import type { CatalogBrandFilter } from "@/lib/catalog-brand";
 import { CatalogFilterBar, type CatalogTabValue } from "./catalog-filter-bar";
-import { CatalogBrandBar } from "./catalog-brand-bar";
 import { CatalogGrid } from "./catalog-grid";
 import { CatalogProductCell } from "./catalog-product-cell";
 import { catalogRectoId } from "@/lib/dingry-product-display";
@@ -44,8 +43,8 @@ type CatalogSectionProps = {
 function CatalogSectionInner({
   tabValue,
   onTabChange,
-  brandValue,
-  onBrandChange,
+  brandValue: _brandValue,
+  onBrandChange: _onBrandChange,
   atelierEnabled,
   onOpenAtelierFromCategory,
   dingryMadaProducts,
@@ -57,7 +56,6 @@ function CatalogSectionInner({
     <section id="catalogue" className={`${CATALOG_SECTION_SURFACE_CLASS} ${CATALOG_SCROLL_OFFSET_CLASS}`}>
       <div className={CATALOG_VITRINE_SHELL_CLASS}>
         <CatalogFilterBar value={tabValue} onChange={onTabChange} products={grid.products} />
-        <CatalogBrandBar value={brandValue} onChange={onBrandChange} />
 
         {grid.catalogState === "error" ? (
           <div

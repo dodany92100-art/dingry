@@ -33,6 +33,7 @@
     "brandFiltersAria": "Filter collection by brand",
     "unavailable": "Catalog temporarily unavailable — checkout disabled. Try again shortly.",
     "categories": {
+      "all-brands": "All brands",
       "all": "Collection",
       "hoodies": "Hoodies",
       "hoodie-zip": "Hoodzip",

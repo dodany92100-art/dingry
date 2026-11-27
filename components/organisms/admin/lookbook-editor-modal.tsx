@@ -159,7 +159,7 @@ export function LookbookEditorModal({
 
         <div className="mb-6">
           <span className="mb-2 block text-[10px] uppercase tracking-[0.22em] text-white/45">
-            Image WebP · 1 Mo max {editingId ? "(optionnel)" : ""}
+            JPG / PNG → WebP auto · 8 Mo max {editingId ? "(optionnel)" : ""}
           </span>
           {imagePreview ? (
             <img src={imagePreview} alt="" className="mb-3 aspect-[3/4] w-full max-w-[200px] object-cover" />

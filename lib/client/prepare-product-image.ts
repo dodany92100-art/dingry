@@ -7,6 +7,7 @@ import {
 
 export type PrepareProductImageOptions = {
   maxSourceBytes?: number;
+  maxSourceLabel?: string;
   maxOutputBytes?: number;
   maxOutputLabel?: string;
   maxEdge?: number;
@@ -40,6 +41,7 @@ export async function prepareProductImage(
   options?: PrepareProductImageOptions,
 ): Promise<File> {
   const maxSource = options?.maxSourceBytes ?? PRODUCT_IMAGE_MAX_BYTES;
+  const maxSourceLabel = options?.maxSourceLabel ?? PRODUCT_IMAGE_MAX_LABEL;
   const maxOutput = options?.maxOutputBytes ?? PRODUCT_IMAGE_MAX_BYTES;
   const maxLabel = options?.maxOutputLabel ?? PRODUCT_IMAGE_MAX_LABEL;
   const edgeCap = options?.maxEdge ?? 2400;
@@ -48,7 +50,7 @@ export async function prepareProductImage(
     throw new Error("Image invalide. Formats acceptés : JPG, PNG, WEBP.");
   }
   if (file.size > maxSource) {
-    throw new Error(`Image trop lourde (${maxLabel} maximum).`);
+    throw new Error(`Fichier source trop lourd (${maxSourceLabel} maximum).`);
   }
 
   const bitmap = await createImageBitmap(file);

@@ -12,6 +12,7 @@ import {
   adminLookbookSlideViews,
   createLookbookSlide,
   loadStoreReadOnly,
+  reorderLookbookSlidesOrdered,
   validateCrmContentImageFile,
 } from "@/lib/admin/store";
 import { preuploadedRectoFromForm } from "@/lib/admin/preuploaded-image";
@@ -23,6 +24,40 @@ function revalidateLookbook() {
   revalidatePath("/");
   revalidatePath("/api/lookbook");
   revalidatePath("/api/banners");
+}
+
+export async function PATCH(request: Request) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
+
+  const blocked = adminCrmMediaBackendGuard();
+  if (blocked) return blocked;
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return jsonNoStore({ error: "Corps JSON invalide." }, { status: 400 });
+  }
+
+  const orderedIds = Array.isArray(body.orderedIds)
+    ? body.orderedIds.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  if (orderedIds.length === 0) {
+    return jsonNoStore({ error: "Liste orderedIds requise." }, { status: 400 });
+  }
+
+  try {
+    const slides = await reorderLookbookSlidesOrdered(orderedIds);
+    if (!slides) {
+      return jsonNoStore({ error: "Impossible de réordonner le lookbook." }, { status: 404 });
+    }
+    revalidateLookbook();
+    const store = await loadStoreReadOnly();
+    return jsonNoStore({ slides: adminLookbookSlideViews(store) });
+  } catch (error) {
+    return respondAdminCrmWriteError(error, "admin lookbook PATCH", "Impossible de réordonner le lookbook.");
+  }
 }
 
 export async function GET() {

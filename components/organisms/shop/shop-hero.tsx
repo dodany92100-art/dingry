@@ -14,6 +14,8 @@ import {
   type ShopHeroSlideFraming,
 } from "@/lib/shop-hero-framing";
 import { resolveShopHeroSlideImageUrl, type ShopHeroMediaMap } from "@/lib/shop-hero-media";
+import type { Brand } from "@/lib/admin/types";
+import { shopHeroSlideIndexForBrand } from "@/lib/shop-hero-brand";
 import { DEFAULT_SHOP_HERO_FRAMING_DEFAULTS, SHOP_HERO_SLIDES, type ShopHeroSlide } from "@/lib/shop-hero-slides";
 import { useTranslation } from "@/hooks/use-translation";
 import styles from "./shop-hero.module.css";
@@ -24,19 +26,15 @@ type ShopHeroProps = {
   onDiscoverCollection?: () => void;
   /** Session admin : curseur de cadrage par slide. */
   adminAdjust?: boolean;
+  /** Onglet marque nav → slide hero correspondant. */
+  brandFocus?: Brand | null;
 };
 
 function slideIndexDelta(delta: number, length: number, current: number): number {
   return (current + delta + length) % length;
 }
 
-type LookbookApiSlide = {
-  id: string;
-  title: string;
-  image: string;
-};
-
-export function ShopHero({ onDiscoverCollection, adminAdjust = false }: ShopHeroProps) {
+export function ShopHero({ onDiscoverCollection, adminAdjust = false, brandFocus = null }: ShopHeroProps) {
   const { t } = useTranslation();
   const [heroSlides, setHeroSlides] = useState<readonly ShopHeroSlide[]>(SHOP_HERO_SLIDES);
   const slideCount = heroSlides.length;
@@ -90,42 +88,13 @@ export function ShopHero({ onDiscoverCollection, adminAdjust = false }: ShopHero
   }, [applyHeroMedia]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const response = await fetch("/api/lookbook");
-        if (!response.ok) return;
-        const data = (await response.json()) as { slides?: LookbookApiSlide[] };
-        const first = data.slides?.find((slide) => slide.image?.trim());
-        if (!first || cancelled) return;
-        setHeroSlides((current) => {
-          const next = [...current];
-          const lookbookIndex = next.findIndex((slide) => slide.id === "lookbook-hero");
-          const targetIndex = lookbookIndex >= 0 ? lookbookIndex : 1;
-          const seed = next[targetIndex] ?? SHOP_HERO_SLIDES[1]!;
-          const dynamicSrc = first.image;
-          next[targetIndex] = {
-            id: `lookbook-${first.id}`,
-            src: dynamicSrc,
-            alt: first.title.trim() || "DINGRY Lookbook",
-            imageClassName: "object-cover",
-            defaultFraming: seed.defaultFraming,
-          };
-          return next;
-        });
-        const mediaRes = await fetch("/api/shop/hero-media");
-        if (mediaRes.ok) {
-          const payload = (await mediaRes.json()) as { media?: ShopHeroMediaMap };
-          if (payload.media && !cancelled) applyHeroMedia(payload.media);
-        }
-      } catch {
-        /* seed lookbook déjà en place */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [applyHeroMedia]);
+    if (!brandFocus) return;
+    const nextIndex = shopHeroSlideIndexForBrand(slideCount, brandFocus);
+    setFramingEditorOpen(false);
+    setDraftFraming(null);
+    setAutoPlay(false);
+    setActiveIndex(nextIndex);
+  }, [brandFocus, slideCount]);
 
   const effectiveFraming = useCallback(
     (slide: ShopHeroSlide): ShopHeroSlideFraming => {

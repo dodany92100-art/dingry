@@ -1,4 +1,8 @@
 
+/** Aperçu admin : même cadre portrait que le hero vitrine (100dvh mobile). */
+export const SHOP_HERO_ADMIN_PREVIEW_CLASS =
+  "relative w-full overflow-hidden aspect-[9/16] max-h-[min(56vh,26rem)] sm:aspect-[3/4] sm:max-h-[28rem]";
+
 export const SHOP_HERO_SCALE_MIN = 1;
 export const SHOP_HERO_SCALE_MAX = 2.25;
 /** Permet de « descendre » / monter le cadre au-delà du centre (object-position %). */

@@ -2181,6 +2181,85 @@ html[data-theme="light"] .dingry-shop .dingry-atelier-editorial__surcharge {
   box-shadow: 0 0 12px rgb(191 149 63 / 0.55);
 }
 
+/** Marques inline · même rangée que Collection / Atelier / Lookbook */
+.dingry-shop-nav-bar .dingry-nav-brand-tabs--inline {
+  display: inline-flex;
+  max-width: none;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.dingry-shop-nav-bar .dingry-nav-brand-tabs--inline > .absolute {
+  display: none !important;
+}
+
+.dingry-shop-nav-bar .dingry-nav-brand-tabs--inline [role="tablist"] {
+  width: auto;
+  max-width: none;
+  overflow: visible;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  padding: 0;
+}
+
+@media (min-width: 1024px) {
+  .dingry-shop-nav-bar .dingry-nav-brand-tabs--inline [role="tablist"] {
+    gap: 0.65rem;
+  }
+}
+
+/** Un seul trait (même règle que Collection) — pas de double surlignage marque + section */
+.dingry-shop-nav-bar .dingry-nav-brand-tabs--inline .dingry-tab-underline-gold {
+  display: none !important;
+}
+
+.dingry-shop-nav-bar .dingry-nav-brand-tabs--inline.dingry-nav-brand-tabs--show-rule [role="tab"][aria-selected="true"] {
+  color: rgb(252 246 186) !important;
+  text-shadow: 0 0 14px rgb(191 149 63 / 0.35);
+}
+
+.dingry-shop-nav-bar .dingry-nav-brand-tabs--inline.dingry-nav-brand-tabs--show-rule [role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.45rem;
+  left: 0.2rem;
+  height: 1px;
+  border-radius: 1px;
+  background: var(--dingry-gold-rule-gradient);
+  box-shadow: 0 0 8px rgb(191 149 63 / 0.45);
+  pointer-events: none;
+}
+
+.dingry-shop-nav-bar .dingry-nav-brand-tabs--inline [role="tab"] {
+  padding-block: 0.55rem;
+  padding-inline: 0.35rem;
+}
+
+@media (min-width: 1024px) {
+  .dingry-shop-nav-bar .dingry-nav-brand-tabs--inline [role="tab"] {
+    padding-inline: 0.55rem;
+  }
+}
+
+/** 2ᵉ onglet = ROCK THE STREET (libellé multi-mots) */
+.dingry-shop-nav-bar .dingry-nav-brand-tabs--inline [role="tab"]:nth-child(2) {
+  padding-inline: 0.45rem;
+  letter-spacing: 0.11em;
+}
+
+@media (min-width: 1024px) {
+  .dingry-shop-nav-bar .dingry-nav-brand-tabs--inline [role="tab"]:nth-child(2) {
+    padding-inline: 0.75rem;
+    letter-spacing: 0.13em;
+  }
+}
+
+.dingry-shop-nav-bar .dingry-nav-menu-link-indicator {
+  right: 0.2rem;
+  left: 0.2rem;
+}
+
 /** Bandeau marque : largeur = contenu (s’arrête après le dernier onglet). */
 .dingry-catalog-brand-bar .dingry-catalog-brand-tabs-scroll {
   width: max-content;
@@ -2290,6 +2369,23 @@ html[data-theme="light"] .dingry-shop .dingry-atelier-editorial__surcharge {
 .dingry-nav-cart-btn:hover {
   border-color: rgb(191 149 63 / 0.55) !important;
   box-shadow: 0 0 14px rgb(191 149 63 / 0.22);
+}
+
+.dingry-shop-nav-bar .dingry-nav-menu .dingry-nav-menu-brands {
+  flex-shrink: 0;
+}
+
+.dingry-shop-nav-bar .dingry-nav-menu .dingry-nav-menu-trailing {
+  margin-inline-start: 1.15rem;
+  padding-inline-start: 1.05rem;
+  border-inline-start: 1px solid rgb(191 149 63 / 0.38);
+}
+
+@media (min-width: 1024px) {
+  .dingry-shop-nav-bar .dingry-nav-menu .dingry-nav-menu-trailing {
+    margin-inline-start: 1.85rem;
+    padding-inline-start: 1.45rem;
+  }
 }
 
 .dingry-shop-nav-bar .dingry-nav-custom-tab {
@@ -2867,7 +2963,22 @@ html[data-theme="light"] .dingry-shop .dingry-shop-lower-band .dingry-footer-sta
 }
 
 html[data-theme="light"] .dingry-shop .dingry-shop-lower-band .dingry-lookbook-band,
-.dingry-shop-lower-band .dingry-lookbook-band,
+.dingry-shop-lower-band .dingry-lookbook-band {
+  background-color: #070707 !important;
+  overflow-x: clip;
+}
+
+/** Bandeaux marques (après atelier) — fond noir même en thème clair. */
+.dingry-editorial-banners-band {
+  background-color: #070707 !important;
+  color: #fff;
+}
+
+html[data-theme="light"] .dingry-shop .dingry-editorial-banners-band {
+  background-color: #070707 !important;
+  color: #fff;
+}
+
 html[data-theme="light"] .dingry-shop .dingry-shop-lower-band .dingry-heritage-band,
 .dingry-shop-lower-band .dingry-heritage-band {
   background-color: #050505 !important;

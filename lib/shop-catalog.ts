@@ -1,5 +1,6 @@
 import {
   CATALOG_CATEGORIES,
+  CATALOG_FILTER_ALL_BRANDS,
   CATALOG_FILTER_LABEL,
   CATALOG_MENU_TABS,
   CATALOG_MENU_TAB_CUSTOM,
@@ -15,10 +16,21 @@ import {
   DINGRY_SWEAT_PRODUCT_IDS,
   DINGRY_TEE_PRODUCT_IDS,
 } from "@/lib/dingry-product-media";
-import { normalizeProductCategory, type ProductCategory } from "@/lib/admin/types";
+import { BRANDS, normalizeProductCategory, type Brand, type ProductCategory } from "@/lib/admin/types";
 import type { ShopProduct } from "@/lib/catalog";
+import { shopProductBrand } from "@/lib/catalog-brand";
 
-export { filterByCategory, parseCatalogFilter, CATALOG_FILTERS, CATALOG_FILTER_LABEL, CATALOG_MENU_TAB_CUSTOM, CATALOG_MENU_TABS, catalogMenuTabLabel } from "@/lib/catalog-category";
+export {
+  filterByCategory,
+  parseCatalogFilter,
+  CATALOG_FILTER_ALL_BRANDS,
+  CATALOG_FILTERS,
+  CATALOG_BAR_TABS,
+  CATALOG_FILTER_LABEL,
+  CATALOG_MENU_TAB_CUSTOM,
+  CATALOG_MENU_TABS,
+  catalogMenuTabLabel,
+} from "@/lib/catalog-category";
 export type { CatalogCategory, CatalogFilter } from "@/lib/catalog-category";
 
 /** Catégories affichées sur une fiche produit boutique. */
@@ -129,9 +141,30 @@ export type CatalogMenuSection = {
   products: ShopProduct[];
 };
 
+export type CatalogBrandSection = {
+  brand: Brand;
+  label: string;
+  products: ShopProduct[];
+};
+
+/** Vue « Toutes les marques » : DINGRY · RTS · FYMA (y compris vides, sans verso). */
+export function buildCatalogBrandSections(products: readonly ShopProduct[]): CatalogBrandSection[] {
+  const cards = toCatalogCards(products);
+  return BRANDS.map((brand) => ({
+    brand,
+    label: brand,
+    products: sortCatalogProducts(
+      cards.filter((product) => shopProductBrand(product) === brand),
+      "featured",
+    ),
+  }));
+}
+
 /** Id d’ancrage scroll pour une section catalogue (ou tête de vitrine). */
 export function catalogScrollIdForFilter(filter: CatalogFilter): string {
-  return filter === "all" ? "catalogue-landing" : `catalog-section-${filter}`;
+  return filter === "all" || filter === CATALOG_FILTER_ALL_BRANDS
+    ? "catalogue-landing"
+    : `catalog-section-${filter}`;
 }
 
 /** Vue « Collection » : blocs produits dans l’ordre du menu (Hoodies → Caps), y compris familles vides. */
@@ -159,7 +192,7 @@ export function catalogMenuTabsForStorefront(
   const withProducts = new Set(catalogCategoryTabsWithProducts(products));
   return CATALOG_MENU_TABS.filter((tab) => {
     if (tab === CATALOG_MENU_TAB_CUSTOM) return true;
-    if (tab === "all") return true;
+    if (tab === "all" || tab === CATALOG_FILTER_ALL_BRANDS) return true;
     return withProducts.has(tab);
   });
 }

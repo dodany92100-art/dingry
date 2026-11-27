@@ -33,6 +33,7 @@
     "brandFiltersAria": "Filtrer la collection par marque",
     "unavailable": "Catalogue momentanément indisponible — achat désactivé. Réessayez dans un instant.",
     "categories": {
+      "all-brands": "Toutes les marques",
       "all": "Collection",
       "hoodies": "Hoodies",
       "hoodie-zip": "Hoodzip",

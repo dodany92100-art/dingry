@@ -1,7 +1,12 @@
 "use client";
 
 import { AnimatedTabs } from "@/components/atoms/ui/animated-tabs";
-import { CATALOG_FILTERS, CATALOG_MENU_TAB_CUSTOM, type CatalogFilter } from "@/lib/shop-catalog";
+import {
+  CATALOG_BAR_TABS,
+  CATALOG_FILTER_ALL_BRANDS,
+  CATALOG_MENU_TAB_CUSTOM,
+  type CatalogFilter,
+} from "@/lib/shop-catalog";
 import type { ShopProduct } from "@/lib/catalog";
 import { useTranslation } from "@/hooks/use-translation";
 import { useShopStorefrontCopy } from "@/hooks/shop-storefront-copy-context";
@@ -18,8 +23,11 @@ type CatalogFilterBarProps = {
 export function CatalogFilterBar({ value, onChange, products: _products }: CatalogFilterBarProps) {
   const { t, catalogTabLabel } = useTranslation();
   const { catalogTabLabel: resolveCatalogTab } = useShopStorefrontCopy();
-  const categoryTabs = CATALOG_FILTERS;
-  const categoryValue = value === CATALOG_MENU_TAB_CUSTOM ? categoryTabs[0] ?? "all" : value;
+  const categoryTabs = CATALOG_BAR_TABS;
+  const categoryValue =
+    value === CATALOG_MENU_TAB_CUSTOM
+      ? CATALOG_FILTER_ALL_BRANDS
+      : value;
 
   return (
     <div className="dingry-catalog-bar dingry-catalog-bar--vitrine dingry-catalog-bar--mobile-bleed -mt-px mb-4 w-full border-b border-white/15 bg-black py-2.5 shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] md:mb-6 md:py-3">

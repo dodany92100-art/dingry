@@ -3,10 +3,11 @@
 import type { ProductFlipSide } from "@/components/molecules/product-image-flip";
 import type { ShopProduct } from "@/lib/catalog";
 import { catalogRectoId } from "@/lib/dingry-product-display";
-import { buildCatalogMenuSections } from "@/lib/shop-catalog";
+import { buildCatalogBrandSections, buildCatalogMenuSections } from "@/lib/shop-catalog";
 import type { CatalogState } from "./hooks/use-shop-catalog";
 import type { AtelierModelPickerGroupId } from "@/lib/atelier-custom-config";
 import { CatalogProductCell } from "./catalog-product-cell";
+import { AllBrandsFeed } from "./all-brands-feed";
 import { CollectionFeed } from "./collection-feed";
 import { CATALOG_PRODUCT_GRID_CLASS } from "./catalog-layout";
 
@@ -67,8 +68,23 @@ export function CatalogGrid({
     );
   }
 
+  const isAllBrandsFeed = filterKey === "all-brands";
   const isCollectionFeed = filterKey === "all";
+  const brandSections = isAllBrandsFeed ? buildCatalogBrandSections(products) : null;
   const sections = isCollectionFeed ? buildCatalogMenuSections(products) : null;
+
+  if (isAllBrandsFeed && brandSections) {
+    return (
+      <AllBrandsFeed
+        sections={brandSections}
+        products={products}
+        onOpenProduct={onOpenProduct}
+        wishlistIds={wishlistIds}
+        onToggleWishlist={onToggleWishlist}
+        showAdminIdBadge={showAdminIdBadge}
+      />
+    );
+  }
 
   if (isCollectionFeed && sections) {
     return sections.length === 0 ? (

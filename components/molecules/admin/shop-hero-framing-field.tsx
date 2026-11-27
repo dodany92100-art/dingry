@@ -8,6 +8,7 @@ import {
   clampShopHeroScale,
   resolveShopHeroFraming,
   shopHeroFramingStyle,
+  SHOP_HERO_ADMIN_PREVIEW_CLASS,
   SHOP_HERO_FOCAL_AXIS_MAX,
   SHOP_HERO_FOCAL_AXIS_MIN,
   SHOP_HERO_SCALE_MAX,
@@ -20,6 +21,16 @@ import {
   ADMIN_CRM_VITRINE_PUBLISH_BTN,
   ADMIN_CRM_VITRINE_RESET_BTN,
 } from "@/components/organisms/admin/admin-crm-field-styles";
+
+const DROPPED_IMAGE_EXT = /\.(jpe?g|png|gif|webp|heic|heif|avif)$/i;
+
+function imageFileFromDataTransfer(dataTransfer: DataTransfer): File | null {
+  const file = dataTransfer.files?.[0];
+  if (!file) return null;
+  if (file.type.startsWith("image/")) return file;
+  if (DROPPED_IMAGE_EXT.test(file.name)) return file;
+  return null;
+}
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -57,12 +68,14 @@ export function ShopHeroFramingField({
   const [imageDragOver, setImageDragOver] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [previewSrc, setPreviewSrc] = useState(imageUrl);
+  const [previewHidden, setPreviewHidden] = useState(false);
   const dragRef = useRef(false);
   const previewRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!imageUploading) setPreviewSrc(imageUrl);
-  }, [imageUrl, imageUploading]);
+    if (imageUploading || previewHidden) return;
+    setPreviewSrc(imageUrl);
+  }, [imageUrl, imageUploading, previewHidden]);
 
   const imageStyle = shopHeroFramingStyle(draft);
   const busy = disabled || imageUploading;
@@ -77,6 +90,7 @@ export function ShopHeroFramingField({
     setDraft(next);
     setDirty(false);
     setStatus("idle");
+    setPreviewHidden(false);
   }, [resetVersion, slideId, defaultFraming, framingMap]);
 
   function discardLocalDraft() {
@@ -99,7 +113,7 @@ export function ShopHeroFramingField({
       setStatus("error");
       return;
     }
-    const url = result.uploaded?.url ?? "";
+    const url = result.uploaded?.url?.trim() ?? "";
     if (!url) {
       setImageUploading(false);
       setStatus("error");
@@ -117,6 +131,7 @@ export function ShopHeroFramingField({
         return;
       }
       setPreviewSrc(url);
+      setPreviewHidden(false);
       onImageSaved?.(slideId, url);
       setStatus("saved");
     } catch {
@@ -143,6 +158,38 @@ export function ShopHeroFramingField({
     },
     [busy],
   );
+
+  async function clearUploadedImage() {
+    if (busy || !previewSrc.trim()) return;
+    if (
+      !window.confirm(
+        `Retirer le visuel de « ${label} » ? Glissez une nouvelle image pour le remplacer ; le cadrage actuel est conservé.`,
+      )
+    ) {
+      return;
+    }
+    setStatus("saving");
+    setImageUploading(true);
+    try {
+      const mediaRes = await fetch("/api/admin/shop/hero-media", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ slideId, clear: true }),
+      });
+      if (!mediaRes.ok) {
+        setStatus("error");
+        return;
+      }
+      onImageCleared?.(slideId);
+      setPreviewSrc("");
+      setPreviewHidden(true);
+      setStatus("saved");
+    } catch {
+      setStatus("error");
+    } finally {
+      setImageUploading(false);
+    }
+  }
 
   async function resetToFactory() {
     if (busy) return;
@@ -176,6 +223,7 @@ export function ShopHeroFramingField({
       if (framingPayload.framing) onMapSaved(framingPayload.framing);
       if (mediaRes.ok) onImageCleared?.(slideId);
       setDraft({ ...defaultFraming });
+      setPreviewHidden(false);
       setDirty(false);
       setStatus("saved");
     } catch {
@@ -213,9 +261,20 @@ export function ShopHeroFramingField({
 
   return (
     <div className={`${ADMIN_CRM_GLASS_PANEL} space-y-4 p-4`}>
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">Hero accueil</p>
-        <p className="mt-1 text-xs font-medium tracking-[0.12em] text-white/80">{label}</p>
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">Hero accueil</p>
+          <p className="mt-1 text-xs font-medium tracking-[0.12em] text-white/80">{label}</p>
+          <p className="mt-0.5 text-[9px] tracking-[0.08em] text-white/35">Aperçu comme sur mobile · plein écran vitrine</p>
+        </div>
+        <a
+          href="/websitedx"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/60 transition hover:border-[#c9a227]/45 hover:text-[#d8b96a]"
+        >
+          Voir sur la vitrine
+        </a>
       </div>
       <div
         className="relative overflow-hidden rounded-md border border-white/12 bg-black/50"
@@ -229,37 +288,43 @@ export function ShopHeroFramingField({
           event.preventDefault();
           setImageDragOver(false);
           if (busy) return;
-          const file = event.dataTransfer.files?.[0];
-          if (file?.type.startsWith("image/")) void handleImageDrop(file);
+          const file = imageFileFromDataTransfer(event.dataTransfer);
+          if (file) void handleImageDrop(file);
         }}
       >
-        <div className="relative aspect-[21/9] w-full overflow-hidden">
-          <img
-            src={previewSrc}
-            alt=""
-            className="h-full w-full object-cover"
-            style={{
-              objectPosition: imageStyle.objectPosition,
-              transform: imageStyle.transform,
-              transformOrigin: imageStyle.transformOrigin,
-            }}
-            draggable={false}
-          />
-          <div
-            className={`pointer-events-none absolute inset-0 z-[4] flex items-center justify-center bg-black/30 text-center transition ${
-              imageDragOver ? "opacity-95" : "opacity-[0.38]"
-            }`}
-            aria-hidden
-          >
-            <span className="px-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/90">
-              {imageUploading ? "Upload…" : "Glisser votre image"}
-            </span>
-          </div>
-          <span
-            className="pointer-events-none absolute z-[2] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#FF3D00] shadow-[0_0_0_1px_rgb(0_0_0/0.55)]"
-            style={{ left: `${draft.focalX}%`, top: `${draft.focalY}%` }}
-            aria-hidden
-          />
+        <div className={SHOP_HERO_ADMIN_PREVIEW_CLASS}>
+          {previewSrc.trim() ? (
+            <img
+              src={previewSrc}
+              alt=""
+              className="h-full w-full object-cover"
+              style={{
+                objectPosition: imageStyle.objectPosition,
+                transform: imageStyle.transform,
+                transformOrigin: imageStyle.transformOrigin,
+              }}
+              draggable={false}
+            />
+          ) : (
+            <div className="h-full w-full bg-black/85" aria-hidden />
+          )}
+          {imageDragOver || imageUploading || !previewSrc.trim() ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-[4] flex items-center justify-center bg-black/45 text-center"
+              aria-hidden
+            >
+              <span className="px-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/90">
+                {imageUploading ? "Upload…" : "Glisser votre image"}
+              </span>
+            </div>
+          ) : null}
+          {previewSrc.trim() ? (
+            <span
+              className="pointer-events-none absolute z-[2] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#FF3D00] shadow-[0_0_0_1px_rgb(0_0_0/0.55)]"
+              style={{ left: `${draft.focalX}%`, top: `${draft.focalY}%` }}
+              aria-hidden
+            />
+          ) : null}
           <button
             ref={previewRef}
             type="button"
@@ -283,9 +348,10 @@ export function ShopHeroFramingField({
               dragRef.current = false;
             }}
             onWheel={(event) => {
-              if (busy) return;
+              if (busy || !(event.ctrlKey || event.metaKey)) return;
               event.preventDefault();
-              const delta = event.deltaY > 0 ? -0.04 : 0.04;
+              const step = Math.min(0.02, Math.abs(event.deltaY) * 0.0008);
+              const delta = event.deltaY > 0 ? -step : step;
               setDraft((prev) => ({ ...prev, scale: clampShopHeroScale(prev.scale + delta) }));
               setDirty(true);
               setStatus("idle");
@@ -333,7 +399,7 @@ export function ShopHeroFramingField({
       </div>
       <label className="block">
         <span className="mb-1 block text-[9px] uppercase tracking-[0.14em] text-white/45">
-          Zoom · {Math.round(draft.scale * 100)}%
+          Zoom · {Math.round(draft.scale * 100)}% <span className="text-white/30">(⌘ ou Ctrl + molette)</span>
         </span>
         <input
           type="range"
@@ -353,6 +419,15 @@ export function ShopHeroFramingField({
         />
       </label>
       <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={busy || !previewSrc.trim() || status === "saving"}
+          onClick={() => void clearUploadedImage()}
+          className="h-10 rounded-full border border-red-400/35 px-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-red-300/90 transition hover:border-red-300/55 hover:text-red-200 disabled:opacity-35"
+          title="Vider la zone pour glisser une nouvelle image"
+        >
+          Supprimer le visuel
+        </button>
         <button
           type="button"
           disabled={busy || status === "saving"}

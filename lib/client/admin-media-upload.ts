@@ -5,6 +5,8 @@ import {
 import {
   CRM_CONTENT_IMAGE_MAX_BYTES,
   CRM_CONTENT_IMAGE_MAX_LABEL,
+  CRM_CONTENT_IMAGE_MAX_SOURCE_BYTES,
+  CRM_CONTENT_IMAGE_MAX_SOURCE_LABEL,
 } from "@/lib/admin/image-limits";
 import {
   prepareProductImage,
@@ -15,7 +17,7 @@ type PrepareAndUploadOptions = {
   folder?: string;
   productId?: string | null;
   face?: "recto" | "verso";
-  /** Lookbook / bannière : plafond 1 Mo. */
+  /** Lookbook / bannière : WebP navigateur · 8 Mo max après conversion. */
   contentImage?: boolean;
 };
 
@@ -32,10 +34,11 @@ export async function prepareAndUploadAdminImage(
   try {
     const compress: PrepareProductImageOptions | undefined = options?.contentImage
       ? {
-          maxSourceBytes: CRM_CONTENT_IMAGE_MAX_BYTES * 4,
+          maxSourceBytes: CRM_CONTENT_IMAGE_MAX_SOURCE_BYTES,
+          maxSourceLabel: CRM_CONTENT_IMAGE_MAX_SOURCE_LABEL,
           maxOutputBytes: CRM_CONTENT_IMAGE_MAX_BYTES,
           maxOutputLabel: CRM_CONTENT_IMAGE_MAX_LABEL,
-          maxEdge: 1600,
+          maxEdge: 2400,
         }
       : undefined;
     const prepared = await prepareProductImage(source, compress);

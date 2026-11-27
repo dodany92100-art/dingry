@@ -7,7 +7,12 @@ import {
   parseCatalogBrandFilter,
   type CatalogBrandFilter,
 } from "@/lib/catalog-brand";
-import { catalogScrollIdForFilter, parseCatalogFilter, type CatalogFilter } from "@/lib/shop-catalog";
+import {
+  CATALOG_FILTER_ALL_BRANDS,
+  catalogScrollIdForFilter,
+  parseCatalogFilter,
+  type CatalogFilter,
+} from "@/lib/shop-catalog";
 import { shopBasePathFromPathname } from "@/lib/shop-base-path";
 
 function liveSearchParams(fallback: string): URLSearchParams {
@@ -40,7 +45,8 @@ export function useCatalogFilter(scrollToSection: (id: string) => void) {
   const selectFilter = useCallback(
     (next: CatalogFilter) => {
       replaceQuery((params) => {
-        if (next === "all") params.delete("category");
+        if (next === CATALOG_FILTER_ALL_BRANDS) params.set("category", CATALOG_FILTER_ALL_BRANDS);
+        else if (next === "all") params.delete("category");
         else params.set("category", next);
       });
     },
@@ -63,7 +69,7 @@ export function useCatalogFilter(scrollToSection: (id: string) => void) {
     const targetId = catalogScrollIdForFilter(activeFilter);
     if (skipFirstScroll.current) {
       skipFirstScroll.current = false;
-      if (activeFilter !== "all") scrollToSection(targetId);
+      if (activeFilter !== "all" && activeFilter !== CATALOG_FILTER_ALL_BRANDS) scrollToSection(targetId);
       return;
     }
     scrollToSection(targetId);

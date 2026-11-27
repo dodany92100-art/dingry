@@ -44,7 +44,11 @@ export async function POST(request: Request) {
   if (!folder) {
     return jsonNoStore({ error: "Dossier cible invalide." }, { status: 400 });
   }
-  const contentImage = folder.includes("lookbook") || folder.includes("banner");
+  const contentImage =
+    folder.includes("lookbook") ||
+    folder.includes("banner") ||
+    folder.includes("vitrine") ||
+    folder.includes("atelier");
   const imageError = await validateImageFileAsync(file, contentImage);
   if (imageError) {
     return jsonNoStore({ error: imageError }, { status: 400 });

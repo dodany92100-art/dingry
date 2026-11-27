@@ -32,10 +32,16 @@ import { ShopHero } from "@/components/organisms/shop/shop-hero";
 import { ShopNav, type ShopNavMagnet } from "@/components/organisms/shop/shop-nav";
 import { DingryI18nProvider } from "@/hooks/use-translation";
 import { isShopProductInStock, type ShopProduct } from "@/lib/catalog";
-import { filterByBrand } from "@/lib/catalog-brand";
+import { filterByBrand, type CatalogBrandFilter } from "@/lib/catalog-brand";
 import { brandPageVisibleProducts, filterBrandCatalogExcludingCollection } from "@/lib/filter-brand-catalog";
 import { DINGRY_MADA_COLLECTION } from "@/lib/shop-brand-page-config";
-import { parseCatalogFilter } from "@/lib/shop-catalog";
+import {
+  CATALOG_FILTER_ALL_BRANDS,
+  filterCatalogProducts,
+  parseCatalogFilter,
+} from "@/lib/shop-catalog";
+import { sortCatalogProducts } from "@/lib/catalog-sort";
+import { DEFAULT_PRODUCT_BRAND } from "@/lib/admin/types";
 import { buildFlipPairs, resolveSaleProduct, visibleCatalogProducts } from "@/lib/shop-view";
 import {
   enabledAtelierModels,
@@ -46,6 +52,8 @@ import { hasSupabaseOAuthQuery, searchWithoutOAuthQuery } from "@/lib/auth/scrub
 import { shopBasePathFromPathname, shopHref } from "@/lib/shop-base-path";
 import { bannerConfiguratorInitialLabel } from "@/lib/custom-city-banner";
 import { toggleCatalogWishlistFavorite } from "@/lib/shop/catalog-wishlist-toggle";
+import type { Brand } from "@/lib/admin/types";
+import { BrandHeritageBanners } from "@/components/organisms/shop/brand-heritage-banners";
 
 const ProductModal = dynamic(
   () => import("@/components/organisms/shop/product-modal").then((m) => ({ default: m.ProductModal })),
@@ -139,6 +147,23 @@ function DingryShopPageInner() {
   const { authenticated: adminSession } = useAdminSessionProbe();
   const { launchFromElement } = useFlyAnimation();
   const { activeFilter, activeBrand, selectFilter, selectBrand } = useCatalogFilter(scrollToSection);
+  const handleNavBrandChange = useCallback(
+    (brand: Parameters<typeof selectBrand>[0]) => {
+      if (activeFilter === CATALOG_FILTER_ALL_BRANDS) {
+        selectFilter("all");
+      }
+      selectBrand(brand);
+      scrollToSection("catalogue");
+    },
+    [activeFilter, scrollToSection, selectBrand, selectFilter],
+  );
+  const handleDiscoverBrandBanner = useCallback(
+    (brand: Brand) => {
+      selectBrand(brand);
+      scrollToSection("catalogue");
+    },
+    [scrollToSection, selectBrand],
+  );
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -176,23 +201,39 @@ function DingryShopPageInner() {
 
   const flipPairs = useMemo(() => buildFlipPairs(products), [products]);
 
+  const effectiveBrand = useMemo((): CatalogBrandFilter => {
+    if (activeFilter === CATALOG_FILTER_ALL_BRANDS) return activeBrand;
+    return activeBrand ?? DEFAULT_PRODUCT_BRAND;
+  }, [activeFilter, activeBrand]);
+
   const catalogGridProducts = useMemo(() => {
-    if (activeFilter === "all") {
-      const scoped = filterByBrand(products, activeBrand);
-      if (activeBrand === "DINGRY") {
-        return filterBrandCatalogExcludingCollection(scoped, "DINGRY", DINGRY_MADA_COLLECTION);
-      }
-      return scoped;
+    const brandScope =
+      activeFilter === CATALOG_FILTER_ALL_BRANDS ? null : effectiveBrand;
+    if (activeFilter === CATALOG_FILTER_ALL_BRANDS) {
+      return sortCatalogProducts(filterCatalogProducts(products, "all"), "featured");
     }
-    return visibleCatalogProducts(products, activeFilter, activeBrand);
-  }, [products, activeFilter, activeBrand]);
+    if (activeFilter === "all") {
+      const scoped = filterByBrand(products, brandScope);
+      const narrowed =
+        effectiveBrand === "DINGRY"
+          ? filterBrandCatalogExcludingCollection(scoped, "DINGRY", DINGRY_MADA_COLLECTION)
+          : scoped;
+      return sortCatalogProducts(filterCatalogProducts(narrowed, "all"), "featured");
+    }
+    return visibleCatalogProducts(products, activeFilter, brandScope);
+  }, [products, activeFilter, effectiveBrand]);
 
   const dingryMadaCatalogProducts = useMemo(() => {
-    if (activeBrand !== "DINGRY" || activeFilter !== "all") return [];
+    if (effectiveBrand !== "DINGRY" || activeFilter !== "all") return [];
     return brandPageVisibleProducts(products, "DINGRY", { collection: DINGRY_MADA_COLLECTION });
-  }, [products, activeBrand, activeFilter]);
+  }, [products, effectiveBrand, activeFilter]);
 
-  const catalogFilterKey = activeFilter === "all" ? "all" : activeFilter;
+  const catalogFilterKey =
+    activeFilter === CATALOG_FILTER_ALL_BRANDS
+      ? "all-brands"
+      : activeFilter === "all"
+        ? "all"
+        : activeFilter;
   const personalizationProduct = useMemo(
     () =>
       products.find((p) => p.id === PERSONALIZABLE_PRODUCT_ID) ??
@@ -201,6 +242,22 @@ function DingryShopPageInner() {
   );
 
   const tabValue = activeFilter;
+
+  const handleTabChange = useCallback(
+    (tab: string) => {
+      const parsed = parseCatalogFilter(tab);
+      if (parsed === CATALOG_FILTER_ALL_BRANDS) {
+        selectBrand(null);
+        selectFilter(parsed);
+        return;
+      }
+      if (parsed === "all" && activeBrand === null) {
+        selectBrand(DEFAULT_PRODUCT_BRAND);
+      }
+      selectFilter(parsed);
+    },
+    [selectFilter, selectBrand, activeBrand],
+  );
 
   useEffect(() => {
     if (searchParams.get("heritage") === "1") {
@@ -247,13 +304,6 @@ function DingryShopPageInner() {
     }
     link.href = href;
   }, [modal.selectedProduct, products, shopBasePath, searchParams]);
-
-  const handleTabChange = useCallback(
-    (tab: string) => {
-      selectFilter(parseCatalogFilter(tab));
-    },
-    [selectFilter],
-  );
 
   const [bannerSeedLabel, setBannerSeedLabel] = useState<string | null>(null);
   const [customProductId, setCustomProductId] = useState<number | null>(null);
@@ -375,6 +425,10 @@ function DingryShopPageInner() {
         onScrollToSection={scrollToSection}
         onOpenCustom={scrollToAtelierLanding}
         navMagnet={navMagnet}
+        catalogBrand={{
+          value: activeFilter === CATALOG_FILTER_ALL_BRANDS ? activeBrand : effectiveBrand,
+          onChange: handleNavBrandChange,
+        }}
       />
       <div
         ref={pageScrollRef}
@@ -382,7 +436,11 @@ function DingryShopPageInner() {
           cart.open ? "overflow-hidden" : "overflow-x-hidden overflow-y-auto"
         }`}
       >
-        <ShopHero onDiscoverCollection={scrollToCatalogueWithNavMagnet} adminAdjust={adminSession} />
+        <ShopHero
+          onDiscoverCollection={scrollToCatalogueWithNavMagnet}
+          adminAdjust={adminSession}
+          brandFocus={activeFilter === CATALOG_FILTER_ALL_BRANDS ? null : effectiveBrand}
+        />
         <div className={DINGRY_SHOP_SHELL_CLASS}>
           <div id="catalogue-landing" className={CATALOG_SCROLL_OFFSET_CLASS} aria-hidden />
           <CatalogSection
@@ -414,6 +472,7 @@ function DingryShopPageInner() {
               adminAdjust={adminSession}
             />
           </LazyWhenVisible>
+          <BrandHeritageBanners onDiscoverBrand={handleDiscoverBrandBanner} adminAdjust={adminSession} />
           <div className={DINGRY_SHOP_LOWER_BAND_CLASS}>
             <LazyWhenVisible
               scrollRootRef={pageScrollRef}

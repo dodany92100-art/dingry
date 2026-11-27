@@ -683,11 +683,17 @@ function AdminDashboard() {
               panel={vitrinePanel}
               onPanelChange={selectVitrinePanel}
               lookbookBusySlideId={lookbookApi.busySlideId}
+              lookbookBatchImporting={lookbookApi.batchImporting}
               lookbookError={lookbookApi.error}
               onLookbookNew={() => setLookbookEditor({ slide: null })}
               onLookbookEdit={(slide) => setLookbookEditor({ slide })}
-              onLookbookReorder={(slide, direction) => {
-                void lookbookApi.reorder(slide, direction).then((err) => {
+              onLookbookReorderDrop={(fromIndex, toIndex) => {
+                void lookbookApi.reorderDrop(fromIndex, toIndex).then((err) => {
+                  if (err) lookbookApi.setError(err);
+                });
+              }}
+              onLookbookImportBatch={(files) => {
+                void lookbookApi.importBatch(files).then((err) => {
                   if (err) lookbookApi.setError(err);
                 });
               }}
